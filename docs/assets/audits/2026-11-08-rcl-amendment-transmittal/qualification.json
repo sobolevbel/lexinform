@@ -1,0 +1,236 @@
+{
+  "archive_change": {
+    "after": {
+      "input": [
+        [
+          [
+            "Autopopr.pdf"
+          ],
+          "bill",
+          "aae8affe5ce8f03f09b48ffb78500fbfcd4c1a1786221c4e0c8203ee08fe747b"
+        ],
+        [
+          [
+            "Uzasadnienie do autopoprawki.docx"
+          ],
+          "justification",
+          "8ef3911badef760fd97ef21143065a77c52f0e6ddd8b451b673963f57b18763c"
+        ]
+      ],
+      "physical_state": "unverified",
+      "retained": null,
+      "waiting": true
+    },
+    "before": {
+      "input": [
+        [
+          [
+            "Autopopr.pdf"
+          ],
+          "bill",
+          "aae8affe5ce8f03f09b48ffb78500fbfcd4c1a1786221c4e0c8203ee08fe747b"
+        ],
+        [
+          [
+            "Uzasadnienie do autopoprawki.docx"
+          ],
+          "justification",
+          "8ef3911badef760fd97ef21143065a77c52f0e6ddd8b451b673963f57b18763c"
+        ]
+      ],
+      "physical_state": "unverified",
+      "retained": [
+        "aae8affe5ce8f03f09b48ffb78500fbfcd4c1a1786221c4e0c8203ee08fe747b"
+      ],
+      "waiting": false
+    },
+    "id": "662379"
+  },
+  "archives": 90,
+  "baseline_commit": "925bade6",
+  "baseline_report_sha256": "b621d89ed664f6296da98f3b2b325f79435ddcc8dfd9500b365228bb4d244665",
+  "candidate_report_sha256": "cc08aab01ca85dd0ff37f230447ebd7d7f7ca631a54cf5699524f9101604b3da",
+  "changes": {
+    "12381402/12": {
+      "after": {
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "old_state": "waiting",
+        "old_text_sha256": null,
+        "proof": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "requests": [],
+        "roles": [],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12381402/13033801/13033802/dokument659611.zip"
+      },
+      "before": {
+        "new_state": "unverified",
+        "new_text_sha256": "2a96073780477876d74bb106d610a1fe4d2344363211da73a4359a64ea06762d",
+        "old_state": "unverified",
+        "old_text_sha256": "2a96073780477876d74bb106d610a1fe4d2344363211da73a4359a64ea06762d",
+        "proof": null,
+        "rejected": [
+          "('Projekt rozp. PRM - art. 29 ust. 6 zarządzania mieniem państwowym - MATERIAŁ INFORMACYJNY.docx',): regulation"
+        ],
+        "requests": [],
+        "roles": [
+          {
+            "member": [
+              "PROJEKT USTAWY - 11.03.2024 - NA RM.docx"
+            ],
+            "role": "bill",
+            "sha256": "8d8fa551c1d7b675bb7b0575a0e0d893cd093ac0b20c0df65f54b1c0affe8867",
+            "text_sha256": "bc2a41e9a519dfb4a35741e0181e5152d364f4858625648057623a8798bed335",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12381402/13033801/13033802/dokument659611.zip"
+          },
+          {
+            "member": [
+              "UZASADNIENIE - NA RM.docx"
+            ],
+            "role": "justification",
+            "sha256": "8aec408a533c0b870627aa91c874caf02addd210134a1cb348edd15e0594f358",
+            "text_sha256": "31fad9221ee9b67f5cba2280ccb3db56033627a57543032db4ae362ed2c18020",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12381402/13033801/13033802/dokument659611.zip"
+          },
+          {
+            "member": [
+              "OSR - 08.03.2024 - NA RM.docx"
+            ],
+            "role": "osr",
+            "sha256": "76f6141312fc8dd7169aacf564ef7ecd344813b1543ea460f9aa6db037fde31c",
+            "text_sha256": "156430eb9d0f407ad7998e489a384fdbc62b0bb1e25f15f6b59f6520f1b3849b",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12381402/13033801/13033802/dokument659611.zip"
+          },
+          {
+            "member": [
+              "Autopopr.pdf"
+            ],
+            "role": "self_amendment",
+            "sha256": "aae8affe5ce8f03f09b48ffb78500fbfcd4c1a1786221c4e0c8203ee08fe747b",
+            "text_sha256": "4e55c4f9fa13ee42cdacca092fc4182d0fdd8ffe90904a1429d56b6c2e8cf3a2",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12381402/13033801/13033802/dokument662379.zip"
+          }
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12381402/13033801/13033802/dokument659611.zip"
+      }
+    },
+    "12381402/14": {
+      "after": {
+        "new_state": "waiting",
+        "new_text_sha256": null,
+        "old_state": "waiting",
+        "old_text_sha256": null,
+        "proof": null,
+        "rejected": [
+          "A declared normative part could not be read during version comparison"
+        ],
+        "requests": [],
+        "roles": [],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12381402/13033801/13033802/dokument659611.zip"
+      },
+      "before": {
+        "new_state": "unverified",
+        "new_text_sha256": "2a96073780477876d74bb106d610a1fe4d2344363211da73a4359a64ea06762d",
+        "old_state": "unverified",
+        "old_text_sha256": "2a96073780477876d74bb106d610a1fe4d2344363211da73a4359a64ea06762d",
+        "proof": null,
+        "rejected": [
+          "('Projekt rozp. PRM - art. 29 ust. 6 zarządzania mieniem państwowym - MATERIAŁ INFORMACYJNY.docx',): regulation"
+        ],
+        "requests": [],
+        "roles": [
+          {
+            "member": [
+              "PROJEKT USTAWY - 11.03.2024 - NA RM.docx"
+            ],
+            "role": "bill",
+            "sha256": "8d8fa551c1d7b675bb7b0575a0e0d893cd093ac0b20c0df65f54b1c0affe8867",
+            "text_sha256": "bc2a41e9a519dfb4a35741e0181e5152d364f4858625648057623a8798bed335",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12381402/13033801/13033802/dokument659611.zip"
+          },
+          {
+            "member": [
+              "UZASADNIENIE - NA RM.docx"
+            ],
+            "role": "justification",
+            "sha256": "8aec408a533c0b870627aa91c874caf02addd210134a1cb348edd15e0594f358",
+            "text_sha256": "31fad9221ee9b67f5cba2280ccb3db56033627a57543032db4ae362ed2c18020",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12381402/13033801/13033802/dokument659611.zip"
+          },
+          {
+            "member": [
+              "OSR - 08.03.2024 - NA RM.docx"
+            ],
+            "role": "osr",
+            "sha256": "76f6141312fc8dd7169aacf564ef7ecd344813b1543ea460f9aa6db037fde31c",
+            "text_sha256": "156430eb9d0f407ad7998e489a384fdbc62b0bb1e25f15f6b59f6520f1b3849b",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12381402/13033801/13033802/dokument659611.zip"
+          },
+          {
+            "member": [
+              "Autopopr.pdf"
+            ],
+            "role": "self_amendment",
+            "sha256": "aae8affe5ce8f03f09b48ffb78500fbfcd4c1a1786221c4e0c8203ee08fe747b",
+            "text_sha256": "4e55c4f9fa13ee42cdacca092fc4182d0fdd8ffe90904a1429d56b6c2e8cf3a2",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12381402/13033801/13033802/dokument662379.zip"
+          }
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12381402/13033801/13033802/dokument659611.zip"
+      }
+    }
+  },
+  "input_manifest_sha256": "76bcf0e6121cd22db8c1de4dd817cfff0a82cb0cd56258b56d875c8d80e4b3ef",
+  "letter_controls_unchanged": [
+    "12388101/9",
+    "12388101/10",
+    "12399200/9",
+    "12399200/12",
+    "12399200/14",
+    "12392400/9",
+    "12392400/10"
+  ],
+  "original_print_comparison": {
+    "archive_sha256": "eb0c09584449a49d0cc5b2d5fbbb4510d20201744a9cd976c051fd7bf56a1b93",
+    "base_candidates": {
+      "https://legislacja.rcl.gov.pl/docs//2/12381402/13033801/13033802/dokument659611.zip": {
+        "cases": [
+          "12381402/12",
+          "12381402/14"
+        ],
+        "catalog_date": "2024-03-12",
+        "draft_dates": [
+          "2024-03-11"
+        ],
+        "file_sha256": "9de2caf7aefd7c3063dc283a342a7aba991294f0812a7e16ec921e0e5e245bc7",
+        "name": "Projekt ustawy o zmianie niektórych ustaw związanych z funkcjonowaniem administracji rządowej (UD9), RM-0610-18-24.zip",
+        "normative_digest": "law-v2:989581ecce4ae2a87b85e6d0130a8a8f3e8c078a9e9538d7633433dab4b6eeb0",
+        "state": "unverified",
+        "text_sha256": "2a96073780477876d74bb106d610a1fe4d2344363211da73a4359a64ea06762d"
+      }
+    },
+    "catalog_date": "2024-04-04",
+    "catalog_name": "autopoprawka do rządowego projektu ustawy o zmianie niektórych ustaw związanych z funkcjonowaniem administracji rządowej (UD9) (druk nr 269), RM-0610-18-24.zip",
+    "catalog_print_numbers": [
+      "269"
+    ],
+    "explicit_date_candidates": [],
+    "member_print_number": null,
+    "proposal_draft_date": null,
+    "same_rm_prints": {
+      "10": {
+        "basis": "catalog_name",
+        "digest_matches": [],
+        "exact_byte_matches": [],
+        "normative_digest": "law-v2:25488a8b64bf332a3e9713b652c92c1eb593969de48b27ae32223feabdd97862",
+        "primary_sha256": "619cf3ea98dd10baa277e866199769f1a3a0b0c57bae5fca981345bd709b35f9",
+        "print_number": "269",
+        "processes_sha256": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f",
+        "rm_number": "RM-0610-18-24"
+      }
+    }
+  },
+  "stages": 142
+}

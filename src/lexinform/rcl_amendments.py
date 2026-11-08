@@ -28,6 +28,18 @@ _ARTICLE_FORMULA = re.compile(
     r"(?:otrzymuje\s+brzmienie|dodaje\s+się|uchyla\s+się)\b",
     re.I,
 )
+_TRANSMITTAL = re.compile(
+    r"\b(?:w\s+załączeniu\s+(?:przekazuję|przedkładam)|"
+    r"(?:przekazuję|przedkładam)\s+w\s+załączeniu)\s+"
+    r"(?:projekt\s+autopoprawki|autopoprawkę)\b",
+    re.I,
+)
+_NORMATIVE_REFERENCE = re.compile(
+    r"\b(?:art\s*\.|artykuł|ust\s*\.|pkt\s*\.?|paragraf)\s*\d|§"
+    r"|\b(?:otrzymuj(?:e|ą)\s+brzmienie|nadać\s+brzmienie|"
+    r"uchyla\s+się|skreśla\s+się|zastępuje\s+się|dodaje\s+się)\b",
+    re.I,
+)
 
 
 def _title(text: str) -> str:
@@ -64,6 +76,15 @@ def has_rcl_self_amendment_text(text: str) -> bool:
     """Recognize proposed article text before any separate supporting section."""
     opening = _opening_target(text)
     return opening is not None and _has_article_formula(text, opening[1])
+
+
+def is_rcl_amendment_transmittal(text: str) -> bool:
+    """Identify a letter explicitly forwarding a separate self-amendment."""
+    return (
+        _TRANSMITTAL.search(text[:1600]) is not None
+        and _HEADING.match(text[:1200]) is None
+        and _NORMATIVE_REFERENCE.search(text) is None
+    )
 
 
 def _addresses_project(part: DocumentPart, project_title: str, project_number: str | None) -> bool:

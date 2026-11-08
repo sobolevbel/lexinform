@@ -15,7 +15,7 @@ from lexinform.models.candidate_trace import NormativeAnnexGapReason, ReturnedPa
 from lexinform.models.document_reads import LoadedFile
 from lexinform.models.documents import DocumentPart, DocumentSelection
 from lexinform.models.sejm import TextDocument
-from lexinform.rcl_amendments import has_rcl_self_amendment_text
+from lexinform.rcl_amendments import has_rcl_self_amendment_text, is_rcl_amendment_transmittal
 from lexinform.sections import APPENDIX_KINDS, PAGE_BREAK, Kind, carries_the_document, document_kind
 
 
@@ -164,8 +164,12 @@ def amendment_part(
         for part in file.selection.parts
         if not rcl
         or not part.members
-        or part.role not in ("justification", "osr")
-        or has_rcl_self_amendment_text(part.text)
+        or (
+            not is_rcl_amendment_transmittal(part.text)
+            and (
+                part.role not in ("justification", "osr") or has_rcl_self_amendment_text(part.text)
+            )
+        )
     )
     if file.selection.parts and not parts:
         return RequiredPartFailure(

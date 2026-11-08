@@ -7,6 +7,7 @@ from lexinform.models.document_reads import LoadedFile
 from lexinform.models.documents import DocumentPart, DocumentSelection
 from lexinform.models.sejm import ProcessSummary
 from lexinform.rcl_amendments import (
+    is_rcl_amendment_transmittal,
     rcl_amendment_base_index,
     rcl_self_amendment_part,
     rcl_self_amendment_print_number,
@@ -150,3 +151,34 @@ def test_rcl_archive_does_not_relabel_standalone_support(mixed: bool) -> None:
         assert isinstance(result, RequiredPartFailure)
         assert result.blocked.selection.state == "waiting"
         assert result.reason == "returned_no_text"
+
+
+@pytest.mark.parametrize(
+    ("suffix", "expected"),
+    [
+        (" wraz z uzasadnieniem.", True),
+        (" i proponuję nadać art. 6 następujące brzmienie.", False),
+        (" wraz z projektem, w którym skreśla się przepis.", False),
+        (" w następującym brzmieniu: § 1. Termin wynosi 30 dni.", False),
+    ],
+)
+def test_transmittal_excludes_letters_that_contain_proposed_wording(
+    suffix: str, expected: bool
+) -> None:
+    text = "Szanowny Panie, w załączeniu przekazuję projekt autopoprawki" + suffix
+    assert is_rcl_amendment_transmittal(text) is expected
+
+
+def test_rcl_archive_does_not_send_transmittal_as_a_proposal() -> None:
+    letter = DocumentPart(
+        members=("Autopopr.pdf",),
+        role="bill",
+        text="W załączeniu przekazuję projekt autopoprawki wraz z uzasadnieniem.",
+    )
+    bundle = BundleAssembly(LoadedFile("bill"), ("bill",), (), ())
+    file = LoadedFile(letter.text, selection=DocumentSelection(parts=(letter,)))
+
+    result = amendment_part(bundle, "https://rcl.test/amendment.zip", file, rcl=True)
+
+    assert isinstance(result, RequiredPartFailure)
+    assert result.blocked.selection.state == "waiting"
