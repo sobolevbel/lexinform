@@ -26,6 +26,8 @@ INCOMPLETE_REASONS: tuple[IncompleteReason, ...] = (
 
 def waiting_trace(
     reason: IncompleteReason = "pdf_page_extraction_failed",
+    *,
+    amendment_only: bool = False,
 ) -> CandidateDispositionTrace:
     document = TextDocument(
         url="https://official.test/earlier.pdf",
@@ -36,8 +38,9 @@ def waiting_trace(
                 url="https://official.test/newer.pdf",
                 kind="rcl",
                 normative_urls=("https://official.test/annex.pdf",)
-                if reason == "normative_part_read_incomplete"
+                if reason == "normative_part_read_incomplete" and not amendment_only
                 else (),
+                amendment_urls=("https://official.test/amendment.pdf",) if amendment_only else (),
             ),
         ),
     )
@@ -108,9 +111,14 @@ def test_normative_read_failure_requires_a_declared_part() -> None:
         )
 
 
-@pytest.mark.parametrize("reason", INCOMPLETE_REASONS)
-def test_deferred_comparison_survives_dump_restore(reason: IncompleteReason) -> None:
-    trace = waiting_trace(reason)
+@pytest.mark.parametrize(
+    ("reason", "amendment_only"),
+    [*((reason, False) for reason in INCOMPLETE_REASONS), ("normative_part_read_incomplete", True)],
+)
+def test_deferred_comparison_survives_dump_restore(
+    reason: IncompleteReason, amendment_only: bool
+) -> None:
+    trace = waiting_trace(reason, amendment_only=amendment_only)
     assert trace.requested_document is not None, "the waiting trace retains its request"
     selection = DocumentSelectionRecord.from_selection(DocumentSelection(state="waiting"))
     observation = SourceObservation(

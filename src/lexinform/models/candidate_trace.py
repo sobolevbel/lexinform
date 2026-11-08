@@ -1182,7 +1182,11 @@ class CandidateDispositionTrace(BaseModel):
             sources = (self.requested_document, *self.requested_document.alternatives)
             if any(
                 item.reason == "normative_part_read_incomplete"
-                and not (sources[item.index].required_urls or sources[item.index].normative_urls)
+                and not (
+                    sources[item.index].required_urls
+                    or sources[item.index].normative_urls
+                    or sources[item.index].amendment_urls
+                )
                 for item in self.dispositions
             ):
                 raise ValueError("an incomplete normative read requires a declared part")
