@@ -65,6 +65,7 @@ from lexinform.models.content import (
     grouped_stage_content_budget,
     original_bill_context,
     original_delivery_bill_snapshot,
+    unpack_original_bill_snapshot,
     validate_review_notice,
 )
 from lexinform.models.events import amendments_stage, has_single_amendments_stage
@@ -1420,6 +1421,8 @@ def verify_sitting_content(
             > MAX_SITTING_HISTORY_BYTES
         ):
             raise ValueError("sitting_history_snapshot_budget")
+        if member.packed_bill:
+            bill = unpack_original_bill_snapshot(bill)
         semantic = Bill.model_validate(read_json(bill.payload_json))
         if (semantic.term, semantic.number) != (member.term, member.number):
             raise ValueError("sitting_history_bill_mismatch")

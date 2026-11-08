@@ -21,6 +21,7 @@ class SittingContentMember(BaseModel):
     kind: Literal["agenda", "agenda_cancelled"]
     ref: str
     bill_snapshot_id: str
+    packed_bill: Literal[True] | None = Field(default=None, exclude_if=lambda value: value is None)
     plan: DeliveryPlan
 
     @model_validator(mode="after")

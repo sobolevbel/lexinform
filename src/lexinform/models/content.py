@@ -102,18 +102,24 @@ def pack_original_bill_snapshot(snapshot: ContentSnapshot) -> ContentSnapshot | 
     return ContentSnapshot(kind="bill", payload_json=payload)
 
 
+def unpack_original_bill_snapshot(snapshot: ContentSnapshot) -> ContentSnapshot:
+    if snapshot.kind != "bill":
+        raise ValueError("original_delivery_bill_profile")
+    envelope = PackedOriginalBill.model_validate_json(snapshot.payload_json)
+    if envelope.model_dump_json() != snapshot.payload_json:
+        raise ValueError("original_delivery_bill_profile")
+    return ContentSnapshot(
+        kind="bill", payload_json=unpack_content(envelope.packed, envelope.sha256).decode()
+    )
+
+
 def original_bill_context(
     snapshot: ContentSnapshot, *, packed: bool, review_notice: bool = False
 ) -> ContentSnapshot:
     if snapshot.kind != "bill":
         raise ValueError("original_delivery_bill_profile")
     if packed:
-        envelope = PackedOriginalBill.model_validate_json(snapshot.payload_json)
-        if envelope.model_dump_json() != snapshot.payload_json:
-            raise ValueError("original_delivery_bill_profile")
-        snapshot = ContentSnapshot(
-            kind="bill", payload_json=unpack_content(envelope.packed, envelope.sha256).decode()
-        )
+        snapshot = unpack_original_bill_snapshot(snapshot)
     if (
         original_delivery_bill_snapshot(snapshot.payload_json, review_notice=review_notice)
         != snapshot

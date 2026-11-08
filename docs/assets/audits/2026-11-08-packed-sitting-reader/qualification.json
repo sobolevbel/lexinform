@@ -1,0 +1,37 @@
+{
+  "before_cleanup_control": {
+    "diagnostics_findings": [],
+    "gzip_delta_bytes": 3185,
+    "original_context_bytes": 6516,
+    "packed_context_bytes": 3195,
+    "packed_dump_sha256": "d676e93ac2e450ed102a341c25183d65380a39aee8b3d2b3787d41e6c69bd93c",
+    "physical_html_equal": true,
+    "physical_ids_equal": true,
+    "plain_dump_sha256": "c63c21d8a30ef9952bdd24b834b83d77f662cd3290a7dd8f75d58e925f66280c",
+    "restore_byte_exact": true,
+    "sql_delta_bytes": 3352
+  },
+  "corrupt_uncompressed_hash_rejected": true,
+  "diagnostics_findings": [],
+  "gzip_delta_bytes": 3409,
+  "legacy_report_sha256": {
+    "notice-false": "fdbf01ce0b7a62d2b56ce1abd66ec4890054b8440ebff6b8d5074908212e3b71",
+    "notice-true": "5fc4997534e417f9f6f316745bdf2d4855f318e26c8137ff90e6c6fd0890ea27",
+    "state": "a25ede4ed157cf23a73fc93ac164d1446812a96205167bfb76a82f6ef3f4a35c"
+  },
+  "legacy_sitting_context_sample": {
+    "excludes": "Groups without retained delivery and all non-Bill plan bytes",
+    "largest_distinct_bill_context_group_bytes": 47854,
+    "rows_with_delivery": 29,
+    "snapshot_sha256": "33b2f30f063f89f92adf847f0f8496da11fc9dbd1cd6b4935642ab43acad88b3"
+  },
+  "original_context_bytes": 156514,
+  "packed_context_bytes": 3751,
+  "packed_dump_sha256": "b7bc4c7c61af74c2dcea10560ce2d11c6c130a6111bd37d25239c1173eb79548",
+  "physical_html_equal": true,
+  "physical_ids_equal": true,
+  "plain_dump_sha256": "4b455189af6bddf86c00b8843f4a6980644a2c681253390e636e5398d3270392",
+  "restore_byte_exact": true,
+  "sql_delta_bytes": 3908,
+  "writer_activated": false
+}
