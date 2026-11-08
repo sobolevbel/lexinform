@@ -1,0 +1,151 @@
+{
+  "base": {
+    "compressible": {
+      "context_bytes": 171291,
+      "gzip_bytes": 13597,
+      "history": null,
+      "html_sha256": "56f8333a13ad84d46b90574f7826a53e1cbe228177a6d4a790b774f6bc72b042",
+      "ids": [
+        3,
+        4
+      ],
+      "receipts": [
+        103,
+        104
+      ],
+      "sql_bytes": 90865,
+      "sql_sha256": "97a90b0599da827837f204720261d88f5bc2d28431ef54e08e373b429f50c06e"
+    },
+    "incompressible": {
+      "context_bytes": 171291,
+      "gzip_bytes": 13597,
+      "history": null,
+      "html_sha256": "56f8333a13ad84d46b90574f7826a53e1cbe228177a6d4a790b774f6bc72b042",
+      "ids": [
+        3,
+        4
+      ],
+      "receipts": [
+        103,
+        104
+      ],
+      "sql_bytes": 90865,
+      "sql_sha256": "97a90b0599da827837f204720261d88f5bc2d28431ef54e08e373b429f50c06e"
+    },
+    "ordinary": {
+      "context_bytes": 21293,
+      "gzip_bytes": 17009,
+      "history": {
+        "packed": false,
+        "snapshot_bytes": 21293
+      },
+      "html_sha256": "56f8333a13ad84d46b90574f7826a53e1cbe228177a6d4a790b774f6bc72b042",
+      "ids": [
+        3,
+        4
+      ],
+      "receipts": [
+        103,
+        104
+      ],
+      "sql_bytes": 145795,
+      "sql_sha256": "39b8da1180e830890a2c95d287ccb4ac45265c814fb281a2ff2cc8c00e98aa81"
+    },
+    "oversized": {
+      "context_bytes": 546291,
+      "gzip_bytes": 13597,
+      "history": null,
+      "html_sha256": "56f8333a13ad84d46b90574f7826a53e1cbe228177a6d4a790b774f6bc72b042",
+      "ids": [
+        3,
+        4
+      ],
+      "receipts": [
+        103,
+        104
+      ],
+      "sql_bytes": 90865,
+      "sql_sha256": "97a90b0599da827837f204720261d88f5bc2d28431ef54e08e373b429f50c06e"
+    }
+  },
+  "baseline_reader": "b9c9d681",
+  "candidate": {
+    "compressible": {
+      "context_bytes": 171291,
+      "gzip_bytes": 19626,
+      "history": {
+        "packed": true,
+        "snapshot_bytes": 3995
+      },
+      "html_sha256": "56f8333a13ad84d46b90574f7826a53e1cbe228177a6d4a790b774f6bc72b042",
+      "ids": [
+        3,
+        4
+      ],
+      "receipts": [
+        103,
+        104
+      ],
+      "sql_bytes": 128516,
+      "sql_sha256": "327c6d1928ca16d1a858e2c2197109cb5931c6a98c93d0eadccdefdb03a68759"
+    },
+    "incompressible": {
+      "context_bytes": 171291,
+      "gzip_bytes": 13597,
+      "history": null,
+      "html_sha256": "56f8333a13ad84d46b90574f7826a53e1cbe228177a6d4a790b774f6bc72b042",
+      "ids": [
+        3,
+        4
+      ],
+      "receipts": [
+        103,
+        104
+      ],
+      "sql_bytes": 90865,
+      "sql_sha256": "97a90b0599da827837f204720261d88f5bc2d28431ef54e08e373b429f50c06e"
+    },
+    "ordinary": {
+      "context_bytes": 21293,
+      "gzip_bytes": 17009,
+      "history": {
+        "packed": false,
+        "snapshot_bytes": 21293
+      },
+      "html_sha256": "56f8333a13ad84d46b90574f7826a53e1cbe228177a6d4a790b774f6bc72b042",
+      "ids": [
+        3,
+        4
+      ],
+      "receipts": [
+        103,
+        104
+      ],
+      "sql_bytes": 145795,
+      "sql_sha256": "39b8da1180e830890a2c95d287ccb4ac45265c814fb281a2ff2cc8c00e98aa81"
+    },
+    "oversized": {
+      "context_bytes": 546291,
+      "gzip_bytes": 13597,
+      "history": null,
+      "html_sha256": "56f8333a13ad84d46b90574f7826a53e1cbe228177a6d4a790b774f6bc72b042",
+      "ids": [
+        3,
+        4
+      ],
+      "receipts": [
+        103,
+        104
+      ],
+      "sql_bytes": 90865,
+      "sql_sha256": "97a90b0599da827837f204720261d88f5bc2d28431ef54e08e373b429f50c06e"
+    }
+  },
+  "grouped_control": {
+    "logical_members": 2,
+    "physical_sends": 1,
+    "shared_packed_history": true
+  },
+  "reader_restored_all_candidate_dumps_byte_identically": true,
+  "scope": "Offline sitting freeze through the regular poster, fake Telegram delivery and SQLite"
+}

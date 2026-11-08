@@ -286,6 +286,7 @@ from lexinform.models.content import (
     CardPrimaryEvidence,
     SupplementContentEvidence,
     editorial_bill_snapshot,
+    pack_original_bill_snapshot,
 )
 from lexinform.models.digest_content import RENDERED_DIGEST_PROFILES
 from lexinform.models.legacy_results import canonical_legacy_json, legacy_json
@@ -4223,8 +4224,38 @@ class SqliteBillRepository:
                 + sum(len(bill.payload_json.encode()) for bill in bills.values())
                 > MAX_SITTING_HISTORY_BYTES
             ):
-                log.warning("sitting content history omitted: publication=%s reason=bytes", root.id)
-                return
+                packed = {
+                    raw: replacement
+                    for raw, bill in bills.items()
+                    if (replacement := pack_original_bill_snapshot(bill)) is not None
+                }
+                if packed:
+                    offered = offered.model_copy(
+                        update={
+                            "members": tuple(
+                                member.model_copy(
+                                    update={
+                                        "bill_snapshot_id": packed[delivery.bill_json].snapshot_id,
+                                        "packed_bill": True,
+                                    }
+                                )
+                                if delivery.bill_json in packed
+                                else member
+                                for member, delivery in zip(logical, plans, strict=True)
+                            )
+                        }
+                    )
+                    bills.update(packed)
+                    snapshot = ContentSnapshot(kind="plan", payload_json=offered.model_dump_json())
+                if (
+                    len(snapshot.payload_json.encode())
+                    + sum(len(bill.payload_json.encode()) for bill in bills.values())
+                    > MAX_SITTING_HISTORY_BYTES
+                ):
+                    log.warning(
+                        "sitting content history omitted: publication=%s reason=bytes", root.id
+                    )
+                    return
             plan = SittingContentPlan.model_validate_json(snapshot.payload_json)
             version = ContentVersion(
                 root_publication_id=root.id,

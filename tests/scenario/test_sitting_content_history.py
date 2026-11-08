@@ -7,7 +7,14 @@ import pytest
 from tools.content_history_doctor import audit
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
-from lexinform.models import ContentSnapshot, ContentVersion, PublicationKind, PublicationStatus
+from lexinform.models import (
+    Bill,
+    ContentSnapshot,
+    ContentVersion,
+    PublicationKind,
+    PublicationStatus,
+)
+from lexinform.models.content import unpack_original_bill_snapshot
 from lexinform.models.sitting_content import SittingContentPlan
 from lexinform.services.content_inspection import inspect_content
 from tests.checkpoint_state import saved_state
@@ -45,14 +52,27 @@ def short_sittings(*, grouped: bool) -> tuple[World, tuple[int, ...], int]:
     return world, tuple(logical), before
 
 
-@pytest.mark.parametrize("profile", ["short", "group", "multipart"])
+@pytest.mark.parametrize("profile", ["short", "group", "multipart", "packed-multipart"])
 def test_sitting_content_survives_normal_delivery_cleanup_and_restore(
     profile: str, tmp_path: Path
 ) -> None:
     logical: tuple[int, ...]
-    if profile == "multipart":
+    multipart = profile in ("multipart", "packed-multipart")
+    packed_bill_json = None
+    if multipart:
         case = queued()
         world = case.world
+        if profile == "packed-multipart":
+            queued_plan = row(world, case.identity).delivery
+            assert queued_plan is not None, "the agenda watcher saved the original plan"
+            bill = Bill.model_validate_json(queued_plan.bill_json)
+            enlarged = bill.model_copy(
+                update={"summary": bill.summary.model_copy(update={"description": "x" * 150_000})}
+            )
+            packed_bill_json = enlarged.model_dump_json()
+            assert world.repo.replace_unattempted_delivery(
+                case.identity, queued_plan.model_copy(update={"bill_json": packed_bill_json})
+            )
         before = len(world.publisher.sent)
         flush(case)
         bound = identities(world, case.identity)
@@ -62,7 +82,7 @@ def test_sitting_content_survives_normal_delivery_cleanup_and_restore(
         bound = logical
     original = tuple(row(world, identity) for identity in bound)
     sent = tuple(message.text for message in world.publisher.sent[before:])
-    assert len(sent) == (len(bound) if profile == "multipart" else 1)
+    assert len(sent) == (len(bound) if multipart else 1)
     assert all(pub.status is PublicationStatus.SENT and pub.message_id for pub in original)
     database = tmp_path / "sitting.db"
     with closing(SqliteBillRepository(database)) as repo:
@@ -72,7 +92,7 @@ def test_sitting_content_survives_normal_delivery_cleanup_and_restore(
     assert report["status"] == "recorded" and not report["findings"]
     (history,) = report["histories"]
     assert history["current_content_id"] is not None
-    if profile == "multipart":
+    if multipart:
         with closing(sqlite3.connect(database)) as db, db:
             db.execute(
                 "UPDATE publications SET status='queued', message_id=NULL, sent_at=NULL WHERE id=?",
@@ -108,6 +128,15 @@ def test_sitting_content_survives_normal_delivery_cleanup_and_restore(
                 assert plan.bindings == bound
                 assert tuple(member.id for member in plan.members) == logical
                 assert tuple(part.html for part in plan.parts) == sent
+                if packed_bill_json is not None:
+                    (member,) = plan.members
+                    assert member.packed_bill is True
+                    bill_snapshot = restored.repo.get_content_snapshot(member.bill_snapshot_id)
+                    assert bill_snapshot is not None, "the sitting references its packed context"
+                    assert (
+                        unpack_original_bill_snapshot(bill_snapshot).payload_json
+                        == packed_bill_json
+                    )
 
 
 def test_sitting_version_reuses_identical_bill_snapshot() -> None:
