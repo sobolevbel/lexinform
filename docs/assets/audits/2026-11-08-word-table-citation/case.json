@@ -1,0 +1,23 @@
+{
+  "claim": "Controlled claim, no provider call.",
+  "custom_id": "b94cef4838048979645d736a5b84c31679e27ea69f60e4877523d09c0bebfdf9",
+  "locator": "15 bez wzgl\u0119du",
+  "original": {
+    "path": "documents/files/778150.zip",
+    "sha256": "659ac5e0b08f211d09ba3d6fc9054c972299f9450a2b1ec55db4ca91fce44a03"
+  },
+  "quote_end": 44111,
+  "quote_sha256": "912d2a982edeb702104e7a53c2f7e6f4c8c55378d60f1c532a2162f49a765844",
+  "quote_start": 43530,
+  "request_sha256": "8059b6d8e02c4b092f5eb015d12eda81da57019f57b8f6e2ceb93bf4bca281ee",
+  "word_table_row": {
+    "path": [
+      0,
+      350,
+      2
+    ],
+    "xml_sha256": "aab9822cd3f8965fc6d33d44a343c92020afffa3fe3a7984b2d98279b31bb47c",
+    "manifest_sha256": "2778bb88cde7d573c334633d93dbb4424c990f310da5a28e5e934a38e0d35edb",
+    "row_sha256": "912d2a982edeb702104e7a53c2f7e6f4c8c55378d60f1c532a2162f49a765844"
+  }
+}

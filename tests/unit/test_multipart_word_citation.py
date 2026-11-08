@@ -1,7 +1,9 @@
 import pytest
 from tools.replay_multipart_claim_input import (
     WordParagraphCitationPin,
+    WordTableRowCitationPin,
     verify_word_paragraph_citation,
+    verify_word_table_row_citation,
 )
 
 from lexinform.adapters.document_text import DocxTextExtractor
@@ -56,3 +58,29 @@ def test_word_quote_binds_plain_runs_before_generated_note_text() -> None:
         verify_word_paragraph_citation(
             raw, pin, text=extracted.legacy_text, quote_span=(begin - 1, span[1])
         )
+
+
+def test_word_row_quote_requires_the_exact_xml_row_and_all_cells() -> None:
+    row = (
+        "<w:tr><w:tc><w:p><w:r><w:t>15</w:t></w:r></w:p></w:tc>"
+        "<w:tc><w:p><w:r><w:t>Termin 30 dni.</w:t></w:r></w:p></w:tc></w:tr>"
+    )
+    raw = package(f"<w:tbl>{row}{row}</w:tbl>", {})
+    extracted = DocxTextExtractor().extract_blocks(raw)
+    text = extracted.legacy_text
+    first, second = (block for block in extracted.blocks if block.kind == "table_row")
+    pin = WordTableRowCitationPin(
+        xml_sha256=extracted.xml_sha256,
+        manifest_sha256=extracted.manifest_sha256,
+        row_sha256=first.text_sha256,
+        path=(0, 0, 0),
+    )
+    end = len(first.text)
+    assert verify_word_table_row_citation(raw, pin, text=text, quote_span=(0, end))[
+        "cell_text_spans"
+    ] == [[0, 2], [3, end]]
+    assert first.text == second.text
+    with pytest.raises(ValueError, match="cell span differs"):
+        verify_word_table_row_citation(raw, pin, text=text, quote_span=(end + 1, len(text)))
+    with pytest.raises(ValueError, match="entire selected row"):
+        verify_word_table_row_citation(raw, pin, text=text, quote_span=(3, end))

@@ -1,0 +1,66 @@
+{
+  "legacy_proof_unchanged": true,
+  "row_proof": {
+    "artifact_sha256": "659ac5e0b08f211d09ba3d6fc9054c972299f9450a2b1ec55db4ca91fce44a03",
+    "check": {
+      "block_origins": "unmapped",
+      "evidence": {
+        "block_origins": "unmapped",
+        "observed_text_span": [
+          43530,
+          44111
+        ],
+        "paid_origins": "unmapped",
+        "quote_occurrences": 1,
+        "semantic": "semantic_not_assessed",
+        "source_complete": false,
+        "status": "quote_present"
+      },
+      "input_span": [
+        43530,
+        44111
+      ],
+      "physical_origins": "unmapped",
+      "reason": "retained_source_span",
+      "semantic": "semantic_not_assessed",
+      "status": "retained"
+    },
+    "claim_text_sha256": "1b32d3e306b9959e85050cf68beaf75da05cc5f24d20b4fb03e29c5671ff8970",
+    "member_sha256": "aad76ba10e42eabcccec9b5207e2e89b8753bb12cde5097f209fc905de8e52b5",
+    "profile": "primary-rcl-archive-package-text-v1",
+    "quote_sha256": "912d2a982edeb702104e7a53c2f7e6f4c8c55378d60f1c532a2162f49a765844",
+    "request_sha256": "8059b6d8e02c4b092f5eb015d12eda81da57019f57b8f6e2ceb93bf4bca281ee",
+    "source_observation_id": "source-observation-v1:85424c7988fc8360355ff80c04abcc55a90acffd20f502f43cab1679b05077b9",
+    "source_selection_id": "selection-v1:dd28972539745a147426a45aa389f0057d1817ccc9e1eed189b5df98a30ced72",
+    "source_text_sha256": "6d7e8d4520299daff7cfd88da3d0806687e1519840fb4634880ad8fdaec53c61",
+    "word_table_row": {
+      "block_id": "word-xml:word/document.xml:0/350/2",
+      "block_sha256": "912d2a982edeb702104e7a53c2f7e6f4c8c55378d60f1c532a2162f49a765844",
+      "cell_text_spans": [
+        [
+          43530,
+          43532
+        ],
+        [
+          43533,
+          43550
+        ],
+        [
+          43551,
+          44111
+        ]
+      ],
+      "coordinates": "word-xml-plain-row-python-string",
+      "manifest_sha256": "2778bb88cde7d573c334633d93dbb4424c990f310da5a28e5e934a38e0d35edb",
+      "selected_text_span": [
+        43530,
+        44111
+      ],
+      "xml_part": "word/document.xml",
+      "xml_sha256": "aab9822cd3f8965fc6d33d44a343c92020afffa3fe3a7984b2d98279b31bb47c"
+    }
+  },
+  "snapshot_sha256": "22603a9be8b98d55cadef73684e50016355e539b8c3dcdbfeb77a130cbb9fb71",
+  "unbound_proof_unchanged": true,
+  "wrong_xml_path_rejected": "Word citation path differs from the expected XML structure"
+}

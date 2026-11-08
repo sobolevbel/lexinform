@@ -58,6 +58,15 @@ class WordParagraphCitationPin(BaseModel):
     end: int = Field(gt=0, strict=True)
 
 
+class WordTableRowCitationPin(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    xml_sha256: Sha256
+    manifest_sha256: Sha256
+    row_sha256: Sha256
+    path: tuple[XmlIndex, XmlIndex, XmlIndex]
+
+
 class PdfPageCitationPin(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -81,6 +90,7 @@ class MultipartCitationCase(BaseModel):
     quote_sha256: Sha256
     word_paragraph: WordParagraphCitationPin | None = None
     pdf_page: PdfPageCitationPin | None = None
+    word_table_row: WordTableRowCitationPin | None = None
 
 
 _W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
@@ -111,6 +121,26 @@ def _plain_run_prefix(paragraph: ET.Element) -> str:
     return "".join(chunks)
 
 
+def _word_citation_node(
+    raw: bytes, sha256: str, path: tuple[int, ...], tags: tuple[str, ...]
+) -> ET.Element:
+    xml = _bounded_zip_member(raw, _WORD_PART)
+    decoded = xml.decode("utf-8-sig")
+    if "<!DOCTYPE" in decoded or digest(xml) != sha256 or min(path) < 0:
+        raise ValueError("Word citation XML or path differs from its pin")
+    node = ET.fromstring(decoded)
+    if node.tag != _W + "document":
+        raise ValueError("Word citation requires a document root")
+    for index, tag in zip(path, tags, strict=True):
+        try:
+            node = node[index]
+        except IndexError as exc:
+            raise ValueError("Word citation path is absent") from exc
+        if node.tag != _W + tag:
+            raise ValueError("Word citation path differs from the expected XML structure")
+    return node
+
+
 def verify_word_paragraph_citation(
     raw: bytes,
     pin: WordParagraphCitationPin,
@@ -118,18 +148,7 @@ def verify_word_paragraph_citation(
     text: str,
     quote_span: tuple[int, int],
 ) -> dict[str, object]:
-    xml = _bounded_zip_member(raw, _WORD_PART)
-    decoded = xml.decode("utf-8-sig")
-    if "<!DOCTYPE" in decoded or digest(xml) != pin.xml_sha256 or min(pin.path) < 0:
-        raise ValueError("Word citation XML or paragraph path differs from its pin")
-    root = ET.fromstring(decoded)
-    try:
-        body = root[pin.path[0]]
-        paragraph = body[pin.path[1]]
-    except IndexError as exc:
-        raise ValueError("Word citation paragraph path is absent") from exc
-    if root.tag != _W + "document" or body.tag != _W + "body" or paragraph.tag != _W + "p":
-        raise ValueError("Word citation requires a top-level XML paragraph")
+    paragraph = _word_citation_node(raw, pin.xml_sha256, pin.path, ("body", "p"))
     extracted = DocxTextExtractor().extract_blocks(raw)
     block = next((b for b in extracted.blocks if b.path == pin.path), None)
     if (
@@ -156,6 +175,67 @@ def verify_word_paragraph_citation(
         "block_span": list((pin.start, pin.end)),
         "selected_text_span": list(quote_span),
         "raw_run_prefix_sha256": digest(prefix.encode()),
+    }
+
+
+def verify_word_table_row_citation(
+    raw: bytes,
+    pin: WordTableRowCitationPin,
+    *,
+    text: str,
+    quote_span: tuple[int, int],
+) -> dict[str, object]:
+    row = _word_citation_node(raw, pin.xml_sha256, pin.path, ("body", "tbl", "tr"))
+    extracted = DocxTextExtractor().extract_blocks(raw)
+    if (
+        extracted.input_sha256 != digest(raw)
+        or extracted.xml_sha256 != pin.xml_sha256
+        or extracted.manifest_sha256 != pin.manifest_sha256
+        or extracted.legacy_text != text
+    ):
+        raise ValueError("Word citation row extraction differs from its pins")
+    block = next((block for block in extracted.blocks if block.path == pin.path), None)
+    if block is None or block.kind != "table_row" or block.text_sha256 != pin.row_sha256:
+        raise ValueError("Word citation row differs from its pin")
+    start, end = quote_span
+    if not 0 <= start < end <= len(text) or text[start:end] != block.text:
+        raise ValueError("Word citation requires the entire selected row")
+
+    if len(row) > 32:
+        raise ValueError("Word citation row exceeds the XML child limit")
+    spans: list[list[int]] = []
+    offset = start
+    for cell_index, cell in enumerate(row):
+        if cell.tag in (_W + "trPr", _W + "tblPrEx"):
+            continue
+        paragraphs = [(i, node) for i, node in enumerate(cell) if node.tag != _W + "tcPr"]
+        if cell.tag != _W + "tc" or len(paragraphs) != 1 or paragraphs[0][1].tag != _W + "p":
+            raise ValueError("Word citation requires one plain paragraph per cell")
+        paragraph_index, paragraph = paragraphs[0]
+        plain = _plain_run_prefix(paragraph)
+        cell_span = (offset, offset + len(plain))
+        if (
+            not plain
+            or text[slice(*cell_span)] != plain
+            or project_word_paragraph_span(
+                extracted, (*pin.path, cell_index, paragraph_index), 0, len(plain)
+            )
+            != cell_span
+        ):
+            raise ValueError("Word citation cell span differs from its plain XML text")
+        spans.append(list(cell_span))
+        offset = cell_span[1] + 1
+    if not spans or offset != end + 1 or "\t".join(text[a:b] for a, b in spans) != block.text:
+        raise ValueError("Word citation cells do not cover the selected row")
+    return {
+        "xml_part": _WORD_PART,
+        "xml_sha256": pin.xml_sha256,
+        "manifest_sha256": pin.manifest_sha256,
+        "block_id": block.block_id,
+        "block_sha256": pin.row_sha256,
+        "coordinates": "word-xml-plain-row-python-string",
+        "selected_text_span": list(quote_span),
+        "cell_text_spans": spans,
     }
 
 
@@ -290,10 +370,11 @@ def _verify(
         "claim_text_sha256": evidence.claim_text_sha256,
         "check": asdict(checked),
     }
-    if case.word_paragraph is not None and case.pdf_page is not None:
+    physical_pins = (case.word_paragraph, case.word_table_row, case.pdf_page)
+    if sum(pin is not None for pin in physical_pins) > 1:
         raise ValueError("Citation must specify a single physical format")
-    if case.word_paragraph is not None or case.pdf_page is not None:
-        proof_format = "Word" if case.word_paragraph is not None else "PDF"
+    if any(pin is not None for pin in physical_pins):
+        proof_format = "PDF" if case.pdf_page is not None else "Word"
         if checked.status != "retained" or len(part.members) > 1:
             raise ValueError(
                 f"{proof_format} citation requires an exactly retained direct file"
@@ -308,6 +389,13 @@ def _verify(
             proof["word_paragraph"] = verify_word_paragraph_citation(
                 member,
                 case.word_paragraph,
+                text=text,
+                quote_span=(case.quote_start, case.quote_end),
+            )
+        elif case.word_table_row is not None:
+            proof["word_table_row"] = verify_word_table_row_citation(
+                member,
+                case.word_table_row,
                 text=text,
                 quote_span=(case.quote_start, case.quote_end),
             )
