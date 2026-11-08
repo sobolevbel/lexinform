@@ -1300,6 +1300,7 @@ class TextLoader:
         candidates: list[tuple[TextDocument, LoadedFile]] = []
         prepared: list[DocumentCandidate] = []
         candidate_indices: list[int] = []
+        incomplete: dict[int, DocumentSelection] = {}
         decisions: list[CandidateDisposition] = []
         for index, candidate in enumerate((document, *document.alternatives)):
             if candidate.official_link_conflict:
@@ -1326,6 +1327,8 @@ class TextLoader:
                     )
                 )
                 continue
+            if file.sha256 is not None and file.selection.has_normative_pdf_page_failure:
+                incomplete[index] = file.selection
             item = DocumentCandidate(
                 candidate.url, file.text, file.selection.parts, file.selection.observed_parts
             )
@@ -1362,6 +1365,33 @@ class TextLoader:
                         observed_sha256=file.sha256,
                     )
                 )
+        if incomplete and len(incomplete.keys() | set(candidate_indices)) > 1:
+            dispositions.extend(
+                item.model_copy(
+                    update={
+                        "outcome": "unclassified",
+                        "reason": (
+                            "pdf_page_extraction_failed"
+                            if item.index in incomplete
+                            else "version_comparison_deferred"
+                        ),
+                    }
+                )
+                if item.index in incomplete or item.index in candidate_indices
+                else item
+                for item in decisions
+            )
+            selection = DocumentSelection(
+                state="waiting",
+                parts=tuple(part for failed in incomplete.values() for part in failed.parts),
+                rejected=("PDF page extraction failed during version comparison",),
+            )
+            return (
+                document,
+                LoadedFile(None, selection=selection),
+                "waiting",
+                "version_input_incomplete",
+            )
         choice = select_candidate_versions(CandidateSet(tuple(prepared)))
         if choice is None:
             dispositions.extend(decisions)

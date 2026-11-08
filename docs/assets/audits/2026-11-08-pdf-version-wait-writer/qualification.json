@@ -1,0 +1,355 @@
+{
+  "rollback_floor": "d37805a8227ed46ac4832d30db1cbc5e7a07f961",
+  "before": {
+    "input_sha256": {
+      "669532.pdf": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f",
+      "667159.pdf": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+    },
+    "cases": [
+      {
+        "alternative": "669532.pdf",
+        "mode": "ordinary",
+        "state": "unverified",
+        "result": "selected",
+        "reason": "version_choice",
+        "rollback_reader_verified": false,
+        "pre_floor_reader_rejected": false,
+        "dispositions": [
+          {
+            "phase": "version_comparison",
+            "index": 0,
+            "outcome": "selected",
+            "reason": "version_choice",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          },
+          {
+            "phase": "version_comparison",
+            "index": 1,
+            "outcome": "policy_excluded",
+            "reason": "version_preference",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          }
+        ],
+        "text_sha256": "8ced185a4c1c86090a14343dd39476b9c41883dee10179805b553b9f1dd34e67",
+        "sql_bytes": 47505,
+        "gzip_bytes": 9854
+      },
+      {
+        "alternative": "669532.pdf",
+        "mode": "blank",
+        "state": "ambiguous",
+        "result": "ambiguous",
+        "reason": "version_conflict",
+        "rollback_reader_verified": false,
+        "pre_floor_reader_rejected": false,
+        "dispositions": [
+          {
+            "phase": "version_comparison",
+            "index": 0,
+            "outcome": "policy_excluded",
+            "reason": "version_conflict",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          },
+          {
+            "phase": "version_comparison",
+            "index": 1,
+            "outcome": "policy_excluded",
+            "reason": "version_conflict",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          }
+        ],
+        "text_sha256": null,
+        "sql_bytes": 45187,
+        "gzip_bytes": 9390
+      },
+      {
+        "alternative": "669532.pdf",
+        "mode": "failure",
+        "state": "ambiguous",
+        "result": "ambiguous",
+        "reason": "version_conflict",
+        "rollback_reader_verified": false,
+        "pre_floor_reader_rejected": false,
+        "dispositions": [
+          {
+            "phase": "version_comparison",
+            "index": 0,
+            "outcome": "policy_excluded",
+            "reason": "version_conflict",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          },
+          {
+            "phase": "version_comparison",
+            "index": 1,
+            "outcome": "policy_excluded",
+            "reason": "version_conflict",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          }
+        ],
+        "text_sha256": null,
+        "sql_bytes": 44552,
+        "gzip_bytes": 9067
+      },
+      {
+        "alternative": "667159.pdf",
+        "mode": "ordinary",
+        "state": "ambiguous",
+        "result": "ambiguous",
+        "reason": "version_conflict",
+        "rollback_reader_verified": false,
+        "pre_floor_reader_rejected": false,
+        "dispositions": [
+          {
+            "phase": "version_comparison",
+            "index": 0,
+            "outcome": "policy_excluded",
+            "reason": "version_conflict",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          },
+          {
+            "phase": "version_comparison",
+            "index": 1,
+            "outcome": "policy_excluded",
+            "reason": "version_conflict",
+            "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+          }
+        ],
+        "text_sha256": null,
+        "sql_bytes": 55848,
+        "gzip_bytes": 12158
+      },
+      {
+        "alternative": "667159.pdf",
+        "mode": "blank",
+        "state": "ambiguous",
+        "result": "ambiguous",
+        "reason": "version_conflict",
+        "rollback_reader_verified": false,
+        "pre_floor_reader_rejected": false,
+        "dispositions": [
+          {
+            "phase": "version_comparison",
+            "index": 0,
+            "outcome": "policy_excluded",
+            "reason": "version_conflict",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          },
+          {
+            "phase": "version_comparison",
+            "index": 1,
+            "outcome": "policy_excluded",
+            "reason": "version_conflict",
+            "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+          }
+        ],
+        "text_sha256": null,
+        "sql_bytes": 55775,
+        "gzip_bytes": 12182
+      },
+      {
+        "alternative": "667159.pdf",
+        "mode": "failure",
+        "state": "ambiguous",
+        "result": "ambiguous",
+        "reason": "version_conflict",
+        "rollback_reader_verified": false,
+        "pre_floor_reader_rejected": false,
+        "dispositions": [
+          {
+            "phase": "version_comparison",
+            "index": 0,
+            "outcome": "policy_excluded",
+            "reason": "version_conflict",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          },
+          {
+            "phase": "version_comparison",
+            "index": 1,
+            "outcome": "policy_excluded",
+            "reason": "version_conflict",
+            "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+          }
+        ],
+        "text_sha256": null,
+        "sql_bytes": 52769,
+        "gzip_bytes": 10768
+      }
+    ]
+  },
+  "after": {
+    "input_sha256": {
+      "669532.pdf": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f",
+      "667159.pdf": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+    },
+    "cases": [
+      {
+        "alternative": "669532.pdf",
+        "mode": "ordinary",
+        "state": "unverified",
+        "result": "selected",
+        "reason": "version_choice",
+        "rollback_reader_verified": false,
+        "pre_floor_reader_rejected": false,
+        "dispositions": [
+          {
+            "phase": "version_comparison",
+            "index": 0,
+            "outcome": "selected",
+            "reason": "version_choice",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          },
+          {
+            "phase": "version_comparison",
+            "index": 1,
+            "outcome": "policy_excluded",
+            "reason": "version_preference",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          }
+        ],
+        "text_sha256": "8ced185a4c1c86090a14343dd39476b9c41883dee10179805b553b9f1dd34e67",
+        "sql_bytes": 47505,
+        "gzip_bytes": 9854
+      },
+      {
+        "alternative": "669532.pdf",
+        "mode": "blank",
+        "state": "ambiguous",
+        "result": "ambiguous",
+        "reason": "version_conflict",
+        "rollback_reader_verified": false,
+        "pre_floor_reader_rejected": false,
+        "dispositions": [
+          {
+            "phase": "version_comparison",
+            "index": 0,
+            "outcome": "policy_excluded",
+            "reason": "version_conflict",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          },
+          {
+            "phase": "version_comparison",
+            "index": 1,
+            "outcome": "policy_excluded",
+            "reason": "version_conflict",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          }
+        ],
+        "text_sha256": null,
+        "sql_bytes": 45187,
+        "gzip_bytes": 9392
+      },
+      {
+        "alternative": "669532.pdf",
+        "mode": "failure",
+        "state": "waiting",
+        "result": "waiting",
+        "reason": "version_input_incomplete",
+        "rollback_reader_verified": true,
+        "pre_floor_reader_rejected": true,
+        "dispositions": [
+          {
+            "phase": "version_comparison",
+            "index": 0,
+            "outcome": "unclassified",
+            "reason": "version_comparison_deferred",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          },
+          {
+            "phase": "version_comparison",
+            "index": 1,
+            "outcome": "unclassified",
+            "reason": "pdf_page_extraction_failed",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          }
+        ],
+        "text_sha256": null,
+        "sql_bytes": 43534,
+        "gzip_bytes": 8910
+      },
+      {
+        "alternative": "667159.pdf",
+        "mode": "ordinary",
+        "state": "ambiguous",
+        "result": "ambiguous",
+        "reason": "version_conflict",
+        "rollback_reader_verified": false,
+        "pre_floor_reader_rejected": false,
+        "dispositions": [
+          {
+            "phase": "version_comparison",
+            "index": 0,
+            "outcome": "policy_excluded",
+            "reason": "version_conflict",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          },
+          {
+            "phase": "version_comparison",
+            "index": 1,
+            "outcome": "policy_excluded",
+            "reason": "version_conflict",
+            "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+          }
+        ],
+        "text_sha256": null,
+        "sql_bytes": 55848,
+        "gzip_bytes": 12158
+      },
+      {
+        "alternative": "667159.pdf",
+        "mode": "blank",
+        "state": "ambiguous",
+        "result": "ambiguous",
+        "reason": "version_conflict",
+        "rollback_reader_verified": false,
+        "pre_floor_reader_rejected": false,
+        "dispositions": [
+          {
+            "phase": "version_comparison",
+            "index": 0,
+            "outcome": "policy_excluded",
+            "reason": "version_conflict",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          },
+          {
+            "phase": "version_comparison",
+            "index": 1,
+            "outcome": "policy_excluded",
+            "reason": "version_conflict",
+            "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+          }
+        ],
+        "text_sha256": null,
+        "sql_bytes": 55775,
+        "gzip_bytes": 12185
+      },
+      {
+        "alternative": "667159.pdf",
+        "mode": "failure",
+        "state": "waiting",
+        "result": "waiting",
+        "reason": "version_input_incomplete",
+        "rollback_reader_verified": true,
+        "pre_floor_reader_rejected": true,
+        "dispositions": [
+          {
+            "phase": "version_comparison",
+            "index": 0,
+            "outcome": "unclassified",
+            "reason": "version_comparison_deferred",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          },
+          {
+            "phase": "version_comparison",
+            "index": 1,
+            "outcome": "unclassified",
+            "reason": "pdf_page_extraction_failed",
+            "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+          }
+        ],
+        "text_sha256": null,
+        "sql_bytes": 43796,
+        "gzip_bytes": 9010
+      }
+    ]
+  }
+}
