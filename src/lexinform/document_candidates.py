@@ -166,6 +166,7 @@ def _select_parts(
     candidates: list[tuple[tuple[int, int, int, int], int, DocumentPart]] = []
     supporting: list[tuple[int, DocumentPart]] = []
     annexes: list[tuple[int, DocumentPart]] = []
+    incomplete_named_bills: list[DocumentPart] = []
     decisions: dict[int, tuple[PolicyOutcome, ArchiveMemberPolicyReason]] = {}
     version_choice: ArchiveVersionChoice | None = None
     conflict_slots: tuple[int, ...] = ()
@@ -201,6 +202,8 @@ def _select_parts(
         if kind != "bill" and _normative_annex(base, part.text):
             annexes.append((index, part.model_copy(update={"role": "normative_annex"})))
             continue
+        if kind == "unknown" and part.has_pdf_page_failure and _member_role(base) == "bill":
+            incomplete_named_bills.append(part)
         if kind in _NOT_THE_BILL or not part.text.strip():
             rejected.append(f"{part.members}: {kind}")
             if part.text.strip():
@@ -251,6 +254,28 @@ def _select_parts(
     peers = [(index, p) for r, index, p in candidates if r[0] == rank[0]]
     peer_set = CandidateSet.from_parts([p for _, p in peers])
     confirmed = [peers[index] for index in peer_set.bill_indices()]
+    main_folder = main.members[-1].rpartition("/")[0]
+    incomplete_peers = tuple(
+        part
+        for part in incomplete_named_bills
+        if part.members[:-1] == main.members[:-1]
+        and part.members[-1].rpartition("/")[0] == main_folder
+    )
+    if confirmed and (
+        incomplete_peers
+        or (len(confirmed) > 1 and any(part.has_pdf_page_failure for _, part in confirmed))
+    ):
+        return ExtractedDocument(
+            selection=DocumentSelection(
+                observed_parts=tuple(parts),
+                state="waiting",
+                parts=(*(part for _, part in confirmed), *incomplete_peers),
+                rejected=(
+                    *rejected,
+                    "PDF page extraction failed during archive version comparison",
+                ),
+            )
+        )
     if len(confirmed) > 1:
         comparison = compare_version_decision([p.text for _, p in confirmed])
         indices = comparison.matching_indices
