@@ -618,7 +618,11 @@ def root_pdf_extraction(physical: ExtractedParts) -> PdfTextExtraction | None:
         return None
     (part,) = physical.parts
     (pdf,) = physical.pdf_pages
-    if part.members or part.sha256 != physical.input_sha256:
+    if (
+        part.members
+        or part.sha256 != physical.input_sha256
+        or part.pages != pdf.extraction.page_count
+    ):
         return None
     return pdf.extraction if pdf.extraction.error_type is None else None
 

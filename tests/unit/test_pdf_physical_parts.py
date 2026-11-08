@@ -165,3 +165,24 @@ def test_a_single_archived_pdf_does_not_offer_a_root_first_page() -> None:
     result = reader.extract_document_with_provenance(archive({"report.pdf": b"%PDF-1.7 fixture"}))
 
     assert result.first_pdf_page is None
+
+
+@pytest.mark.parametrize("reported_pages", [0, 2, 3])
+def test_complete_pdf_requires_agreement_with_the_reported_page_count(reported_pages: int) -> None:
+    class TextPdf(FakeTextExtractor):
+        def extract_pages(self, data: bytes) -> PdfTextExtraction:
+            return PdfTextExtraction(
+                input_sha256=hashlib.sha256(data).hexdigest(),
+                pypdf_version="fixture",
+                pages=(PdfPageText(number=1, text="first"), PdfPageText(number=2, text="second")),
+            )
+
+    reader = extractor(TextPdf(page_count=reported_pages))
+
+    observed = reader.extract_document_with_provenance(b"%PDF-1.7 fixture")
+
+    assert observed.document.text == "first\fsecond"
+    assert observed.complete_pdf_pages == (2 if reported_pages == 2 else None)
+    assert observed.first_pdf_page == (
+        PdfPageText(number=1, text="first") if reported_pages == 2 else None
+    )
