@@ -1,0 +1,234 @@
+{
+  "scope": "Known native ODT archive candidates from RCL project 12392400; source and selection replay at the exact two stage boundaries.",
+  "local_inventory": {
+    "direct_zip_roots": 1803,
+    "direct_odt_members": 5,
+    "first_level_nested_zip_members": 378,
+    "first_level_nested_odt_members": 2,
+    "nested_members_excluded": [
+      [
+        "584479.zip",
+        "Zgloszenia lobbingowe na RM (zip) (1570455).zip",
+        "nested_archive_size"
+      ],
+      [
+        "700362.zip",
+        "zgloszenia lobbingowe 28 (6785696).zip",
+        "nested_archive_size"
+      ]
+    ],
+    "deeper_nested_zip_members_outside_this_probe": 32
+  },
+  "embedded_note_members": [
+    {
+      "archive": "738682.zip",
+      "archive_sha256": "2aadd75698fd556fe54616468b81d08fd4927dfce9b9dbacdd93d35d2279a9ef",
+      "member": "6. rozporzadzenie w sprawie szkolen uzytkownik, koordynator, doradca wzajemny (8561788).odt",
+      "member_sha256": "68b7570bf2478bdb6a785ad56d99756cce52c2b8cc733453e0fc624ab38fe0a0",
+      "notes": 1,
+      "note_refs": 0
+    },
+    {
+      "archive": "738682.zip",
+      "archive_sha256": "2aadd75698fd556fe54616468b81d08fd4927dfce9b9dbacdd93d35d2279a9ef",
+      "member": "7. rozporzadzenie w sprawie ewaluacji (8561795).odt",
+      "member_sha256": "feaa21827b8d98ad4116282e40f8fdd6577000c8a64a515f2f860a5ced41db44",
+      "notes": 1,
+      "note_refs": 0
+    },
+    {
+      "archive": "744252.zip",
+      "archive_sha256": "ee2670aa2e0aacc42c346fc05dfd66dd8de245dbecd2d0fc3d29dfe6772463c4",
+      "nested": "załączniki- rozporządzenia informacyjne.zip",
+      "nested_sha256": "2f06c807487b0a5c13d05fcdbe5bf307409c0d4a65f384a0f956c4cac54ea705",
+      "member": "5.1 rozporządzenie_42 ust 2.odt",
+      "member_sha256": "6e5deaf254817350d3e65d01acbb58e782ab4424efa7debccf74742e7306de39",
+      "notes": 1,
+      "note_refs": 0
+    },
+    {
+      "archive": "744252.zip",
+      "archive_sha256": "ee2670aa2e0aacc42c346fc05dfd66dd8de245dbecd2d0fc3d29dfe6772463c4",
+      "nested": "załączniki- rozporządzenia informacyjne.zip",
+      "nested_sha256": "2f06c807487b0a5c13d05fcdbe5bf307409c0d4a65f384a0f956c4cac54ea705",
+      "member": "6.1. rozporządzenie_49 ust. 11.odt",
+      "member_sha256": "287f85a695eb9d8a4652af853b0807824a744b37e914a9844efb67dba8474d2d",
+      "notes": 1,
+      "note_refs": 0
+    }
+  ],
+  "stage_replay": {
+    "9": {
+      "selected_parts": [
+        {
+          "role": "bill",
+          "members": [
+            "22. 29.08. Ustawa AOON.pdf"
+          ],
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument735247.zip",
+          "sha256": "5ba68bcabceac7c7d4e3af8d10ccdb36163ec7c4b948245dcf1d05591b240ac9"
+        },
+        {
+          "role": "justification",
+          "members": [
+            "22. uzasadnienie 29.08.2025.pdf"
+          ],
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument735247.zip",
+          "sha256": "175f8fcf1712cd84f280addac784e15fdcf93ac5025696c180e4b7ac340e5e73"
+        },
+        {
+          "role": "osr",
+          "members": [
+            "22. AOON OSR 29.08.pdf"
+          ],
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument735247.zip",
+          "sha256": "7ca1c87415978c1a2a5bbcc925329a3eb687f40804ebc0c053fc103eef4ded6f"
+        },
+        {
+          "role": "self_amendment",
+          "members": [],
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument735406.pdf",
+          "sha256": "6816307f27f363dbf093bc980d8f4e6a1a4891ced3b08f6f3fc756595fa3d341"
+        }
+      ],
+      "archive_selected": [
+        {
+          "physical_index": 2,
+          "sha256": "2119ae52140192ad5c99715e2d133e5034732145c430799527d85301d7cb8e90",
+          "format": "pdf",
+          "text_sha256": "ae9e54a61735683c55989d496f8e876db68e7cdaab6077c5f590291089548236"
+        }
+      ],
+      "downloads": [
+        {
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument738682.zip",
+          "sha256": "2aadd75698fd556fe54616468b81d08fd4927dfce9b9dbacdd93d35d2279a9ef",
+          "state": "read"
+        },
+        {
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument715437.zip",
+          "sha256": "693b0fefd5e098f4df7daac8e57144ab976f2251f809f609f4e797341b922af6",
+          "state": "read"
+        },
+        {
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument716022.zip",
+          "sha256": "8e605ee701789fbb78e2fff2bbb06b97f04fd3b5a08d681775cc4aa2608ac1a4",
+          "state": "read"
+        },
+        {
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument733043.zip",
+          "sha256": "e8ed8ec6e5bfbf3c3de2b29b28cfde6e3d6e5eb746d574478c2c92e4de1d1a7c",
+          "state": "read"
+        },
+        {
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument734029.pdf",
+          "sha256": "2ea96f4296771ce69ca433f6e5ba47d101e47db41a26b6d2cb96a0399cb13a76",
+          "state": "read"
+        },
+        {
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument734039.pdf",
+          "sha256": "653fbd05008ff197f55d6fabf55408665af1c78ff19948c1640a8a357ec7d718",
+          "state": "read"
+        },
+        {
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument735247.zip",
+          "sha256": "f6de7e216cdaec994ed1cc19eb38e64b7a99e5bbd17abf69f419c7c850960128",
+          "state": "read"
+        },
+        {
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument735406.pdf",
+          "sha256": "6816307f27f363dbf093bc980d8f4e6a1a4891ced3b08f6f3fc756595fa3d341",
+          "state": "read"
+        }
+      ],
+      "pins": {
+        "INDEX.json": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+        "corpus/12392400.json": "8904f1446bccb9579877673f8df6f49e37407b7e6d65331469a99d19057a4b5a",
+        "documents/files/738682.zip": "2aadd75698fd556fe54616468b81d08fd4927dfce9b9dbacdd93d35d2279a9ef",
+        "documents/files/715437.zip": "693b0fefd5e098f4df7daac8e57144ab976f2251f809f609f4e797341b922af6",
+        "documents/files/716022.zip": "8e605ee701789fbb78e2fff2bbb06b97f04fd3b5a08d681775cc4aa2608ac1a4",
+        "documents/files/733043.zip": "e8ed8ec6e5bfbf3c3de2b29b28cfde6e3d6e5eb746d574478c2c92e4de1d1a7c",
+        "documents/files/734029.pdf": "2ea96f4296771ce69ca433f6e5ba47d101e47db41a26b6d2cb96a0399cb13a76",
+        "documents/files/734039.pdf": "653fbd05008ff197f55d6fabf55408665af1c78ff19948c1640a8a357ec7d718",
+        "documents/files/735247.zip": "f6de7e216cdaec994ed1cc19eb38e64b7a99e5bbd17abf69f419c7c850960128",
+        "documents/files/735406.pdf": "6816307f27f363dbf093bc980d8f4e6a1a4891ced3b08f6f3fc756595fa3d341"
+      },
+      "located_url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument738682.zip",
+      "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument735247.zip"
+    },
+    "12": {
+      "selected_parts": [
+        {
+          "role": "bill",
+          "members": [
+            "PROJEKT Ustawa AOON_RM.docx"
+          ],
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099600/13099601/dokument744252.zip",
+          "sha256": "32b465c80758187b1e1cf92cbb37e40eb06b0ce1e12cbc94d444f4769d318fc8"
+        },
+        {
+          "role": "justification",
+          "members": [
+            "UZASADNIENIE AOON_RM.docx"
+          ],
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099600/13099601/dokument744252.zip",
+          "sha256": "58ec472ab017329ab5c56b97843503ef4c360078eee45b6553fe1aa4074c57d9"
+        },
+        {
+          "role": "osr",
+          "members": [
+            "OSR AOON_RM.docx"
+          ],
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099600/13099601/dokument744252.zip",
+          "sha256": "7e90d679851965b80f9faed99f3f75c1aac250371d7acf6a14640d56d4187608"
+        },
+        {
+          "role": "self_amendment",
+          "members": [],
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099600/13099601/dokument745002.docx",
+          "sha256": "ec18abd5623429525e7b01cac1158a984bb6108de2fab14b119c533ed5084c50"
+        }
+      ],
+      "archive_selected": [
+        {
+          "physical_index": 1,
+          "sha256": "7e90d679851965b80f9faed99f3f75c1aac250371d7acf6a14640d56d4187608",
+          "format": "word",
+          "text_sha256": "05d4412fe5c19273a506c744127f62c39ebb164b622764edcdf5d335544a8e54"
+        },
+        {
+          "physical_index": 2,
+          "sha256": "32b465c80758187b1e1cf92cbb37e40eb06b0ce1e12cbc94d444f4769d318fc8",
+          "format": "word",
+          "text_sha256": "876052d3ca1fd97f29118c614be5b1aa4303e3212fbf1b30ae0dacf29a77a0da"
+        },
+        {
+          "physical_index": 6,
+          "sha256": "58ec472ab017329ab5c56b97843503ef4c360078eee45b6553fe1aa4074c57d9",
+          "format": "word",
+          "text_sha256": "2ef25c8b84808c0fc35b97b66e9a4650b652ca071366adc5288ffeca3f7ff696"
+        }
+      ],
+      "downloads": [
+        {
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099600/13099601/dokument744252.zip",
+          "sha256": "ee2670aa2e0aacc42c346fc05dfd66dd8de245dbecd2d0fc3d29dfe6772463c4",
+          "state": "read"
+        },
+        {
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099600/13099601/dokument745002.docx",
+          "sha256": "ec18abd5623429525e7b01cac1158a984bb6108de2fab14b119c533ed5084c50",
+          "state": "read"
+        }
+      ],
+      "pins": {
+        "INDEX.json": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+        "corpus/12392400.json": "8904f1446bccb9579877673f8df6f49e37407b7e6d65331469a99d19057a4b5a",
+        "documents/files/744252.zip": "ee2670aa2e0aacc42c346fc05dfd66dd8de245dbecd2d0fc3d29dfe6772463c4",
+        "documents/files/745002.docx": "ec18abd5623429525e7b01cac1158a984bb6108de2fab14b119c533ed5084c50"
+      },
+      "located_url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099600/13099601/dokument744252.zip",
+      "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099600/13099601/dokument744252.zip"
+    }
+  }
+}
