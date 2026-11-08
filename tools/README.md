@@ -482,6 +482,9 @@ The report records catalog and candidate references, input hashes, extraction ou
 mechanical text signals. It does not store extracted bodies or assign legal roles.
 Pass `--project-targets` to report which physical member, if any, has a unique explicit
 project target and proposed article text. This option leaves the ordinary selection unchanged.
+Pass `--archive-admission` to replay which members the current amendment composition keeps.
+The same option lists explicit quoted article replacements in replies as offsets and hashes
+into the extracted member. Missing quote boundaries and competing article references stay unresolved.
 
 Replay the explicit print targets from the pinned J642 edition report and J641 member report:
 

@@ -1,0 +1,161 @@
+{
+  "archive_admission_baseline_sha256": "05162221451019c7b8aa1e7b7eea56292a4a3247fbec0424ed050d5a60422e06",
+  "archive_admission_equal": true,
+  "archive_count": 90,
+  "archive_sha256s": {
+    "662379": "eb0c09584449a49d0cc5b2d5fbbb4510d20201744a9cd976c051fd7bf56a1b93",
+    "684485": "8f1dd7f69eaf8741cc2646fea2a6b4f20d642ed205b2eab605bd3edce79375ab",
+    "701779": "ed6b9a51588af8348d724ade5a4e49349d968d9c64ed51ef1ba43e31a15b6ffe",
+    "716022": "8e605ee701789fbb78e2fff2bbb06b97f04fd3b5a08d681775cc4aa2608ac1a4",
+    "724420": "c4b2686b8693bcbdf1e0ddfed3a93c4af89890fbda2a6a2c4372a2d8298b99e6"
+  },
+  "correspondence": {
+    "662379": [
+      {
+        "forwarding_only": true,
+        "path": [
+          "Autopopr.pdf"
+        ],
+        "quoted_replacements": [],
+        "sha256": "aae8affe5ce8f03f09b48ffb78500fbfcd4c1a1786221c4e0c8203ee08fe747b",
+        "text_sha256": "4e55c4f9fa13ee42cdacca092fc4182d0fdd8ffe90904a1429d56b6c2e8cf3a2"
+      }
+    ],
+    "684485": [
+      {
+        "forwarding_only": true,
+        "path": [
+          "pismo RM (6208580).DOCX"
+        ],
+        "quoted_replacements": [],
+        "sha256": "0ec43228769df9143fda3cc89940721e882efc688698f56dd6977587029fbd47",
+        "text_sha256": "9ee8e5642432523d8fce0d5a77ab582791e14bf333d36bbbbb55964e878cb98e"
+      }
+    ],
+    "701779": [
+      {
+        "forwarding_only": false,
+        "path": [
+          "ODNIESIENIE DO UWAG MF.DOCX"
+        ],
+        "quoted_replacements": [
+          {
+            "end": 2247,
+            "reference": "art. 6",
+            "sha256": "3a49d5be310de67f74a3484cc64ae84e7fe60b0bf1d9a52d7934269104315581",
+            "start": 1300,
+            "status": "quoted"
+          }
+        ],
+        "sha256": "9d8b17f9ade8e6e7769b5b19bdfebc69239402fd075a3a58d5b2ef5c9305dc81",
+        "text_sha256": "f07579db85a537429d170788e9e44b7dd48e80f2a1fd97af38bd9fd232f902a2"
+      }
+    ],
+    "716022": [
+      {
+        "forwarding_only": false,
+        "path": [
+          "1. Pismo.pdf"
+        ],
+        "quoted_replacements": [
+          {
+            "end": 1561,
+            "reference": "art. 4",
+            "sha256": "62129cd89f73eb264eaac0537a45cbcb31e4e47cbe11a0e8e03a2563562fec79",
+            "start": 1233,
+            "status": "quoted"
+          },
+          {
+            "end": 1687,
+            "reference": "art. 18",
+            "sha256": "c567fa8c8caf1feb1f9b4eb4961f0d986ddccc24a581b4da3fc98b79a076f67f",
+            "start": 1629,
+            "status": "quoted"
+          },
+          {
+            "reference": "art. 50",
+            "start": 2738,
+            "status": "unresolved_boundary"
+          },
+          {
+            "end": 3559,
+            "reference": "art. 21",
+            "sha256": "9709966830bbff4d894425784ef24dbed2f72a7cff3065257cda09f2c6a2a507",
+            "start": 3342,
+            "status": "quoted"
+          },
+          {
+            "end": 4154,
+            "reference": "Art. 17",
+            "sha256": "8fdddf5933cdbdc38caee20185cd2c05d09cd6be0e33b7ce0b4073733911ef98",
+            "start": 3613,
+            "status": "quoted"
+          }
+        ],
+        "sha256": "e7616d962f48e6482bc7453f93f3bb56153ad6a1c6c4c3a668622e91016fe445",
+        "text_sha256": "cb4be13b86077c952dd5973bc7b9f30ad77f5f81831855b09164c84afc85e1fe"
+      }
+    ],
+    "724420": [
+      {
+        "forwarding_only": false,
+        "path": [
+          "Odpowiedź MS na uwagi RCL - etap SKRM (4).pdf"
+        ],
+        "quoted_replacements": [
+          {
+            "end": 1270,
+            "reference": "art. 952",
+            "sha256": "5f5dbd45573edc8110b599875f21429156d03676acfd8691b97a45b64d71c075",
+            "start": 589,
+            "status": "quoted"
+          }
+        ],
+        "sha256": "7e9649b9a2f7d84297e745fcdafcd56282988d4cb958399cccfcb15e3bac8674",
+        "text_sha256": "b0f12c11d16367ddabe633a269b88f2c694fe3cdd3489b186e543bdba7c9e091"
+      }
+    ]
+  },
+  "edition_control": {
+    "comparison": "literal_substring_after_whitespace_collapse",
+    "sources": {
+      "701779": {
+        "https://legislacja.rcl.gov.pl/docs//2/12388101/13074332/13074333/dokument700161.zip": {
+          "body_count": 1,
+          "matched_quotes": [],
+          "raw_sha256": "289a146c31ee4cb38aaa40c0f9bf26519c485b87c0424f0705cec59de98ca583",
+          "state": "unverified"
+        }
+      },
+      "716022": {
+        "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument715437.zip": {
+          "body_count": 1,
+          "matched_quotes": [],
+          "raw_sha256": "693b0fefd5e098f4df7daac8e57144ab976f2251f809f609f4e797341b922af6",
+          "state": "unverified"
+        }
+      },
+      "724420": {
+        "https://legislacja.rcl.gov.pl/docs//2/12399200/13138389/13138390/dokument723551.zip": {
+          "body_count": 1,
+          "matched_quotes": [],
+          "raw_sha256": "8d64f9ab64d61c7c70a30789813912abc82014f8eaa5aa9f0b368c3065e3e851",
+          "state": "unverified"
+        },
+        "https://legislacja.rcl.gov.pl/docs//2/12399200/13138400/13138401/dokument724629.zip": {
+          "body_count": 1,
+          "matched_quotes": [],
+          "raw_sha256": "8e3e3092bff58adc83f1b1b8c54a0d90c79ec454512b94aefa55e7b39534ecff",
+          "state": "unverified"
+        }
+      }
+    }
+  },
+  "legacy_projection_equal": true,
+  "legacy_projection_sha256": "be6c8bef56895432af5bba759106957558452bb1f8064a4b510f46e661a8cfa6",
+  "quote_counts": {
+    "quoted": 6,
+    "unresolved_boundary": 1
+  },
+  "report_sha256": "d33e0d9ae9cdbeb04ab14e3d98a8020102cf004185492130464937fe31f7e6cb"
+}
