@@ -1802,7 +1802,7 @@ INSERT INTO "commands" VALUES(79370153,'-1004460742180',703,'/digest publish ref
 INSERT INTO "commands" VALUES(79370154,'-1004460742180',711,'/analyze UD491 force','2026-10-27T15:59:32+00:00','2026-10-27T16:01:00+00:00','WPL/UD491 queued: queued to the batch; the result is applied when the batch completes','2026-10-27T16:00:51+00:00');
 INSERT INTO "commands" VALUES(79370156,'-1004460742180',732,'/digest publish ref=2026-W44','2026-11-01T13:42:01+00:00','2026-11-01T14:02:28+00:00','digest (message 155): 2026-W44 posted to the channel','2026-11-01T14:02:23+00:00');
 INSERT INTO "commands" VALUES(79370157,'-1004460742180',743,'/link RCL/12398102 to=3281','2026-11-03T09:34:04+00:00','2026-11-03T09:35:43+00:00','RCL/12398102 linked: druk 3281 keeps its own card (message 157); the entry''s message 72 is left without a thread: reply under it with a link to the druk''s card','2026-11-03T09:35:35+00:00');
-INSERT INTO "commands" VALUES(79370158,'-1004460742180',761,'/digest publish ref=2026-W45','2026-11-08T13:44:39+00:00',NULL,NULL,NULL);
+INSERT INTO "commands" VALUES(79370158,'-1004460742180',761,'/digest publish ref=2026-W45','2026-11-08T13:44:39+00:00',NULL,'digest (message 170): 2026-W45 posted to the channel','2026-11-08T15:18:12+00:00');
 CREATE TABLE computation_results (
         result_id TEXT PRIMARY KEY,
         provider TEXT NOT NULL,
