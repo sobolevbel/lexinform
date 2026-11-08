@@ -1,0 +1,15 @@
+# DA6.6 retention acceptance
+
+| Requirement | Evidence in the current SQLite profile |
+| --- | --- |
+| Separate cache and audit history | `prune_history` removes old settled memo entries and eligible operational bodies. In four restored states, row fingerprints stayed equal for the paid results, applications, source and content history, and all other tables outside the operational targets. Batch rows also matched after excluding exactly the disposable JSON fields. |
+| Protect ongoing work | The copy of `daf986cf` retained all five unfinished batch items. The four snapshots retained all non-sent publications. Owner transfer, cross-owner exact keys, prepared reviews and work without an established owner have separate executable controls. |
+| Preserve publication and revision dependencies | The revision gate requires exact modern binding and completed application evidence. Its tests cover uncertain, legacy and dependent rows, rollback on invalid history, and restoration after cleanup. Published compact history remains readable after expiry. J578 keeps historical-only audit evidence separate when the current state never had a durable binding. |
+| Pin necessary inputs and reclaim unused text | The amendment input test deletes two unreferenced snapshots and only one text body, because the queued snapshot still uses the shared body. The submitted item keeps the same input after the intent is removed. The existing paid-result control confirms the original input remains readable after expiry and two restores. |
+| Apply the adopted storage policy | DA2.1 measures the SQLite profile and separates operational time limits from the lifetime of durable records. Durable metadata and result history do not inherit the operational 90/180-day cutoffs. Referenced amendment text is governed by reachability. The separately deferred raw archive has no active retention guarantee. |
+
+Replay restores `lexinform.sql` from each SHA in the results into a disposable database using the current repository reader. Apply `prune_history` with the UTC cutoffs listed there. Compare sorted full rows outside `analysis_memo`, `publications` and `llm_batch_items`. Compare every publication and batch row without the operational columns, plus full unfinished and non-sent rows. Compare batch JSON with the disposable fields removed on both sides. Run foreign-key checks, repeat the cleanup and restore the resulting SQL. Both the input hashes and measured gzip sizes are recorded.
+
+On `105de577`, the replay cleared one batch payload, 157 delivery payloads and 126 memos. On `7598f545`, 181 delivery payloads and 130 memos were cleared and gzip SQL fell from 5,420,411 to 2,693,647 bytes. These are future-cutoff controls. J497 separately covers naturally expired batch payloads. Natural source-family delivery evidence remains in DA10.7.
+
+[Replay results](replay.json) · [Storage profile](../../../reviews/2026-10-27-storage-profile.md#current-profile-assessment) · [Revision cleanup controls](../2026-11-04-revision-retention-cleanup/report.md) · [Retention rules](../../../state-retention.md)

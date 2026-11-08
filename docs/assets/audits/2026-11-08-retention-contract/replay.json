@@ -1,0 +1,247 @@
+{
+  "delivery_cutoff": "2027-08-10T00:00:00+00:00",
+  "memo_cutoff": "2027-05-12T00:00:00+00:00",
+  "comparison": "sorted full-row SHA-256, all tables except operational cleanup targets, plus non-sent publications, unfinished batch items non-payload columns of all publications and batch items, and batch JSON with only disposable fields removed",
+  "snapshots": [
+    {
+      "state_sha": "105de577d682b1f7057e0593aab5c7a408aed740",
+      "input_sql_sha256": "29dfe8566f02ceb810a1a43e8ea9a7b0fd0d9f6fc54ffa7212c4dda23945cd6d",
+      "removed": {
+        "delivery_payloads": 157,
+        "analysis_memos": 126,
+        "batch_payloads": 1
+      },
+      "gzip_sql_bytes_before": 5220821,
+      "gzip_sql_bytes_after": 2502391,
+      "pruned_restore_exact": true,
+      "repeat_cleanup_noop": true,
+      "unchanged_rows": {
+        "computation_results": {
+          "rows": 13,
+          "sha256": "118d20b685ab5b25a8dcda5a0176d8398a6f8ffb61cc50d9e593fbe13c11447a"
+        },
+        "result_applications": {
+          "rows": 26,
+          "sha256": "0bef1c5c2e85ac90c1ee651df014604c98755d2f0f61cbb3823a7bc19f403b2d"
+        },
+        "artifacts": {
+          "rows": 378,
+          "sha256": "0b1c0562eda5435175ca192730bd4a8ee878c2084d35a7f5c2dc3b5b5525f7c6"
+        },
+        "content_versions": {
+          "rows": 1,
+          "sha256": "564cf77d35a77ce198b533b08c590f48f2c0c4d15d0b4130852017afd58370e6"
+        },
+        "publication_content": {
+          "rows": 1,
+          "sha256": "f7f0da84f729aa5463d0f54d2e2070db75b6a86bd5903a78c636224cc5c9d206"
+        },
+        "document_work": {
+          "rows": 4,
+          "sha256": "e8f6e68a8d51a50fb3c02b1a5df9b6f16fbbeec8034ea3ee0446364e8f94d77e"
+        },
+        "amendment_input_snapshots": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "amendment_input_texts": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "non_sent_publications": {
+          "rows": 8,
+          "sha256": "31760453a91f31b063c05951f5bdbe74218549b40a0c09a00147c20ced49807b"
+        },
+        "unfinished_batch_items": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "retained_batch_metadata": {
+          "rows": 122,
+          "sha256": "991be05db9ad8595c9ae1aaa8c0d8ea9995e6ab83e3e141cc848612a379ac582"
+        }
+      },
+      "all_checked_domains": 55
+    },
+    {
+      "state_sha": "daf986cfaa1cbe1a4623ffd1aa8e784bb1378c94",
+      "input_sql_sha256": "463271a294bd611494b7774a0c81d4672ee6324205ed2840805208ed0c7e0ee9",
+      "removed": {
+        "delivery_payloads": 173,
+        "analysis_memos": 116,
+        "batch_payloads": 0
+      },
+      "gzip_sql_bytes_before": 5398958,
+      "gzip_sql_bytes_after": 2705253,
+      "pruned_restore_exact": true,
+      "repeat_cleanup_noop": true,
+      "unchanged_rows": {
+        "computation_results": {
+          "rows": 14,
+          "sha256": "fd8d474e589a20b0c3dd166e7c53d20893132158fbc85edb6c6ba1d31bb7f23c"
+        },
+        "result_applications": {
+          "rows": 28,
+          "sha256": "d3ba5c69b44288366a821d05b65aa8ce59c7a2005d5b7c84b31693cc71cfe530"
+        },
+        "artifacts": {
+          "rows": 477,
+          "sha256": "9e2f5e3f3436fae06c00c5041e5988bef055e83f9d620af6d6c5770cc7e1978f"
+        },
+        "content_versions": {
+          "rows": 1,
+          "sha256": "564cf77d35a77ce198b533b08c590f48f2c0c4d15d0b4130852017afd58370e6"
+        },
+        "publication_content": {
+          "rows": 1,
+          "sha256": "f7f0da84f729aa5463d0f54d2e2070db75b6a86bd5903a78c636224cc5c9d206"
+        },
+        "document_work": {
+          "rows": 6,
+          "sha256": "73030e170cda7397d5ae4b263bf03d6b019f3f17cb2a4bbab2faf1dfb14f4170"
+        },
+        "amendment_input_snapshots": {
+          "rows": 3,
+          "sha256": "c9a220280d3f96f29555f1f5bee50bd3e5707e69679e58e95ea47abe5bf2cf46"
+        },
+        "amendment_input_texts": {
+          "rows": 3,
+          "sha256": "5d88f365d9b5bf228f100247f623bd09f0b5a584017a2f7b93db484c3ccda033"
+        },
+        "non_sent_publications": {
+          "rows": 10,
+          "sha256": "d4a9fc07c8780ea0b5aaad059c7152a36ea237ee8eb3055e35691c0fc219b312"
+        },
+        "unfinished_batch_items": {
+          "rows": 5,
+          "sha256": "0c2bbafe16bb4072e71905dc7e2484a5e9419cbf9546283dea6f8cd6870dc0f3"
+        },
+        "retained_batch_metadata": {
+          "rows": 128,
+          "sha256": "ec73c39c56496c09431719009e1e122d81676158ed3883d66814cdef0f0c791d"
+        }
+      },
+      "all_checked_domains": 55
+    },
+    {
+      "state_sha": "175b03b53e3d17a2cb87fd361325749d758e16dd",
+      "input_sql_sha256": "86631b80b725d7581a9da3000449c54dbbddec364841b219bfb99ad934372023",
+      "removed": {
+        "delivery_payloads": 180,
+        "analysis_memos": 128,
+        "batch_payloads": 0
+      },
+      "gzip_sql_bytes_before": 5416262,
+      "gzip_sql_bytes_after": 2692796,
+      "pruned_restore_exact": true,
+      "repeat_cleanup_noop": true,
+      "unchanged_rows": {
+        "computation_results": {
+          "rows": 19,
+          "sha256": "eae2cde5832d534188a76cfdef8968637249a89c4e548389084b6fe380e25838"
+        },
+        "result_applications": {
+          "rows": 35,
+          "sha256": "f2938a74637ec9ac71833948bd3ed95590e5c649884287d7d317e97ef4b97b22"
+        },
+        "artifacts": {
+          "rows": 489,
+          "sha256": "c9193171563cd6d27d49195082ae4c518152f94531f1bf0980a6c42fc68dcfd4"
+        },
+        "content_versions": {
+          "rows": 4,
+          "sha256": "1213986e8f0b85644aee1b0ad67c61f6fc5aa377b60f55a4311db8b8fa8287ed"
+        },
+        "publication_content": {
+          "rows": 4,
+          "sha256": "a2eae2d5b8347d856982d0dad3f166edff5d92fc156befde99bc3e33045ec336"
+        },
+        "document_work": {
+          "rows": 6,
+          "sha256": "73030e170cda7397d5ae4b263bf03d6b019f3f17cb2a4bbab2faf1dfb14f4170"
+        },
+        "amendment_input_snapshots": {
+          "rows": 3,
+          "sha256": "c9a220280d3f96f29555f1f5bee50bd3e5707e69679e58e95ea47abe5bf2cf46"
+        },
+        "amendment_input_texts": {
+          "rows": 3,
+          "sha256": "5d88f365d9b5bf228f100247f623bd09f0b5a584017a2f7b93db484c3ccda033"
+        },
+        "non_sent_publications": {
+          "rows": 10,
+          "sha256": "d4a9fc07c8780ea0b5aaad059c7152a36ea237ee8eb3055e35691c0fc219b312"
+        },
+        "unfinished_batch_items": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "retained_batch_metadata": {
+          "rows": 128,
+          "sha256": "4ecdeb98363a8da93a64242c2f4ad303e7c37fe355045ece482a7e22e03c1beb"
+        }
+      },
+      "all_checked_domains": 55
+    },
+    {
+      "state_sha": "7598f545010b8a9a33dd13c35d0487c7396fcd8a",
+      "input_sql_sha256": "a9b23fd06114bd44b8e2d228457f91763b9d485f05361a80e15a527544e9c17d",
+      "removed": {
+        "delivery_payloads": 181,
+        "analysis_memos": 130,
+        "batch_payloads": 0
+      },
+      "gzip_sql_bytes_before": 5420411,
+      "gzip_sql_bytes_after": 2693647,
+      "pruned_restore_exact": true,
+      "repeat_cleanup_noop": true,
+      "unchanged_rows": {
+        "computation_results": {
+          "rows": 19,
+          "sha256": "eae2cde5832d534188a76cfdef8968637249a89c4e548389084b6fe380e25838"
+        },
+        "result_applications": {
+          "rows": 35,
+          "sha256": "f2938a74637ec9ac71833948bd3ed95590e5c649884287d7d317e97ef4b97b22"
+        },
+        "artifacts": {
+          "rows": 489,
+          "sha256": "c9193171563cd6d27d49195082ae4c518152f94531f1bf0980a6c42fc68dcfd4"
+        },
+        "content_versions": {
+          "rows": 5,
+          "sha256": "f06f7573d0142a13522ce8be55d185c561b4888a41f1703051f341eb5cac1467"
+        },
+        "publication_content": {
+          "rows": 5,
+          "sha256": "35f925032813f1569484c05fa76d5aed1e40d8c3e8e5ce91b81092aa4e5d8bf6"
+        },
+        "document_work": {
+          "rows": 6,
+          "sha256": "73030e170cda7397d5ae4b263bf03d6b019f3f17cb2a4bbab2faf1dfb14f4170"
+        },
+        "amendment_input_snapshots": {
+          "rows": 3,
+          "sha256": "c9a220280d3f96f29555f1f5bee50bd3e5707e69679e58e95ea47abe5bf2cf46"
+        },
+        "amendment_input_texts": {
+          "rows": 3,
+          "sha256": "5d88f365d9b5bf228f100247f623bd09f0b5a584017a2f7b93db484c3ccda033"
+        },
+        "non_sent_publications": {
+          "rows": 9,
+          "sha256": "23538498c21cd4a69b8b69ee85f1382c0a27d3517105ecbde33e744495f3dc97"
+        },
+        "unfinished_batch_items": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "retained_batch_metadata": {
+          "rows": 128,
+          "sha256": "4ecdeb98363a8da93a64242c2f4ad303e7c37fe355045ece482a7e22e03c1beb"
+        }
+      },
+      "all_checked_domains": 55
+    }
+  ]
+}

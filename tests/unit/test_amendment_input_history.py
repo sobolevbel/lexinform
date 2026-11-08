@@ -9,7 +9,7 @@ import pytest
 from tools.computation_doctor import audit
 from tools.replay_content_applications import poster, queued, revision
 
-from lexinform.adapters.amendment_inputs import amendment_input_issues
+from lexinform.adapters.amendment_inputs import amendment_input_issues, write_shared_amendment_input
 from lexinform.adapters.sqlite_repo import MIGRATIONS, SqliteBillRepository
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.json_storage import canonical_json
@@ -296,7 +296,9 @@ def test_broken_known_inputs_fail_public_reads_doctor_and_atomic_restore(
     assert any(item["code"] == "invalid_amendment_input" for item in report["findings"])
 
 
-def test_intent_item_transport_refs_are_read_only_and_require_actual_question() -> None:
+def test_intent_and_item_pin_exact_input_while_unreferenced_snapshots_expire(
+    tmp_path: Path,
+) -> None:
     value = input_snapshot()
     request = BatchRequest(
         custom_id="amendments",
@@ -322,13 +324,33 @@ def test_intent_item_transport_refs_are_read_only_and_require_actual_question() 
             },
         }
     )
-    with closing(SqliteBillRepository(":memory:")) as repo:
+    shared_text_orphan = AmendmentInputSnapshot(
+        question_json=canonical_json(
+            AmendmentsQuestion(
+                ctx=value.context.model_copy(update={"proposal": "Separate proposal"})
+            ).model_dump(mode="json")
+        )
+    )
+    unique_text_orphan = input_snapshot("Art. 1. Nie ma odwołania do tego tekstu.")
+    cutoff = NOW + dt.timedelta(days=181)
+    path = tmp_path / "state.db"
+    with closing(SqliteBillRepository(path)) as repo:
         repo.migrate()
         with pytest.raises(ValueError, match="invalid_amendment_input"):
             repo.save_batch_intent(intent)
-        repo.save_amendment_input(value)
+        with closing(sqlite3.connect(path)) as db, db:
+            write_shared_amendment_input(db, value)
+            write_shared_amendment_input(db, shared_text_orphan)
+            write_shared_amendment_input(db, unique_text_orphan)
         repo.save_batch_intent(intent)
         assert repo.list_queued_batch_intents() == [intent]
+        removed = repo.prune_history(before=cutoff, memo_before=cutoff)
+        assert removed["amendment_input_snapshots"] == 2
+        assert removed["amendment_input_texts"] == 1
+        assert repo.get_amendment_input(value.snapshot_id) == value
+        assert repo.get_amendment_input(shared_text_orphan.snapshot_id) is None
+        assert repo.get_amendment_input(unique_text_orphan.snapshot_id) is None
+
         item = LlmBatchItem.from_intent("batch", intent)
         repo.save_llm_batch(
             LlmBatch(
@@ -342,7 +364,11 @@ def test_intent_item_transport_refs_are_read_only_and_require_actual_question() 
             ),
             [item],
         )
+        repo.delete_batch_intents([request.custom_id])
+        assert repo.list_queued_batch_intents() == []
+        assert not any(repo.prune_history(before=cutoff, memo_before=cutoff).values())
         assert repo.list_llm_batch_items("batch") == [item]
+        assert repo.get_amendment_input(value.snapshot_id) == value
         dumped = repo.dump()
         repo.restore(dumped)
         assert repo.dump() == dumped
