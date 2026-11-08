@@ -16670,3 +16670,22 @@ Unknown delivery stayed unconfirmed without a resend.
   Обычное чтение, пустые страницы и сбой файла с именем
   обоснования дали прежние результаты.
   [Квалификация](../assets/audits/2026-11-08-archive-missing-primary-pdf/qualification.json).
+
+<a id="j575"></a>
+
+### J575. Выпуски диагностики и ожидания ZIP
+
+| Этапы | Коммит выпуска | Проверки | Развёртывание |
+| --- | --- | --- | --- |
+| J570 | `bb5e9e3a` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42464001893) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42464658632) |
+| J571 | `e24886d4` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42464756844) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42465386196) |
+| J572–J573 | `d3196b0b` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42465504248) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42466049588) |
+| J574 | `3e8557ce` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42466145906) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42466834903) |
+
+На контрольном дампе J574 читатель J573 восстановил состояние
+ожидания и хеш файла без подтверждения его роли.
+SHA-256 дампа: `3487bfde3b62e0cc540641d39b362eb3bfa8d90fff5a5ba4879c07abc50790e5`.
+
+В офлайн-прогоне с тем же корпусным PDF фильтр дождался чтения без расхода попытки анализа. После восстановления дампа обычное чтение вернуло проект в фильтр, где он был отсеян по тексту.
+
+На этом коммите в плане остаются 14 применимых незакрытых пунктов. Полные условия приёмки остаются в плане. В текущем профиле неприменимы 6 пунктов, перечисленных там же.
