@@ -9,10 +9,36 @@ _MULTI_BLANK_RE = re.compile(r"\n{3,}")
 _TRAILING_SPACES_RE = re.compile(r"[ \t]+\n")
 
 
-def legacy_pdf_text(pages: Iterable[str]) -> str:
-    text = PAGE_BREAK.join(pages).replace("\r\n", "\n").replace("\xa0", " ")
+def _normalize_pdf_whitespace(text: str) -> str:
+    text = text.replace("\r\n", "\n").replace("\xa0", " ")
     text = _TRAILING_SPACES_RE.sub("\n", text)
-    return _MULTI_BLANK_RE.sub("\n\n", text).strip()
+    return _MULTI_BLANK_RE.sub("\n\n", text)
+
+
+def legacy_pdf_text(pages: Iterable[str]) -> str:
+    return _normalize_pdf_whitespace(PAGE_BREAK.join(pages)).strip()
+
+
+def normalized_pdf_page_offsets(pages: tuple[str, ...]) -> tuple[int | None, ...]:
+    """Locate each nonempty normalized page in the legacy PDF string."""
+    chunks = _normalize_pdf_whitespace(PAGE_BREAK.join(pages)).split(PAGE_BREAK)
+    if len(chunks) != len(pages):
+        return ()
+    trim = next(
+        (
+            sum(len(chunk) + 1 for chunk in chunks[:i]) + len(chunk) - len(chunk.lstrip())
+            for i, chunk in enumerate(chunks)
+            if chunk.strip()
+        ),
+        0,
+    )
+    offset = 0
+    starts: list[int | None] = []
+    for chunk in chunks:
+        leading = len(chunk) - len(chunk.lstrip())
+        starts.append(offset + leading - trim if chunk.strip() else None)
+        offset += len(chunk) + 1
+    return tuple(starts)
 
 
 def raw_pdf_page_span(page: str, start: int, end: int) -> tuple[int, int] | None:

@@ -66,8 +66,6 @@ def test_physical_page_block_maps_the_literal_quote_with_normalized_coordinates(
 @pytest.mark.parametrize(
     ("pages", "message"),
     [
-        (("", QUOTE), "collapsed physical page boundaries"),
-        ((QUOTE, ""), "collapsed physical page boundaries"),
         (("Cover\finside one page", QUOTE), "Pinned PDF artifact"),
         ((QUOTE, QUOTE), "quote_ambiguous"),
     ],
@@ -77,6 +75,18 @@ def test_ambiguous_or_collapsed_page_maps_are_rejected(
 ) -> None:
     with pytest.raises(ValueError, match=message):
         check(pages)
+
+
+@pytest.mark.parametrize(
+    ("pages", "number"),
+    [
+        (("", "", QUOTE), 3),
+        ((QUOTE, "", ""), 1),
+        (("Cover", "", QUOTE, ""), 3),
+    ],
+)
+def test_blank_pages_keep_physical_page_numbers(pages: tuple[str, ...], number: int) -> None:
+    assert check(pages, page=number)["page"] == number
 
 
 def test_quote_crossing_physical_page_boundary_cannot_gain_one_page_locator() -> None:

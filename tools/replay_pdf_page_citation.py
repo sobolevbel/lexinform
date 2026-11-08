@@ -11,7 +11,11 @@ from pydantic import BaseModel, ConfigDict, Field
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.models import AnalysisRecord, EvidenceCitation, PdfTextExtraction, ReviewDocument
 from lexinform.models.physical_inventory import Sha256
-from lexinform.pdf_projection import legacy_pdf_text, raw_pdf_page_span
+from lexinform.pdf_projection import (
+    legacy_pdf_text,
+    normalized_pdf_page_offsets,
+    raw_pdf_page_span,
+)
 from lexinform.primary_claims import KeyChangeEvidence, validate_key_change_evidence
 from lexinform.sections import PAGE_BREAK
 from tools.corpus_artifacts import digest, read_artifact, write_json
@@ -72,17 +76,17 @@ def verify_pdf_page(
     ):
         raise ValueError("Pinned PDF artifact, extraction or literal source differs")
 
-    chunks = document.text.split(PAGE_BREAK)
-    if len(chunks) != len(extraction.pages):
-        raise ValueError("Legacy PDF text collapsed physical page boundaries")
+    offsets = normalized_pdf_page_offsets(tuple(page.text for page in extraction.pages))
+    if len(offsets) != len(extraction.pages):
+        raise ValueError("PDF page boundaries cannot be reconstructed")
     start, end = checked.observed_text_span
-    offset = 0
     found: dict[str, object] | None = None
-    for page, chunk in zip(extraction.pages, chunks, strict=True):
+    for page, content_start in zip(extraction.pages, offsets, strict=True):
+        if content_start is None:
+            continue
         block = legacy_pdf_text((page.text,))
-        if block != chunk.strip():
+        if document.text[content_start : content_start + len(block)] != block:
             raise ValueError("Legacy PDF chunk differs from its exact normalized page")
-        content_start = offset + len(chunk) - len(chunk.lstrip())
         if content_start <= start < end <= content_start + len(block):
             if page.number != expected_page:
                 raise ValueError("Citation does not belong to the expected physical page")
@@ -108,7 +112,6 @@ def verify_pdf_page(
                     "span": list(raw_span),
                     "text_sha256": raw_hash,
                 }
-        offset += len(chunk) + len(PAGE_BREAK)
     if found is None:
         raise ValueError("Citation crosses a physical page boundary")
     return {

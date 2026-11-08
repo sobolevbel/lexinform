@@ -1,0 +1,20 @@
+{
+  "source_sha256": "33761f4ec89a0677f646a3de6547c08683bf93c826a67c3daa5f304b367b115e",
+  "extraction_manifest_sha256": "97df04eefe96a36c7eef8a7b837a8781359fd50435df246704d9d846b36aed50",
+  "request_sha256": "d8d8696688c2833c5fe66f8fdaadff9e85cfec836343eec2701486f28177d5c7",
+  "physical_page": 10,
+  "request_span": [
+    15579,
+    15650
+  ],
+  "source_span": [
+    15579,
+    15650
+  ],
+  "raw_page_span": [
+    234,
+    305
+  ],
+  "raw_page_sha256": "92d9385dbeac37131afb3509059f6d43319b74b5462922390b1ffdd45e09e5e0",
+  "quote_sha256": "6dab611429f00c234d5eda8f6d6ef19bf9ff26dd7c85d16acfb7231e97256a61"
+}
