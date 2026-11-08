@@ -1,4 +1,7 @@
+import sqlite3
 import threading
+from contextlib import closing
+from datetime import timedelta
 from typing import Literal
 from unittest.mock import patch
 
@@ -25,6 +28,7 @@ from tests.harness import World, print_url, rcl_document, rcl_folder, rcl_projec
 from tests.scenario.test_extraction_source_history import reader
 from tests.unit.test_doc_note_extraction import source_notes
 from tests.unit.test_doc_note_physical_parts import ole_document
+from tests.unit.test_odt_blocks import odt_document
 from tests.unit.test_physical_extraction import archive, docx
 
 TEXT = "USTAWA\nArt. 1. Cudzoziemiec składa wniosek osobiście i otrzymuje 300 zł.\n" * 50
@@ -340,3 +344,51 @@ def test_loose_rcl_receipt_is_saved_only_with_its_recorded_parents(
     current.repo.restore(dumped)
     assert current.repo.list_llm_batch_items(batch.batch_id) == [item]
     assert current.repo.dump() == dumped
+
+
+def test_odt_row_receipt_survives_batch_cleanup_and_restore() -> None:
+    raw = odt_document(
+        "<text:p>" + "USTAWA Art. 1. Cudzoziemiec składa wniosek. " * 8 + "</text:p>"
+        "<table:table><table:table-row>"
+        "<table:table-cell><text:p>Termin</text:p></table:table-cell>"
+        "<table:table-cell><text:p>31 grudnia</text:p></table:table-cell>"
+        "</table:table-row></table:table>"
+    )
+    current = world(raw)
+
+    current.run(track=False)
+
+    (batch,) = current.repo.list_open_llm_batches()
+    (item,) = current.repo.list_llm_batch_items(batch.batch_id)
+    assert isinstance(item.meta, BatchItemMeta), "the actual primary caller saves primary metadata"
+    receipt = item.meta.prepared_input_receipt
+    assert isinstance(receipt, PrimaryInputReceipt), "the loose native ODT stores its primary input"
+    companion = receipt.block_companion
+    assert companion is not None, "the exact ODT row is within the prepared input"
+    row = companion.rows[-1]
+    extraction = current.repo.get_extraction_result(row.extraction_id)
+    assert extraction is not None, "the copy is tied to a retained extraction"
+    witness = extraction.selected_parts[0].block_copy_witness
+    assert witness is not None, "the extraction retains its exact copies"
+    assert witness.runs[row.run_index].block_id == "odt-xml:content.xml:body:1/0"
+    assert item.meta.text[row.start : row.end] == "Termin\t31 grudnia"
+    assert receipt.request_sha256 == current.batch.submitted[0].payload_sha256
+
+    current.batch.resolve(batch.batch_id)
+    current.run(track=False)
+    current.batch.forget(batch.batch_id)
+    current.repo.mark_llm_batch_forgotten(batch.batch_id, forgotten_at=current.clock.now())
+    cutoff = current.clock.now() + timedelta(days=181)
+    current.repo.prune_history(before=cutoff, memo_before=cutoff)
+    sql = current.repo.dump()
+    current.repo.restore(sql)
+    with closing(sqlite3.connect(":memory:")) as connection:
+        connection.executescript(current.repo.dump())
+        (row_json,) = connection.execute(
+            "SELECT meta_json FROM llm_batch_items WHERE batch_id=?", (batch.batch_id,)
+        ).fetchone()
+    restored = BatchItemMeta.model_validate_json(row_json)
+    assert restored.text == ""
+    assert restored.prepared_input_receipt == receipt
+    assert current.repo.get_extraction_result(row.extraction_id) == extraction
+    assert current.repo.dump() == sql

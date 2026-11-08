@@ -1,0 +1,111 @@
+{
+  "scope": "Pinned official ODT bytes in a synthetic test route with a fake batch provider. No claim of historic source linkage, paid call, or production processing.",
+  "official_odt": "rcl-file:684340",
+  "sha256": "743d88976846877fcc7d9c4a81ed0e1128822b1c2f5e70c71b1b518a1027143f",
+  "comparison": "Exact request digest and equal receipt fields apart from extraction identity and block copies.",
+  "previous_reader_restored_cleaned_dumps_byte_identically": true,
+  "controls": {
+    "clipped": {
+      "request_sha256": "a5b1d8e96cd03a42d9e639a4ac0805714c79548def9993bcbb3f038227b6248d",
+      "row_count": 2,
+      "clipped_rows": 1,
+      "rows": [
+        {
+          "block_id": "odt-xml:content.xml:body:1/1",
+          "start": 155,
+          "end": 434,
+          "intersection": null,
+          "text_sha256": "ae3df599e78f05ed90594cc5abf4e3656a028aeca224411afc91d003bad7a886"
+        },
+        {
+          "block_id": "odt-xml:content.xml:body:1/2",
+          "start": 435,
+          "end": 1000,
+          "intersection": "clipped-v1",
+          "text_sha256": "946ddd875488bc7a1c822e8c08e80d9cac9fc785f7b146d1a464beeafacd3694"
+        }
+      ],
+      "cleaned_sql_delta_bytes": 4015,
+      "cleaned_gzip_delta_bytes": 998
+    },
+    "full": {
+      "request_sha256": "da89499b4025d9e8b4221fc0ee1944492c5556c99e98869c4084a4c19043abd4",
+      "row_count": 10,
+      "clipped_rows": 0,
+      "rows": [
+        {
+          "block_id": "odt-xml:content.xml:body:1/1",
+          "start": 155,
+          "end": 434,
+          "intersection": null,
+          "text_sha256": "ae3df599e78f05ed90594cc5abf4e3656a028aeca224411afc91d003bad7a886"
+        },
+        {
+          "block_id": "odt-xml:content.xml:body:1/2",
+          "start": 435,
+          "end": 1186,
+          "intersection": null,
+          "text_sha256": "e436250d1f103a2371893961f566b445352eda761baeaa34caee5405a255339f"
+        },
+        {
+          "block_id": "odt-xml:content.xml:body:1/3",
+          "start": 1187,
+          "end": 1428,
+          "intersection": null,
+          "text_sha256": "44af89ffad8028f5b8c770da6e14b348b74d25eddcc0ae69c9cecf49102b1bc4"
+        },
+        {
+          "block_id": "odt-xml:content.xml:body:1/4",
+          "start": 1429,
+          "end": 2085,
+          "intersection": null,
+          "text_sha256": "c03822dd15d882b6efba28f27992c2f58bf9527a2c314c77df44a613ef7191ba"
+        },
+        {
+          "block_id": "odt-xml:content.xml:body:1/5",
+          "start": 2086,
+          "end": 2634,
+          "intersection": null,
+          "text_sha256": "9a86e4aa5c8164fadccee665255571547e52f28b64eb2281104dbfe9e7e3a499"
+        },
+        {
+          "block_id": "odt-xml:content.xml:body:1/6",
+          "start": 2635,
+          "end": 2807,
+          "intersection": null,
+          "text_sha256": "c8ad101b83e31fee7d4f451b8c3e2843944686c5082f8d7cc0bc3c3bd228bc2d"
+        },
+        {
+          "block_id": "odt-xml:content.xml:body:1/7",
+          "start": 2808,
+          "end": 3835,
+          "intersection": null,
+          "text_sha256": "2a8df65313d0379dd5d44f4d48f320814d58770ede6547facd03f03f991bba97"
+        },
+        {
+          "block_id": "odt-xml:content.xml:body:1/9",
+          "start": 4298,
+          "end": 4370,
+          "intersection": null,
+          "text_sha256": "c548bfc94bff30571c2e020cb45843c87d1477cdb718c033cec70846a3ff3ea1"
+        },
+        {
+          "block_id": "odt-xml:content.xml:body:1/10",
+          "start": 4371,
+          "end": 5005,
+          "intersection": null,
+          "text_sha256": "a77f12d8187e3912efa4b79030f83f068081296349142a14be26bf9570405a71"
+        },
+        {
+          "block_id": "odt-xml:content.xml:body:1/11",
+          "start": 5006,
+          "end": 5156,
+          "intersection": null,
+          "text_sha256": "437e2236547c08477d58f9f1f9463d35fcd1e09d0fc4a59e914d2a8424cee448"
+        }
+      ],
+      "cleaned_sql_delta_bytes": 6755,
+      "cleaned_gzip_delta_bytes": 1092
+    }
+  }
+}
