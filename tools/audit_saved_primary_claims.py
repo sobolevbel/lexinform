@@ -190,6 +190,10 @@ class ReviewTextUnavailableError(ValueError):
     pass
 
 
+class ReviewBatchItemMissingError(ReviewTextUnavailableError):
+    pass
+
+
 @dataclass(frozen=True)
 class SavedClaimReview:
     record: AnalysisRecord
@@ -203,11 +207,13 @@ class SavedClaimReview:
 def _primary_batch_meta(db: sqlite3.Connection, paid: ComputationResult) -> BatchItemMeta:
     item = db.execute(
         "SELECT i.*, b.provider FROM llm_batch_items AS i"
-        " JOIN llm_batches AS b USING (batch_id)"
+        " LEFT JOIN llm_batches AS b USING (batch_id)"
         " WHERE i.batch_id=? AND i.custom_id=?",
         (paid.batch_id, paid.custom_id),
     ).fetchone()
-    if item is None or (item["provider"], item["term"], item["number"], item["call_kind"]) != (
+    if item is None:
+        raise ReviewBatchItemMissingError("Review requires the exact saved batch item")
+    if (item["provider"], item["term"], item["number"], item["call_kind"]) != (
         paid.provider,
         paid.term,
         paid.number,
@@ -312,6 +318,10 @@ def _checkpoint_intent_text(
             or question.ctx.scan is not None
             or current.text_source != question.ctx.text_source
             or saved.text_source != current.text_source
+            or (
+                current.prepared_input_receipt is not None
+                and saved.prepared_input_receipt != current.prepared_input_receipt
+            )
         ):
             raise ReviewTextUnavailableError(
                 "Input checkpoint differs from the exact saved text intent"
@@ -352,6 +362,15 @@ def _checkpoint_intent_text(
         return text
 
 
+def _receipt_checkpoint_text(
+    checkpoint: ReviewInputCheckpoint, paid: ComputationResult, current: BatchItemMeta
+) -> str:
+    try:
+        return _checkpoint_text(checkpoint, paid, current)
+    except ReviewBatchItemMissingError:
+        return _checkpoint_intent_text(checkpoint, paid, current)
+
+
 def _saved_review_input(
     database: Path,
     *,
@@ -387,7 +406,7 @@ def _saved_review_input(
             text = (
                 meta.text
                 if input_checkpoint is None
-                else _checkpoint_text(input_checkpoint, paid, meta)
+                else _receipt_checkpoint_text(input_checkpoint, paid, meta)
             )
             text_sha256 = digest(text.encode())
             if (

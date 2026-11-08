@@ -1,0 +1,74 @@
+{
+  "scope": "Read-only exact frozen intent replay for cleaned results with a retained receipt.",
+  "current_state_commit": "949ed30602cf88b95d547c73732c811af2be3be6",
+  "current_db_sha256": "33b2f30f063f89f92adf847f0f8496da11fc9dbd1cd6b4935642ab43acad88b3",
+  "candidate_checkpoint_commits": 14,
+  "verified": [
+    {
+      "result_id": "result-v1:ef9d048e4a113196bb189a106eb5452ec8642fa5046f16244b83ebedefd3b290",
+      "checkpoint_commit": "291624da8e96ae0131828e31a400ef1c287748cc",
+      "checkpoint_sql_sha256": "4523e84f19570d7fdb90f4e2d1488821bca5e00bc2c79242d3e6fd887988dbe8",
+      "checkpoint_db_sha256": "d0d3e804cd3b9d8bf98db54b5c3e1253dafcb303a7e24344da8d921f47b1f1b8",
+      "request_sha256": "5f229284bf6f5a533ac93e7d11a5bb2d8e063d6ed451fc1366bd027aa13b574a",
+      "text_sha256": "dcd8198dc98d25a31e5d107d1d4a1cabc7db4fd6feb6fa8894b7d99083974c57",
+      "text_chars": 15279,
+      "text_bytes": 16076
+    },
+    {
+      "result_id": "result-v1:c70ea61d48af19826e0a9909ef21fb44b5dc0ac082e9386348a75c730870200f",
+      "checkpoint_commit": "08fcf8f19f318489ff0cd6119a5670c0f00f1fb7",
+      "checkpoint_sql_sha256": "2249e3dbf71783db17610086ddff594ff866dfcd4db4d15cc2102e7ff03cec3e",
+      "checkpoint_db_sha256": "5d1c28810a9abd5c58e7ef5647190c093a58c6bb37167b147d9ab76810f6db55",
+      "request_sha256": "b4595f0f6963fdc728e51126226ca7018c1f962d00eff0ca372471c70aac63a1",
+      "text_sha256": "67593c91cfcbe74e4d7f1c584d00127b04e0b46c9bb1fb25219c2363ad3848f6",
+      "text_chars": 14838,
+      "text_bytes": 15502
+    }
+  ],
+  "rejection_counts": {},
+  "baseline": {
+    "commit": "4ce66882",
+    "verified_intents": 0,
+    "missing_batch_item": 2
+  },
+  "additional_checkpoints": [
+    {
+      "result_id": "result-v1:a9049cf312bc1c654aa03e9114fe98db7a82da64d5d752c1f48c44cae232a4cb",
+      "checkpoint_commit": "a468e59a821a9ee31c00c8b87ddd0baede3cafe5",
+      "checkpoint_sql_sha256": "3fddf947c552365c583a74cae8639a37ecc62832645c2942b17f702163d43070",
+      "checkpoint_db_sha256": "4d32d72ed1b874efc89aba0ab8c3286096eece386aadafe42c7dedc798a57315",
+      "request_sha256": "01ef94189741fdc6ccf764411e5948f33beb890fce313ba109661ea0611d6fb4",
+      "text_sha256": "cc4172086103785acbfdd444bed2ccf4eb0a31144f5cff9850b357b0aa0576a8",
+      "text_chars": 454398,
+      "text_bytes": 474379,
+      "verified_on_baseline": true
+    },
+    {
+      "result_id": "result-v1:a9049cf312bc1c654aa03e9114fe98db7a82da64d5d752c1f48c44cae232a4cb",
+      "checkpoint_commit": "ac16341960acef477ea7571e549b7ab529b62eb9",
+      "checkpoint_sql_sha256": "5aa56269fa7a4862b3261b789b919d52bfb6924c0b435beed30670c5fb1ea351",
+      "checkpoint_db_sha256": "a3921902c3b97e34814084b66d2e08fed6b33189980a2439e650d4417c7cc7e7",
+      "rejection": "Review requires an exact frozen text intent"
+    }
+  ],
+  "combined_with_prior_checkpoints": {
+    "baseline_and_candidate_report_sha256": "733aed965d50e73be5400ec31165d947f612ad4f17e0ef449f84ef67bd81e155",
+    "checkpoint_db_sha256s": [
+      "8c21e5781d5d89b911bfb0376ca5fc1a90893755f8e51c908287c26bd3d65c57",
+      "88a7e44075d810925f6e9226c756db00daf5b6fb3c240693ff2858138f85377a",
+      "9366b9c6ee89a5535c0d9dbf26be37e4cf03f1b54836964ee9579e24fbd1d304",
+      "bfa694eb9874501feb1e515e8264e6a61d732f0ba7534f00e081caaf675847c0",
+      "47b34b4c69d1e2c6d6595ac28f12b122cf311f0f310dc7f6211bab2cd38b84d4",
+      "e78613cba60318f88374caaab31514a49aa77e2bf7cdf726e6ee565ed3b99a12",
+      "d4181d75d36df48469b9f74ca72e1fd04fc4c57bdb2012b14cee50ee5560fd20",
+      "9c55eb7078890e0899b77f4bfcfdb131dbc0dfa2a07f38ac606ef080a58c83a3",
+      "5ee32f1eae088dd16d34c070d74051a866f4044606829fcf03c7e56c9aae3687",
+      "4818bf76da5f515e89d9edfce84d5c5f9516ecc7432fb141cb495477c529c349",
+      "d0d3e804cd3b9d8bf98db54b5c3e1253dafcb303a7e24344da8d921f47b1f1b8",
+      "5d1c28810a9abd5c58e7ef5647190c093a58c6bb37167b147d9ab76810f6db55"
+    ],
+    "verified_text": 12,
+    "verified_metadata_only": 2,
+    "unavailable": 0
+  }
+}

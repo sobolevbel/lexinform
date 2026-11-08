@@ -1,14 +1,17 @@
 import sqlite3
 from contextlib import closing
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
+from tools import audit_saved_primary_claims as claims_audit
 from tools.audit_saved_primary_claims import ReviewInputCheckpoint, audit, review_page, run
 from tools.corpus_artifacts import digest
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models import AnalysisRecord, ComputationResult
 from tests.computations import retained_result
+from tests.unit.test_input_receipts import meta
 
 
 def test_census_uses_canonical_primary_rows_and_exports_only_claim_addresses(
@@ -156,3 +159,21 @@ def test_review_does_not_use_paid_result_without_its_exact_input(tmp_path: Path)
         review_page(
             database, database_sha256=digest(database.read_bytes()), result_id=result.result_id
         )
+
+
+def test_receipt_checkpoint_only_tries_intent_when_batch_item_is_missing(tmp_path: Path) -> None:
+    checkpoint = ReviewInputCheckpoint(tmp_path / "checkpoint.db", "0" * 64)
+    paid = retained_result("analysis")
+    current = meta()
+    with (
+        patch.object(claims_audit, "_checkpoint_text") as batch_item_text,
+        patch.object(claims_audit, "_checkpoint_intent_text", return_value="exact text") as intent,
+    ):
+        batch_item_text.side_effect = claims_audit.ReviewTextUnavailableError("mismatched item")
+        with pytest.raises(claims_audit.ReviewTextUnavailableError, match="mismatched item"):
+            claims_audit._receipt_checkpoint_text(checkpoint, paid, current)
+        intent.assert_not_called()
+
+        batch_item_text.side_effect = claims_audit.ReviewBatchItemMissingError("missing item")
+        assert claims_audit._receipt_checkpoint_text(checkpoint, paid, current) == "exact text"
+        intent.assert_called_once_with(checkpoint, paid, current)
