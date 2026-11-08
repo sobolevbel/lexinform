@@ -1,0 +1,534 @@
+{
+  "baseline_commit": "888f3184573a33cc0c0b1c791d9eaea3f3b654f7",
+  "input_pins": {
+    "667159.pdf": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8",
+    "300517.pdf": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+  },
+  "comparisons": {
+    "archive_first": {
+      "changed_cases": [
+        "one_missing_annex"
+      ],
+      "baseline": {
+        "one_missing_annex": {
+          "state": "unverified",
+          "calls": [
+            "https://source.test/archive.zip",
+            "https://source.test/alternative.pdf"
+          ],
+          "text_sha256": "9dd7524c574121ac8980c33595bb1ec129c1babcdb7e566b57ad701eaeede444",
+          "selection_sha256_ignoring_policy_version": "ac38b28aa367e55c0c2f1c0b86bacadf1d1b1d505ab6dc4d866d1bc397847c90",
+          "trace_result": "selected",
+          "trace_reason": "version_choice",
+          "dispositions": [
+            {
+              "phase": "version_comparison",
+              "index": 0,
+              "outcome": "unclassified",
+              "reason": "ambiguous_extraction",
+              "observed_sha256": "e4acbe6687e1e8029ea6fc53f9074de21b8402b57db19c25b3b9f4a4c9299161"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 1,
+              "outcome": "selected",
+              "reason": "version_choice",
+              "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+            }
+          ],
+          "part_roles": [
+            "bill"
+          ],
+          "page_failure_parts": 0,
+          "injected_pages": 0,
+          "archive_sha256": "e4acbe6687e1e8029ea6fc53f9074de21b8402b57db19c25b3b9f4a4c9299161",
+          "selected_members": [
+            []
+          ]
+        },
+        "equal_annexes": {
+          "state": "ambiguous",
+          "calls": [
+            "https://source.test/archive.zip",
+            "https://source.test/alternative.pdf"
+          ],
+          "text_sha256": null,
+          "selection_sha256_ignoring_policy_version": "230f216ddaee901bb377bba6403c68c365cd20c9b9ae734432cdc496b62bb114",
+          "trace_result": "ambiguous",
+          "trace_reason": "version_conflict",
+          "dispositions": [
+            {
+              "phase": "version_comparison",
+              "index": 0,
+              "outcome": "policy_excluded",
+              "reason": "version_conflict",
+              "observed_sha256": "6f83098b8f1ab15b75756f41bff5869d7081ad095d03697ee833a714030d4a1c"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 1,
+              "outcome": "policy_excluded",
+              "reason": "version_conflict",
+              "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+            }
+          ],
+          "part_roles": [
+            "bill",
+            "normative_annex",
+            "bill"
+          ],
+          "page_failure_parts": 0,
+          "injected_pages": 0,
+          "archive_sha256": "6f83098b8f1ab15b75756f41bff5869d7081ad095d03697ee833a714030d4a1c",
+          "selected_members": [
+            [
+              "a.zip",
+              "projekt.pdf"
+            ],
+            [
+              "a.zip",
+              "zalacznik do ustawy.pdf"
+            ],
+            []
+          ]
+        },
+        "no_annexes": {
+          "state": "unverified",
+          "calls": [
+            "https://source.test/archive.zip",
+            "https://source.test/alternative.pdf"
+          ],
+          "text_sha256": "9dd7524c574121ac8980c33595bb1ec129c1babcdb7e566b57ad701eaeede444",
+          "selection_sha256_ignoring_policy_version": "3aefb758450b785478770710b4ecaf3d6d0bf85e6360ac32a4b2aa74864c0de9",
+          "trace_result": "selected",
+          "trace_reason": "version_choice",
+          "dispositions": [
+            {
+              "phase": "version_comparison",
+              "index": 0,
+              "outcome": "selected",
+              "reason": "version_choice",
+              "observed_sha256": "d466778ee9c148b44b0deaa2167e23d7e727e30afc0393c44b801e0650cf28f3"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 1,
+              "outcome": "policy_excluded",
+              "reason": "version_preference",
+              "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+            }
+          ],
+          "part_roles": [
+            "bill"
+          ],
+          "page_failure_parts": 0,
+          "injected_pages": 0,
+          "archive_sha256": "d466778ee9c148b44b0deaa2167e23d7e727e30afc0393c44b801e0650cf28f3",
+          "selected_members": [
+            [
+              "a.zip",
+              "projekt.pdf"
+            ]
+          ]
+        }
+      },
+      "candidate": {
+        "one_missing_annex": {
+          "state": "ambiguous",
+          "calls": [
+            "https://source.test/archive.zip",
+            "https://source.test/alternative.pdf"
+          ],
+          "text_sha256": null,
+          "selection_sha256_ignoring_policy_version": "fb8da21d9224e575bbf6341e4c3d18f2bf7409e592666022d389b83c520eb564",
+          "trace_result": "ambiguous",
+          "trace_reason": "version_conflict",
+          "dispositions": [
+            {
+              "phase": "version_comparison",
+              "index": 0,
+              "outcome": "policy_excluded",
+              "reason": "version_conflict",
+              "observed_sha256": "e4acbe6687e1e8029ea6fc53f9074de21b8402b57db19c25b3b9f4a4c9299161"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 1,
+              "outcome": "policy_excluded",
+              "reason": "version_conflict",
+              "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+            }
+          ],
+          "part_roles": [
+            "bill",
+            "bill",
+            "normative_annex"
+          ],
+          "page_failure_parts": 0,
+          "injected_pages": 0,
+          "archive_sha256": "e4acbe6687e1e8029ea6fc53f9074de21b8402b57db19c25b3b9f4a4c9299161",
+          "selected_members": [
+            [
+              "a.zip",
+              "projekt.pdf"
+            ],
+            [
+              "b.zip",
+              "projekt.pdf"
+            ],
+            [
+              "a.zip",
+              "zalacznik do ustawy.pdf"
+            ]
+          ]
+        },
+        "equal_annexes": {
+          "state": "ambiguous",
+          "calls": [
+            "https://source.test/archive.zip",
+            "https://source.test/alternative.pdf"
+          ],
+          "text_sha256": null,
+          "selection_sha256_ignoring_policy_version": "230f216ddaee901bb377bba6403c68c365cd20c9b9ae734432cdc496b62bb114",
+          "trace_result": "ambiguous",
+          "trace_reason": "version_conflict",
+          "dispositions": [
+            {
+              "phase": "version_comparison",
+              "index": 0,
+              "outcome": "policy_excluded",
+              "reason": "version_conflict",
+              "observed_sha256": "6f83098b8f1ab15b75756f41bff5869d7081ad095d03697ee833a714030d4a1c"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 1,
+              "outcome": "policy_excluded",
+              "reason": "version_conflict",
+              "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+            }
+          ],
+          "part_roles": [
+            "bill",
+            "normative_annex",
+            "bill"
+          ],
+          "page_failure_parts": 0,
+          "injected_pages": 0,
+          "archive_sha256": "6f83098b8f1ab15b75756f41bff5869d7081ad095d03697ee833a714030d4a1c",
+          "selected_members": [
+            [
+              "a.zip",
+              "projekt.pdf"
+            ],
+            [
+              "a.zip",
+              "zalacznik do ustawy.pdf"
+            ],
+            []
+          ]
+        },
+        "no_annexes": {
+          "state": "unverified",
+          "calls": [
+            "https://source.test/archive.zip",
+            "https://source.test/alternative.pdf"
+          ],
+          "text_sha256": "9dd7524c574121ac8980c33595bb1ec129c1babcdb7e566b57ad701eaeede444",
+          "selection_sha256_ignoring_policy_version": "3aefb758450b785478770710b4ecaf3d6d0bf85e6360ac32a4b2aa74864c0de9",
+          "trace_result": "selected",
+          "trace_reason": "version_choice",
+          "dispositions": [
+            {
+              "phase": "version_comparison",
+              "index": 0,
+              "outcome": "selected",
+              "reason": "version_choice",
+              "observed_sha256": "d466778ee9c148b44b0deaa2167e23d7e727e30afc0393c44b801e0650cf28f3"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 1,
+              "outcome": "policy_excluded",
+              "reason": "version_preference",
+              "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+            }
+          ],
+          "part_roles": [
+            "bill"
+          ],
+          "page_failure_parts": 0,
+          "injected_pages": 0,
+          "archive_sha256": "d466778ee9c148b44b0deaa2167e23d7e727e30afc0393c44b801e0650cf28f3",
+          "selected_members": [
+            [
+              "a.zip",
+              "projekt.pdf"
+            ]
+          ]
+        }
+      }
+    },
+    "archive_second": {
+      "changed_cases": [
+        "one_missing_annex"
+      ],
+      "baseline": {
+        "one_missing_annex": {
+          "state": "unverified",
+          "calls": [
+            "https://source.test/alternative.pdf",
+            "https://source.test/archive.zip"
+          ],
+          "text_sha256": "9dd7524c574121ac8980c33595bb1ec129c1babcdb7e566b57ad701eaeede444",
+          "selection_sha256_ignoring_policy_version": "ac38b28aa367e55c0c2f1c0b86bacadf1d1b1d505ab6dc4d866d1bc397847c90",
+          "trace_result": "selected",
+          "trace_reason": "version_choice",
+          "dispositions": [
+            {
+              "phase": "version_comparison",
+              "index": 0,
+              "outcome": "selected",
+              "reason": "version_choice",
+              "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 1,
+              "outcome": "unclassified",
+              "reason": "ambiguous_extraction",
+              "observed_sha256": "e4acbe6687e1e8029ea6fc53f9074de21b8402b57db19c25b3b9f4a4c9299161"
+            }
+          ],
+          "part_roles": [
+            "bill"
+          ],
+          "page_failure_parts": 0,
+          "injected_pages": 0,
+          "archive_sha256": "e4acbe6687e1e8029ea6fc53f9074de21b8402b57db19c25b3b9f4a4c9299161",
+          "selected_members": [
+            []
+          ]
+        },
+        "equal_annexes": {
+          "state": "ambiguous",
+          "calls": [
+            "https://source.test/alternative.pdf",
+            "https://source.test/archive.zip"
+          ],
+          "text_sha256": null,
+          "selection_sha256_ignoring_policy_version": "df0c379e7e20a5a2f1be68739b3cd3539e2f459bb6f24f0e13a69291fdf52586",
+          "trace_result": "ambiguous",
+          "trace_reason": "version_conflict",
+          "dispositions": [
+            {
+              "phase": "version_comparison",
+              "index": 0,
+              "outcome": "policy_excluded",
+              "reason": "version_conflict",
+              "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 1,
+              "outcome": "policy_excluded",
+              "reason": "version_conflict",
+              "observed_sha256": "6f83098b8f1ab15b75756f41bff5869d7081ad095d03697ee833a714030d4a1c"
+            }
+          ],
+          "part_roles": [
+            "bill",
+            "bill",
+            "normative_annex"
+          ],
+          "page_failure_parts": 0,
+          "injected_pages": 0,
+          "archive_sha256": "6f83098b8f1ab15b75756f41bff5869d7081ad095d03697ee833a714030d4a1c",
+          "selected_members": [
+            [],
+            [
+              "a.zip",
+              "projekt.pdf"
+            ],
+            [
+              "a.zip",
+              "zalacznik do ustawy.pdf"
+            ]
+          ]
+        },
+        "no_annexes": {
+          "state": "unverified",
+          "calls": [
+            "https://source.test/alternative.pdf",
+            "https://source.test/archive.zip"
+          ],
+          "text_sha256": "9dd7524c574121ac8980c33595bb1ec129c1babcdb7e566b57ad701eaeede444",
+          "selection_sha256_ignoring_policy_version": "1e3811dab7ebb73f7602af0e7e19dff8a5bd8329172199a198e07b906b1ffe0a",
+          "trace_result": "selected",
+          "trace_reason": "version_choice",
+          "dispositions": [
+            {
+              "phase": "version_comparison",
+              "index": 0,
+              "outcome": "selected",
+              "reason": "version_choice",
+              "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 1,
+              "outcome": "policy_excluded",
+              "reason": "version_preference",
+              "observed_sha256": "d466778ee9c148b44b0deaa2167e23d7e727e30afc0393c44b801e0650cf28f3"
+            }
+          ],
+          "part_roles": [
+            "bill"
+          ],
+          "page_failure_parts": 0,
+          "injected_pages": 0,
+          "archive_sha256": "d466778ee9c148b44b0deaa2167e23d7e727e30afc0393c44b801e0650cf28f3",
+          "selected_members": [
+            []
+          ]
+        }
+      },
+      "candidate": {
+        "one_missing_annex": {
+          "state": "ambiguous",
+          "calls": [
+            "https://source.test/alternative.pdf",
+            "https://source.test/archive.zip"
+          ],
+          "text_sha256": null,
+          "selection_sha256_ignoring_policy_version": "a4122d309935d9c2fe1344d0bec0aebfad333be76b31684da70d863b1a38e14e",
+          "trace_result": "ambiguous",
+          "trace_reason": "version_conflict",
+          "dispositions": [
+            {
+              "phase": "version_comparison",
+              "index": 0,
+              "outcome": "policy_excluded",
+              "reason": "version_conflict",
+              "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 1,
+              "outcome": "policy_excluded",
+              "reason": "version_conflict",
+              "observed_sha256": "e4acbe6687e1e8029ea6fc53f9074de21b8402b57db19c25b3b9f4a4c9299161"
+            }
+          ],
+          "part_roles": [
+            "bill",
+            "bill",
+            "normative_annex"
+          ],
+          "page_failure_parts": 0,
+          "injected_pages": 0,
+          "archive_sha256": "e4acbe6687e1e8029ea6fc53f9074de21b8402b57db19c25b3b9f4a4c9299161",
+          "selected_members": [
+            [
+              "a.zip",
+              "projekt.pdf"
+            ],
+            [
+              "b.zip",
+              "projekt.pdf"
+            ],
+            [
+              "a.zip",
+              "zalacznik do ustawy.pdf"
+            ]
+          ]
+        },
+        "equal_annexes": {
+          "state": "ambiguous",
+          "calls": [
+            "https://source.test/alternative.pdf",
+            "https://source.test/archive.zip"
+          ],
+          "text_sha256": null,
+          "selection_sha256_ignoring_policy_version": "df0c379e7e20a5a2f1be68739b3cd3539e2f459bb6f24f0e13a69291fdf52586",
+          "trace_result": "ambiguous",
+          "trace_reason": "version_conflict",
+          "dispositions": [
+            {
+              "phase": "version_comparison",
+              "index": 0,
+              "outcome": "policy_excluded",
+              "reason": "version_conflict",
+              "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 1,
+              "outcome": "policy_excluded",
+              "reason": "version_conflict",
+              "observed_sha256": "6f83098b8f1ab15b75756f41bff5869d7081ad095d03697ee833a714030d4a1c"
+            }
+          ],
+          "part_roles": [
+            "bill",
+            "bill",
+            "normative_annex"
+          ],
+          "page_failure_parts": 0,
+          "injected_pages": 0,
+          "archive_sha256": "6f83098b8f1ab15b75756f41bff5869d7081ad095d03697ee833a714030d4a1c",
+          "selected_members": [
+            [],
+            [
+              "a.zip",
+              "projekt.pdf"
+            ],
+            [
+              "a.zip",
+              "zalacznik do ustawy.pdf"
+            ]
+          ]
+        },
+        "no_annexes": {
+          "state": "unverified",
+          "calls": [
+            "https://source.test/alternative.pdf",
+            "https://source.test/archive.zip"
+          ],
+          "text_sha256": "9dd7524c574121ac8980c33595bb1ec129c1babcdb7e566b57ad701eaeede444",
+          "selection_sha256_ignoring_policy_version": "1e3811dab7ebb73f7602af0e7e19dff8a5bd8329172199a198e07b906b1ffe0a",
+          "trace_result": "selected",
+          "trace_reason": "version_choice",
+          "dispositions": [
+            {
+              "phase": "version_comparison",
+              "index": 0,
+              "outcome": "selected",
+              "reason": "version_choice",
+              "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 1,
+              "outcome": "policy_excluded",
+              "reason": "version_preference",
+              "observed_sha256": "d466778ee9c148b44b0deaa2167e23d7e727e30afc0393c44b801e0650cf28f3"
+            }
+          ],
+          "part_roles": [
+            "bill"
+          ],
+          "page_failure_parts": 0,
+          "injected_pages": 0,
+          "archive_sha256": "d466778ee9c148b44b0deaa2167e23d7e727e30afc0393c44b801e0650cf28f3",
+          "selected_members": [
+            []
+          ]
+        }
+      }
+    }
+  },
+  "unchanged_native_archives_excluding_policy_label": 16,
+  "native_comparison_sha256": "e813562d9d8caba0d5d3d60f613d61d07eee4b626fa3a0a7ef2504f540564feb",
+  "previous_reader_restored_both_conflict_dumps_byte_identically": true
+}

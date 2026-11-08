@@ -59,6 +59,36 @@ def test_ordered_fallback_preserves_a_proven_draft_conflict(conflict: bool) -> N
     assert (rejected is None) == conflict
 
 
+@pytest.mark.parametrize("archive_first", [True, False])
+def test_version_comparison_preserves_internal_archive_conflict(
+    monkeypatch: pytest.MonkeyPatch, archive_first: bool
+) -> None:
+    archive, alternative = ROOT + "archive.zip", ROOT + "alternative.pdf"
+    annex = DocumentPart(role="normative_annex", members=("inner.zip", "annex.pdf"))
+    selection = DocumentSelection(
+        state="ambiguous", limitations=("draft_version_conflict",), parts=(annex,)
+    )
+    loader, calls = snapshots(
+        monkeypatch,
+        {archive: LoadedFile(None, sha256="a" * 64, selection=selection), alternative: file(law())},
+    )
+    first, second = (archive, alternative) if archive_first else (alternative, archive)
+    requested = TextDocument(
+        url=first,
+        kind="rcl",
+        compare_versions=True,
+        alternatives=(TextDocument(url=second, kind="rcl"),),
+    )
+
+    resolved, loaded = loader.select_document(requested)
+
+    assert resolved == requested and calls == [first, second]
+    assert loaded.selection.state == "ambiguous" and loaded.text is None
+    assert loaded.selection.parts == (annex,)
+    trace = loaded.candidate_trace
+    assert trace is not None and trace.result == "ambiguous" and trace.version_decision is None
+
+
 def values() -> dict[str, LoadedFile | Exception]:
     return {
         ROOT + "main": file(law()),

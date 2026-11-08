@@ -1494,6 +1494,7 @@ class TextLoader:
         candidate_indices: list[int] = []
         incomplete: dict[int, DocumentSelection] = {}
         unpack_blocked: set[int] = set()
+        conflicts: dict[int, DocumentSelection] = {}
         observed: dict[int, tuple[DocumentPart, ...]] = {}
         decisions: list[CandidateDisposition] = []
         for index, candidate in enumerate((document, *document.alternatives)):
@@ -1530,7 +1531,12 @@ class TextLoader:
                 candidate.url, file.text, file.selection.parts, file.selection.observed_parts
             )
             is_bill = item.is_bill
-            if index in incomplete or is_bill:
+            if (
+                file.selection.state == "ambiguous"
+                and "draft_version_conflict" in file.selection.limitations
+            ):
+                conflicts[index] = file.selection
+            if index in incomplete or index in conflicts or is_bill:
                 observed[index] = item.observed_parts or item.parts
             if is_bill:
                 candidates.append((candidate, file))
@@ -1565,6 +1571,23 @@ class TextLoader:
                         observed_sha256=file.sha256,
                     )
                 )
+        if conflicts:
+            dispositions.extend(
+                item.model_copy(update={"outcome": "policy_excluded", "reason": "version_conflict"})
+                if item.index in conflicts or item.index in candidate_indices
+                else item
+                for item in decisions
+            )
+            selection = DocumentSelection(
+                state="ambiguous",
+                limitations=("draft_version_conflict",),
+                parts=tuple(part for conflict in conflicts.values() for part in conflict.parts),
+                observed_parts=tuple(part for parts in observed.values() for part in parts),
+                rejected=tuple(
+                    reason for conflict in conflicts.values() for reason in conflict.rejected
+                ),
+            )
+            return document, LoadedFile(None, selection=selection), "ambiguous", "version_conflict"
         if incomplete and len(incomplete.keys() | set(candidate_indices)) > 1:
             dispositions.extend(
                 item.model_copy(
