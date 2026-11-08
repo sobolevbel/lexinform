@@ -1,0 +1,446 @@
+{
+  "archive_sha256s": {
+    "438407": "bd6f91bda54885653fda2d506d6dbb1d63bca6c79d81608ad8e1c39bc69baa66",
+    "580789": "0e08e28c04b62b8326e3dc7aa0ec70d1682f034a669905d054c1aa6391f3b62d",
+    "581610": "8ff54ea2261bc6c8926276c26d0d120518b49225dbf1f27ee5289867ed0746be",
+    "605416": "554fb89c8c26b67a24a8f79849e72e440552b876c893e83890087e688fe0831a",
+    "618478": "244d945f9b633bae474011fb2921cd2615fc534b12e6d4af5cd37db8ab1f9c2a",
+    "636802": "73de9ea0659e6cf60e347d58ca1bb627ae8d044833d6b088f01e91e9825e0bba",
+    "642032": "7113f3b86425ff36460606ff499571540f6b2a2b79a4f2efb8a76430c3f49dc3",
+    "650834": "90a28eff6a107f030d43cd4cdbb3421fca9fc1c9821b6edfde9aa6141d01a7bb",
+    "651743": "4ae72259304dec97f26a7586b61e3b67d10a8fe11ad9803a631fb652755c231b",
+    "662379": "eb0c09584449a49d0cc5b2d5fbbb4510d20201744a9cd976c051fd7bf56a1b93",
+    "666361": "76b9e8cbe7bf2c91ab5d588ffa207dbaa538b4d46e3c47cf62ee6fdb98e0ef04",
+    "666362": "76b9e8cbe7bf2c91ab5d588ffa207dbaa538b4d46e3c47cf62ee6fdb98e0ef04",
+    "684485": "8f1dd7f69eaf8741cc2646fea2a6b4f20d642ed205b2eab605bd3edce79375ab",
+    "684631": "b3f9c12b007c4da1677482831cdcdca942a3774a6f2afd4f899eaffa7a2f1b95",
+    "686539": "fb472cc79e62dc17400d578bd029a99f2863e0ae93ef0e14f5da4895feb18ef0",
+    "692249": "de773a45c728e502732ba6c6625bf2ad4ba500f1ba667d787313bffae363ba7c",
+    "692630": "f2b7e44c066780bf3e97685c021bd631f0fffe244f0a04682d9ce1bc517c7d94",
+    "693037": "c5f26b0babdb6980b3937a51f0ba02d13f779b546cd288d16e1ee5074f1864f4",
+    "693064": "3875dfaa967437d4b0bbad0beb7bf7dadc1b2b8f7b86459d846e935fdc528fb6",
+    "694393": "2115fe2b9796cf5b0d21e157de1a7f9b11d5932749a9a978c05cbff691a902c9",
+    "699840": "b5f05a39de7d4fec34a853c84d80c5821c118d584b77098b821053ee6076be44",
+    "701779": "ed6b9a51588af8348d724ade5a4e49349d968d9c64ed51ef1ba43e31a15b6ffe",
+    "703205": "32dbd63c1a49d3210e75f27a5bca5798f60fab4c673db0808aec32279446d646",
+    "705811": "e2140e302616634132aaafe7690975230af8986db80ca9924506e69ed08046b9",
+    "705812": "62c87ed1545a6fe0dd6bf529495bdedea000689084c2258d90a8516dcdca6295",
+    "707052": "45e53fc5c3ba38073022d3abf2c3e1d7ae37ac0b41e74c37e9a02ed5764f71ba",
+    "711612": "9d7793451ff68fb80a849a5d66a94772f71382c539a1f962a9b620ce0a43941b",
+    "712281": "2e416d667f00e0df0bff3f8b9521a3653825d193114d70088cacfe53654953d5",
+    "712887": "e336699ff1ce8414bb04eef299e128719e441ea8d0bdd489c184a8cce24b33fa",
+    "714569": "5f96094e507233f3b88aecb007487f53337ab061e3ce6043c36907d31816a120",
+    "714973": "3212474a7f350b012d5e5474066cc8eb03f29cb8b4545a53bcd368ab7adef273",
+    "714974": "cee7a372f2f0d7a016f6c8c82c59139985cbcf6237b9d9b1a532bb8f85ba6964",
+    "715915": "ae020285f1718e5f21ab93de835136b5c38c1712bcc029c0d434437598c321ba",
+    "716022": "8e605ee701789fbb78e2fff2bbb06b97f04fd3b5a08d681775cc4aa2608ac1a4",
+    "721360": "83d09f0a5ec86a4e75f12e34f9963f4537bcc96a376770783aedffdae9ee6e8e",
+    "722744": "a8fc8cd40a82f1d69f6927edb4f8f0f259fb798425992c14fc8b9c6465536670",
+    "723035": "518e7154537e402f15db19e7a0748e57909736638207ab97ed3c5caafd2f41da",
+    "723960": "4ba906b587bc8efa58997c61d62bb1ce38ddd7520aa4992c5545442fccb5490e",
+    "724420": "c4b2686b8693bcbdf1e0ddfed3a93c4af89890fbda2a6a2c4372a2d8298b99e6",
+    "725210": "ac40a7c332bd193c3d491b24052435a6314139f8d25a5243a69a0fd817f8785e",
+    "725433": "f75833d0476582f5c736d299626136286543c748c98a3e12cad5cfae27052684",
+    "725441": "188240f719b095e46aef5d80660371a768bf7dec16f84777c9edc5ce169f0fb7",
+    "726088": "916595773202d10be00d7e5f3debf6ff2641e1e04781eb816f055c1a33b8c249",
+    "726756": "69d4299171632bf87fe529d1daa51880ad4b8ac3b4dc072712499f93a19451da",
+    "727375": "fe322aa6b293d501cd3104deed042ac3c1eff73b62610b1b5686e42a2beb9a49",
+    "727617": "4f0c2031d0c15c671f0cbd7c72d27a41922ddca24a800700c0ea72d12d99f2bb",
+    "727764": "53c16e8aaf9871b9dac16dc13945442cb58814c74f4ec4461a23963d639fce28",
+    "727951": "2cfea628c9047b66e6f80e4e649b54d7ea38fa0ad49413fb01466cc29f02b9cd",
+    "727952": "1fb4aba0e2eaab8bd90669d87b9a5060fe21b3eea422782b1695f4fa4fea3d75",
+    "728859": "abea6b695ed059c1824c82a8f915062e9eeba93ad6389246555d2d6be30a199a",
+    "729076": "c730030b4a14b905663173c8403e4cf13edaada3ce7054d632e075b7d363b352",
+    "729412": "8e8b6beae9ff4b28092184a094cbefa8527e573a6723dc4c97c78adfb2b4fd04",
+    "730661": "4725af91aba4607fd0bef43e82209bd083a59aebe56c54eee67f9648691a7f44",
+    "734642": "352c8287b48f725bb16e87b66f8097b72674b27c570f0112c8644adad87a99fc",
+    "735387": "9288bf4dc8a89bb750935c71e7b108c79ec182ddeec83c812482e009a20dbe88",
+    "736009": "0b4cb30ba5db9787d10ad1db9cb374e1810789582a8522f3af5d8638d97d2977",
+    "740748": "7b5e6779290f8586f03618d7b1675ea5a51100ebef31fee35e1628ca692aaca3",
+    "743067": "cdefbf7f0e7309c0ac941d6cad32d4512a3b9fdc7266ad0e66c1a21c57d7d96e",
+    "744253": "6736b24a8f55fdbbe62eb51da02b3c0dd588bdd0af119129956a72a62dd1b1f9",
+    "744390": "0f4912b92111412900961634fe793b48f4118fcf6b22821a2228b86fc5c9cfc5",
+    "745801": "110dcc7e85a6b3b510e300b9e523d19a962fc5dbb9daa39ee74e11c408d07bd0",
+    "747256": "4aac32ce33048b459fec744c56ebd021e1721b9b168dcc9aeb4ba49a7f5aeea7",
+    "747511": "ff037f52a970028a00e19ae0ad2f71e3c6703025862060663828054d9b68b79c",
+    "749514": "18e56526f094b41cf14a74d3584dea3e7bb0ec974076305695ee26ef662fd1ec",
+    "750358": "9636a7913afb2b8e2f439695b997718a719b851e0ac0d56843147ebc9960f728",
+    "750636": "1743c7b9e7d218ceef078497f22bdd06c60d0edf5bc86d3e87a5682eee940392",
+    "753689": "46fde7459959dbace839d69ac0e10d02aa8cef84525950d4fb94976aa15fcbec",
+    "754701": "fc0a0e58ed4fd48ade61ae83a3330de4261fe792672a602c7f8439b4e637dd6e",
+    "758464": "d3dafd029f466c32ed4da19701bf5a7f44b18b2e2ad61caca4f108d3a2d66d60",
+    "759150": "8b69d17d10c3d31d2993803a73214dcfe641ead3170fcdff7105380e299207e6",
+    "759723": "7292a8381be5c1a5185ca3d8b106f396c96b5cbea63da5837b391f4afcfe6a92",
+    "759818": "d1768205346044171148fb428d06c6d449769805df23b6e6c847dc69f9520d76",
+    "759965": "3e1e52fef1eb3f3f6a78209e436dd9094dde2c1888a5b4ae2173725937afbfb3",
+    "761165": "0878ee97a0776babe5864c10b74c058faae0c27a1889dda12196309f3cc8b7af",
+    "761333": "c4f3971ecc787ee5324b7c19a7dc1ddce7f1c15556cf77861b130bd43abadfae",
+    "762601": "820594d835a4aed267a78501721c09653e8758bc388a658f203fc2287f166018",
+    "763172": "e445a4e63823d6ec81b433e884e10b850ecf4b9f3eae134d9590e17c50d4ea12",
+    "765245": "c4346728e26310d6abea5c8b2f098486c5c7af3457d69a96b7d5aca0a2190b6b",
+    "769903": "c48fe55ff3ae324e2d3b806969f76b4209eab0cfa07dcf86afb527942f5e0d66",
+    "771933": "3f453c5f3723afd3dfbf9e868b10384d646f26dfe9b1d52b24802bec7f6cb983",
+    "772734": "39032c010a73aab8c4da84e05fbab23e251b6f8b51148a04222d7273f4823aa8",
+    "775942": "118ea71124341c24df28e766ba432a646b890ce6cbce90b7eb596c113fcebb05",
+    "781713": "566b6e866b12c8c84ac2f82235c31a9ec21c1506cb4253a06a3f32416a449bbc",
+    "784882": "68e4b583965fe4f09824d09e9b489ff47c849670aa10e09279604b068e220b94",
+    "787041": "a687e15b0b45bbf945d35a4fbc9a324ee218c03e0f6d2b42f8307092b8b06d36",
+    "789848": "df32b46f3725daffcfc286a1c2a20d4aebebe566b7974952ed1e2f050a9bfed8",
+    "791156": "244648bbae0ab5c7d6312cc61d0bd56fc62deebc3241adfb2bd319006b800255",
+    "793832": "4ebbe21a674173b59aef825279b837bfb98bcfa4cee61af5779671e469597ac1",
+    "794092": "9e1844bfae0a18a25b8018adb6d690bbef1fec0a9bc48314add77e31f4e349bb",
+    "796458": "c1dcfb4b4f72f6f232e7c5cf5ef10c99d9efc331e4d02233d01b96499a04a15e"
+  },
+  "as_of": "2026-10-17T00:00:00+00:00",
+  "controls": {
+    "666361": {
+      "catalog": [
+        [
+          "12382350",
+          "autopoprawka do projektu ustawy - Prawo komunikacji elektronicznej (UC7), RM-0610-13-24.zip"
+        ]
+      ],
+      "members": [
+        {
+          "amendment_heading": true,
+          "article_formula": true,
+          "chars": 4482,
+          "kind": "unknown",
+          "member_named_amendment": false,
+          "path": [
+            "RM - projekt autopoprawki do PKE i wPKE 7.05.2024 r..docx"
+          ],
+          "sha256": "85773db6c2179f3c39fe63454c62d6b0b081ee6d44ad15b3123816f6f2b59937",
+          "text_sha256": "dda5fa07675a5d39eac4655cc4afc9d1923b066496d54f9c8c40e0bc85de3feb",
+          "transmittal": false
+        },
+        {
+          "amendment_heading": false,
+          "article_formula": false,
+          "chars": 672,
+          "kind": "unknown",
+          "member_named_amendment": false,
+          "path": [
+            "RM 3 - Pismo przekazujące autopoprawkę na RM 6.05.pdf"
+          ],
+          "sha256": "e3042dc567f37353fde97c4254ed71f632dbb78ddd88fa98fb47304c06889109",
+          "text_sha256": "04059ec921407abf8805a4f7fb84c5ee7d9adad98b0cad7cab3b8e4e8e54ed4c",
+          "transmittal": false
+        }
+      ],
+      "rejected": 0,
+      "related_stages": [
+        "12382350/12",
+        "12382350/14"
+      ],
+      "selection": "unverified",
+      "sha256": "76b9e8cbe7bf2c91ab5d588ffa207dbaa538b4d46e3c47cf62ee6fdb98e0ef04",
+      "status": "read",
+      "unreadable": 0
+    },
+    "666362": {
+      "catalog": [
+        [
+          "12382351",
+          "autopoprawka do projektu ustawy - Przepisy wprowadzające ustawę – Prawo komunikacji elektronicznej (UC8), RM-0610-14-24.zip"
+        ]
+      ],
+      "members": [
+        {
+          "amendment_heading": true,
+          "article_formula": true,
+          "chars": 4482,
+          "kind": "unknown",
+          "member_named_amendment": false,
+          "path": [
+            "RM - projekt autopoprawki do PKE i wPKE 7.05.2024 r..docx"
+          ],
+          "sha256": "85773db6c2179f3c39fe63454c62d6b0b081ee6d44ad15b3123816f6f2b59937",
+          "text_sha256": "dda5fa07675a5d39eac4655cc4afc9d1923b066496d54f9c8c40e0bc85de3feb",
+          "transmittal": false
+        },
+        {
+          "amendment_heading": false,
+          "article_formula": false,
+          "chars": 672,
+          "kind": "unknown",
+          "member_named_amendment": false,
+          "path": [
+            "RM 3 - Pismo przekazujące autopoprawkę na RM 6.05.pdf"
+          ],
+          "sha256": "e3042dc567f37353fde97c4254ed71f632dbb78ddd88fa98fb47304c06889109",
+          "text_sha256": "04059ec921407abf8805a4f7fb84c5ee7d9adad98b0cad7cab3b8e4e8e54ed4c",
+          "transmittal": false
+        }
+      ],
+      "rejected": 0,
+      "related_stages": [
+        "12382351/12",
+        "12382351/14"
+      ],
+      "selection": "unverified",
+      "sha256": "76b9e8cbe7bf2c91ab5d588ffa207dbaa538b4d46e3c47cf62ee6fdb98e0ef04",
+      "status": "read",
+      "unreadable": 0
+    },
+    "699840": {
+      "catalog": [
+        [
+          "12383101",
+          "autopoprawka ze stanowiskiem do uwag do projektu ustawy o zmianie ustawy o świadczeniu usług drogą elektroniczną oraz niektórych innych ustaw (UC21), KRM-0610-140-24.zip"
+        ]
+      ],
+      "members": [
+        {
+          "amendment_heading": false,
+          "article_formula": false,
+          "chars": 689,
+          "kind": "unknown",
+          "member_named_amendment": false,
+          "path": [
+            "Pismo do SSKRM ws tabeli uwag SKRM_UC21 08012025 ezd.pdf"
+          ],
+          "sha256": "6ea77d96a643882909a54cf4e803b4812396024f2e8f58d566814dc364b461ed",
+          "text_sha256": "60d232004ec89c4da7a164a58281a845f0700be3091d65dfcc467a7f69ab4152",
+          "transmittal": false
+        },
+        {
+          "amendment_heading": false,
+          "article_formula": false,
+          "chars": 75309,
+          "kind": "unknown",
+          "member_named_amendment": false,
+          "path": [
+            "Załącznik do pisma do SSKRM - tabela uwag SKRM_UC21 08012025 ezd.pdf"
+          ],
+          "sha256": "0fc53e5df6eef3954a547082ec4bc51156c39111eea657abed78bb69b390dd30",
+          "text_sha256": "77ea82773ffd17b9f80c5d51d7af270a752098599473c1bfa8f58f584f5aff0d",
+          "transmittal": false
+        }
+      ],
+      "rejected": 0,
+      "related_stages": [
+        "12383101/10",
+        "12383101/9"
+      ],
+      "selection": "unsupported",
+      "sha256": "b5f05a39de7d4fec34a853c84d80c5821c118d584b77098b821053ee6076be44",
+      "status": "read",
+      "unreadable": 0
+    },
+    "716022": {
+      "catalog": [
+        [
+          "12392400",
+          "autopoprawka do projektu ustawy o asystencji osobistej osób z niepełnosprawnościami (UD168), KRM-0610-54-25.zip"
+        ]
+      ],
+      "members": [
+        {
+          "amendment_heading": false,
+          "article_formula": true,
+          "chars": 12646,
+          "kind": "unknown",
+          "member_named_amendment": false,
+          "path": [
+            "1. Pismo.pdf"
+          ],
+          "sha256": "e7616d962f48e6482bc7453f93f3bb56153ad6a1c6c4c3a668622e91016fe445",
+          "text_sha256": "cb4be13b86077c952dd5973bc7b9f30ad77f5f81831855b09164c84afc85e1fe",
+          "transmittal": false
+        },
+        {
+          "amendment_heading": false,
+          "article_formula": false,
+          "chars": 58167,
+          "kind": "unknown",
+          "member_named_amendment": false,
+          "path": [
+            "2. Załącznik do pisma.pdf"
+          ],
+          "sha256": "72b7f0ddc4500baa7df893bfc3b41f611c2b0771ee8d1d15d00ac2a582155dc9",
+          "text_sha256": "b5b3f69aac82bc320f32c862464ea055fc1336cac26dadfafa6288957e3e10ef",
+          "transmittal": false
+        }
+      ],
+      "rejected": 0,
+      "related_stages": [
+        "12392400/10",
+        "12392400/9"
+      ],
+      "selection": "unsupported",
+      "sha256": "8e605ee701789fbb78e2fff2bbb06b97f04fd3b5a08d681775cc4aa2608ac1a4",
+      "status": "read",
+      "unreadable": 0
+    },
+    "727951": {
+      "catalog": [
+        [
+          "12386961",
+          "autopoprawka do projektu ustawy o zmianie ustawy o zarządzaniu kryzysowym oraz niektórych innych ustaw (UC47), KRM-0610-66-25 .zip"
+        ]
+      ],
+      "members": [
+        {
+          "amendment_heading": false,
+          "article_formula": false,
+          "chars": 1088,
+          "kind": "remarks_table",
+          "member_named_amendment": false,
+          "path": [
+            "Stanowisko RCB do uwag KOSR UC47 etap SKRM pismo przewodnie.docx"
+          ],
+          "sha256": "d2cb87bd5af5e24beaf2a40cf5c719f79c2964a792d5275078bd0946310b4a39",
+          "text_sha256": "4378071bd16954b2f5db10a57a831708478fda3d395d2df85e478645ddf3b51f",
+          "transmittal": false
+        },
+        {
+          "amendment_heading": false,
+          "article_formula": false,
+          "chars": 7226,
+          "kind": "remarks_table",
+          "member_named_amendment": false,
+          "path": [
+            "Stanowisko RCB do uwag KOSR UC47 etap SKRM tabela.docx"
+          ],
+          "sha256": "eca65ea7506d1f4fb0afcf959f026dd057f2d21f5a708ad87be50f05aa6b1c0b",
+          "text_sha256": "0e2e676a48cb42ee736966873edf3b5c2a26bf9b95d36fea831461cbc02cc861",
+          "transmittal": false
+        }
+      ],
+      "rejected": 0,
+      "related_stages": [
+        "12386961/10",
+        "12386961/9"
+      ],
+      "selection": "unsupported",
+      "sha256": "2cfea628c9047b66e6f80e4e649b54d7ea38fa0ad49413fb01466cc29f02b9cd",
+      "status": "read",
+      "unreadable": 0
+    },
+    "727952": {
+      "catalog": [
+        [
+          "12386961",
+          "autopoprawka II do projektu ustawy o zmianie ustawy o zarządzaniu kryzysowym oraz niektórych innych ustaw (UC47), KRM-0610-66-25.zip"
+        ]
+      ],
+      "members": [
+        {
+          "amendment_heading": false,
+          "article_formula": false,
+          "chars": 1034,
+          "kind": "unknown",
+          "member_named_amendment": true,
+          "path": [
+            "Ustawa UC47 autopoprawka etap SKRM pismo przewodnie.docx"
+          ],
+          "sha256": "59e5489fd678381e158197c680376d17839ca7d695569fc0c2b94570b4701a21",
+          "text_sha256": "0813f13049c8b71405c674c1a77965132f679e0eac1ee46a07ddd778793f4687",
+          "transmittal": true
+        },
+        {
+          "amendment_heading": true,
+          "article_formula": false,
+          "chars": 5960,
+          "kind": "unknown",
+          "member_named_amendment": true,
+          "path": [
+            "Ustawa UC47 autopoprawka etap SKRM załącznik.docx"
+          ],
+          "sha256": "e36f03beb2251252fa4e54138138767431eaab18e572dae72bd02978430a0da2",
+          "text_sha256": "0af4c30b5ba9049dff1d47c0cfeec7044b4c1a45558fd9983f3e01457240928e",
+          "transmittal": false
+        }
+      ],
+      "rejected": 0,
+      "related_stages": [
+        "12386961/10",
+        "12386961/9"
+      ],
+      "selection": "unsupported",
+      "sha256": "1fb4aba0e2eaab8bd90669d87b9a5060fe21b3eea422782b1695f4fa4fea3d75",
+      "status": "read",
+      "unreadable": 0
+    },
+    "744253": {
+      "catalog": [
+        [
+          "12396201",
+          "autopoprawka do projektu ustawy o zmianie ustawy – Ordynacja podatkowa oraz niektórych innych ustaw (UD196), KRM-0610-208-25.zip"
+        ]
+      ],
+      "members": [
+        {
+          "amendment_heading": true,
+          "article_formula": false,
+          "chars": 1116,
+          "kind": "unknown",
+          "member_named_amendment": false,
+          "path": [
+            "MF - pismo ws autopoprawki (8787422).pdf"
+          ],
+          "sha256": "96e985f586686cb623b4fb816ac170b14cb82a850797ab6a74390a7957c9d5ac",
+          "text_sha256": "26a6285fab848d1339ad9bfdebbabdc9116bf42165e2fdab0297f753a804232b",
+          "transmittal": false
+        },
+        {
+          "amendment_heading": true,
+          "article_formula": true,
+          "chars": 1891,
+          "kind": "justification",
+          "member_named_amendment": true,
+          "path": [
+            "autopoprawka UD196 (8787423).docm"
+          ],
+          "sha256": "844783212adc8202b2228bb8256676eba891a01ce9accab61f6e7fee98d4ee93",
+          "text_sha256": "de26e263d15665d35eb817d1dd23e3da389a5cb2e360238794a97141dce9107c",
+          "transmittal": false
+        }
+      ],
+      "rejected": 0,
+      "related_stages": [
+        "12396201/10",
+        "12396201/9"
+      ],
+      "selection": "unsupported",
+      "sha256": "6736b24a8f55fdbbe62eb51da02b3c0dd588bdd0af119129956a72a62dd1b1f9",
+      "status": "read",
+      "unreadable": 0
+    }
+  },
+  "counts": {
+    "archives": 90,
+    "members": 225,
+    "projects": 825,
+    "related_stages": 142,
+    "stages": 4276
+  },
+  "full_report_sha256": "357ba4f39429562eaf0f4f25efb0c1c76b0aa36b015e6be324fd68c56e57063e",
+  "heading_and_article_formula": {
+    "unsupported": [
+      "438407",
+      "581610",
+      "642032",
+      "651743",
+      "684485",
+      "692249",
+      "692630",
+      "694393",
+      "721360",
+      "736009",
+      "744253",
+      "791156"
+    ],
+    "unverified": [
+      "662379",
+      "666361",
+      "666362"
+    ]
+  },
+  "producer_source_sha256": "49752dbd1ad19491ed7c5d5b327f2bc26642ce9cbd490e1c464b83a0f55a3ff7",
+  "selection_counts": {
+    "unsupported": 49,
+    "unverified": 41
+  }
+}

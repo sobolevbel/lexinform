@@ -472,6 +472,15 @@ paths and required run IDs. Historical snapshots and download resume keys are pr
 
 ## RCL corpus health and repair queue
 
+To inventory the members of ZIPs declared as self-amendments in the saved RCL stages:
+
+```sh
+uv run --offline --frozen python -m tools.audit_rcl_amendment_archives CORPUS NEW_REPORT.json
+```
+
+The report records catalog and candidate references, input hashes, extraction outcomes and
+mechanical text signals. It does not store extracted bodies or assign legal roles.
+
 ```bash
 mkdir -p out/corpus
 uv run --offline --frozen python -m tools.corpus_health \
