@@ -1,0 +1,30 @@
+{
+  "state_commit": "7598f545010b8a9a33dd13c35d0487c7396fcd8a",
+  "state_dump_sha256": "a9b23fd06114bd44b8e2d228457f91763b9d485f05361a80e15a527544e9c17d",
+  "schema": 73,
+  "plan_sha256": "042231efd534ec752d137db5f6e8b1fedf7f44ce3462abacbcff5ed45939a4b8",
+  "surveyed_columns": 817,
+  "modern_occurrences": 46,
+  "replacement_rows": 284,
+  "shared_analysis_rows": 135,
+  "repeat_apply_unchanged": true,
+  "restore_unchanged": true,
+  "result": {
+    "applied": true,
+    "manifest_sha256": "0ded82bc23c3d7cf31255db72ab330d6ed356407f991cdadc261e57bdfea4719",
+    "baseline_sql_bytes": 27191071,
+    "baseline_gzip_bytes": 5420411,
+    "compact_sql_bytes": 27790202,
+    "compact_gzip_bytes": 5554364
+  },
+  "content_parity": {
+    "exact_json_projections": {
+      "analysis_memo": 105,
+      "bills": 172,
+      "status_changes": 7
+    },
+    "exact_values": 336,
+    "exact_occurrences": 445,
+    "unknown_purpose_occurrences": 255
+  }
+}
