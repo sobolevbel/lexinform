@@ -296,19 +296,23 @@ def _select_parts(
     confirmed = [peers[index] for index in peer_set.bill_indices()]
     comparison_peers = confirmed or [(main_index, main)]
 
+    def archive_parent(
+        members: tuple[str, ...], ordinals: tuple[int, ...]
+    ) -> tuple[tuple[int, ...], tuple[str, ...]]:
+        return ordinals[:-1] if part_archive_ordinals else (), members[:-1]
+
     def comparison_family(
         members: tuple[str, ...], ordinals: tuple[int, ...]
     ) -> tuple[tuple[int, ...], tuple[str, ...], str]:
-        return (
-            ordinals[:-1] if part_archive_ordinals else (),
-            members[:-1],
-            members[-1].rpartition("/")[0],
+        return (*archive_parent(members, ordinals), members[-1].rpartition("/")[0])
+
+    def part_parent(index: int, part: DocumentPart) -> tuple[tuple[int, ...], tuple[str, ...]]:
+        return archive_parent(
+            part.members, part_archive_ordinals[index] if part_archive_ordinals else ()
         )
 
     def part_family(index: int, part: DocumentPart) -> tuple[tuple[int, ...], tuple[str, ...], str]:
-        return comparison_family(
-            part.members, part_archive_ordinals[index] if part_archive_ordinals else ()
-        )
+        return (*part_parent(index, part), part.members[-1].rpartition("/")[0])
 
     comparison_families = {part_family(index, part) for index, part in comparison_peers}
     incomplete_peers = tuple(
@@ -391,13 +395,13 @@ def _select_parts(
                 selected_first=winner == 0,
                 date_filter=(dates[0], dates[1]) if dates is not None else None,
             )
-    family = main.members[:-1]
+    family = part_parent(main_index, main)
     for index, _ in (*annexes, *supporting):
         note(index, "policy_excluded", "family_exclusion")
     kept = [main]
     note(main_index, "selected", "selected_main")
     kept_annexes = sorted(
-        ((index, p) for index, p in annexes if p.members[:-1] == family),
+        ((index, p) for index, p in annexes if part_parent(index, p) == family),
         key=lambda item: normative_annex_key(item[1].text),
     )
     for index, p in kept_annexes:
@@ -405,7 +409,9 @@ def _select_parts(
         note(index, "selected", "selected_annex")
     for role in ("justification", "osr"):
         matches = [
-            (index, p) for index, p in supporting if p.role == role and p.members[:-1] == family
+            (index, p)
+            for index, p in supporting
+            if p.role == role and part_parent(index, p) == family
         ]
         for index, _ in matches:
             note(index, "policy_excluded", "rank_preference")

@@ -1,0 +1,152 @@
+{
+  "baseline_commit": "6656d0ef5c60c4577622525f93bcee6085917246",
+  "input_pins": {
+    "667159.pdf": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8",
+    "300517.pdf": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+  },
+  "changed_cases": [
+    "duplicate_parent"
+  ],
+  "baseline": {
+    "duplicate_parent": {
+      "state": "unverified",
+      "calls": [
+        "https://source.test/archive.zip"
+      ],
+      "text_sha256": "c8336b57d7ebc7c38eec698086422dced3fba83af75e74944fe15f04e148b7dc",
+      "selection_sha256_ignoring_policy_version": "f9a492cbbb030f971892093bce37a56cc39652d51e6128a5f88cf2ba72c94c38",
+      "part_roles": [
+        "bill",
+        "normative_annex"
+      ],
+      "page_failure_parts": 0,
+      "injected_pages": 0,
+      "archive_sha256": "aaf032e6be9a1a29632f3e7c165cd8eb210456eaa746a28377c220fa5bf1b4c5",
+      "selected_members": [
+        [
+          "inner.zip",
+          "projekt.pdf"
+        ],
+        [
+          "inner.zip",
+          "zalacznik do ustawy.pdf"
+        ]
+      ]
+    },
+    "different_parent": {
+      "state": "unverified",
+      "calls": [
+        "https://source.test/archive.zip"
+      ],
+      "text_sha256": "9dd7524c574121ac8980c33595bb1ec129c1babcdb7e566b57ad701eaeede444",
+      "selection_sha256_ignoring_policy_version": "5e05af45e229322fea9b18e99fabe61d592baaa07052048f90865948a6379f27",
+      "part_roles": [
+        "bill"
+      ],
+      "page_failure_parts": 0,
+      "injected_pages": 0,
+      "archive_sha256": "1634302a47ec0b57c83fd1796a633a7a4a5a7c7948c5a952f1e045c797029434",
+      "selected_members": [
+        [
+          "a.zip",
+          "projekt.pdf"
+        ]
+      ]
+    },
+    "same_parent": {
+      "state": "unverified",
+      "calls": [
+        "https://source.test/archive.zip"
+      ],
+      "text_sha256": "c8336b57d7ebc7c38eec698086422dced3fba83af75e74944fe15f04e148b7dc",
+      "selection_sha256_ignoring_policy_version": "7c66fddfd8dd89b169e96d2fc9bf30dc43655766bf50958563da42e13304ebd7",
+      "part_roles": [
+        "bill",
+        "normative_annex"
+      ],
+      "page_failure_parts": 0,
+      "injected_pages": 0,
+      "archive_sha256": "adff104f82217586fc8b01df99192baa419f052796f406fb1fc5a15784fb1605",
+      "selected_members": [
+        [
+          "inner.zip",
+          "projekt.pdf"
+        ],
+        [
+          "inner.zip",
+          "zalacznik do ustawy.pdf"
+        ]
+      ]
+    }
+  },
+  "candidate": {
+    "duplicate_parent": {
+      "state": "unverified",
+      "calls": [
+        "https://source.test/archive.zip"
+      ],
+      "text_sha256": "9dd7524c574121ac8980c33595bb1ec129c1babcdb7e566b57ad701eaeede444",
+      "selection_sha256_ignoring_policy_version": "d271073d709d02e175f16a3dbb47de8018899955138566b68061798a233e82b7",
+      "part_roles": [
+        "bill"
+      ],
+      "page_failure_parts": 0,
+      "injected_pages": 0,
+      "archive_sha256": "aaf032e6be9a1a29632f3e7c165cd8eb210456eaa746a28377c220fa5bf1b4c5",
+      "selected_members": [
+        [
+          "inner.zip",
+          "projekt.pdf"
+        ]
+      ]
+    },
+    "different_parent": {
+      "state": "unverified",
+      "calls": [
+        "https://source.test/archive.zip"
+      ],
+      "text_sha256": "9dd7524c574121ac8980c33595bb1ec129c1babcdb7e566b57ad701eaeede444",
+      "selection_sha256_ignoring_policy_version": "5e05af45e229322fea9b18e99fabe61d592baaa07052048f90865948a6379f27",
+      "part_roles": [
+        "bill"
+      ],
+      "page_failure_parts": 0,
+      "injected_pages": 0,
+      "archive_sha256": "1634302a47ec0b57c83fd1796a633a7a4a5a7c7948c5a952f1e045c797029434",
+      "selected_members": [
+        [
+          "a.zip",
+          "projekt.pdf"
+        ]
+      ]
+    },
+    "same_parent": {
+      "state": "unverified",
+      "calls": [
+        "https://source.test/archive.zip"
+      ],
+      "text_sha256": "c8336b57d7ebc7c38eec698086422dced3fba83af75e74944fe15f04e148b7dc",
+      "selection_sha256_ignoring_policy_version": "7c66fddfd8dd89b169e96d2fc9bf30dc43655766bf50958563da42e13304ebd7",
+      "part_roles": [
+        "bill",
+        "normative_annex"
+      ],
+      "page_failure_parts": 0,
+      "injected_pages": 0,
+      "archive_sha256": "adff104f82217586fc8b01df99192baa419f052796f406fb1fc5a15784fb1605",
+      "selected_members": [
+        [
+          "inner.zip",
+          "projekt.pdf"
+        ],
+        [
+          "inner.zip",
+          "zalacznik do ustawy.pdf"
+        ]
+      ]
+    }
+  },
+  "unchanged_native_archives_excluding_policy_label": 16,
+  "native_comparison_sha256": "e813562d9d8caba0d5d3d60f613d61d07eee4b626fa3a0a7ef2504f540564feb",
+  "previous_reader_restored_selection_dump_byte_identically": true
+}

@@ -37,6 +37,29 @@ WHOLE_ACT = PAGE_BREAK.join(
 COVERAGE_LOSS = "text page coverage differs from the PDF page count"
 
 
+def test_archive_composition_keeps_annexes_and_support_from_the_selected_occurrence() -> None:
+    physical = ExtractedParts(
+        input_sha256="a" * 64,
+        parts=(
+            DocumentPart(text=BILL, members=("inner.zip", "projekt.pdf")),
+            DocumentPart(text="Załącznik do ustawy\nWłasny", members=("inner.zip", "own.pdf")),
+            DocumentPart(text="UZASADNIENIE\nWłasne", members=("inner.zip", "uzasadnienie-z.pdf")),
+            DocumentPart(text="Załącznik do ustawy\nObcy", members=("inner.zip", "foreign.pdf")),
+            DocumentPart(text="UZASADNIENIE\nObce", members=("inner.zip", "uzasadnienie-a.pdf")),
+        ),
+        part_archive_ordinals=((0, 0), (0, 1), (0, 2), (1, 0), (1, 1)),
+    )
+
+    selected = select_document_parts(physical, max_part_chars=None)
+
+    assert [part.members[-1] for part in selected.selection.parts] == [
+        "projekt.pdf",
+        "own.pdf",
+        "uzasadnienie-z.pdf",
+    ]
+    assert len(selected.selection.observed_parts) == 5
+
+
 def test_selection_preserves_the_physical_snapshot_for_other_consumers() -> None:
     physical = ExtractedParts(
         input_sha256="a" * 64,
