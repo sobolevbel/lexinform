@@ -1,0 +1,55 @@
+{
+  "baseline_commit": "9142d108",
+  "valid_restores_and_doctor_reports_equal": [
+    {
+      "input": "off.sql",
+      "input_sha256": "f9ab4050e7ae6128319b4284a440307ad00275f6e7d94a20759dc5cb39f002c5",
+      "restored_sql_sha256": "371ed8c2ede603c474f5ab569e03510896ec015d67df2a0a54e3d135b6b041d6",
+      "doctor_sha256": "9dd486ff7d7cf1b0ee4aff5b786697fce0d6c60756133baf6ef149017060407b",
+      "histories": 2
+    },
+    {
+      "input": "on-draft-repeat.sql",
+      "input_sha256": "59c8d8f1d80cf65c7f401a7406a66aac1b5bbd75bca0f8f8b9bb803596ce81b3",
+      "restored_sql_sha256": "14af07e067811faa03ab470394cee78bd6877d62d9835266df481c74bb0594e1",
+      "doctor_sha256": "1a7f78e78875d016b16c2f1ad8dbaab9f3c91727bdda6ca9e9a63c557a4ef095",
+      "histories": 3
+    },
+    {
+      "input": "on-unknown.sql",
+      "input_sha256": "5760c2190ab2bc4bcf8af30bc683dab665b75173d92431ba693600e147974dc6",
+      "restored_sql_sha256": "4de7832c716ea388673ce312629a64cc1d12717775d209207ddbe158e61eb52d",
+      "doctor_sha256": "b9ac2189d72e0531b095e1b8f87bff0ca473419bee8060d327d2bfecaedb49ca",
+      "histories": 2
+    },
+    {
+      "input": "on.sql",
+      "input_sha256": "aa7c6de197b54ce42aa34e1c3ff223e2fedbde3a6b66ad4a1b97a426252a0947",
+      "restored_sql_sha256": "19166f0318479d57f11e8ed8fb2c74d8cd80fe96be55f59bbf0546caf987c0c1",
+      "doctor_sha256": "ef4f2238b2a3739d48b74ef56a8332fb99ae1d24183a6d76c45d4c8d66674b3c",
+      "histories": 2
+    },
+    {
+      "input": "shadow.sql",
+      "input_sha256": "0123b67e7955a4b4a64ccf9d98811f8d483c0942fd372cdead65973a7bc7267f",
+      "restored_sql_sha256": "e64fb63ed7729c20c6d63a8fc7adf812e82edab37311270cac1747f9b998e2ce",
+      "doctor_sha256": "31db2430115d73ca8005718261d101deebc90c7d41e3904c5e3d70834968ed7f",
+      "histories": 2
+    },
+    {
+      "input": "native-pruned.sql",
+      "input_sha256": "f0d82bf47597aebe93a9ce97f80d627c196407b95a5d0238a92b66d832c3fa17",
+      "restored_sql_sha256": "743c85b604600d214ea8c77024c9ebf72f50ac0875cc7aca40c737ef610f5bd2",
+      "doctor_sha256": "543625177acc28d153f8a1f98f5520c330672aa50f8628de7ee2a88f9fb8a19c",
+      "histories": 2
+    }
+  ],
+  "historical_state_reports_unchanged": true,
+  "fault_control": {
+    "input": "on-unknown.sql",
+    "mutation": "Confirm part 3 while part 2 remains unknown.",
+    "baseline_rejected": false,
+    "candidate_rejected": true,
+    "prior_state_preserved": true
+  }
+}

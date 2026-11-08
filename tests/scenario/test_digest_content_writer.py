@@ -1,3 +1,5 @@
+import sqlite3
+from contextlib import closing
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Literal
@@ -83,6 +85,19 @@ def test_digest_writer_normal_freeze_is_atomic_before_each_reader_effect(
     assert version is not None and len(calls) == 3
     history = inspect_content(world.repo, root)
     assert history is not None and history.current_id == version.content_id
+    if mode == "on":
+        sent = world.repo.dump()
+        with closing(sqlite3.connect(":memory:")) as db:
+            db.executescript(sent)
+            db.execute(
+                "UPDATE publications SET status='unknown',sent_at=NULL,message_id=NULL WHERE id=?",
+                (calls[0],),
+            )
+            corrupt = "\n".join([*db.iterdump(), sent.splitlines()[-1]])
+        with pytest.raises(ValueError, match="invalid_content_history") as failure:
+            world.repo.restore(corrupt)
+        assert str(failure.value.__cause__) == "digest_content_receipt_prefix"
+        assert world.repo.dump() == sent
     world.repo.prune_history(
         before=world.clock.now() + timedelta(days=180),
         memo_before=world.clock.now() + timedelta(days=180),

@@ -78,6 +78,7 @@ def verify_digest_content(
         raise ValueError("digest_content_root_mismatch")
     receipts: list[int] = []
     previous_created = version.recorded_at
+    sent_prefix = True
     for index, part in enumerate(resolved.parts):
         cursor = connection.execute("SELECT * FROM publications WHERE id=?", (part.publication_id,))
         row = cursor.fetchone()
@@ -106,6 +107,8 @@ def verify_digest_content(
             sent = datetime.fromisoformat(columns["sent_at"])
             if sent.utcoffset() is None:
                 raise ValueError("digest_content_receipt_time")
+            if not sent_prefix:
+                raise ValueError("digest_content_receipt_prefix")
             receipts.append(message)
         elif (
             status
@@ -120,6 +123,8 @@ def verify_digest_content(
             or columns["sent_at"] is not None
         ):
             raise ValueError("digest_content_uncertain_receipt")
+        else:
+            sent_prefix = False
         raw = columns["delivery_json"]
         if raw is not None:
             delivery = DeliveryPlan.model_validate(read_json(raw))
