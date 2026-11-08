@@ -1493,6 +1493,7 @@ class TextLoader:
         prepared: list[DocumentCandidate] = []
         candidate_indices: list[int] = []
         incomplete: dict[int, DocumentSelection] = {}
+        observed: dict[int, tuple[DocumentPart, ...]] = {}
         decisions: list[CandidateDisposition] = []
         for index, candidate in enumerate((document, *document.alternatives)):
             if candidate.official_link_conflict:
@@ -1524,7 +1525,10 @@ class TextLoader:
             item = DocumentCandidate(
                 candidate.url, file.text, file.selection.parts, file.selection.observed_parts
             )
-            if item.is_bill:
+            is_bill = item.is_bill
+            if index in incomplete or is_bill:
+                observed[index] = item.observed_parts or item.parts
+            if is_bill:
                 candidates.append((candidate, file))
                 prepared.append(item)
                 candidate_indices.append(index)
@@ -1576,6 +1580,7 @@ class TextLoader:
             selection = DocumentSelection(
                 state="waiting",
                 parts=tuple(part for failed in incomplete.values() for part in failed.parts),
+                observed_parts=tuple(part for parts in observed.values() for part in parts),
                 rejected=("PDF page extraction failed during version comparison",),
             )
             return (

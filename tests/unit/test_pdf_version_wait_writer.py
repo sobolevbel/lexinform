@@ -28,7 +28,10 @@ def test_competing_pdf_read_failure_defers_the_entire_comparison(
                 return ExtractedDocument(
                     text=failed_text, selection=DocumentSelection(parts=(part,))
                 )
-            return ExtractedDocument(text=self.extract(data))
+            return ExtractedDocument(
+                text=self.extract(data),
+                selection=DocumentSelection(parts=(DocumentPart(role="bill"),)),
+            )
 
     reads: list[str] = []
 
@@ -61,6 +64,9 @@ def test_competing_pdf_read_failure_defers_the_entire_comparison(
             ("version_comparison", "pdf_page_extraction_failed"),
         ]
         assert trace.dispositions[1].observed_sha256 == hashlib.sha256(b"newer").hexdigest()
+        assert [part.url for part in file.selection.parts] == [NEWER]
+        assert [part.url for part in file.selection.observed_parts] == [EARLIER, NEWER]
+        assert file.selection.policy_version == "document-selection-v9"
     else:
         assert resolved.url == NEWER
         assert (trace.result, trace.reason) == ("selected", "version_choice")

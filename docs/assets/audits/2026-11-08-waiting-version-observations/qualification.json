@@ -1,0 +1,112 @@
+{
+  "baseline_commit": "6d87a15c8bd16d039fd581eab65ab15bbc36ed4b",
+  "input_sha256": {
+    "669532.pdf": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f",
+    "667159.pdf": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+  },
+  "cases": [
+    {
+      "alternative": "669532.pdf",
+      "mode": "ordinary",
+      "state": "unverified",
+      "policy_version_before": "document-selection-v8",
+      "policy_version_after": "document-selection-v9",
+      "parts": [
+        "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+      ],
+      "observed_parts_before": [
+        "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f",
+        "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+      ],
+      "observed_parts_after": [
+        "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f",
+        "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+      ],
+      "sql_bytes_delta": 0,
+      "gzip_bytes_delta": 1
+    },
+    {
+      "alternative": "669532.pdf",
+      "mode": "blank",
+      "state": "ambiguous",
+      "policy_version_before": "document-selection-v8",
+      "policy_version_after": "document-selection-v9",
+      "parts": [
+        "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f",
+        "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+      ],
+      "observed_parts_before": [],
+      "observed_parts_after": [],
+      "sql_bytes_delta": 0,
+      "gzip_bytes_delta": 0
+    },
+    {
+      "alternative": "669532.pdf",
+      "mode": "failure",
+      "state": "waiting",
+      "policy_version_before": "document-selection-v8",
+      "policy_version_after": "document-selection-v9",
+      "parts": [
+        "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+      ],
+      "observed_parts_before": [],
+      "observed_parts_after": [
+        "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f",
+        "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+      ],
+      "sql_bytes_delta": 1575,
+      "gzip_bytes_delta": 153
+    },
+    {
+      "alternative": "667159.pdf",
+      "mode": "ordinary",
+      "state": "ambiguous",
+      "policy_version_before": "document-selection-v8",
+      "policy_version_after": "document-selection-v9",
+      "parts": [
+        "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f",
+        "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+      ],
+      "observed_parts_before": [],
+      "observed_parts_after": [],
+      "sql_bytes_delta": 0,
+      "gzip_bytes_delta": 0
+    },
+    {
+      "alternative": "667159.pdf",
+      "mode": "blank",
+      "state": "ambiguous",
+      "policy_version_before": "document-selection-v8",
+      "policy_version_after": "document-selection-v9",
+      "parts": [
+        "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f",
+        "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+      ],
+      "observed_parts_before": [],
+      "observed_parts_after": [],
+      "sql_bytes_delta": 0,
+      "gzip_bytes_delta": -2
+    },
+    {
+      "alternative": "667159.pdf",
+      "mode": "failure",
+      "state": "waiting",
+      "policy_version_before": "document-selection-v8",
+      "policy_version_after": "document-selection-v9",
+      "parts": [
+        "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+      ],
+      "observed_parts_before": [],
+      "observed_parts_after": [
+        "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f",
+        "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+      ],
+      "sql_bytes_delta": 9532,
+      "gzip_bytes_delta": 1751
+    }
+  ],
+  "unchanged_native_archives_excluding_policy_label": 16,
+  "native_comparison_sha256": "e813562d9d8caba0d5d3d60f613d61d07eee4b626fa3a0a7ef2504f540564feb",
+  "previous_reader_restored_two_waiting_dumps_byte_identically": true,
+  "persisted_selection_parts_have_no_text": true
+}
