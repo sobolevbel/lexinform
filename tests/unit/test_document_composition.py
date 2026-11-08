@@ -1,5 +1,6 @@
 import pytest
 
+from lexinform.document_composition import CandidateFallback
 from lexinform.errors import SejmApiUnavailableError
 from lexinform.models import DocumentPart, DocumentSelection, TextDocument
 from lexinform.models.document_reads import LoadedFile
@@ -43,6 +44,19 @@ def document() -> TextDocument:
         extra_urls=(ROOT + "support",),
         version_basis=("official/project/1",),
     )
+
+
+@pytest.mark.parametrize("conflict", [False, True])
+def test_ordered_fallback_preserves_a_proven_draft_conflict(conflict: bool) -> None:
+    selection = DocumentSelection(
+        state="ambiguous", limitations=("draft_version_conflict",) if conflict else ()
+    )
+
+    rejected = CandidateFallback().consider(
+        ROOT + "archive.zip", LoadedFile(None, selection=selection), multiple=True
+    )
+
+    assert (rejected is None) == conflict
 
 
 def values() -> dict[str, LoadedFile | Exception]:

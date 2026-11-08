@@ -121,6 +121,7 @@ def test_equal_archive_bill_bodies_do_not_hide_distinct_annexes(amount: str, sta
 
     assert result.selection.state == state
     assert len(result.selection.parts) == (4 if state == "ambiguous" else 2)
+    assert ("draft_version_conflict" in result.selection.limitations) == (state == "ambiguous")
     assert bool(result.text) == (state != "ambiguous")
 
 

@@ -252,7 +252,10 @@ class CandidateFallback:
                 self,
                 rejected=(*self.rejected, f"{url}: {document_kind(file.text)}"),
             )
-        if file.selection.state == "waiting":
+        if file.selection.state == "waiting" or (
+            file.selection.state == "ambiguous"
+            and "draft_version_conflict" in file.selection.limitations
+        ):
             return None
         if file.text is None and not file.is_scan and multiple:
             reason = "download size limit" if file.oversize else "no readable body"

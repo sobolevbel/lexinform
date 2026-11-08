@@ -391,6 +391,7 @@ def _select_parts(
                     selection=DocumentSelection(
                         observed_parts=tuple(parts),
                         state="ambiguous",
+                        limitations=("draft_version_conflict",) if annex_conflict else (),
                         parts=(
                             *(part for _, part in confirmed),
                             *(
