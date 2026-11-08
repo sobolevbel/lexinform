@@ -1,0 +1,148 @@
+{
+  "committee_catalog": {
+    "10": [],
+    "9": [
+      {
+        "id": 700161,
+        "sha256": "289a146c31ee4cb38aaa40c0f9bf26519c485b87c0424f0705cec59de98ca583",
+        "title": "Projekt ustawy o zmianie ustawy o wymianie informacji z organami ścigania państw członkowskich Unii Europejskiej, państw trzecich, agencjami Unii Europejskiej oraz organizacjami międzynarodowymi (UC66), KRM-0610-2-25.zip",
+        "url": "https://legislacja.rcl.gov.pl/docs//2/12388101/13074332/13074333/dokument700161.zip"
+      },
+      {
+        "id": 701779,
+        "sha256": "ed6b9a51588af8348d724ade5a4e49349d968d9c64ed51ef1ba43e31a15b6ffe",
+        "title": "autopoprawka wraz z nowym tekstem OSR do projektu ustawy o zmianie ustawy o wymianie informacji z organami ścigania państw członkowskich Unii Europejskiej, państw trzecich, agencjami... (UC66), KRM-0610-2-25.zip",
+        "url": "https://legislacja.rcl.gov.pl/docs//2/12388101/13074332/13074333/dokument701779.zip"
+      },
+      {
+        "id": 703271,
+        "sha256": "db894964b55e3c36dd3fefae63f5e68dc7e0fae7d7632456a88b3bf1da8fe6e3",
+        "title": "informacja Ministra Finansów w sprawie wykonania ustaleń SKRM dot. projektu ustawy o zmianie ustawy o wymianie informacji z organami ścigania państw członkowskich Unii Europejskiej... (UC66), KRM-0610-2-25.pdf",
+        "url": "https://legislacja.rcl.gov.pl/docs//2/12388101/13074332/13074333/dokument703271.pdf"
+      }
+    ]
+  },
+  "committee_minutes_reference": {
+    "end": 1822,
+    "source": "703271.pdf",
+    "source_sha256": "db894964b55e3c36dd3fefae63f5e68dc7e0fae7d7632456a88b3bf1da8fe6e3",
+    "start": 1784,
+    "status": "referenced_letter_not_listed_in_captured_committee_stages",
+    "text": "przesłane przy piśmie nr KRM-0103-3-25",
+    "text_sha256": "4f5f76a14ace0c4219565b71a8a0ff04282b48dac412df5434f632ff026e3ee1"
+  },
+  "print_followup": {
+    "comparison": "final_article_in_bill_body_after_whitespace_collapse",
+    "inputs": {
+      "documents/files/727902.zip": {
+        "file_sha256": "540652f16d46c4d892d6f6b6b844495d0be88bf1ab2bdd4e4019ef71d677f171",
+        "final_article_end": 42564,
+        "final_article_sha256": "2f0af84d5be3f4bca86372519dda6c0fef38923988b72ce9bc66a3e48b390e0f",
+        "final_article_start": 42389,
+        "member": [
+          "PROJEKT USTAWY.DOCX"
+        ],
+        "member_sha256": "7d473a9ecf8dbb71b7f9338812f38d4cbef1a1722f68b61518437df030b4253f",
+        "normalized_body_sha256": "1842cab9c660197df0334c1db14248e5fe8cfce605fa1491302fd5c1c3c631df",
+        "text_sha256": "c9c8b8d972ab24f26d1966bc85505c7155fa7f558478bdddeef878065b6cb603"
+      },
+      "sejm/term10/files/1605__1605-ustawa.docx": {
+        "file_sha256": "4c79b0ef8f4562f8278e9a65c71923d22869f0fbdc07cdaaf2e99498b82cceee",
+        "final_article_end": 42615,
+        "final_article_sha256": "2f0af84d5be3f4bca86372519dda6c0fef38923988b72ce9bc66a3e48b390e0f",
+        "final_article_start": 42440,
+        "member": [],
+        "member_sha256": "4c79b0ef8f4562f8278e9a65c71923d22869f0fbdc07cdaaf2e99498b82cceee",
+        "normalized_body_sha256": "0ce32ecd0359137a00845a1079d9291f92289660377fd34332a6bfc9ce215fdc",
+        "text_sha256": "25cca4ff2550886c1a241439af0304561b222c068089981592bbe0fba156ae3b"
+      }
+    },
+    "print_number": "1605",
+    "process_snapshot": "sejm/term10/process_details.json.gz",
+    "process_snapshot_sha256": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f",
+    "rm_number": "RM-0610-21-25"
+  },
+  "project": "UC66",
+  "project_sha256": "1e7913d5b9724ee26b74e6a384dad96fc9c18e7263087f5c9550e31ded35402f",
+  "source_check": "Agent inspection of archived official correspondence and matched bill text",
+  "sources": {
+    "july_transmittal": {
+      "archive": "727902.zip",
+      "archive_sha256": "540652f16d46c4d892d6f6b6b844495d0be88bf1ab2bdd4e4019ef71d677f171",
+      "member": [
+        "PISMO PRZEWODNIE.DOCX"
+      ],
+      "member_sha256": "3da555f997f5cb8e1e19c150514c5843a4d302af662d8275d7b56ed264abf2f7",
+      "member_text_sha256": "5b83e872a0f777627f50da9ed9115411096cb019808d5ad3aa0e174a7784682c",
+      "spans": [
+        {
+          "end": 948,
+          "sha256": "b8212cf97c0d874f8c573befba7da2ca3384a747a57908bb573d4107a2591a3c",
+          "start": 862,
+          "text": "projekt został wówczas zdjęty z porządku obrad Rady Ministrów na wniosek projektodawcy"
+        },
+        {
+          "end": 2414,
+          "sha256": "94b51f446b422b49b467f00126d29d2e9af5a98f900335d8f6cb0becef219ba3",
+          "start": 2336,
+          "text": "z projektu został wykreślony przepis, w którym znajdowała się reguła wydatkowa"
+        }
+      ]
+    },
+    "march_transmittal": {
+      "archive": "709229.zip",
+      "archive_sha256": "59998147f6cbb36540bb4e0794bd68ad4fe2eb72c516c7ebb89d55defc97e15b",
+      "member": [
+        "PISMO PRZEWODNIE.DOCX"
+      ],
+      "member_sha256": "2824d0b0d7d9ec22ecdce072766ba7275c23ce60660b92e5310464c5fe67fe96",
+      "member_text_sha256": "87c56cd742aede85f0319aac0d92e7b1cf2b3fec812f2f89ce26c182e4a8a94a",
+      "spans": [
+        {
+          "end": 2159,
+          "sha256": "a782561347c21c6d6b2e4f691927c4448363799452b67dcd4d7c39621b5dc069",
+          "start": 2110,
+          "text": "w sposób zaproponowany w autopoprawce przez MSWiA"
+        },
+        {
+          "end": 4477,
+          "sha256": "2e6e30f07519b7843f3c35a5aa76f62bea61f4a0eaa66c5ebcc3e5b19d29b49b",
+          "start": 4371,
+          "text": "W stosunku do wersji przyjętej przez Stały Komitet Rady Ministrów w projekcie dokonano następujących zmian"
+        }
+      ]
+    },
+    "proposal": {
+      "archive": "701779.zip",
+      "archive_sha256": "ed6b9a51588af8348d724ade5a4e49349d968d9c64ed51ef1ba43e31a15b6ffe",
+      "member": [
+        "ODNIESIENIE DO UWAG MF.DOCX"
+      ],
+      "member_sha256": "9d8b17f9ade8e6e7769b5b19bdfebc69239402fd075a3a58d5b2ef5c9305dc81",
+      "member_text_sha256": "f07579db85a537429d170788e9e44b7dd48e80f2a1fd97af38bd9fd232f902a2",
+      "quoted_replacements": [
+        {
+          "end": 2247,
+          "reference": "art. 6",
+          "sha256": "3a49d5be310de67f74a3484cc64ae84e7fe60b0bf1d9a52d7934269104315581",
+          "start": 1300,
+          "status": "quoted"
+        }
+      ],
+      "spans": [
+        {
+          "end": 57,
+          "sha256": "8ffdcbfebbb859bca5c42d585410d5ba183cee2deca3bab1e5a41976153769b1",
+          "start": 39,
+          "text": "Dot. KRM-0610-2-25"
+        },
+        {
+          "end": 1297,
+          "sha256": "2e46b19a1379709c8a57dc73b2e1af928f6b5debf6d6e56c0dc67d33b986de82",
+          "start": 1237,
+          "text": "proponuję nadać art. 6 projektu ustawy następujące brzmienie"
+        }
+      ]
+    }
+  }
+}
