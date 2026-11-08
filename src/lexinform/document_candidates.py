@@ -9,6 +9,7 @@ from typing import Self
 from lexinform.archive_policy_capture import (
     ArchivePolicyDecision,
     ArchiveVersionChoice,
+    ArchiveVersionGroup,
     PolicyOutcome,
 )
 from lexinform.document_versions import (
@@ -214,6 +215,7 @@ def _select_parts(
     decisions: dict[int, tuple[PolicyOutcome, ArchiveMemberPolicyReason]] = {}
     version_choice: ArchiveVersionChoice | None = None
     conflict_slots: tuple[int, ...] = ()
+    version_group: ArchiveVersionGroup | None = None
 
     def note(index: int, outcome: PolicyOutcome, reason: ArchiveMemberPolicyReason) -> None:
         if decision_sink is not None:
@@ -233,6 +235,10 @@ def _select_parts(
                             part.text_sha256,
                             version_choice if reason == "selected_main" else None,
                             compared_in_conflict=index in conflict_slots,
+                            version_group=version_group
+                            if version_group is not None
+                            and index == version_group.candidate_slots[0]
+                            else None,
                         )
                     )
             except Exception:
@@ -410,6 +416,24 @@ def _select_parts(
             for parent in compared_parents
         }
         annex_conflict = len(annex_identities) > 1
+        if decision_sink is not None and 2 < len(confirmed) <= 32:
+            candidate_slots = tuple(index for index, _ in confirmed)
+            version_group = ArchiveVersionGroup(
+                candidate_slots=candidate_slots,
+                retained_slots=tuple(
+                    candidate_slots[index] for index in comparison.retained_indices
+                ),
+                matching_slots=tuple(candidate_slots[index] for index in indices),
+                date_filter=comparison.date_filter,
+                selected_slot=candidate_slots[indices[0]]
+                if indices and not annex_conflict
+                else None,
+                outcome="annex_conflict"
+                if annex_conflict
+                else "selected"
+                if indices
+                else "text_conflict",
+            )
         if not indices or annex_conflict:
             if not indices and decision_sink is not None and len(confirmed) == 2:
                 conflict_slots = (confirmed[0][0], confirmed[1][0])

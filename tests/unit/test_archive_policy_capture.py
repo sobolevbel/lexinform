@@ -191,3 +191,75 @@ def test_version_conflict_prevents_package_composition_without_claiming_a_family
         "native slot accounting seals only fully corroborated policy decisions"
     )
     assert [item.reason for item in capture.decisions] == ["version_conflict"] * 4
+
+
+@pytest.mark.parametrize(
+    ("bills", "retained", "matching", "selected", "outcome"),
+    [
+        ((BILL, BILL, BILL), (1, 2, 0), (1, 2, 0), 1, "selected"),
+        ((BILL, BILL, BILL.replace("200 zł", "400 zł")), (1, 2, 0), (), None, "text_conflict"),
+        (
+            (
+                "Projekt z dnia 1 stycznia 2026\n" + BILL,
+                "Projekt z dnia 2 stycznia 2026\n" + BILL,
+                "Projekt z dnia 2 stycznia 2026\n" + BILL,
+            ),
+            (1, 2),
+            (1, 2),
+            1,
+            "selected",
+        ),
+    ],
+)
+def test_archive_version_group_keeps_the_ordered_physical_slots(
+    bills: tuple[str, ...],
+    retained: tuple[int, ...],
+    matching: tuple[int, ...],
+    selected: int | None,
+    outcome: str,
+) -> None:
+    physical = ExtractedParts(
+        input_sha256="a" * 64,
+        parts=tuple(
+            DocumentPart(text=text, members=(name,))
+            for text, name in zip(bills, ("z.docx", "a.docx", "b.docx"), strict=True)
+        ),
+    )
+    capture = ArchivePolicyCapture()
+    capture.native(3)
+
+    actual = select_document_parts(physical, max_part_chars=None, decision_sink=capture.record)
+
+    assert actual == select_document_parts(physical, max_part_chars=None)
+    assert capture.decisions is not None, "all three physical slots are accounted for"
+    (group,) = tuple(row.version_group for row in capture.decisions if row.version_group)
+    assert group.candidate_slots == (1, 2, 0)
+    assert group.retained_slots == retained
+    assert group.matching_slots == matching
+    assert group.selected_slot == selected
+    assert group.outcome == outcome
+    assert (group.date_filter is not None) == (len(retained) < len(bills))
+
+
+def test_archive_version_group_distinguishes_matching_bodies_from_conflicting_annexes() -> None:
+    physical = ExtractedParts(
+        input_sha256="a" * 64,
+        parts=(
+            *(
+                DocumentPart(text=BILL, members=(root, "projekt.docx"))
+                for root in ("a.zip", "b.zip", "c.zip")
+            ),
+            DocumentPart(text="Załącznik do ustawy\nTreść", members=("a.zip", "annex.docx")),
+        ),
+    )
+    capture = ArchivePolicyCapture()
+    capture.native(4)
+
+    result = select_document_parts(physical, max_part_chars=None, decision_sink=capture.record)
+
+    assert result.selection.state == "ambiguous"
+    assert capture.decisions is not None, "all physical slots have observed policy reasons"
+    (group,) = tuple(row.version_group for row in capture.decisions if row.version_group)
+    assert group.candidate_slots == group.matching_slots == (0, 1, 2)
+    assert group.selected_slot is None
+    assert group.outcome == "annex_conflict"

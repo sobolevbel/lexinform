@@ -1,0 +1,114 @@
+{
+  "archive_count": 35,
+  "archive_sha256s": {
+    "477448.zip": "8195b124b4bafe0600c24b9e8189f0879ac9a2d5164465e147159d57c1544073",
+    "478840.zip": "ab9447849d3189fe9c22412136551c4574ada293c1a8cb07a5e283cdf50e3c1d",
+    "480109.zip": "41f5dafb5dbfe2267831efee11a4020a3615fb864ab53e9796277e05ebfd81cd",
+    "512521.zip": "8a5c2d05a75c3342725a94804b76496cbf93291bdf05001e451d65fcf011abd0",
+    "521528.zip": "8c82d0c814b57a8dfc05d3251363389c0f7e1fffad647346df6e4c5ca6c868d1",
+    "523766.zip": "2307e619a53917d0888f77fb33ddd2d72d078adc3e3721e996169f0d6e5bb886",
+    "626562.zip": "840a0865f02a43adddc9dd1bf01fa0aa237d4d8aeb1299b20f5f13155c47946d",
+    "626566.zip": "5fff5dfcccf0ffd2cf24c42856df322085a0b7af2de3b992b9170746c3a5a595",
+    "661759.zip": "a7f04419ad8568aa5107de80c7e65c33f5ce8336963d498fbe31b85cab88e807",
+    "683704.zip": "633577206ed87ed049862cc4aff2f97be3820b2e8b7050e249f8e1ed55606530",
+    "686098.zip": "56e1a85771b92630793d4b0118b16e585286ce262c42e600657c6794f1501936",
+    "686771.zip": "6de549584182b9b9a67bc51c2fe6f6de8e8708cf7ee0ace32afc4248374cd3ca",
+    "686981.zip": "230cf4b46f817d336f6f45ee134ea0155bbc2d2d277b701949af4c251baf191c",
+    "689686.zip": "d948df3291dfbf996f3c4b8b77d5d9a4c30199606781f74261c61ce808dbbb74",
+    "695884.zip": "a8b45ed711ae43d6dc7cd9cd19c6424cc571fdc65463dedda7067e295e3fd03a",
+    "702759.zip": "7a4cd063a6c2b20fc3a63926dc139ae1c3fcbb47d0d9746e7340c4f519c37681",
+    "704065.zip": "0b5b97a95d15af3eebb616801f0bafefd6df01e5b0afe1d2c805393a84149663",
+    "708796.zip": "0fb981b37ee57ec6ae4d475c45851f8b73fc599430bce8f53a861416c7c33fb5",
+    "711446.zip": "e3c337a860741e488c4487feb205d9067eb8856621f595c29918004a181ac67b",
+    "716084.zip": "2363fc80253f7af4f4eb443eb95bcbe11102188137c36fcbe5e09a26bb7d9196",
+    "722571.zip": "db5a22cdfb48326befe54dfcefc20ce8d11f6d7f2604927aa334b2165b11ba5a",
+    "724269.zip": "34d8d60abc8cecd362bc2eb00df0dcf6ab82dc91439ce75b417f67db4ec36874",
+    "726551.zip": "75711a0205038ef48acdf9611a6b9f424e25d3512e024c6bb0c0f3711db2e433",
+    "729903.zip": "98973b07dcd40e368f48693d12cc643bc52d7f7f3c900d5206625c3ad0038dce",
+    "730648.zip": "65c480d69bf1c3c3b933a22c37b7699718b45348860e2ed668a778fde8f98ac6",
+    "732761.zip": "819bd719b5c9319e2fc36d07fb9ad298799ceaf8992449c751bb506bf8cfbdc8",
+    "741110.zip": "add89db69f5a63a465b1906895efed04ad741707b295e03d671accaf54386f3b",
+    "743631.zip": "ee54460e1ddd3ccd993977578f18d4b578c2561df6061307d667af1487c984ae",
+    "751946.zip": "d8d4f659429897eaa770c4896b8a840757573d5558337f0bb596a50663925abc",
+    "758479.zip": "3a79a45b7bc07574d409e8f555ed04196f5bcf86190c667cf9f93f4c15c169ba",
+    "763369.zip": "125c7670f637d5a0e3fc8acde9ecfab77977b81ab5c9d57fb1585266ae39a18b",
+    "763720.zip": "91bc2f0e0698286a15b5c4af0c44900f04bfcd44ad7abd53a8d074c1ac94f40b",
+    "764087.zip": "d5e43ce9ed1a8341481bef986284c9131a8db5b5c9996ffb12fe35a02789f507",
+    "783807.zip": "06b50a8c69a1c4c3a72479ae2f8d2b732b0165ef729b7929e349da226fdbd743",
+    "801844.zip": "ce66b2b4c9561fa3c0e52999083e890c4ff7ff3a2a3886a7f51adf134fe7825e"
+  },
+  "groups": {
+    "711446.zip": {
+      "decision": {
+        "candidate_slots": [
+          38,
+          4,
+          27
+        ],
+        "date_filter": null,
+        "matching_slots": [],
+        "outcome": "text_conflict",
+        "retained_slots": [
+          38,
+          4,
+          27
+        ],
+        "selected_slot": null
+      },
+      "independent_ordinals_verified": true,
+      "opening_inspection": {
+        "27": {
+          "explicit_draft_date": "2025-02-27",
+          "heading_type": "draft"
+        },
+        "38": {
+          "explicit_draft_date": "2025-03-31",
+          "heading_type": "draft"
+        },
+        "4": {
+          "explicit_draft_date": null,
+          "heading_type": "ministry response to comments"
+        }
+      },
+      "physical": {
+        "27": {
+          "members": [
+            "Odniesienie do I tury uwag resortów (6211660).zip",
+            "Ustawa o AOON - treść projektu - 27.02.2025.pdf"
+          ],
+          "ordinals": [
+            4,
+            22
+          ],
+          "sha256": "759afe5fc7e3790ff757192db4791c189a1f4f87a053cf3f97d767e8de7f08ce",
+          "text_sha256": "e4fbf82076a2520773a41e1d0956bc3c28232cc18a7f0287c38ee2b11e690f7b"
+        },
+        "38": {
+          "members": [
+            "Ustawa o AOON - tresc projektu - 31.03.2025 - AKTUALNA - final.pdf"
+          ],
+          "ordinals": [
+            16
+          ],
+          "sha256": "c77cd564be28e8c93cd08e36f6629320cbd71a0a270a75096c84e5a3526911f4",
+          "text_sha256": "e445338b42812a920b7d1051d23df756211d239420ed6c1022c3e72ca51a3e7b"
+        },
+        "4": {
+          "members": [
+            "Odniesienie do I tury uwag resortów (6211660).zip",
+            "Odniesienie do Uwag MC do Ustawy o AOON - 26.02.2025.pdf"
+          ],
+          "ordinals": [
+            4,
+            2
+          ],
+          "sha256": "1e264001fbbb17b11939af310d3bcdbe3bc26d0eddd96ad278a8051d8a25db8b",
+          "text_sha256": "d721fd2eb03efba7a893f1e29f8ef6ea2ce3ae4dab05b101be752be57390ee66"
+        }
+      }
+    }
+  },
+  "legacy_projection_equal": true,
+  "legacy_projection_sha256": "6e3ee0d4cd4311170094d802e1a2131742cf8191f169c5bc13d2260d110c1e61",
+  "scope": "Local ZIPs whose outer directory lists at least three bill-named readable entries with bill role by name"
+}

@@ -6,7 +6,7 @@ import threading
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager, suppress
 from contextvars import ContextVar
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Literal
 
 from lexinform.archive_dispositions import MAX_ARCHIVE_VALIDATION_BYTES
@@ -25,6 +25,16 @@ class ArchiveVersionChoice:
 
 
 @dataclass(frozen=True)
+class ArchiveVersionGroup:
+    candidate_slots: tuple[int, ...]
+    retained_slots: tuple[int, ...]
+    matching_slots: tuple[int, ...]
+    date_filter: tuple[dt.date, ...] | None
+    selected_slot: int | None
+    outcome: Literal["selected", "text_conflict", "annex_conflict"]
+
+
+@dataclass(frozen=True)
 class ArchivePolicyDecision:
     index: int
     outcome: PolicyOutcome
@@ -33,6 +43,7 @@ class ArchivePolicyDecision:
     text_sha256: str
     version_choice: ArchiveVersionChoice | None = None
     compared_in_conflict: bool = False
+    version_group: ArchiveVersionGroup | None = None
 
 
 _CURRENT: ContextVar[ArchivePolicyCapture | None] = ContextVar(
@@ -79,6 +90,8 @@ class ArchivePolicyCapture:
                 separators=(",", ":"),
             ).encode()
         ) + bool(self._decisions)
+        if decision.version_group is not None:
+            size += len(json.dumps(asdict(decision.version_group), default=str).encode())
         if self._bytes + size > MAX_ARCHIVE_VALIDATION_BYTES:
             self._failed = True
             self._decisions.clear()
