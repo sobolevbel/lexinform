@@ -1,0 +1,117 @@
+{
+  "cases": [
+    {
+      "archive_id": "805259",
+      "state": "eccdc263",
+      "database_sha256": "2fa282b623328efa9bec50d3d6da771fd6a8b098565ea619d1a1a4ed38f351b7",
+      "request": {
+        "result_id": "result-v1:ab5f898b57bb42e3e638c43c6d5d2db2cad47f4707167f40cdc7f8e7cab555b1",
+        "request_sha256": "da219a26d72c0b03ca58520023baef5031a814625bc56288133827456147d3a8",
+        "text_sha256": "4e280ddab76fca9915d9c60deb63db46c5c8318d667ed184ba58318cd2895fc8",
+        "text_chars": 162940,
+        "input_checkpoint_sha256": "e78613cba60318f88374caaab31514a49aa77e2bf7cdf726e6ee565ed3b99a12"
+      },
+      "physical_source_replay": {
+        "observation_id": "source-observation-v1:ba60631c5a4454a164af4743687260b88e9fc4cde141ce1c02ca6f7750e45e0a",
+        "selection_id": "selection-v1:2c143ec6902d43acdfc7ac9acbe40e1b0e1c9a187ebc30fca8d6417ded0d220c",
+        "archive_sha256": "7c502682dc4e9ba717906276eec862781d389c46c1898b2f5ae7524d2736a6c4",
+        "archive_bytes": 1740119,
+        "selected_parts": [
+          {
+            "role": "bill",
+            "members": [
+              "Projekt ustawy_uzasadnienie_OSR_KdsC_UDER87docx.zip",
+              "Projekt ustawy_uzasadnienie_OSR_KdsC_UDER87docx.docx"
+            ],
+            "sha256": "8b548dc341a9cdd82397c5aed9c032545e96f089d85a9ed77f6a09e46ed28504",
+            "text_sha256": "c3c5cd8bd0b32a3c3d006dac19f615eec2e160714f1fd808b6a57910f772ba2c"
+          }
+        ],
+        "extracted_text_sha256": "c3c5cd8bd0b32a3c3d006dac19f615eec2e160714f1fd808b6a57910f772ba2c",
+        "dropped_sections": [
+          {
+            "name": "OSR pkt 5-13",
+            "chars": 12855
+          }
+        ],
+        "trimmed_text_segments": [
+          {
+            "start": 0,
+            "end": 162898,
+            "source_start": 0
+          },
+          {
+            "start": 162898,
+            "end": 162940,
+            "source_start": null
+          }
+        ]
+      }
+    },
+    {
+      "archive_id": "805116",
+      "state": "852a237a",
+      "database_sha256": "2fa282b623328efa9bec50d3d6da771fd6a8b098565ea619d1a1a4ed38f351b7",
+      "request": {
+        "result_id": "result-v1:4aaeb04af4d0fae10d65a963eb776bad410855db84de5459a225b4bcda823a6f",
+        "request_sha256": "0c85b87138d626cd4011925137047f4a9da6735b854e3b97bf676b0d16e61181",
+        "text_sha256": "f3fc91c434a4b85e90b94668e31d2254fabdcdd5f33d93b6ace9e9672b3d7500",
+        "text_chars": 159348,
+        "input_checkpoint_sha256": "9366b9c6ee89a5535c0d9dbf26be37e4cf03f1b54836964ee9579e24fbd1d304"
+      },
+      "physical_source_replay": {
+        "observation_id": "source-observation-v1:d53618b892dc099bd080ed719916d63f98c290b5695b8089e2fb4d143eadc5c8",
+        "selection_id": "selection-v1:597bd5ab7d6cca20e35d7922fe79410a1a1ae669497b5d7ac490cc89838c111f",
+        "archive_sha256": "9b06f186db7544a2e4cfd2d3dec81f85d042a108cf7c69992e1055f8e96dc1f5",
+        "archive_bytes": 8639604,
+        "selected_parts": [
+          {
+            "role": "bill",
+            "members": [
+              "PROJEKT_USTAWY_NA_RM.pdf"
+            ],
+            "sha256": "1ee5f36d84c375c9d779afa47838d26932dbdf7ed21da373b775418d4b123aca",
+            "text_sha256": "0b54c92d6c15a12f02b59a11b8d1dff4d36e74a683c80f83096e554b749e8c02"
+          },
+          {
+            "role": "justification",
+            "members": [
+              "Art. 25 ust. 6 - uzasadnienie.pdf"
+            ],
+            "sha256": "c29383f11c340b798d9af22f8026c4af3e050fe171d0e42457da6d3132948ef5",
+            "text_sha256": "15c1e1fc7181b5c42dc164ea5762f62d635b8d4ecdbc9c4ff231a125e54f5557"
+          },
+          {
+            "role": "osr",
+            "members": [
+              "Art. 25 ust. 6 - OSR.pdf"
+            ],
+            "sha256": "d0161c507ba8d1c27255a4886072458113cc597b99fb34553eb32bef3b6f3d71",
+            "text_sha256": "14a4541e7d9da7193e43b73ae1037511b5ff7072b13987ad658d1059dd0305cd"
+          }
+        ],
+        "extracted_text_sha256": "50400a3650559118a2e0ae0da2edc28375adb31dd14e77897ec6c02d9b41bd5a",
+        "dropped_sections": [
+          {
+            "name": "OSR pkt 5-13",
+            "chars": 6561
+          }
+        ],
+        "trimmed_text_segments": [
+          {
+            "start": 0,
+            "end": 159307,
+            "source_start": 0
+          },
+          {
+            "start": 159307,
+            "end": 159348,
+            "source_start": null
+          }
+        ]
+      }
+    }
+  ],
+  "old_card_report_unchanged": true,
+  "foreign_observation_rejected": true
+}

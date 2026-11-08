@@ -16206,3 +16206,17 @@ Unknown delivery stayed unconfirmed without a resend.
   not_observed. Архив не входит в репозиторий или дамп.
   [Архив RCL](https://legislacja.rcl.gov.pl/docs//2/12407350/13188194/dokument805059.zip) ·
   [Квалификация](../assets/audits/2026-11-08-historical-archive/qualification.json).
+
+<a id="j542"></a>
+
+### J542. Повтор архивной сборки по идентификатору результата
+
+- Отдельный режим сверяет сохранённый запрос и архив по идентификатору
+  результата, без привязки к публикации. Для исходной карточки
+  прежний отчёт совпал.
+- Архив 805259 содержит вложенный ZIP с DOCX и воспроизводит
+  162 940 символов запроса. Из трёх PDF архива 805116 восстановлены
+  159 348 символов. Наблюдение другого результата отклонено.
+  [Архив 805259](https://legislacja.rcl.gov.pl/docs//2/12409801/13201112/13201113/dokument805259.zip) ·
+  [Архив 805116](https://legislacja.rcl.gov.pl/docs//2/12400563/13146429/13146432/dokument805116.zip) ·
+  [Квалификация](../assets/audits/2026-11-08-historical-archive-results/qualification.json).

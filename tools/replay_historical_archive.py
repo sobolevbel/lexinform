@@ -2,7 +2,7 @@
 
 import argparse
 import sqlite3
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -13,12 +13,24 @@ from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtr
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.models import DocumentPart
 from lexinform.sections import trim_print
-from tools.audit_saved_primary_claims import ReviewInputCheckpoint, _primary_batch_meta
+from tools.audit_saved_primary_claims import (
+    ReviewInputCheckpoint,
+    _primary_batch_meta,
+    saved_claim_review,
+)
 from tools.corpus_artifacts import digest, write_json
 from tools.primary_delivery_cycle import audit
 from tools.sqlite_snapshot import open_snapshot, snapshot_files
 
 _MAX_ARCHIVE_BYTES = 32_000_000
+
+
+@dataclass(frozen=True)
+class SubmittedText:
+    database_sha256: str
+    result_id: str
+    text_sha256: str
+    chars: int
 
 
 def _identity(part: DocumentPart) -> tuple[object, ...]:
@@ -37,25 +49,21 @@ def _read_archive(archive: Path, archive_sha256: str) -> bytes:
     return raw
 
 
-def replay(
+def _replay_source(
     database: Path,
-    publication_id: int,
     checkpoint: ReviewInputCheckpoint,
     observation_id: str,
     archive: Path,
     archive_sha256: str,
+    text: SubmittedText,
 ) -> dict[str, object]:
     raw = _read_archive(archive, archive_sha256)
-    delivery = audit(database, publication_id, legacy_text_checkpoint=checkpoint)
-    text = delivery.get("legacy_submitted_text")
-    if not isinstance(text, dict) or text["status"] != "recorded":
-        raise ValueError("Replay requires a verified historical card request")
     with open_snapshot(database) as snapshot:
         db = snapshot.connection
-        if snapshot.sha256 != delivery["database_sha256"]:
+        if snapshot.sha256 != text.database_sha256:
             raise ValueError("Database changed after the historical card audit")
         row = db.execute(
-            "SELECT * FROM computation_results WHERE result_id=?", (text["result_id"],)
+            "SELECT * FROM computation_results WHERE result_id=?", (text.result_id,)
         ).fetchone()
         paid = read_computation_result(row)
         meta = _primary_batch_meta(db, paid)
@@ -88,7 +96,7 @@ def replay(
         selected = selection.selection.parts
         if (
             not selected
-            or any(len(part.members) != 1 for part in selected)
+            or any(not 1 <= len(part.members) <= 2 for part in selected)
             or tuple(map(_identity, selected)) != tuple(map(_identity, meta.selection.parts))
         ):
             raise ValueError("Recorded selection differs from the historical request parts")
@@ -105,10 +113,7 @@ def replay(
         if tuple(map(_identity, extracted.selection.parts)) != tuple(map(_identity, selected)):
             raise ValueError("Archive replay differs from the recorded source parts")
         trimmed = trim_print(extracted.text)
-        if (
-            len(trimmed.text) != text["text_chars"]
-            or digest(trimmed.text.encode()) != text["text_sha256"]
-        ):
+        if len(trimmed.text) != text.chars or digest(trimmed.text.encode()) != text.text_sha256:
             raise ValueError("Trimmed archive does not reproduce the submitted text")
         projection = trimmed.projection
         if projection is None:
@@ -120,35 +125,88 @@ def replay(
         ):
             raise ValueError("A pinned source changed during archive replay")
     return {
+        "observation_id": observation_id,
+        "selection_id": selection.selection_id,
+        "archive_sha256": archive_sha256,
+        "archive_bytes": len(raw),
+        "selected_parts": [
+            {
+                "role": part.role,
+                "members": part.members,
+                "sha256": part.sha256,
+                "text_sha256": part.text_sha256,
+            }
+            for part in selected
+        ],
+        "extracted_text_sha256": digest(extracted.text.encode()),
+        "dropped_sections": [asdict(section) for section in trimmed.dropped],
+        "trimmed_text_segments": [asdict(segment) for segment in projection.segments],
+    }
+
+
+def replay(
+    database: Path,
+    publication_id: int,
+    checkpoint: ReviewInputCheckpoint,
+    observation_id: str,
+    archive: Path,
+    archive_sha256: str,
+) -> dict[str, object]:
+    delivery = audit(database, publication_id, legacy_text_checkpoint=checkpoint)
+    text = delivery.get("legacy_submitted_text")
+    if not isinstance(text, dict) or text["status"] != "recorded":
+        raise ValueError("Replay requires a verified historical card request")
+    database_sha256 = delivery["database_sha256"]
+    assert isinstance(database_sha256, str), "the delivery audit pins the current database"
+    submitted = SubmittedText(
+        database_sha256, text["result_id"], text["text_sha256"], text["text_chars"]
+    )
+    return {
         "publication_id": publication_id,
-        "database_sha256": delivery["database_sha256"],
+        "database_sha256": database_sha256,
         "request": text,
         "delivery_cycle": delivery["status"],
-        "physical_source_replay": {
-            "observation_id": observation_id,
-            "selection_id": selection.selection_id,
-            "archive_sha256": archive_sha256,
-            "archive_bytes": len(raw),
-            "selected_parts": [
-                {
-                    "role": part.role,
-                    "members": part.members,
-                    "sha256": part.sha256,
-                    "text_sha256": part.text_sha256,
-                }
-                for part in selected
-            ],
-            "extracted_text_sha256": digest(extracted.text.encode()),
-            "dropped_sections": [asdict(section) for section in trimmed.dropped],
-            "trimmed_text_segments": [asdict(segment) for segment in projection.segments],
+        "physical_source_replay": _replay_source(
+            database, checkpoint, observation_id, archive, archive_sha256, submitted
+        ),
+    }
+
+
+def replay_result(
+    database: Path,
+    database_sha256: str,
+    result_id: str,
+    checkpoint: ReviewInputCheckpoint,
+    observation_id: str,
+    archive: Path,
+    archive_sha256: str,
+) -> dict[str, object]:
+    saved = saved_claim_review(
+        database, database_sha256=database_sha256, result_id=result_id, input_checkpoint=checkpoint
+    )
+    submitted = SubmittedText(database_sha256, result_id, saved.text_sha256, len(saved.text))
+    return {
+        "database_sha256": database_sha256,
+        "request": {
+            "result_id": result_id,
+            "request_sha256": saved.request_sha256,
+            "text_sha256": saved.text_sha256,
+            "text_chars": len(saved.text),
+            "input_checkpoint_sha256": checkpoint.sha256,
         },
+        "physical_source_replay": _replay_source(
+            database, checkpoint, observation_id, archive, archive_sha256, submitted
+        ),
     }
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--database", type=Path, required=True)
-    parser.add_argument("--publication-id", type=int, required=True)
+    target = parser.add_mutually_exclusive_group(required=True)
+    target.add_argument("--publication-id", type=int)
+    target.add_argument("--result-id")
+    parser.add_argument("--database-sha256")
     parser.add_argument("--checkpoint", nargs=2, metavar=("PATH", "SHA256"), required=True)
     parser.add_argument("--observation-id", required=True)
     parser.add_argument("--archive", type=Path, required=True)
@@ -160,17 +218,16 @@ def main() -> None:
     try:
         if args.output.resolve() in protected | {args.archive.resolve()}:
             raise ValueError("Output must be separate from all replay inputs")
-        write_json(
-            args.output,
-            replay(
-                args.database,
-                args.publication_id,
-                checkpoint,
-                args.observation_id,
-                args.archive,
-                args.archive_sha256,
-            ),
-        )
+        common = (checkpoint, args.observation_id, args.archive, args.archive_sha256)
+        if args.result_id is not None:
+            if args.database_sha256 is None:
+                raise ValueError("Result replay requires a database SHA-256 pin")
+            report = replay_result(args.database, args.database_sha256, args.result_id, *common)
+        else:
+            if args.database_sha256 is not None:
+                raise ValueError("Database SHA-256 is only used for result replay")
+            report = replay(args.database, args.publication_id, *common)
+        write_json(args.output, report)
     except (OSError, ValueError, sqlite3.Error) as error:
         parser.error(str(error))
 
