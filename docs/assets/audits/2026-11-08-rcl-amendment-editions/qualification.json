@@ -1,0 +1,577 @@
+{
+  "command_report_sha256": "be6c8bef56895432af5bba759106957558452bb1f8064a4b510f46e661a8cfa6",
+  "match_control": {
+    "mutated_digests": {
+      "deadline": "law-v2:dc9a36a5f8a00ca102e17f02c0585e91e4e7a6407bdeba77aaed6cb95cfef10f",
+      "negation": "law-v2:39ebad1a73c20aa7e0b1681cb3c78564d8e9b39efc2db82254154474ef9afcdc",
+      "reference": "law-v2:7924cb6c2f0bee12d1e8cab92a2ab32ccdb83777c9499edab921b1a25f8c9fd0"
+    },
+    "normalised_chars": 159446
+  },
+  "member_projection_equal": true,
+  "normalisation": "law_digest(trim_print(extracted_text).text)",
+  "observations": {
+    "438407/12330353": {
+      "archive_sha256": "bd6f91bda54885653fda2d506d6dbb1d63bca6c79d81608ad8e1c39bc69baa66",
+      "base_candidates": {
+        "https://legislacja.rcl.gov.pl/docs//2/12330353/12663633/12663634/dokument438394.zip": {
+          "cases": [
+            "12330353/9"
+          ],
+          "catalog_date": "2020-02-19",
+          "draft_dates": [
+            "2020-01-21"
+          ],
+          "file_sha256": "f3fb3bff07f1790dfec97ec16938bd2e44e320d76eaee18a8456b84d95d98af7",
+          "name": "Projekt ustawy o systemach homologacji typu UE i nadzoru rynku silników spalinowych przeznaczonych do maszyn mobilnych nieporuszających się po drogach (UC16), KRM-10-6-20.zip",
+          "normative_digest": null,
+          "state": "ambiguous",
+          "text_sha256": null
+        },
+        "https://legislacja.rcl.gov.pl/docs//2/12330353/12663644/12663645/dokument438392.zip": {
+          "cases": [
+            "12330353/12",
+            "12330353/14"
+          ],
+          "catalog_date": "2020-02-19",
+          "draft_dates": [
+            "2020-02-11"
+          ],
+          "file_sha256": "82bc36e0f0bc2ea634d782203003335f1e11bcd1c7bfc518c77e36e796fb2723",
+          "name": "Projekt ustawy o systemach homologacji typu UE i nadzoru rynku silników spalinowych przeznaczonych do maszyn mobilnych nieporuszających się po drogach (UC16), RM-10-14-20, RM 18-02-2020.zip",
+          "normative_digest": "law-v2:f7cea26e5a334396e81518ac4f92d9c01683bd00741a4b9339cb11172140a867",
+          "state": "unverified",
+          "text_sha256": "77b90d77cb8cff21638f1debdbee34b3ccf6384cc05ed8e7bd77f7bf7def8ec2"
+        }
+      },
+      "catalog_date": "2020-02-19",
+      "catalog_name": "autopoprawka.zip",
+      "catalog_print_numbers": [],
+      "explicit_date_candidates": [],
+      "member_print_number": null,
+      "proposal_draft_date": null,
+      "same_rm_prints": {}
+    },
+    "581610/12365060": {
+      "archive_sha256": "8ff54ea2261bc6c8926276c26d0d120518b49225dbf1f27ee5289867ed0746be",
+      "base_candidates": {
+        "https://legislacja.rcl.gov.pl/docs//2/12365060/12918826/12918827/dokument581356.zip": {
+          "cases": [
+            "12365060/12",
+            "12365060/14"
+          ],
+          "catalog_date": "2022-10-18",
+          "draft_dates": [
+            "2022-10-13"
+          ],
+          "file_sha256": "22427e1b04c475867ef0c90335f227b1f6a885f08622282f4bb2a0b953afed24",
+          "name": "Projekt ustawy o środkach nadzwyczajnych mających na celu ograniczenie wysokości cen energii elektrycznej oraz wsparciu niektórych odbiorców w 2023 roku (UD454), RM-0610-142-22, RM 14-10-2022.zip",
+          "normative_digest": "law-v2:e023f436a113bbafa617cf566f9b4fa3758e24cc18f0c8b41f98fb7f97a6f1ed",
+          "state": "unverified",
+          "text_sha256": "9fbdc12f6474077b43c236b34ff127dceeae2535d9ed4b4e51881e43224ae895"
+        },
+        "https://legislacja.rcl.gov.pl/docs//2/12365060/12918826/12918827/dokument581357.docx": {
+          "cases": [
+            "12365060/12",
+            "12365060/14"
+          ],
+          "catalog_date": "2022-10-18",
+          "draft_dates": [],
+          "file_sha256": "0e4ca93755b7e927affbc9a40afd1366aab125546d38808eb36e0410c54dd9a2",
+          "name": "autopoprawka do projektu ustawy o środkach nadzwyczajnych mających na celu ograniczenie wysokości cen energii elektrycznej oraz wsparciu niektórych odbiorców w 2023 roku (UD454), RM-0610-142-22.docx",
+          "normative_digest": null,
+          "state": "unverified",
+          "text_sha256": "3713677b28031eea554192d3cdc92ad6bcb12a6696b428d179a1d6f9d6dfb01c"
+        }
+      },
+      "catalog_date": "2022-10-19",
+      "catalog_name": "autopoprawka do rządowego projekt ustawy o środkach nadzwyczajnych mających na celu ograniczenie wysokości cen energii elektrycznej oraz wsparciu niektórych odbiorców ... (UD454) (druk 2697), RM-0610-142-22, RM 18-10-2022.zip",
+      "catalog_print_numbers": [
+        "2697"
+      ],
+      "explicit_date_candidates": [],
+      "member_print_number": "2697",
+      "proposal_draft_date": null,
+      "same_rm_prints": {
+        "9": {
+          "basis": "member_heading",
+          "digest_matches": [],
+          "exact_byte_matches": [],
+          "normative_digest": null,
+          "primary_sha256": null,
+          "print_number": "2697",
+          "processes_sha256": "058e7992271c4b74d10123dd2fd8e07720ad069c1bcaf004b649c825ae0e4f4a",
+          "rm_number": "RM-0610-142-22"
+        }
+      }
+    },
+    "642032/12359600": {
+      "archive_sha256": "7113f3b86425ff36460606ff499571540f6b2a2b79a4f2efb8a76430c3f49dc3",
+      "base_candidates": {
+        "https://legislacja.rcl.gov.pl/docs//2/12359600/12878100/12878101/dokument642029.zip": {
+          "cases": [
+            "12359600/12",
+            "12359600/14"
+          ],
+          "catalog_date": "2023-10-03",
+          "draft_dates": [
+            "2022-06-23"
+          ],
+          "file_sha256": "b0c5bd8b9d0ddf9594565a9361cf0e7a0510f01527edb017f0a8e314c423cc7f",
+          "name": "Projekt ustawy o zmianie ustawy o inwestycjach w zakresie elektrowni wiatrowych oraz niektórych innych ustaw (UD207), RM-0610-95-22, RM 05-07-2022.zip",
+          "normative_digest": "law-v2:e0ae07e806d3a0e66161d36ab7c257ea82cf2b628c3d06e19b1bd7c798b52cf6",
+          "state": "unverified",
+          "text_sha256": "acb8d79b530f7b19e8f727501442e28fadc4a7b068da5a8a46009aaccba6c3f5"
+        },
+        "https://legislacja.rcl.gov.pl/docs//2/12359600/12878100/12878101/dokument642033.zip": {
+          "cases": [
+            "12359600/12",
+            "12359600/14"
+          ],
+          "catalog_date": "2023-10-03",
+          "draft_dates": [],
+          "file_sha256": "a56e02bff4b164be736527d935d0285f5d38333dd480bb078acca51b61089e0e",
+          "name": "tekst ostateczny autopoprawki do projektu ustawy o zmianie ustawy o inwestycjach w zakresie elektrowni wiatrowych oraz niektórych innych ustaw (UD207), RM-0610-95-22.zip",
+          "normative_digest": null,
+          "state": "unsupported",
+          "text_sha256": null
+        }
+      },
+      "catalog_date": "2023-10-03",
+      "catalog_name": "autopoprawka do skierowanego do Sejmu RP w dniu 13 lipca 2022 r. projektu ustawy o zmianie ustawy o inwestycjach w zakresie elektrowni wiatrowych oraz niektórych innych ustaw (UD207), RM-0610-95-22, RM 13-12-2022.zip",
+      "catalog_print_numbers": [],
+      "explicit_date_candidates": [],
+      "member_print_number": null,
+      "proposal_draft_date": null,
+      "same_rm_prints": {}
+    },
+    "651743/12376009": {
+      "archive_sha256": "4ae72259304dec97f26a7586b61e3b67d10a8fe11ad9803a631fb652755c231b",
+      "base_candidates": {
+        "https://legislacja.rcl.gov.pl/docs//2/12376009/13000549/13000550/dokument647715.zip": {
+          "cases": [
+            "12376009/12",
+            "12376009/14"
+          ],
+          "catalog_date": "2023-11-13",
+          "draft_dates": [
+            "2023-10-30"
+          ],
+          "file_sha256": "4191537ab383f9437ceec49e0993974e616b3e79fb915b2bc93e84bec1df44ac",
+          "name": "Projekt ustawy o szczególnych rozwiązaniach służących realizacji ustawy budżetowej na rok 2024 (UD487), RM-0610-100-23, RM 07-11-2023.zip",
+          "normative_digest": "law-v2:42805a89a1a2cc214e58bb2dc0c58b83eb150bb030b4dc743f4579b5ef27939c",
+          "state": "unverified",
+          "text_sha256": "21e9b3fc998f531e20166c59134fffc601a20426a8d41422a618e6ac47ae5c84"
+        },
+        "https://legislacja.rcl.gov.pl/docs//2/12376009/13000549/13000550/dokument647716.zip": {
+          "cases": [
+            "12376009/12",
+            "12376009/14"
+          ],
+          "catalog_date": "2023-11-13",
+          "draft_dates": [
+            "2023-11-08"
+          ],
+          "file_sha256": "061f9f808f41607999d11c69ebde32c7d18a4cc43d99955140380d2568e4c444",
+          "name": "tekst ostateczny projektu ustawy o szczególnych rozwiązaniach służących realizacji ustawy budżetowej na rok 2024 (UD487), RM-0610-100-23.zip",
+          "normative_digest": "law-v2:8f97c640b85f849839a95c73efd7ed18cee1085a0f30de1a09335d6cf36e6043",
+          "state": "unverified",
+          "text_sha256": "1f59c4858a168e67d94c2f388952b1b058d2b1a29785e8c652f73f6e096bb541"
+        },
+        "https://legislacja.rcl.gov.pl/docs//2/12376009/13000549/13000550/dokument650834.zip": {
+          "cases": [
+            "12376009/12",
+            "12376009/14"
+          ],
+          "catalog_date": "2023-12-04",
+          "draft_dates": [],
+          "file_sha256": "90a28eff6a107f030d43cd4cdbb3421fca9fc1c9821b6edfde9aa6141d01a7bb",
+          "name": "autopoprawka do rządowego projektu ustawy o szczególnych rozwiązaniach służących realizacji ustawy budżetowej na rok 2024 (UD487), RM-0610-112-23, RM 30-11-2023.zip",
+          "normative_digest": null,
+          "state": "unsupported",
+          "text_sha256": "460e0cc3880db8cdae88a6bda49266377ce488de5b48c3d5b923e3743ff018bb"
+        },
+        "https://legislacja.rcl.gov.pl/docs//2/12376009/13000549/13000550/dokument651745.zip": {
+          "cases": [
+            "12376009/12",
+            "12376009/14"
+          ],
+          "catalog_date": "2023-12-11",
+          "draft_dates": [],
+          "file_sha256": "f0e176fde651a21ccdf514593d61e16fb0aa1998e9a2c2bd55fd8ea2ccb80cbb",
+          "name": "nowy tekst autopoprawki II do rządowego projektu ustawy o szczególnych rozwiązaniach służących realizacji ustawy budżetowej na rok 2024 (UD487), RM-0610-112-23, RM 08-12-2023.zip",
+          "normative_digest": null,
+          "state": "unsupported",
+          "text_sha256": "10aed34c40faa7feaf9b9bcdf9793c21f3836c39b29a3220ac12fc7df4940180"
+        }
+      },
+      "catalog_date": "2023-12-11",
+      "catalog_name": "autopoprawka II do rządowego projektu ustawy o szczególnych rozwiązaniach służących realizacji ustawy budżetowej na rok 2024 (UD487), RM-0610-112-23.zip",
+      "catalog_print_numbers": [],
+      "explicit_date_candidates": [
+        {
+          "member": [
+            "RM Autopoprawka do ustawy okołobudżetowej na rok 2024.docm"
+          ],
+          "start": 0,
+          "text": "Projekt z dnia 30 listopada 2023 r."
+        }
+      ],
+      "member_print_number": null,
+      "proposal_draft_date": "2023-11-30",
+      "same_rm_prints": {}
+    },
+    "662379/12381402": {
+      "archive_sha256": "eb0c09584449a49d0cc5b2d5fbbb4510d20201744a9cd976c051fd7bf56a1b93",
+      "base_candidates": {
+        "https://legislacja.rcl.gov.pl/docs//2/12381402/13033801/13033802/dokument659611.zip": {
+          "cases": [
+            "12381402/12",
+            "12381402/14"
+          ],
+          "catalog_date": "2024-03-12",
+          "draft_dates": [
+            "2024-03-11"
+          ],
+          "file_sha256": "9de2caf7aefd7c3063dc283a342a7aba991294f0812a7e16ec921e0e5e245bc7",
+          "name": "Projekt ustawy o zmianie niektórych ustaw związanych z funkcjonowaniem administracji rządowej (UD9), RM-0610-18-24.zip",
+          "normative_digest": "law-v2:989581ecce4ae2a87b85e6d0130a8a8f3e8c078a9e9538d7633433dab4b6eeb0",
+          "state": "unverified",
+          "text_sha256": "2a96073780477876d74bb106d610a1fe4d2344363211da73a4359a64ea06762d"
+        }
+      },
+      "catalog_date": "2024-04-04",
+      "catalog_name": "autopoprawka do rządowego projektu ustawy o zmianie niektórych ustaw związanych z funkcjonowaniem administracji rządowej (UD9) (druk nr 269), RM-0610-18-24.zip",
+      "catalog_print_numbers": [
+        "269"
+      ],
+      "explicit_date_candidates": [],
+      "member_print_number": null,
+      "proposal_draft_date": null,
+      "same_rm_prints": {
+        "10": {
+          "basis": "catalog_name",
+          "digest_matches": [],
+          "exact_byte_matches": [],
+          "normative_digest": "law-v2:25488a8b64bf332a3e9713b652c92c1eb593969de48b27ae32223feabdd97862",
+          "primary_sha256": "619cf3ea98dd10baa277e866199769f1a3a0b0c57bae5fca981345bd709b35f9",
+          "print_number": "269",
+          "processes_sha256": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f",
+          "rm_number": "RM-0610-18-24"
+        }
+      }
+    },
+    "684485/12389752": {
+      "archive_sha256": "8f1dd7f69eaf8741cc2646fea2a6b4f20d642ed205b2eab605bd3edce79375ab",
+      "base_candidates": {
+        "https://legislacja.rcl.gov.pl/docs//2/12389752/13082617/13082618/dokument684251.zip": {
+          "cases": [
+            "12389752/12",
+            "12389752/14"
+          ],
+          "catalog_date": "2024-09-25",
+          "draft_dates": [],
+          "file_sha256": "4d2c1be3c8c1a48811e50f58c516b517f115965ab95bf6014756bef42dbb0843",
+          "name": "Projekt ustawy o zmianie ustawy o szczególnych rozwiązaniach związanych z usuwaniem skutków powodzi oraz niektórych innych ustaw (UD138), RM-0610-73-24.zip",
+          "normative_digest": "law-v2:b4c61b20fb0c83644842234da71a2f93ad47bf31b1ce3db89f1966d89ae4a5c1",
+          "state": "unverified",
+          "text_sha256": "2ff50b85c6a402ad8403ad5e24c09d9087244a283b4f90af22034e073140683b"
+        }
+      },
+      "catalog_date": "2024-09-26",
+      "catalog_name": "autopoprawka do rządowego projektu ustawy o zmianie ustawy o szczególnych rozwiązaniach związanych z usuwaniem skutków powodzi oraz niektórych innych ustaw (UD138) (druk nr 672), RM-0610-73-24.zip",
+      "catalog_print_numbers": [
+        "672"
+      ],
+      "explicit_date_candidates": [],
+      "member_print_number": "672",
+      "proposal_draft_date": null,
+      "same_rm_prints": {
+        "10": {
+          "basis": "member_heading",
+          "digest_matches": [
+            "https://legislacja.rcl.gov.pl/docs//2/12389752/13082617/13082618/dokument684251.zip"
+          ],
+          "exact_byte_matches": [],
+          "normative_digest": "law-v2:b4c61b20fb0c83644842234da71a2f93ad47bf31b1ce3db89f1966d89ae4a5c1",
+          "primary_sha256": "ba4a93c5c4f3a8400f7dedc06783a8044ef3ce453319a816bd908f14e08705e8",
+          "print_number": "672",
+          "processes_sha256": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f",
+          "rm_number": "RM-0610-73-24"
+        }
+      }
+    },
+    "692249/12390302": {
+      "archive_sha256": "de773a45c728e502732ba6c6625bf2ad4ba500f1ba667d787313bffae363ba7c",
+      "base_candidates": {
+        "https://legislacja.rcl.gov.pl/docs//2/12390302/13086686/13086687/dokument689698.zip": {
+          "cases": [
+            "12390302/12",
+            "12390302/14"
+          ],
+          "catalog_date": "2024-10-25",
+          "draft_dates": [
+            "2024-10-25"
+          ],
+          "file_sha256": "f5922df680622d2f1ece22c7b32d0f734060ed6831e1ed0e1b496926e0eb0435",
+          "name": "Projekt ustawy o zmianie ustawy o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych (UD144), RM-0610-100-24.zip",
+          "normative_digest": "law-v2:0ca3d5a99b99e54eeb9d17452640aae40a0c2933cd9114f24ec0599d0e60397d",
+          "state": "unverified",
+          "text_sha256": "66d26ce793f3ada0c10bf8f61284b3eda579a566a8c999c6377c5e0a5eedd4af"
+        }
+      },
+      "catalog_date": "2024-11-14",
+      "catalog_name": "autopoprawka do rządowego projektu ustawy o zmianie ustawy o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych (druk nr 764) (UD144), RM-0610-100-24.zip",
+      "catalog_print_numbers": [
+        "764"
+      ],
+      "explicit_date_candidates": [],
+      "member_print_number": "764",
+      "proposal_draft_date": null,
+      "same_rm_prints": {
+        "10": {
+          "basis": "member_heading",
+          "digest_matches": [],
+          "exact_byte_matches": [],
+          "normative_digest": "law-v2:d8381adf482d4cb541c68c6c61a04bab36f7ac11f0745188f99f0467ec7c727e",
+          "primary_sha256": "4e0e1fe1ed4531e9515c95a5991d5b9d2946cfd814d27b7d95287c6fcbffc58c",
+          "print_number": "764",
+          "processes_sha256": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f",
+          "rm_number": "RM-0610-100-24"
+        }
+      }
+    },
+    "692630/12390302": {
+      "archive_sha256": "f2b7e44c066780bf3e97685c021bd631f0fffe244f0a04682d9ce1bc517c7d94",
+      "base_candidates": {
+        "https://legislacja.rcl.gov.pl/docs//2/12390302/13086686/13086687/dokument689698.zip": {
+          "cases": [
+            "12390302/12",
+            "12390302/14"
+          ],
+          "catalog_date": "2024-10-25",
+          "draft_dates": [
+            "2024-10-25"
+          ],
+          "file_sha256": "f5922df680622d2f1ece22c7b32d0f734060ed6831e1ed0e1b496926e0eb0435",
+          "name": "Projekt ustawy o zmianie ustawy o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych (UD144), RM-0610-100-24.zip",
+          "normative_digest": "law-v2:0ca3d5a99b99e54eeb9d17452640aae40a0c2933cd9114f24ec0599d0e60397d",
+          "state": "unverified",
+          "text_sha256": "66d26ce793f3ada0c10bf8f61284b3eda579a566a8c999c6377c5e0a5eedd4af"
+        },
+        "https://legislacja.rcl.gov.pl/docs//2/12390302/13086686/13086687/dokument692249.zip": {
+          "cases": [
+            "12390302/12",
+            "12390302/14"
+          ],
+          "catalog_date": "2024-11-14",
+          "draft_dates": [],
+          "file_sha256": "de773a45c728e502732ba6c6625bf2ad4ba500f1ba667d787313bffae363ba7c",
+          "name": "autopoprawka do rządowego projektu ustawy o zmianie ustawy o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych (druk nr 764) (UD144), RM-0610-100-24.zip",
+          "normative_digest": null,
+          "state": "unsupported",
+          "text_sha256": "c9d1631f6c03c76b139a0561a2e6b09cce329973ce0c5b056911b6c8db69f51d"
+        }
+      },
+      "catalog_date": "2024-11-18",
+      "catalog_name": "Autopoprawka do rządowego projektu ustawy o zmianie ustawy o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych (druk nr 764), RM-0610-100-24.zip",
+      "catalog_print_numbers": [
+        "764"
+      ],
+      "explicit_date_candidates": [],
+      "member_print_number": "764",
+      "proposal_draft_date": null,
+      "same_rm_prints": {
+        "10": {
+          "basis": "member_heading",
+          "digest_matches": [],
+          "exact_byte_matches": [],
+          "normative_digest": "law-v2:d8381adf482d4cb541c68c6c61a04bab36f7ac11f0745188f99f0467ec7c727e",
+          "primary_sha256": "4e0e1fe1ed4531e9515c95a5991d5b9d2946cfd814d27b7d95287c6fcbffc58c",
+          "print_number": "764",
+          "processes_sha256": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f",
+          "rm_number": "RM-0610-100-24"
+        }
+      }
+    },
+    "694393/12387102": {
+      "archive_sha256": "2115fe2b9796cf5b0d21e157de1a7f9b11d5932749a9a978c05cbff691a902c9",
+      "base_candidates": {
+        "https://legislacja.rcl.gov.pl/docs//2/12387102/13069575/13069576/dokument686110.zip": {
+          "cases": [
+            "12387102/10",
+            "12387102/9"
+          ],
+          "catalog_date": "2024-10-07",
+          "draft_dates": [
+            "2024-10-02"
+          ],
+          "file_sha256": "a5f7ec836c92ce9bc0621f3c0353ebdd2f116e59f45aa620fb30a454863d7108",
+          "name": "Projekt ustawy o zmianie ustawy o ochronie zdrowia przed następstwami używania tytoniu i wyrobów tytoniowych (UD86), KRM-0610-95-24.zip",
+          "normative_digest": "law-v2:82f5ede7d5187d5be87d55587c732def1d7f105695a80a2fb51bf0320a6d813d",
+          "state": "unverified",
+          "text_sha256": "bdbcd0408b78d9ec9a41321983cb34be59023b2188da4ae67cc1df99a59f9545"
+        }
+      },
+      "catalog_date": "2024-11-29",
+      "catalog_name": "Autopoprawka do projektu ustawy o zmianie ustawy o ochronie zdrowia przed następstwami używania tytoniu i wyrobów tytoniowych (UD86), KRM-0610-130-24.zip",
+      "catalog_print_numbers": [],
+      "explicit_date_candidates": [],
+      "member_print_number": null,
+      "proposal_draft_date": null,
+      "same_rm_prints": {}
+    },
+    "721360/12392802": {
+      "archive_sha256": "83d09f0a5ec86a4e75f12e34f9963f4537bcc96a376770783aedffdae9ee6e8e",
+      "base_candidates": {
+        "https://legislacja.rcl.gov.pl/docs//2/12392802/13102736/13102737/dokument717873.zip": {
+          "cases": [
+            "12392802/12",
+            "12392802/14"
+          ],
+          "catalog_date": "2025-05-20",
+          "draft_dates": [
+            "2025-05-19"
+          ],
+          "file_sha256": "b8c1df35a0a12a4670d229e9a3de67261444007242e3869979c7aa58c6587755",
+          "name": "Projekt ustawy o uchyleniu ustawy o Centralnej Informacji Emerytalnej (ID78), RM-0610-67-25.zip",
+          "normative_digest": "law-v2:f5c7d4f2b2ec163d0dcb8400ec6de65ca6c50b9afc29a2f96346ab9f8d3103ed",
+          "state": "unverified",
+          "text_sha256": "10df79292464120059f37a8dc84a76e6e587624eaeceb65027e8d27e665c7768"
+        }
+      },
+      "catalog_date": "2025-06-09",
+      "catalog_name": "Autopoprawka do rządowego projektu ustawy o uchyleniu ustawy o Centralnej Informacji Emerytalnej (druk sejmowy nr 1307), RM-0610-67-25.zip",
+      "catalog_print_numbers": [
+        "1307"
+      ],
+      "explicit_date_candidates": [
+        {
+          "member": [
+            "Autopoprawka do projektu ustawy o uchyleniu ustawy o CIE druk sejmowy nr 1307 v 9.docx"
+          ],
+          "start": 0,
+          "text": "Projekt z dnia 09.06.2025 r."
+        }
+      ],
+      "member_print_number": null,
+      "proposal_draft_date": "2025-06-09",
+      "same_rm_prints": {
+        "10": {
+          "basis": "catalog_name",
+          "digest_matches": [],
+          "exact_byte_matches": [],
+          "normative_digest": "law-v2:cadb260a9c4a95ae2268aff3431852b947a80821aabb2e97cbd9c90b5360416c",
+          "primary_sha256": "09c2d40237d2774e379eeed9aed90e749fc95bc0e17e1a35ae13c0fa9f13a46b",
+          "print_number": "1307",
+          "processes_sha256": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f",
+          "rm_number": "RM-0610-67-25"
+        }
+      }
+    },
+    "736009/12399000": {
+      "archive_sha256": "0b4cb30ba5db9787d10ad1db9cb374e1810789582a8522f3af5d8638d97d2977",
+      "base_candidates": {
+        "https://legislacja.rcl.gov.pl/docs//2/12399000/13136450/13136451/dokument724851.zip": {
+          "cases": [
+            "12399000/12",
+            "12399000/14"
+          ],
+          "catalog_date": "2025-06-30",
+          "draft_dates": [
+            "2025-06-27"
+          ],
+          "file_sha256": "c334e446c21a104f5d62cc8c5dc36ad92e5bf3265a5d32d465c75ce1f55752d6",
+          "name": "Projekt ustawy o zmianie ustawy – Prawo o ruchu drogowym (UDER51), KRM-0610-116-25.zip",
+          "normative_digest": "law-v2:7dee2b6added69cefae24958e3ab8580f8188e0864ebb5da3e6a5d9849c9b57b",
+          "state": "unverified",
+          "text_sha256": "4b32aa6a35ba5f8b64fbf58e54b137fdf7786410641511605b576de14c634c98"
+        }
+      },
+      "catalog_date": "2025-09-09",
+      "catalog_name": "Autopoprawka do rządowego projektu ustawy o zmianie ustawy – Prawo o ruchu drogowym (druku nr 1437), RM-0610-116-125.zip",
+      "catalog_print_numbers": [
+        "1437"
+      ],
+      "explicit_date_candidates": [],
+      "member_print_number": "1437",
+      "proposal_draft_date": null,
+      "same_rm_prints": {
+        "10": {
+          "basis": "member_heading",
+          "digest_matches": [],
+          "exact_byte_matches": [],
+          "normative_digest": "law-v2:cd12fda54b2288c2106c35ded3678e56ee18b7425a236b3bdc703696853abb63",
+          "primary_sha256": "b7427ea8daba2f33a22b613a5d1f1f31fa785c3ca0d8b5a770374aa3a4b9c761",
+          "print_number": "1437",
+          "processes_sha256": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f",
+          "rm_number": "RM-0610-116-25"
+        }
+      }
+    },
+    "744253/12396201": {
+      "archive_sha256": "6736b24a8f55fdbbe62eb51da02b3c0dd588bdd0af119129956a72a62dd1b1f9",
+      "base_candidates": {
+        "https://legislacja.rcl.gov.pl/docs//2/12396201/13119182/13119183/dokument741436.zip": {
+          "cases": [
+            "12396201/10",
+            "12396201/9"
+          ],
+          "catalog_date": "2025-10-07",
+          "draft_dates": [
+            "2025-10-02"
+          ],
+          "file_sha256": "b93ab13869a2d97bada9ceff47325cce9670e9bfa4ec4c313de282191220ecfb",
+          "name": "Projekt ustawy o zmianie ustawy – Ordynacja podatkowa oraz niektórych innych ustaw (UD196), KRM-0610-208-25.zip",
+          "normative_digest": "law-v2:e3c7970d38d3c8a0139e4520fe5a74ce2a5e664acc55fe6455503f06b9797554",
+          "state": "unverified",
+          "text_sha256": "d2547a859efba9d6c436ff71cc7e83d98fc68d8cdfb829cdd38d24cc03157638"
+        }
+      },
+      "catalog_date": "2025-10-23",
+      "catalog_name": "autopoprawka do projektu ustawy o zmianie ustawy – Ordynacja podatkowa oraz niektórych innych ustaw (UD196), KRM-0610-208-25.zip",
+      "catalog_print_numbers": [],
+      "explicit_date_candidates": [
+        {
+          "member": [
+            "autopoprawka UD196 (8787423).docm"
+          ],
+          "start": 0,
+          "text": "Projekt z dnia 22 października 2025 r."
+        }
+      ],
+      "member_print_number": null,
+      "proposal_draft_date": "2025-10-22",
+      "same_rm_prints": {}
+    },
+    "791156/12405803": {
+      "archive_sha256": "244648bbae0ab5c7d6312cc61d0bd56fc62deebc3241adfb2bd319006b800255",
+      "base_candidates": {
+        "https://legislacja.rcl.gov.pl/docs//2/12405803/13178895/13178896/dokument788234.zip": {
+          "cases": [
+            "12405803/9"
+          ],
+          "catalog_date": "2026-07-20",
+          "draft_dates": [
+            "2026-07-10"
+          ],
+          "file_sha256": "6d4d7be18ff208248df06691fc8381316060c3b48310212e5ef03f2492bd4cdd",
+          "name": "Projekt ustawy o zmianie ustawy o funduszach inwestycyjnych i zarządzaniu alternatywnymi funduszami inwestycyjnymi oraz niektórych innych ustaw (UC105), KRM-0610-109-26.zip",
+          "normative_digest": "law-v2:258ed66fff9e46ca72ab7cf2972ad3b75711db2c366f4611a59322b00d40d860",
+          "state": "unverified",
+          "text_sha256": "3ddc0dd5d8cc67969798b37569947a2c4b8b02d96909746350f5829ceddac1e6"
+        }
+      },
+      "catalog_date": "2026-08-06",
+      "catalog_name": "KRM-0610-109-26 autopoprawka i nowy tekst OSR.zip",
+      "catalog_print_numbers": [],
+      "explicit_date_candidates": [],
+      "member_print_number": null,
+      "proposal_draft_date": null,
+      "same_rm_prints": {}
+    }
+  },
+  "ordinary_projection_equal": true,
+  "parser_source_sha256": "fd2c1aa655717ca5be7d4ba1d3d2e33dbd39fa6546a5dadeb592bd1462dba704",
+  "previous_sha256": "68acd157bbc1ee637aa23d365ea38d6310f1d0953812ac4bcc1fdc3600ba1099"
+}

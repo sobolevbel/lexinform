@@ -15,7 +15,12 @@ _BODY = re.compile(r"^\s*(?:w\s+(?:rządowym\s+)?projekcie\b|art\s*\.|\d+\))", r
 _SUPPORT = re.compile(r"^\s*(?:uzasadnienie|ocena skutków regulacji)\s*$", re.I | re.M)
 _PROJECT_NUMBER = re.compile(r"\b(?:UA|UB|UC|UD(?:ER)?|UO|UPRO)\s*\d+\b", re.I)
 _JOINT_TARGET = re.compile(r"\bprojektu\s+ustawy\b", re.I)
-_PRINT_REFERENCE = re.compile(r"\s*\(\s*(?:nr\s+)?druku?\b[^()]*\)", re.I)
+_PRINT_REFERENCE = re.compile(r"\s*\(\s*(?:nr\.?\s+)?druku?\b[^()]*\)", re.I)
+_PRINT_NUMBER = re.compile(
+    r"\(\s*(?:nr\.?\s+)?druku?(?:\s+sejmow(?:y|ego))?"
+    r"(?:\s+nr\.?)?\s+([1-9]\d*)\s*\)",
+    re.I,
+)
 _TARGET_NUMBER = re.compile(r"\(\s*([A-Z]+\s*\d+)\s*\)$", re.I)
 _ARTICLE_FORMULA = re.compile(
     r"\bart\s*\.\s*\d+[a-z]?[\s\w.(),–-]{0,95}"
@@ -29,12 +34,31 @@ def _title(text: str) -> str:
     return re.sub(r"^(?:rządowy )?projekt ustawy ", "", words)
 
 
-def _addresses_project(part: DocumentPart, project_title: str, project_number: str | None) -> bool:
-    opening = part.text[:1200]
+def _opening_target(text: str) -> tuple[str, int] | None:
+    opening = text[:1200]
     heading = _HEADING.match(opening)
     if heading is None or (body := _BODY.search(opening, heading.end())) is None:
+        return None
+    return opening[heading.end() : body.start()].strip(), body.start()
+
+
+def rcl_self_amendment_print_number(text: str) -> str | None:
+    """Return the explicit original print reference from a single-target proposal heading."""
+    opening = _opening_target(text)
+    if opening is None or _JOINT_TARGET.search(opening[0]):
+        return None
+    references = _PRINT_REFERENCE.findall(opening[0])
+    if len(references) != 1:
+        return None
+    match = _PRINT_NUMBER.fullmatch(references[0].strip())
+    return match[1] if match else None
+
+
+def _addresses_project(part: DocumentPart, project_title: str, project_number: str | None) -> bool:
+    opening = _opening_target(part.text)
+    if opening is None:
         return False
-    target = opening[heading.end() : body.start()].strip()
+    target, body_start = opening
     if not target or _JOINT_TARGET.search(target):
         return False
     numbers = {normalize_wykaz_number(match[0]) for match in _PROJECT_NUMBER.finditer(target)}
@@ -49,7 +73,7 @@ def _addresses_project(part: DocumentPart, project_title: str, project_number: s
             return False
     elif _title(title) != project_title:
         return False
-    normative = _SUPPORT.split(part.text[body.start() :], maxsplit=1)[0]
+    normative = _SUPPORT.split(part.text[body_start:], maxsplit=1)[0]
     return _ARTICLE_FORMULA.search(normative) is not None
 
 

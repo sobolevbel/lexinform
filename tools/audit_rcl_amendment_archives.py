@@ -11,7 +11,7 @@ from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.document_candidates import select_document_parts
-from lexinform.rcl_amendments import rcl_self_amendment_part
+from lexinform.rcl_amendments import rcl_self_amendment_part, rcl_self_amendment_print_number
 from lexinform.sections import document_kind
 from tools.corpus_artifacts import digest, write_json
 from tools.corpus_rcl import document_id, projects, stage_cases
@@ -41,6 +41,7 @@ def archive_observation(
                 "path": member.members,
                 "sha256": member.sha256,
                 "text_sha256": member.text_sha256,
+                "original_print_number": rcl_self_amendment_print_number(member.text),
             }
             if (
                 member := rcl_self_amendment_part(

@@ -1,7 +1,7 @@
 import pytest
 
 from lexinform.models.documents import DocumentPart
-from lexinform.rcl_amendments import rcl_self_amendment_part
+from lexinform.rcl_amendments import rcl_self_amendment_part, rcl_self_amendment_print_number
 
 TITLE = "Projekt ustawy o ochronie cudzoziemców"
 TARGET = "o ochronie cudzoziemców"
@@ -54,3 +54,22 @@ def test_declines_non_archive_incomplete_or_duplicate_member() -> None:
         (proposal, proposal),
     ):
         assert rcl_self_amendment_part(parts, project_title=TITLE, wykaz_number=None) is None
+
+
+@pytest.mark.parametrize(
+    ("reference", "number"),
+    [
+        ("(druk nr 764) (UD34)", "764"),
+        ("(druku sejmowego nr 764)", "764"),
+        ("(druk sejmowy nr 764)", "764"),
+        ("(nr druku 764)", "764"),
+        ("(druk nr 764-A)", None),
+        ("(druk 764) (druk 765-A)", None),
+        ("(druk 764) oraz projektu ustawy o pomocy", None),
+        ("(nr druku sejmowego nie został nadany)", None),
+        ("", None),
+    ],
+)
+def test_reads_only_one_explicit_print_reference(reference: str, number: str | None) -> None:
+    text = member(f"{TARGET} {reference}", f"{BODY}\nDruk nr 1000.").text
+    assert rcl_self_amendment_print_number(text) == number
