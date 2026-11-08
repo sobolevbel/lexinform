@@ -1064,6 +1064,9 @@ class CandidateDispositionTrace(BaseModel):
     amendment_part_gap: AmendmentPartGap | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+    version_part_gaps: tuple[RequiredPartGap | AmendmentPartGap | NormativeAnnexGap, ...] = Field(
+        default=(), max_length=MAX_VERSION_DECISION_ROWS, exclude_if=lambda value: not value
+    )
 
     supporting_exclusions: SupportingPartExclusions | None = Field(
         default=None, exclude_if=lambda value: value is None
@@ -1245,6 +1248,8 @@ class CandidateDispositionTrace(BaseModel):
             validate_required_part_gap_parent(self, self.required_part_gap)
         if self.amendment_part_gap is not None:
             validate_amendment_part_gap_parent(self, self.amendment_part_gap)
+        if self.version_part_gaps:
+            validate_version_part_gaps(self)
         if self.sejm_original_proposal is not None:
             validate_sejm_original_proposal(self, self.sejm_original_proposal)
         if self.sejm_print_representation is not None:
@@ -1617,6 +1622,36 @@ def validate_amendment_part_gap_parent(
         raise ValueError("amendment gap exceeds the actual amendment URL namespace")
     if not metadata_url_decision(candidate.amendment_urls[gap.amendment_index]).admitted:
         raise ValueError("amendment gap parent URL is outside metadata admission")
+
+
+def validate_version_part_gaps(trace: CandidateDispositionTrace) -> None:
+    request = trace.requested_document
+    if request is None or trace.result != "waiting":
+        raise ValueError("version part gaps require a retained waiting comparison")
+    candidates = (request, *request.alternatives)
+    failed = {
+        row.index
+        for row in trace.dispositions
+        if row.phase == "version_comparison" and row.reason == "normative_part_read_incomplete"
+    }
+    previous_index = -1
+    for gap in trace.version_part_gaps:
+        if (
+            gap.phase != "version_comparison"
+            or gap.index not in failed
+            or gap.index <= previous_index
+        ):
+            raise ValueError("version part gaps require ordered distinct failed candidates")
+        previous_index = gap.index
+        candidate = candidates[gap.index]
+        if isinstance(gap, RequiredPartGap):
+            urls, position = candidate.required_urls, gap.required_index
+        elif isinstance(gap, AmendmentPartGap):
+            urls, position = candidate.amendment_urls, gap.amendment_index
+        else:
+            urls, position = candidate.normative_urls, gap.normative_index
+        if position >= len(urls) or not metadata_url_decision(urls[position]).admitted:
+            raise ValueError("version part gap requires its declared part URL")
 
 
 def validate_required_part_gap_parent(

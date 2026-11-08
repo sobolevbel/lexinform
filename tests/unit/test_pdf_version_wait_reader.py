@@ -112,13 +112,57 @@ def test_normative_read_failure_requires_a_declared_part() -> None:
 
 
 @pytest.mark.parametrize(
-    ("reason", "amendment_only"),
-    [*((reason, False) for reason in INCOMPLETE_REASONS), ("normative_part_read_incomplete", True)],
+    "changes",
+    [
+        {"phase": "fallback"},
+        {"index": 0},
+        {"amendment_index": 1},
+        {"reason": "download_size_limit"},
+    ],
+)
+def test_comparison_part_gap_rejects_unbound_evidence(changes: dict[str, object]) -> None:
+    trace = waiting_trace("normative_part_read_incomplete", amendment_only=True)
+    gap = {
+        "phase": "version_comparison",
+        "index": 1,
+        "amendment_index": 0,
+        "reason": "returned_no_text",
+        "file_sha256": "c" * 64,
+    }
+    with pytest.raises(ValueError):
+        CandidateDispositionTrace.model_validate(
+            {**trace.model_dump(), "version_part_gaps": ({**gap, **changes},)}
+        )
+
+
+@pytest.mark.parametrize(
+    ("reason", "amendment_only", "gap"),
+    [
+        *((reason, False, False) for reason in INCOMPLETE_REASONS),
+        ("normative_part_read_incomplete", True, False),
+        ("normative_part_read_incomplete", True, True),
+    ],
 )
 def test_deferred_comparison_survives_dump_restore(
-    reason: IncompleteReason, amendment_only: bool
+    reason: IncompleteReason, amendment_only: bool, gap: bool
 ) -> None:
     trace = waiting_trace(reason, amendment_only=amendment_only)
+    assert "version_part_gaps" not in trace.model_dump()
+    if gap:
+        trace = CandidateDispositionTrace.model_validate(
+            {
+                **trace.model_dump(),
+                "version_part_gaps": (
+                    {
+                        "phase": "version_comparison",
+                        "index": 1,
+                        "amendment_index": 0,
+                        "reason": "returned_no_text",
+                        "file_sha256": "c" * 64,
+                    },
+                ),
+            }
+        )
     assert trace.requested_document is not None, "the waiting trace retains its request"
     selection = DocumentSelectionRecord.from_selection(DocumentSelection(state="waiting"))
     observation = SourceObservation(
