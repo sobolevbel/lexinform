@@ -1,0 +1,83 @@
+{
+  "baseline": "28460cb0",
+  "pinned_history_reports_unchanged": true,
+  "saved_states": [
+    {
+      "state_sha": "daf986cfaa1cbe1a4623ffd1aa8e784bb1378c94",
+      "sql_sha256": "463271a294bd611494b7774a0c81d4672ee6324205ed2840805208ed0c7e0ee9",
+      "sqlite_sha256": "de8cf170e057a217c329be6dd3e7b8228ae7651f1e9863ccc3f6a35cb0fda42c",
+      "doctor_sha256": "d0c72c2fd9a335d0f224bf28a410bed8ca8e7dcea16ebf7cadc4901a8ad89ee4",
+      "histories": 1,
+      "review_counts_by_kind_status_destination": [
+        [
+          "consultation_review",
+          "queued",
+          "digest_only",
+          2
+        ]
+      ],
+      "review_plans_with_exact_key": 2,
+      "review_plans_examined": 2
+    },
+    {
+      "state_sha": "175b03b53e3d17a2cb87fd361325749d758e16dd",
+      "sql_sha256": "86631b80b725d7581a9da3000449c54dbbddec364841b219bfb99ad934372023",
+      "sqlite_sha256": "de8d9bd1ebf1e16cf84cb318e38d96c07a411786985d3733744fcbdae6d28f60",
+      "doctor_sha256": "c8263098a12a4fd715d4ad84e350e8285284b8f68d73e7a82665c96be5f34227",
+      "histories": 4,
+      "review_counts_by_kind_status_destination": [
+        [
+          "consultation_review",
+          "queued",
+          "digest_only",
+          2
+        ]
+      ],
+      "review_plans_with_exact_key": 2,
+      "review_plans_examined": 2
+    },
+    {
+      "state_sha": "7598f545010b8a9a33dd13c35d0487c7396fcd8a",
+      "sql_sha256": "a9b23fd06114bd44b8e2d228457f91763b9d485f05361a80e15a527544e9c17d",
+      "sqlite_sha256": "c3540c2808ff788dde9fb4874bccdc30610f730429573f872755f707bc933554",
+      "doctor_sha256": "00091c5a562027c362c3bd854c7367311852a72fd35ae22c91417fe92a495f46",
+      "histories": 5,
+      "review_counts_by_kind_status_destination": [
+        [
+          "consultation_review",
+          "queued",
+          "digest_only",
+          2
+        ]
+      ],
+      "review_plans_with_exact_key": 2,
+      "review_plans_examined": 2
+    }
+  ],
+  "offline_application_delivery_and_restore": [
+    {
+      "purpose": "consultation_review",
+      "sqlite_sha256": "f1e93d3cead476efd96a39bcfed83db4e9e5cf632e6ec382300abb43aa85d456",
+      "content_id": "content-v1:8b61a07b4a6230505280bb6fb40c499a7d79f52582dc7fd8c307fbad1bcd2b47",
+      "evidence": {
+        "status": "recorded",
+        "application_id": 1,
+        "result_id": "result-v1:62a26910abad3c5a2332ca1b212f997cf96eb4e7eae0bdcafee7d556f0e1aa9b",
+        "request_sha256": "4627ebb504f24f24c5b565603f57d50dc59593cdf88e1fbdcf9398c12a2c3969",
+        "recorded_source_count": 2
+      }
+    },
+    {
+      "purpose": "commission_review",
+      "sqlite_sha256": "2f20de19f1a059b92247d109ebcd0d67874f9947f465638bcff2d628c9d85303",
+      "content_id": "content-v1:68aed398f267765baa5eb47eaa2c18625e80c406ee2c4bdfd1787ef59ec9c65d",
+      "evidence": {
+        "status": "recorded",
+        "application_id": 1,
+        "result_id": "result-v1:2c0a75cc47d105496996a8aa05f6ff9d1dac20bed20d517fdb9b7094c9d6fa18",
+        "request_sha256": "cf6c4cc05e4e17c1fb44a3ef9a01bf93e16c53b2b58677e899380452e1b86861",
+        "recorded_source_count": 4
+      }
+    }
+  ]
+}

@@ -13,6 +13,7 @@ from lexinform.models.bill import Bill
 from lexinform.models.enums import PublicationKind, PublicationStatus
 from lexinform.models.grouped_update_witness import GroupedRenderWitness
 from lexinform.models.original_delivery_content import OriginalDeliveryEvidence
+from lexinform.models.reviews import DocumentReviewRecord
 
 
 class ContentSnapshot(BaseModel):
@@ -79,7 +80,9 @@ def original_delivery_bill_snapshot(raw: str, *, review_notice: bool = False) ->
     return snapshot
 
 
-def validate_review_notice(bill: Bill, kind: PublicationKind, ref: str | None) -> None:
+def validate_review_notice(
+    bill: Bill, kind: PublicationKind, ref: str | None
+) -> DocumentReviewRecord:
     record = (
         bill.consultation_review
         if kind is PublicationKind.CONSULTATION_REVIEW
@@ -93,6 +96,7 @@ def validate_review_notice(bill: Bill, kind: PublicationKind, ref: str | None) -
         or record.context.memo_key(bill.term) != ref
     ):
         raise ValueError("original_delivery_review_scope")
+    return record
 
 
 def card_bill_snapshot(raw: str) -> ContentSnapshot:

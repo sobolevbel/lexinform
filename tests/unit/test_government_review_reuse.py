@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
+from tools.content_review_evidence import review_application_evidence
 from tools.replay_content_applications import CHANNEL, NOW, poster
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
@@ -13,12 +14,17 @@ from lexinform.document_fingerprints import text_digest
 from lexinform.models import (
     Bill,
     BillStatus,
+    ContentSnapshot,
+    ContentVersion,
     DocumentReviewRecord,
+    PublicationKind,
     ReviewContext,
     ReviewSource,
     TextDocument,
 )
 from lexinform.models.batch import BatchRequest
+from lexinform.models.content import original_delivery_bill_snapshot
+from lexinform.models.original_delivery_content import OriginalDeliveryEvidence
 from lexinform.models.reviews import ReviewPurpose
 from lexinform.sections import TextBudget
 from lexinform.services.analysis import AnalysisOptions, AnalysisService, Waiting
@@ -408,3 +414,71 @@ def test_known_same_number_rollover_receipt_cannot_name_another_government_resul
         assert original.computation_id is not None, "the original paid result remains addressable"
         retained = repo.get_computation_result(original.computation_id)
         assert retained is not None and retained.model_dump_json() == encoded
+
+
+@pytest.mark.parametrize(
+    "purpose,kind",
+    [
+        ("consultation_review", PublicationKind.CONSULTATION_REVIEW),
+        ("commission_review", PublicationKind.COMMISSION_REVIEW),
+    ],
+)
+def test_frozen_review_evidence_resolves_only_its_exact_application(
+    tmp_path: Path, purpose: ReviewPurpose, kind: PublicationKind
+) -> None:
+    path = tmp_path / "review.db"
+    number = "RCL/123"
+    with closing(SqliteBillRepository(path)) as repo:
+        case = prepared(repo, number, purpose)
+        _, record = case.apply(10)
+        bill = repo.get(10, number)
+        assert bill is not None, "application retains the current Bill"
+        ref = record.context.memo_key(bill.term)
+
+    def snapshot(value: DocumentReviewRecord) -> ContentSnapshot:
+        return original_delivery_bill_snapshot(
+            bill.model_copy(update={purpose: value}).model_dump_json(), review_notice=True
+        )
+
+    projected = snapshot(record)
+    version = ContentVersion(
+        root_publication_id=1,
+        reason="original",
+        language="ru",
+        formatter_version="fixture",
+        recorded_at=NOW,
+        bill_snapshot_id=projected.snapshot_id,
+        plan_snapshot_id=ContentSnapshot(kind="plan", payload_json="{}").snapshot_id,
+        original_delivery_evidence=OriginalDeliveryEvidence(
+            kind=kind, channel_id=CHANNEL, ref=ref, bill_context="editorial-notice-v1"
+        ),
+    )
+
+    def audit_projection(db: sqlite3.Connection, value: DocumentReviewRecord) -> dict[str, object]:
+        changed = snapshot(value)
+        bound = version.model_copy(update={"bill_snapshot_id": changed.snapshot_id})
+        return review_application_evidence(db, bound, changed)
+
+    with closing(sqlite3.connect(path)) as db:
+        db.row_factory = sqlite3.Row
+        matched = review_application_evidence(db, version, projected)
+        assert matched["status"] == "recorded"
+        assert matched["result_id"] == record.computation_id
+        assert matched["recorded_source_count"] == len(record.context.documents)
+        if purpose == "commission_review":
+            filtered = record.model_copy(
+                update={"review": record.review.model_copy(update={"commission_findings": ()})}
+            )
+            assert audit_projection(db, filtered) == matched
+        foreign = record.model_copy(update={"source_key": "review-input:" + "f" * 64})
+        assert audit_projection(db, foreign) == {
+            "status": "unavailable",
+            "reason": "projection_unavailable",
+        }
+        edited = record.model_copy(
+            update={"review": record.review.model_copy(update={"summary": "Unrecorded claim"})}
+        )
+        assert audit_projection(db, edited) == {
+            "status": "invalid",
+            "reason": "paid_review_conflict",
+        }

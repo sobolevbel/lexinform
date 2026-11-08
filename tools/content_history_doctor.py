@@ -41,7 +41,8 @@ from lexinform.models import (
     PublicationStatus,
 )
 from lexinform.models.commands import read_delivery_resolution
-from lexinform.models.original_delivery_content import ORIGINAL_CARD_KINDS
+from lexinform.models.original_delivery_content import ORIGINAL_CARD_KINDS, REVIEW_NOTICE_KINDS
+from tools.content_review_evidence import review_application_evidence
 from tools.corpus_artifacts import write_json
 from tools.sqlite_snapshot import open_snapshot, snapshot_files
 
@@ -482,12 +483,39 @@ def audit(database: Path, *, publication_id: int | None = None) -> dict[str, Any
             for identity in validated_primary_refs
             if any(physical["available"] for physical in bindings.get(identity, ()))
         }
+        invalid_originals = {
+            row["ref"]
+            for row in findings.rows
+            if row["code"] == "invalid_original_delivery_history"
+        }
+        review_refs: dict[str, dict[str, object]] = {}
+        for identity, version in versions.items():
+            original = version.original_delivery_evidence
+            physical = bindings.get(identity, ())
+            if (
+                original is None
+                or original.kind not in REVIEW_NOTICE_KINDS
+                or identity in invalid_originals
+                or not physical
+                or not all(row["available"] for row in physical)
+            ):
+                continue
+            try:
+                semantic = snapshots[version.bill_context_id]
+                review_refs[identity] = review_application_evidence(db, version, semantic)
+            except ValueError, TypeError, KeyError, sqlite3.Error:
+                review_refs[identity] = {"status": "invalid", "reason": "review_evidence_invalid"}
         if not snapshot.unchanged():
             findings.add("database_changed_during_audit", "database")
             validated_primary_refs.clear()
+            review_refs.clear()
     histories = _history_rows(
         versions, bindings, findings, publication_id, cards, validated_primary_refs
     )
+    for history in histories:
+        for entry in history["versions"]:
+            if entry["content_id"] in review_refs:
+                entry["review_application_evidence"] = review_refs[entry["content_id"]]
     counts["errors"] = sum(row["level"] == "error" for row in findings.rows)
     counts["warnings"] = sum(row["level"] == "warning" for row in findings.rows)
     if counts["errors"]:
