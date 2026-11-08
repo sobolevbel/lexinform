@@ -1,0 +1,238 @@
+{
+  "baseline_commit": "626f90223662aab92d75f9b9a95dda0e01570f9d",
+  "policy_version": "document-selection-v10",
+  "controls": {
+    "sejm/term10/files/92__92.pdf": {
+      "pdf_sha256": "66a79c29f1e4375b1a75823db7bab82022bbc7949a8a21fe49edf85ec57e874b",
+      "fault_pages": [
+        2,
+        3,
+        4
+      ],
+      "changed_cases": [
+        "named_failure"
+      ],
+      "baseline": {
+        "named_failure": {
+          "archive_sha256": "d6738ac463c9ff535149218b8d0face0bfea364f451f5d1b4167980d47a9fff7",
+          "state": "unsupported",
+          "reads": [
+            "https://source.test/partial.zip"
+          ],
+          "output_text_sha256": null,
+          "observed_parts": 1,
+          "parts": []
+        },
+        "support_failure": {
+          "archive_sha256": "16b719ec994b26c5b84dfeccf18570af6823e4d1e2f49a59207215dc64dc11ce",
+          "state": "unsupported",
+          "reads": [
+            "https://source.test/partial.zip"
+          ],
+          "output_text_sha256": null,
+          "observed_parts": 1,
+          "parts": []
+        },
+        "named_blank": {
+          "archive_sha256": "d6738ac463c9ff535149218b8d0face0bfea364f451f5d1b4167980d47a9fff7",
+          "state": "unsupported",
+          "reads": [
+            "https://source.test/partial.zip"
+          ],
+          "output_text_sha256": null,
+          "observed_parts": 1,
+          "parts": []
+        },
+        "named_original": {
+          "archive_sha256": "d6738ac463c9ff535149218b8d0face0bfea364f451f5d1b4167980d47a9fff7",
+          "state": "unsupported",
+          "reads": [
+            "https://source.test/partial.zip"
+          ],
+          "output_text_sha256": null,
+          "observed_parts": 1,
+          "parts": []
+        }
+      },
+      "candidate": {
+        "named_failure": {
+          "archive_sha256": "d6738ac463c9ff535149218b8d0face0bfea364f451f5d1b4167980d47a9fff7",
+          "state": "waiting",
+          "reads": [
+            "https://source.test/partial.zip"
+          ],
+          "output_text_sha256": null,
+          "observed_parts": 1,
+          "parts": [
+            {
+              "role": "unknown",
+              "sha256": "66a79c29f1e4375b1a75823db7bab82022bbc7949a8a21fe49edf85ec57e874b",
+              "text_sha256": "e7e8ac2320275a6527f21516944f4c7316f5437175c0a520b0deca791a9cebb3",
+              "page_failure": true
+            }
+          ]
+        },
+        "support_failure": {
+          "archive_sha256": "16b719ec994b26c5b84dfeccf18570af6823e4d1e2f49a59207215dc64dc11ce",
+          "state": "unsupported",
+          "reads": [
+            "https://source.test/partial.zip"
+          ],
+          "output_text_sha256": null,
+          "observed_parts": 1,
+          "parts": []
+        },
+        "named_blank": {
+          "archive_sha256": "d6738ac463c9ff535149218b8d0face0bfea364f451f5d1b4167980d47a9fff7",
+          "state": "unsupported",
+          "reads": [
+            "https://source.test/partial.zip"
+          ],
+          "output_text_sha256": null,
+          "observed_parts": 1,
+          "parts": []
+        },
+        "named_original": {
+          "archive_sha256": "d6738ac463c9ff535149218b8d0face0bfea364f451f5d1b4167980d47a9fff7",
+          "state": "unsupported",
+          "reads": [
+            "https://source.test/partial.zip"
+          ],
+          "output_text_sha256": null,
+          "observed_parts": 1,
+          "parts": []
+        }
+      }
+    },
+    "sejm/term10/files/124__124.pdf": {
+      "pdf_sha256": "654bfb518b46c76af9038242a5e5eabcd85bf50d1b46f7b5d32cdc432745b757",
+      "fault_pages": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "changed_cases": [
+        "named_failure"
+      ],
+      "baseline": {
+        "named_failure": {
+          "archive_sha256": "e2ecc9eadc1891cd4950d7af7313817f6ba374f0f36f8b9fc87b845cb05870ed",
+          "state": "unsupported",
+          "reads": [
+            "https://source.test/partial.zip"
+          ],
+          "output_text_sha256": null,
+          "observed_parts": 1,
+          "parts": []
+        },
+        "support_failure": {
+          "archive_sha256": "159727d0d3dd829cbf0148f8a32926260c4f2bd375befab9ca64732788391e77",
+          "state": "unsupported",
+          "reads": [
+            "https://source.test/partial.zip"
+          ],
+          "output_text_sha256": null,
+          "observed_parts": 1,
+          "parts": []
+        },
+        "named_blank": {
+          "archive_sha256": "e2ecc9eadc1891cd4950d7af7313817f6ba374f0f36f8b9fc87b845cb05870ed",
+          "state": "unsupported",
+          "reads": [
+            "https://source.test/partial.zip"
+          ],
+          "output_text_sha256": null,
+          "observed_parts": 1,
+          "parts": []
+        },
+        "named_original": {
+          "archive_sha256": "e2ecc9eadc1891cd4950d7af7313817f6ba374f0f36f8b9fc87b845cb05870ed",
+          "state": "unverified",
+          "reads": [
+            "https://source.test/partial.zip"
+          ],
+          "output_text_sha256": "4bbad380fa20689b4127dd7f42b19d27c47427d95c6217cf248932e58a30a365",
+          "observed_parts": 1,
+          "parts": [
+            {
+              "role": "bill",
+              "sha256": "654bfb518b46c76af9038242a5e5eabcd85bf50d1b46f7b5d32cdc432745b757",
+              "text_sha256": "4bbad380fa20689b4127dd7f42b19d27c47427d95c6217cf248932e58a30a365",
+              "page_failure": false
+            }
+          ]
+        }
+      },
+      "candidate": {
+        "named_failure": {
+          "archive_sha256": "e2ecc9eadc1891cd4950d7af7313817f6ba374f0f36f8b9fc87b845cb05870ed",
+          "state": "waiting",
+          "reads": [
+            "https://source.test/partial.zip"
+          ],
+          "output_text_sha256": null,
+          "observed_parts": 1,
+          "parts": [
+            {
+              "role": "unknown",
+              "sha256": "654bfb518b46c76af9038242a5e5eabcd85bf50d1b46f7b5d32cdc432745b757",
+              "text_sha256": "b81f87ea4f5afe449892511676610c8d8245d4437f3e1d12c886918090ee6bb7",
+              "page_failure": true
+            }
+          ]
+        },
+        "support_failure": {
+          "archive_sha256": "159727d0d3dd829cbf0148f8a32926260c4f2bd375befab9ca64732788391e77",
+          "state": "unsupported",
+          "reads": [
+            "https://source.test/partial.zip"
+          ],
+          "output_text_sha256": null,
+          "observed_parts": 1,
+          "parts": []
+        },
+        "named_blank": {
+          "archive_sha256": "e2ecc9eadc1891cd4950d7af7313817f6ba374f0f36f8b9fc87b845cb05870ed",
+          "state": "unsupported",
+          "reads": [
+            "https://source.test/partial.zip"
+          ],
+          "output_text_sha256": null,
+          "observed_parts": 1,
+          "parts": []
+        },
+        "named_original": {
+          "archive_sha256": "e2ecc9eadc1891cd4950d7af7313817f6ba374f0f36f8b9fc87b845cb05870ed",
+          "state": "unverified",
+          "reads": [
+            "https://source.test/partial.zip"
+          ],
+          "output_text_sha256": "4bbad380fa20689b4127dd7f42b19d27c47427d95c6217cf248932e58a30a365",
+          "observed_parts": 1,
+          "parts": [
+            {
+              "role": "bill",
+              "sha256": "654bfb518b46c76af9038242a5e5eabcd85bf50d1b46f7b5d32cdc432745b757",
+              "text_sha256": "4bbad380fa20689b4127dd7f42b19d27c47427d95c6217cf248932e58a30a365",
+              "page_failure": false
+            }
+          ]
+        }
+      }
+    }
+  },
+  "unchanged_native_archives_excluding_policy_label": 16,
+  "native_comparison_sha256": "e813562d9d8caba0d5d3d60f613d61d07eee4b626fa3a0a7ef2504f540564feb",
+  "previous_reader_restored_two_waiting_dumps_byte_identically": true
+}

@@ -188,6 +188,38 @@ def test_partially_read_named_draft_has_one_physical_slot(recognised: bool) -> N
     assert observed.sha256 == part.sha256
 
 
+@pytest.mark.parametrize(
+    ("name", "error", "state"),
+    [
+        ("projekt.pdf", "ValueError", "waiting"),
+        ("projekt.pdf", None, "unsupported"),
+        ("pismo.pdf", "ValueError", "unsupported"),
+    ],
+)
+def test_cover_letter_in_partially_read_draft_defers_selection(
+    name: str, error: str | None, state: str
+) -> None:
+    class Pdf(FakeTextExtractor):
+        def extract_pages(self, data: bytes) -> PdfTextExtraction:
+            return PdfTextExtraction(
+                input_sha256=hashlib.sha256(data).hexdigest(),
+                pypdf_version="fixture",
+                pages=(
+                    PdfPageText(number=1, text="Posłowie wnoszą projekt ustawy."),
+                    PdfPageText(number=2, error_type=error),
+                ),
+            )
+
+    reader = DocumentTextExtractor(Pdf(page_count=2), DocxTextExtractor(), FakeTextExtractor())
+    loaded = reader.extract_document_with_provenance(archive({name: b"%PDF-draft"})).document
+
+    assert loaded.selection.state == state
+    assert not loaded.text
+    if state == "waiting":
+        (part,) = loaded.selection.parts
+        assert part.has_pdf_page_failure and part.role == "unknown"
+
+
 @pytest.mark.parametrize("failed_folder", ["b", "other"])
 def test_named_pdf_failure_considers_every_confirmed_comparison_family(failed_folder: str) -> None:
     class Pdf(FakeTextExtractor):

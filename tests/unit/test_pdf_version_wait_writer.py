@@ -2,6 +2,7 @@ import hashlib
 
 import pytest
 
+from lexinform.document_selection import DOCUMENT_SELECTION_POLICY_VERSION
 from lexinform.models import DocumentPart, DocumentSelection, TextDocument
 from lexinform.models.documents import ExtractedDocument
 from lexinform.services.documents import TextLoader
@@ -66,7 +67,7 @@ def test_competing_pdf_read_failure_defers_the_entire_comparison(
         assert trace.dispositions[1].observed_sha256 == hashlib.sha256(b"newer").hexdigest()
         assert [part.url for part in file.selection.parts] == [NEWER]
         assert [part.url for part in file.selection.observed_parts] == [EARLIER, NEWER]
-        assert file.selection.policy_version == "document-selection-v9"
+        assert file.selection.policy_version == DOCUMENT_SELECTION_POLICY_VERSION
     else:
         assert resolved.url == NEWER
         assert (trace.result, trace.reason) == ("selected", "version_choice")

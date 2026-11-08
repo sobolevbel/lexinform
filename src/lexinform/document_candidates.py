@@ -202,7 +202,11 @@ def _select_parts(
         if kind != "bill" and _normative_annex(base, part.text):
             annexes.append((index, part.model_copy(update={"role": "normative_annex"})))
             continue
-        if kind == "unknown" and part.has_pdf_page_failure and _member_role(base) == "bill":
+        if (
+            kind in ("unknown", "letter")
+            and part.has_pdf_page_failure
+            and _member_role(base) == "bill"
+        ):
             incomplete_named_bills.append((index, part))
         if kind in _NOT_THE_BILL or not part.text.strip():
             rejected.append(f"{part.members}: {kind}")
