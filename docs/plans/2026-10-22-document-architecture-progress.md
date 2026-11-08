@@ -16220,3 +16220,16 @@ Unknown delivery stayed unconfirmed without a resend.
   [Архив 805259](https://legislacja.rcl.gov.pl/docs//2/12409801/13201112/13201113/dokument805259.zip) ·
   [Архив 805116](https://legislacja.rcl.gov.pl/docs//2/12400563/13146429/13146432/dokument805116.zip) ·
   [Квалификация](../assets/audits/2026-11-08-historical-archive-results/qualification.json).
+
+<a id="j543"></a>
+
+### J543. Повтор исторической сборки из отдельных файлов
+
+- Режим `--result-id ... --part PATH SHA256` принимает файлы в порядке
+  сохранённого выбора. Хеши сверяются с исходным наблюдением до
+  извлечения. Обратный порядок отклонён.
+- Три PDF RCL 12408601 воспроизвели 608 481 символ запроса.
+  Два DOCX и DOC RCL 12416550 воспроизвели 174 958 символов.
+  Служебные отметки об удалённых секциях остались отдельными
+  сегментами. Архивные проверки J542 и карточка 264 совпали.
+  [Квалификация](../assets/audits/2026-11-08-historical-loose-results/qualification.json).

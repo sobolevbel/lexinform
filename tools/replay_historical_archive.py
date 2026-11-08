@@ -1,4 +1,4 @@
-"""Verify archived source parts and replay trimming against a retained card request."""
+"""Verify physical source parts and replay trimming against a retained request."""
 
 import argparse
 import sqlite3
@@ -12,7 +12,7 @@ from lexinform.adapters.document_source_rows import DocumentSourceRows
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.models import DocumentPart
-from lexinform.sections import trim_print
+from lexinform.sections import PAGE_BREAK, trim_print
 from tools.audit_saved_primary_claims import (
     ReviewInputCheckpoint,
     _primary_batch_meta,
@@ -33,11 +33,17 @@ class SubmittedText:
     chars: int
 
 
+@dataclass(frozen=True)
+class PinnedSource:
+    path: Path
+    sha256: str
+
+
 def _identity(part: DocumentPart) -> tuple[object, ...]:
     return part.role, part.members, part.sha256, part.text_sha256, part.text_start, part.text_end
 
 
-def _read_archive(archive: Path, archive_sha256: str) -> bytes:
+def _read_source(archive: Path, archive_sha256: str) -> bytes:
     if archive.name == ".env" or archive.resolve().name == ".env":
         raise ValueError("A credential file is not a replay archive")
     if archive.stat().st_size > _MAX_ARCHIVE_BYTES:
@@ -49,15 +55,36 @@ def _read_archive(archive: Path, archive_sha256: str) -> bytes:
     return raw
 
 
+def _extract_source_text(
+    selected: tuple[DocumentPart, ...], bodies: list[bytes], *, archive: bool
+) -> str:
+    reader = DocumentTextExtractor(PypdfTextExtractor(), DocxTextExtractor(), DocTextExtractor())
+    if archive:
+        extracted = reader.extract_document(bodies[0])
+        if tuple(map(_identity, extracted.selection.parts)) != tuple(map(_identity, selected)):
+            raise ValueError("Archive replay differs from the recorded source parts")
+        return extracted.text
+    texts = []
+    for expected, raw in zip(selected, bodies, strict=True):
+        extracted = reader.extract_document(raw)
+        if tuple(map(_identity, extracted.selection.parts)) != (_identity(expected),):
+            raise ValueError("File replay differs from its recorded source part")
+        texts.append(extracted.text)
+    return PAGE_BREAK.join(texts)
+
+
 def _replay_source(
     database: Path,
     checkpoint: ReviewInputCheckpoint,
     observation_id: str,
-    archive: Path,
-    archive_sha256: str,
+    sources: tuple[PinnedSource, ...],
     text: SubmittedText,
+    *,
+    archive: bool,
 ) -> dict[str, object]:
-    raw = _read_archive(archive, archive_sha256)
+    if not sources or len(sources) > 6 or (archive and len(sources) != 1):
+        raise ValueError("Replay requires one archive or one to six individual parts")
+    bodies = [_read_source(source.path, source.sha256) for source in sources]
     with open_snapshot(database) as snapshot:
         db = snapshot.connection
         if snapshot.sha256 != text.database_sha256:
@@ -96,7 +123,11 @@ def _replay_source(
         selected = selection.selection.parts
         if (
             not selected
-            or any(not 1 <= len(part.members) <= 2 for part in selected)
+            or (
+                any(not 1 <= len(part.members) <= 2 for part in selected)
+                if archive
+                else len(selected) != len(sources) or any(part.members for part in selected)
+            )
             or tuple(map(_identity, selected)) != tuple(map(_identity, meta.selection.parts))
         ):
             raise ValueError("Recorded selection differs from the historical request parts")
@@ -105,14 +136,19 @@ def _replay_source(
             " WHERE selection_id=? AND part_scope='parts' ORDER BY part_index",
             (selection.selection_id,),
         )
-        if list(map(tuple, references)) != list(enumerate([archive_sha256] * len(selected))):
-            raise ValueError("Selected parts do not share the pinned archive")
-        extracted = DocumentTextExtractor(
-            PypdfTextExtractor(), DocxTextExtractor(), DocTextExtractor()
-        ).extract_document(raw)
-        if tuple(map(_identity, extracted.selection.parts)) != tuple(map(_identity, selected)):
-            raise ValueError("Archive replay differs from the recorded source parts")
-        trimmed = trim_print(extracted.text)
+        expected_hashes = (
+            [sources[0].sha256] * len(selected)
+            if archive
+            else [source.sha256 for source in sources]
+        )
+        if list(map(tuple, references)) != list(enumerate(expected_hashes)):
+            raise ValueError(
+                "Selected parts do not share the pinned archive"
+                if archive
+                else "Selected parts differ from the ordered file pins"
+            )
+        extracted = _extract_source_text(selected, bodies, archive=archive)
+        trimmed = trim_print(extracted)
         if len(trimmed.text) != text.chars or digest(trimmed.text.encode()) != text.text_sha256:
             raise ValueError("Trimmed archive does not reproduce the submitted text")
         projection = trimmed.projection
@@ -121,14 +157,20 @@ def _replay_source(
         if (
             not snapshot.unchanged()
             or not checkpoint.unchanged()
-            or _read_archive(archive, archive_sha256) != raw
+            or any(
+                _read_source(source.path, source.sha256) != raw
+                for source, raw in zip(sources, bodies, strict=True)
+            )
         ):
             raise ValueError("A pinned source changed during archive replay")
     return {
         "observation_id": observation_id,
         "selection_id": selection.selection_id,
-        "archive_sha256": archive_sha256,
-        "archive_bytes": len(raw),
+        **(
+            {"archive_sha256": sources[0].sha256, "archive_bytes": len(bodies[0])}
+            if archive
+            else {"file_sha256s": expected_hashes, "file_bytes": [len(raw) for raw in bodies]}
+        ),
         "selected_parts": [
             {
                 "role": part.role,
@@ -138,7 +180,7 @@ def _replay_source(
             }
             for part in selected
         ],
-        "extracted_text_sha256": digest(extracted.text.encode()),
+        "extracted_text_sha256": digest(extracted.encode()),
         "dropped_sections": [asdict(section) for section in trimmed.dropped],
         "trimmed_text_segments": [asdict(segment) for segment in projection.segments],
     }
@@ -167,7 +209,12 @@ def replay(
         "request": text,
         "delivery_cycle": delivery["status"],
         "physical_source_replay": _replay_source(
-            database, checkpoint, observation_id, archive, archive_sha256, submitted
+            database,
+            checkpoint,
+            observation_id,
+            (PinnedSource(archive, archive_sha256),),
+            submitted,
+            archive=True,
         ),
     }
 
@@ -180,6 +227,27 @@ def replay_result(
     observation_id: str,
     archive: Path,
     archive_sha256: str,
+) -> dict[str, object]:
+    return replay_result_sources(
+        database,
+        database_sha256,
+        result_id,
+        checkpoint,
+        observation_id,
+        (PinnedSource(archive, archive_sha256),),
+        archive=True,
+    )
+
+
+def replay_result_sources(
+    database: Path,
+    database_sha256: str,
+    result_id: str,
+    checkpoint: ReviewInputCheckpoint,
+    observation_id: str,
+    sources: tuple[PinnedSource, ...],
+    *,
+    archive: bool = False,
 ) -> dict[str, object]:
     saved = saved_claim_review(
         database, database_sha256=database_sha256, result_id=result_id, input_checkpoint=checkpoint
@@ -195,7 +263,7 @@ def replay_result(
             "input_checkpoint_sha256": checkpoint.sha256,
         },
         "physical_source_replay": _replay_source(
-            database, checkpoint, observation_id, archive, archive_sha256, submitted
+            database, checkpoint, observation_id, sources, submitted, archive=archive
         ),
     }
 
@@ -209,24 +277,49 @@ def main() -> None:
     parser.add_argument("--database-sha256")
     parser.add_argument("--checkpoint", nargs=2, metavar=("PATH", "SHA256"), required=True)
     parser.add_argument("--observation-id", required=True)
-    parser.add_argument("--archive", type=Path, required=True)
-    parser.add_argument("--archive-sha256", required=True)
+    physical = parser.add_mutually_exclusive_group(required=True)
+    physical.add_argument("--archive", type=Path)
+    physical.add_argument("--part", nargs=2, action="append", metavar=("PATH", "SHA256"))
+    parser.add_argument("--archive-sha256")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     checkpoint = ReviewInputCheckpoint(Path(args.checkpoint[0]), args.checkpoint[1])
     protected = snapshot_files(args.database) | snapshot_files(checkpoint.database)
     try:
-        if args.output.resolve() in protected | {args.archive.resolve()}:
+        sources: tuple[PinnedSource, ...]
+        if args.archive is not None:
+            if args.archive_sha256 is None:
+                raise ValueError("Archive replay requires its SHA-256 pin")
+            sources = (PinnedSource(args.archive, args.archive_sha256),)
+        else:
+            if args.archive_sha256 is not None or args.result_id is None:
+                raise ValueError("Individual parts require result replay and one pin per part")
+            sources = tuple(PinnedSource(Path(path), sha) for path, sha in args.part)
+        if args.output.resolve() in protected | {source.path.resolve() for source in sources}:
             raise ValueError("Output must be separate from all replay inputs")
-        common = (checkpoint, args.observation_id, args.archive, args.archive_sha256)
         if args.result_id is not None:
             if args.database_sha256 is None:
                 raise ValueError("Result replay requires a database SHA-256 pin")
-            report = replay_result(args.database, args.database_sha256, args.result_id, *common)
+            report = replay_result_sources(
+                args.database,
+                args.database_sha256,
+                args.result_id,
+                checkpoint,
+                args.observation_id,
+                sources,
+                archive=args.archive is not None,
+            )
         else:
             if args.database_sha256 is not None:
                 raise ValueError("Database SHA-256 is only used for result replay")
-            report = replay(args.database, args.publication_id, *common)
+            report = replay(
+                args.database,
+                args.publication_id,
+                checkpoint,
+                args.observation_id,
+                sources[0].path,
+                sources[0].sha256,
+            )
         write_json(args.output, report)
     except (OSError, ValueError, sqlite3.Error) as error:
         parser.error(str(error))

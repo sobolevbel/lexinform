@@ -1,0 +1,147 @@
+{
+  "cases": [
+    {
+      "state": "df257630",
+      "files": [
+        "769078.pdf",
+        "769079.pdf",
+        "769080.pdf"
+      ],
+      "database_sha256": "2fa282b623328efa9bec50d3d6da771fd6a8b098565ea619d1a1a4ed38f351b7",
+      "request": {
+        "result_id": "result-v1:7abf53b9cf9baa9408a529918c05ad0692155a5eed622d8b4820582346da4f4d",
+        "request_sha256": "1fe039ec8ff4e37ff47e5282564600ea8cd4ed4bbdebe0df2f61e311b0364adf",
+        "text_sha256": "452a076c91c8de5f7907c1ce1d153a8e12d493b522cc146d729fe66c66ca385f",
+        "text_chars": 608481,
+        "input_checkpoint_sha256": "47b34b4c69d1e2c6d6595ac28f12b122cf311f0f310dc7f6211bab2cd38b84d4"
+      },
+      "physical_source_replay": {
+        "observation_id": "source-observation-v1:017503b84cee36b6cc993b9ec3f92aa79a5352784af261aab89a7a2bf33e4d95",
+        "selection_id": "selection-v1:238b126a4ee6e7ac2a79617623bd586415913145d2d0b80580c798e86ed06209",
+        "file_sha256s": [
+          "763ac6cd72dbe3e6e45dc93c6f0e3935108d0b4188d750307babf0cb97a89085",
+          "1df0a054620d8dc2bdfeb38bf61b41734b91bc2d4c1bb10d664274a550e88af9",
+          "8849709070e4264a5ed1373b2d0fbe3fa39d4b42341c5fd998f699ccc7fb032c"
+        ],
+        "file_bytes": [
+          528750,
+          382897,
+          269766
+        ],
+        "selected_parts": [
+          {
+            "role": "bill",
+            "members": [],
+            "sha256": "763ac6cd72dbe3e6e45dc93c6f0e3935108d0b4188d750307babf0cb97a89085",
+            "text_sha256": "2fba842d95836d45ad7f4728ac2632ea1015cd608c62bf49a6bd44cb43066036"
+          },
+          {
+            "role": "justification",
+            "members": [],
+            "sha256": "1df0a054620d8dc2bdfeb38bf61b41734b91bc2d4c1bb10d664274a550e88af9",
+            "text_sha256": "024ef7a3efd75d5c64a39559503a84ce9183008c6f93142369719d2b2fba0c4b"
+          },
+          {
+            "role": "osr",
+            "members": [],
+            "sha256": "8849709070e4264a5ed1373b2d0fbe3fa39d4b42341c5fd998f699ccc7fb032c",
+            "text_sha256": "7cfd3b14744a034f650c41ff6ea6480bd4186e42ed406fab76b3db0bdb4951fe"
+          }
+        ],
+        "extracted_text_sha256": "8ed7e74684cd7ff61d4a0778d14d05ce0d9184e441fd6ee5feb6ba182e62c3ab",
+        "dropped_sections": [
+          {
+            "name": "OSR pkt 5-13",
+            "chars": 10620
+          },
+          {
+            "name": "raport z konsultacji",
+            "chars": 43401
+          }
+        ],
+        "trimmed_text_segments": [
+          {
+            "start": 0,
+            "end": 608388,
+            "source_start": 0
+          },
+          {
+            "start": 608388,
+            "end": 608481,
+            "source_start": null
+          }
+        ]
+      }
+    },
+    {
+      "state": "68519b71",
+      "files": [
+        "805738.docx",
+        "805739.docx",
+        "805740.doc"
+      ],
+      "database_sha256": "2fa282b623328efa9bec50d3d6da771fd6a8b098565ea619d1a1a4ed38f351b7",
+      "request": {
+        "result_id": "result-v1:bf80920f0fc77b10afca4b5b97dc480fb3f161b0f9ac23f7d33983da0503b694",
+        "request_sha256": "d8853139629fb84f6d567e8e7857ab9b3135d81a824d453a423ef9b0802554a6",
+        "text_sha256": "42ba1f9d959483b59b4213589788cd33c6b984cf0136c657127234cf64bac7c9",
+        "text_chars": 174958,
+        "input_checkpoint_sha256": "88a7e44075d810925f6e9226c756db00daf5b6fb3c240693ff2858138f85377a"
+      },
+      "physical_source_replay": {
+        "observation_id": "source-observation-v1:b600a10106373b9fde25936684267d29210974f1bbf325e7b58265735fbdadd6",
+        "selection_id": "selection-v1:d39c54c8f4e9ceee1a394b0186911b7a34342c000ce721ab5ddbd234658c676e",
+        "file_sha256s": [
+          "3ecbc562934fe94cb072a49e7e8e3917543e230ca44af7d26fb9eebfb53785a3",
+          "045eccc7a30135084bdb7978ea3d558f456f0a73ae011b5b0411aad36595c01d",
+          "bc06e73ef209eb2819da13cd79c4c588e45d23fb5ded7c141fe7e690ccf52308"
+        ],
+        "file_bytes": [
+          120440,
+          87701,
+          283648
+        ],
+        "selected_parts": [
+          {
+            "role": "bill",
+            "members": [],
+            "sha256": "3ecbc562934fe94cb072a49e7e8e3917543e230ca44af7d26fb9eebfb53785a3",
+            "text_sha256": "26cc182a1efb9e249729e05fa8f1f9593599562278876ada15900679cf8bdea5"
+          },
+          {
+            "role": "justification",
+            "members": [],
+            "sha256": "045eccc7a30135084bdb7978ea3d558f456f0a73ae011b5b0411aad36595c01d",
+            "text_sha256": "d31deb969b8bce3c5272363aefab18bee94fb9633cc9f687ca37532176949897"
+          },
+          {
+            "role": "osr",
+            "members": [],
+            "sha256": "bc06e73ef209eb2819da13cd79c4c588e45d23fb5ded7c141fe7e690ccf52308",
+            "text_sha256": "f164af4219da0a96cf02c95c95735b750963e3e380b6abcf6fbccda6d3423694"
+          }
+        ],
+        "extracted_text_sha256": "15483227978a38bd82fea1474f78f0af544afd4ecc9db2441532a2078d926fd3",
+        "dropped_sections": [
+          {
+            "name": "OSR pkt 5-13",
+            "chars": 22712
+          }
+        ],
+        "trimmed_text_segments": [
+          {
+            "start": 0,
+            "end": 174916,
+            "source_start": 0
+          },
+          {
+            "start": 174916,
+            "end": 174958,
+            "source_start": null
+          }
+        ]
+      }
+    }
+  ],
+  "reordered_files_rejected": true
+}
