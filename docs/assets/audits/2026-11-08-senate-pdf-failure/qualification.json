@@ -1,0 +1,28 @@
+{
+  "input_sha256": {
+    "catalog.json": "c2058114deaf00d7559bc82521dd28fc8fce722993e85dd8e342916999efd6a6",
+    "stage-evidence.json": "6da4db2d9968e45f95394e4f436e0600c91530334c1d051e12fbbe8723420e0e"
+  },
+  "counts": {
+    "8/selected": 203,
+    "mutation_probes": 4903,
+    "8/scan_pending_verification": 5,
+    "8/no_unique_stage_date": 1,
+    "9/selected": 333,
+    "9/not_amendments": 90,
+    "9/scan_pending_verification": 14,
+    "10/selected": 165,
+    "10/scan_pending_verification": 4,
+    "10/no_unique_stage_date": 1
+  },
+  "files": 1825,
+  "rows": 816,
+  "negative_controls": {
+    "counts": {
+      "sejm": 980,
+      "rcl": 10418
+    },
+    "matches": []
+  },
+  "unchanged": true
+}

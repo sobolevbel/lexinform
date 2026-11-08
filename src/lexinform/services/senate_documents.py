@@ -107,6 +107,10 @@ def resolve_senate_document(
                 )
             ):
                 reason = "date_mismatch"
+            if not reason and loaded.selection.has_pdf_page_failure:
+                incomplete = True
+                reason = "unreadable_amendment_page"
+                evidence = evidence.model_copy(update={"limitation": reason})
             if reason or loaded.sha256 is None:
                 log.info("Senate attachment %s: %s", attachment.url, reason or "missing_hash")
                 if (
@@ -246,6 +250,7 @@ def verified_senate_text(
     evidence = inspect_senate_resolution(loaded.text or "", word_eof=identity.word_eof)
     if (
         loaded.sha256 != identity.sha256
+        or loaded.selection.has_pdf_page_failure
         or not evidence.complete
         or evidence.outcome != "amendments"
         or evidence.subject != identity.subject
