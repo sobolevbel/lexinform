@@ -103,6 +103,27 @@ def test_confirmed_versions_with_different_amounts_remain_ambiguous() -> None:
     assert len(result.selection.observed_parts) == len(result.selection.parts) == 2
 
 
+@pytest.mark.parametrize(("amount", "state"), [("200", "unverified"), ("300", "ambiguous")])
+def test_equal_archive_bill_bodies_do_not_hide_distinct_annexes(amount: str, state: str) -> None:
+    annex = "Załącznik do ustawy\nWykaz\n200 zł"
+    physical = ExtractedParts(
+        input_sha256="a" * 64,
+        parts=(
+            DocumentPart(text=BILL, members=("a.zip", "projekt.pdf")),
+            DocumentPart(text=annex, members=("a.zip", "annex.pdf")),
+            DocumentPart(text=BILL, members=("b.zip", "projekt.pdf")),
+            DocumentPart(text=annex.replace("200", amount), members=("b.zip", "annex.pdf")),
+        ),
+        part_archive_ordinals=((0, 0), (0, 1), (1, 0), (1, 1)),
+    )
+
+    result = select_document_parts(physical, max_part_chars=None)
+
+    assert result.selection.state == state
+    assert len(result.selection.parts) == (4 if state == "ambiguous" else 2)
+    assert bool(result.text) == (state != "ambiguous")
+
+
 def test_file_selection_keeps_input_indices_after_non_bill_candidates() -> None:
     bill = DocumentPart(text=BILL)
     physical = DocumentPart(text="Physical appendix")

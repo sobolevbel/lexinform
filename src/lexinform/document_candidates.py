@@ -367,8 +367,20 @@ def _select_parts(
     if len(confirmed) > 1:
         comparison = compare_version_decision([p.text for _, p in confirmed])
         indices = comparison.matching_indices
-        if not indices:
-            if decision_sink is not None and len(confirmed) == 2:
+        compared_parents = {part_parent(*confirmed[index]) for index in indices}
+        annex_identities = {
+            tuple(
+                sorted(
+                    normative_annex_key(part.text)
+                    for index, part in annexes
+                    if part_parent(index, part) == parent
+                )
+            )
+            for parent in compared_parents
+        }
+        annex_conflict = len(annex_identities) > 1
+        if not indices or annex_conflict:
+            if not indices and decision_sink is not None and len(confirmed) == 2:
                 conflict_slots = (confirmed[0][0], confirmed[1][0])
             for index, _ in (*annexes, *supporting):
                 note(index, "policy_excluded", "version_conflict")
@@ -379,7 +391,14 @@ def _select_parts(
                     selection=DocumentSelection(
                         observed_parts=tuple(parts),
                         state="ambiguous",
-                        parts=tuple(p for _, p in confirmed),
+                        parts=(
+                            *(part for _, part in confirmed),
+                            *(
+                                part
+                                for index, part in annexes
+                                if annex_conflict and part_parent(index, part) in compared_parents
+                            ),
+                        ),
                         rejected=tuple(rejected),
                     )
                 )
