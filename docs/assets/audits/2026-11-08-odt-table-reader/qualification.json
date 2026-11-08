@@ -1,0 +1,12 @@
+{
+  "scope": "Reader qualification. New metadata is explicitly injected from the pinned offline coordinate proof; runtime extraction still uses the legacy writer.",
+  "pinned_official_odt_leaves_with_byte_identical_result_json": 21,
+  "legacy_report_sha256": "a9a1c97dc261c45e6eaf26125d7caf0b5d349a1f229e72e2ee9950f0b53405bd",
+  "case": "rcl-file:684340",
+  "input_sha256": "743d88976846877fcc7d9c4a81ed0e1128822b1c2f5e70c71b1b518a1027143f",
+  "body_manifest_sha256": "49a2860fcfe336a27327219873ddb0109cf267bf9a795c045134723c7476d090",
+  "retained_merges": 35,
+  "retained_covered_positions": 70,
+  "metadata_bytes": 3132,
+  "sql_restored_byte_identically": true
+}

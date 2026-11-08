@@ -24,6 +24,7 @@ from lexinform.models.odt_notes import (
     Path,
 )
 from lexinform.models.odt_notes import _width as odt_note_metadata_width
+from lexinform.models.odt_tables import MAX_ODT_TABLE_BYTES, OdtTableMerges
 from lexinform.models.physical_inventory import Position, Sha256
 from lexinform.models.word_field_ranges import MAX_WORD_FIELD_BYTES, WordFieldPrefix
 
@@ -320,6 +321,10 @@ class ExtractedPartSummary(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
 
+    odt_table_merges: OdtTableMerges | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
     doc_notes: DocNoteSummary | None = Field(default=None, exclude_if=lambda value: value is None)
 
     @model_validator(mode="after")
@@ -424,6 +429,19 @@ class ExtractedPartSummary(BaseModel):
                 or len(fields.paragraphs) > self.block_count
             ):
                 raise ValueError("Word field prefix requires its actual input and Word manifest")
+        if self.odt_table_merges is not None:
+            tables = OdtTableMerges.model_validate(self.odt_table_merges)
+            if (
+                self.format != "odt"
+                or self.coordinates != "odt-blocks-v1"
+                or self.text_view != "legacy-odt-body-v1"
+                or self.block_count is None
+                or (tables.input_sha256, tables.body_manifest_sha256)
+                != (self.sha256, self.manifest_sha256)
+            ):
+                raise ValueError(
+                    "ODT table merges require their actual ODT input and body manifest"
+                )
         if self.odt_note_status is not None:
             if not isinstance(self.odt_note_status, OdtNoteStatus):
                 raise ValueError("Constructed ODT summary requires its typed note status")
@@ -588,6 +606,15 @@ class ExtractionResult(BaseModel):
                 or part.doc_notes is not None
             ):
                 ExtractedPartSummary.model_validate(part)
+        table_bytes = 0
+        for part in self.selected_parts:
+            if part.odt_table_merges is not None:
+                if not isinstance(part.odt_table_merges, OdtTableMerges):
+                    raise ValueError("Constructed ODT summary requires typed table metadata")
+                ExtractedPartSummary.model_validate(part)
+                table_bytes += len(part.odt_table_merges.model_dump_json().encode())
+        if table_bytes > MAX_ODT_TABLE_BYTES:
+            raise ValueError("Stored ODT tables exceed the aggregate byte limit")
         indices = [part.physical_index for part in self.selected_parts]
         if len(set(indices)) != len(indices) or any(
             index >= self.physical_part_count for index in indices
