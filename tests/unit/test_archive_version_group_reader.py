@@ -104,9 +104,6 @@ def test_archive_version_group_requires_exact_physical_parents(
         trace = CandidateDispositionTrace.model_validate(
             {**base.model_dump(), "archive_version_group": evidence}
         )
-        if outcome == "annex_conflict":
-            assert repo.list_candidate_disposition_traces(observation.observation_id) == [base]
-            repo.save_candidate_disposition_trace(observation.observation_id, trace)
         assert repo.get_candidate_disposition_trace(trace.trace_id) == trace
         good = repo.dump()
         history.persist_source_history(repo, recorded_at=NOW)

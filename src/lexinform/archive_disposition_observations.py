@@ -380,9 +380,6 @@ class ArchiveDispositionAccumulator:
     ) -> ArchiveVersionGroupEvidence | None:
         eligible = []
         for group in self._version_groups:
-            # Annex conflicts require the reader that validates the retained conflicting bundle.
-            if group.outcome == "annex_conflict":
-                continue
             try:
                 archive_version_group_members(trace, group)
             except ValueError:
