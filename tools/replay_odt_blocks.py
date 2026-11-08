@@ -26,6 +26,7 @@ from lexinform.sections import PAGE_BREAK
 from tools.corpus_artifacts import digest, observation_changes, read_artifact, write_json
 from tools.corpus_manifests import RawReplayManifest
 from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
+from tools.odt_table_layout import merged_table_layouts
 
 Mode = Literal["library", "adapter"]
 OFFICE = "{urn:oasis:names:tc:opendocument:xmlns:office:1.0}"
@@ -142,6 +143,7 @@ def verify_manifest(data: bytes, extracted: OdtTextExtraction) -> dict[str, Any]
     if digest(xml) != extracted.xml_sha256:
         raise ValueError("ODT manifest refers to different XML bytes")
     geometry: dict[str, dict[str, int]] | None = None
+    merged_tables = None
     if extracted.body_state == "read":
         body = ET.fromstring(xml).find(f"{OFFICE}body/{OFFICE}text")
         if body is None:
@@ -163,6 +165,9 @@ def verify_manifest(data: bytes, extracted: OdtTextExtraction) -> dict[str, Any]
             if xml_node(body, ignored.path).tag != ignored.tag:
                 raise ValueError("Ignored ODT path does not address its declared XML element")
         geometry = table_geometry_counts(body, table_blocks)
+        merged_tables = merged_table_layouts(
+            body, {block.path for block in extracted.blocks if block.kind == "table_cell"}
+        )
     return {
         "manifest_sha256": extracted.manifest_sha256,
         "xml_sha256": extracted.xml_sha256,
@@ -174,6 +179,7 @@ def verify_manifest(data: bytes, extracted: OdtTextExtraction) -> dict[str, Any]
         "tracked_changes": extracted.tracked_changes,
         "table_repetitions": extracted.table_repetitions,
         "table_geometry": geometry,
+        "merged_tables": merged_tables,
     }
 
 

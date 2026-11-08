@@ -303,3 +303,39 @@ def test_replay_reports_declared_table_geometry_without_expanding_text() -> None
         "number-rows-repeated": {"declared_nodes": 1, "nodes_with_blocks": 1},
         "number-rows-spanned": {"declared_nodes": 1, "nodes_with_blocks": 1},
     }
+
+
+@pytest.mark.parametrize(
+    ("second_row", "reason"),
+    [
+        (
+            "<table:table-row><table:covered-table-cell/><table:covered-table-cell/></table:table-row>",
+            None,
+        ),
+        ("<table:table-row><table:covered-table-cell/></table:table-row>", "missing_covered_cell"),
+        ("<table:table-row table:number-rows-repeated='2'/>", "repeated_rows"),
+        ("<text:section/>", "unsupported_table_child"),
+    ],
+)
+def test_replay_links_rectangular_merge_only_when_explicit_cells_match(
+    second_row: str, reason: str | None
+) -> None:
+    raw = odt_document(
+        "<table:table><table:table-header-rows><table:table-row>"
+        "<table:table-cell table:number-rows-spanned='2' table:number-columns-spanned='2'>"
+        "<text:p>Termin</text:p></table:table-cell><table:covered-table-cell/>"
+        "</table:table-row></table:table-header-rows>"
+        f"{second_row}</table:table>"
+    )
+
+    extracted = OdtTextExtractor().extract_odt_blocks(raw)
+    (layout,) = verify_manifest(raw, extracted)["merged_tables"]
+
+    if reason is not None:
+        assert layout == {"table_path": (0,), "status": "unresolved", "reason": reason}
+    else:
+        assert layout == {
+            "table_path": (0,),
+            "status": "verified",
+            "merges": [{"anchor": (0, 0, 0, 0), "covered": [(0, 0, 0, 1), (0, 1, 0), (0, 1, 1)]}],
+        }

@@ -1,0 +1,280 @@
+{
+  "scope": "Offline explicit merged-cell proof only, using physical child-index paths. Does not expand repeated rows or cells.",
+  "official_leaf_pins": "docs/assets/audits/2026-11-08-odt-table-geometry/qualification.json",
+  "official_leaves_checked": 21,
+  "corpus_roots_checked": 6,
+  "corpus_odt_leaves_checked": 8,
+  "corpus_report_sha256": "c0744ad8af1f8fec0b820d96ba988d2f8574c1975a4037fac118e6165a40cd2b",
+  "unchanged_routing_and_extracted_text": true,
+  "positive_controls": [
+    {
+      "official_id": "rcl-file:684340",
+      "name": "684340.odt",
+      "sha256": "743d88976846877fcc7d9c4a81ed0e1128822b1c2f5e70c71b1b518a1027143f",
+      "xml_sha256": "7c70ee46b818ce5fe1f9a4aaa79906ac61927f444cfe19fec1530c06892f8e91",
+      "geometry": {
+        "covered-table-cell": {
+          "declared_nodes": 70,
+          "nodes_with_blocks": 70
+        },
+        "number-rows-spanned": {
+          "declared_nodes": 35,
+          "nodes_with_blocks": 35
+        }
+      },
+      "merged_tables": [
+        {
+          "table_path": [1],
+          "status": "verified",
+          "merges": [
+            {
+              "anchor": [1, 8, 0],
+              "covered": [
+                [1, 9, 0]
+              ]
+            },
+            {
+              "anchor": [1, 8, 1],
+              "covered": [
+                [1, 9, 1]
+              ]
+            },
+            {
+              "anchor": [1, 8, 3],
+              "covered": [
+                [1, 9, 3]
+              ]
+            },
+            {
+              "anchor": [1, 8, 4],
+              "covered": [
+                [1, 9, 4]
+              ]
+            },
+            {
+              "anchor": [1, 8, 5],
+              "covered": [
+                [1, 9, 5]
+              ]
+            },
+            {
+              "anchor": [1, 10, 0],
+              "covered": [
+                [1, 11, 0],
+                [1, 12, 0]
+              ]
+            },
+            {
+              "anchor": [1, 10, 1],
+              "covered": [
+                [1, 11, 1],
+                [1, 12, 1]
+              ]
+            },
+            {
+              "anchor": [1, 10, 3],
+              "covered": [
+                [1, 11, 3],
+                [1, 12, 3]
+              ]
+            },
+            {
+              "anchor": [1, 10, 4],
+              "covered": [
+                [1, 11, 4],
+                [1, 12, 4]
+              ]
+            },
+            {
+              "anchor": [1, 10, 5],
+              "covered": [
+                [1, 11, 5],
+                [1, 12, 5]
+              ]
+            },
+            {
+              "anchor": [1, 13, 0],
+              "covered": [
+                [1, 14, 0]
+              ]
+            },
+            {
+              "anchor": [1, 13, 1],
+              "covered": [
+                [1, 14, 1]
+              ]
+            },
+            {
+              "anchor": [1, 13, 3],
+              "covered": [
+                [1, 14, 3]
+              ]
+            },
+            {
+              "anchor": [1, 13, 4],
+              "covered": [
+                [1, 14, 4]
+              ]
+            },
+            {
+              "anchor": [1, 13, 5],
+              "covered": [
+                [1, 14, 5]
+              ]
+            },
+            {
+              "anchor": [1, 16, 0],
+              "covered": [
+                [1, 17, 0]
+              ]
+            },
+            {
+              "anchor": [1, 16, 1],
+              "covered": [
+                [1, 17, 1]
+              ]
+            },
+            {
+              "anchor": [1, 16, 3],
+              "covered": [
+                [1, 17, 3],
+                [1, 18, 3],
+                [1, 19, 3],
+                [1, 20, 3],
+                [1, 21, 3],
+                [1, 22, 3]
+              ]
+            },
+            {
+              "anchor": [1, 16, 4],
+              "covered": [
+                [1, 17, 4],
+                [1, 18, 4],
+                [1, 19, 4],
+                [1, 20, 4],
+                [1, 21, 4],
+                [1, 22, 4]
+              ]
+            },
+            {
+              "anchor": [1, 16, 5],
+              "covered": [
+                [1, 17, 5],
+                [1, 18, 5],
+                [1, 19, 5],
+                [1, 20, 5],
+                [1, 21, 5],
+                [1, 22, 5]
+              ]
+            },
+            {
+              "anchor": [1, 22, 0],
+              "covered": [
+                [1, 23, 0],
+                [1, 24, 0],
+                [1, 25, 0]
+              ]
+            },
+            {
+              "anchor": [1, 22, 1],
+              "covered": [
+                [1, 23, 1],
+                [1, 24, 1],
+                [1, 25, 1]
+              ]
+            },
+            {
+              "anchor": [1, 23, 3],
+              "covered": [
+                [1, 24, 3]
+              ]
+            },
+            {
+              "anchor": [1, 23, 4],
+              "covered": [
+                [1, 24, 4]
+              ]
+            },
+            {
+              "anchor": [1, 23, 5],
+              "covered": [
+                [1, 24, 5]
+              ]
+            },
+            {
+              "anchor": [1, 27, 3],
+              "covered": [
+                [1, 28, 3],
+                [1, 29, 3],
+                [1, 30, 3]
+              ]
+            },
+            {
+              "anchor": [1, 27, 4],
+              "covered": [
+                [1, 28, 4],
+                [1, 29, 4],
+                [1, 30, 4]
+              ]
+            },
+            {
+              "anchor": [1, 27, 5],
+              "covered": [
+                [1, 28, 5],
+                [1, 29, 5],
+                [1, 30, 5]
+              ]
+            },
+            {
+              "anchor": [1, 31, 0],
+              "covered": [
+                [1, 32, 0],
+                [1, 33, 0],
+                [1, 34, 0]
+              ]
+            },
+            {
+              "anchor": [1, 32, 3],
+              "covered": [
+                [1, 33, 3],
+                [1, 34, 3]
+              ]
+            },
+            {
+              "anchor": [1, 32, 4],
+              "covered": [
+                [1, 33, 4],
+                [1, 34, 4]
+              ]
+            },
+            {
+              "anchor": [1, 32, 5],
+              "covered": [
+                [1, 33, 5],
+                [1, 34, 5]
+              ]
+            },
+            {
+              "anchor": [1, 35, 3],
+              "covered": [
+                [1, 36, 3]
+              ]
+            },
+            {
+              "anchor": [1, 35, 4],
+              "covered": [
+                [1, 36, 4]
+              ]
+            },
+            {
+              "anchor": [1, 35, 5],
+              "covered": [
+                [1, 36, 5]
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
