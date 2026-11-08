@@ -1,0 +1,40 @@
+{
+  "scope": "Offline bounded logical coordinates for tables with merge declarations. No text or selection changes.",
+  "official_leaf_pins": "docs/assets/audits/2026-11-08-odt-table-geometry/qualification.json",
+  "prior_merge_map": "docs/assets/audits/2026-11-08-odt-merge-links/qualification.json",
+  "official_leaves_checked": 21,
+  "corpus_roots_checked": 6,
+  "corpus_odt_leaves_checked": 8,
+  "corpus_report_sha256": "31220d3e405672cfb7dbe00c18d2f7753d141f752da24ceb6a7e2b306d0bda7e",
+  "unchanged_routing_extracted_text_and_physical_merges": true,
+  "natural_repeat_positive_controls": 0,
+  "positive": {
+    "official_id": "rcl-file:684340",
+    "merges": 35,
+    "covered_coordinates": 70,
+    "example": {
+      "anchor": [
+        1,
+        8,
+        0
+      ],
+      "covered": [
+        [
+          1,
+          9,
+          0
+        ]
+      ],
+      "logical_anchor": [
+        7,
+        0
+      ],
+      "logical_covered": [
+        [
+          8,
+          0
+        ]
+      ]
+    }
+  }
+}

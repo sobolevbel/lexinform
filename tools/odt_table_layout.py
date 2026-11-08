@@ -1,4 +1,4 @@
-"""Verify explicit ODT merged-cell coordinates without expanding repeated rows or cells."""
+"""Verify ODT merged-cell coordinates in a bounded logical table."""
 
 from collections.abc import Iterator
 from xml.etree import ElementTree as ET
@@ -14,8 +14,11 @@ _CELL = TABLE + "table-cell"
 _COVERED = TABLE + "covered-table-cell"
 _SPANS = (TABLE + "number-rows-spanned", TABLE + "number-columns-spanned")
 _MAX_MERGE_AREA = 4096
+_MAX_LOGICAL_CELLS = 16_384
 
 Path = tuple[int, ...]
+Position = tuple[int, int]
+Cell = tuple[Position, Path]
 
 
 def _rows(node: ET.Element, path: Path) -> Iterator[tuple[Path, ET.Element]]:
@@ -27,53 +30,75 @@ def _rows(node: ET.Element, path: Path) -> Iterator[tuple[Path, ET.Element]]:
             yield position, child
 
 
-def _span(cell: ET.Element, attribute: str) -> int:
-    raw = cell.get(attribute, "1")
+def _positive(node: ET.Element, attribute: str, reason: str) -> int:
+    raw = node.get(attribute, "1")
     if len(raw) > 4 or not raw.isascii() or not raw.isdecimal() or int(raw) < 1:
-        raise ValueError("invalid_span")
+        raise ValueError(reason)
     return int(raw)
 
 
-def _merges(rows: list[tuple[Path, ET.Element]], block_paths: set[Path]) -> dict[Path, list[Path]]:
-    owners: dict[tuple[int, int], Path] = {}
-    matches: dict[Path, list[Path]] = {}
-    remaining = _MAX_MERGE_AREA
-    for row_index, (row_path, row) in enumerate(rows):
+def _cells(
+    rows: list[tuple[Path, ET.Element]], block_paths: set[Path]
+) -> Iterator[tuple[Cell, ET.Element]]:
+    row_index = 0
+    remaining = _MAX_LOGICAL_CELLS
+    for row_path, row in rows:
         if row.tag != _ROW:
             raise ValueError("unsupported_table_child")
-        if row.get(TABLE + "number-rows-repeated", "1") != "1":
-            raise ValueError("repeated_rows")
-        for column, cell in enumerate(row):
-            cell_path = (*row_path, column)
-            if cell.tag not in (_CELL, _COVERED) or cell_path not in block_paths:
+        height = _positive(row, TABLE + "number-rows-repeated", "invalid_row_repeat")
+        physical: list[tuple[Path, ET.Element, int]] = []
+        width = 0
+        for index, cell in enumerate(row):
+            path = (*row_path, index)
+            if cell.tag not in (_CELL, _COVERED) or path not in block_paths:
                 raise ValueError("unmapped_cell")
-            if cell.get(TABLE + "number-columns-repeated", "1") != "1":
-                raise ValueError("repeated_cells")
-            position = (row_index, column)
-            owner = owners.pop(position, None)
-            if cell.tag == _COVERED:
-                if owner is None or any(attribute in cell.attrib for attribute in _SPANS):
-                    raise ValueError("unmatched_covered_cell")
-                matches[owner].append(cell_path)
-                continue
-            if owner is not None:
-                raise ValueError("occupied_cell")
-            height, width = (_span(cell, attribute) for attribute in _SPANS)
-            area = height * width - 1
-            if area > remaining:
-                raise ValueError("merge_area_limit")
-            if not area:
-                continue
-            remaining -= area
-            matches[cell_path] = []
-            for y in range(row_index, row_index + height):
-                for x in range(column, column + width):
-                    target = (y, x)
-                    if target == position:
-                        continue
-                    if target in owners:
-                        raise ValueError("overlapping_spans")
-                    owners[target] = cell_path
+            repeat = _positive(cell, TABLE + "number-columns-repeated", "invalid_cell_repeat")
+            physical.append((path, cell, repeat))
+            width += repeat
+        cost = height * max(1, width)
+        if cost > remaining:
+            raise ValueError("logical_table_limit")
+        remaining -= cost
+        for y in range(row_index, row_index + height):
+            column = 0
+            for path, cell, repeat in physical:
+                for x in range(column, column + repeat):
+                    yield ((y, x), path), cell
+                column += repeat
+        row_index += height
+
+
+def _merges(rows: list[tuple[Path, ET.Element]], block_paths: set[Path]) -> dict[Cell, list[Cell]]:
+    owners: dict[Position, Cell] = {}
+    matches: dict[Cell, list[Cell]] = {}
+    remaining = _MAX_MERGE_AREA
+    for key, cell in _cells(rows, block_paths):
+        position, _ = key
+        row_index, column = position
+        owner = owners.pop(position, None)
+        if cell.tag == _COVERED:
+            if owner is None or any(attribute in cell.attrib for attribute in _SPANS):
+                raise ValueError("unmatched_covered_cell")
+            matches[owner].append(key)
+            continue
+        if owner is not None:
+            raise ValueError("occupied_cell")
+        height, width = (_positive(cell, attribute, "invalid_span") for attribute in _SPANS)
+        area = height * width - 1
+        if area > remaining:
+            raise ValueError("merge_area_limit")
+        if not area:
+            continue
+        remaining -= area
+        matches[key] = []
+        for y in range(row_index, row_index + height):
+            for x in range(column, column + width):
+                target = (y, x)
+                if target == position:
+                    continue
+                if target in owners:
+                    raise ValueError("overlapping_spans")
+                owners[target] = key
     if owners:
         raise ValueError("missing_covered_cell")
     return matches
@@ -105,8 +130,13 @@ def merged_table_layouts(body: ET.Element, block_paths: set[Path]) -> list[dict[
                     "table_path": path,
                     "status": "verified",
                     "merges": [
-                        {"anchor": anchor, "covered": covered}
-                        for anchor, covered in matches.items()
+                        {
+                            "anchor": anchor_path,
+                            "covered": [path for _, path in covered],
+                            "logical_anchor": position,
+                            "logical_covered": [position for position, _ in covered],
+                        }
+                        for (position, anchor_path), covered in matches.items()
                     ],
                 }
             )

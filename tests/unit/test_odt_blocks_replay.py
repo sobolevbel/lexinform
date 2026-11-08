@@ -313,7 +313,7 @@ def test_replay_reports_declared_table_geometry_without_expanding_text() -> None
             None,
         ),
         ("<table:table-row><table:covered-table-cell/></table:table-row>", "missing_covered_cell"),
-        ("<table:table-row table:number-rows-repeated='2'/>", "repeated_rows"),
+        ("<table:table-row table:number-rows-repeated='0'/>", "invalid_row_repeat"),
         ("<text:section/>", "unsupported_table_child"),
     ],
 )
@@ -337,5 +337,48 @@ def test_replay_links_rectangular_merge_only_when_explicit_cells_match(
         assert layout == {
             "table_path": (0,),
             "status": "verified",
-            "merges": [{"anchor": (0, 0, 0, 0), "covered": [(0, 0, 0, 1), (0, 1, 0), (0, 1, 1)]}],
+            "merges": [
+                {
+                    "anchor": (0, 0, 0, 0),
+                    "logical_anchor": (0, 0),
+                    "logical_covered": [(0, 1), (1, 0), (1, 1)],
+                    "covered": [(0, 0, 0, 1), (0, 1, 0), (0, 1, 1)],
+                }
+            ],
         }
+
+
+def test_replay_distinguishes_logical_positions_sharing_a_repeated_covered_cell() -> None:
+    raw = odt_document(
+        "<table:table><table:table-row table:number-rows-repeated='2'>"
+        "<table:table-cell table:number-columns-repeated='4'/></table:table-row>"
+        "<table:table-row><table:table-cell/>"
+        "<table:table-cell table:number-rows-spanned='3' table:number-columns-spanned='2'>"
+        "<text:p>Termin</text:p></table:table-cell><table:covered-table-cell/>"
+        "</table:table-row><table:table-row table:number-rows-repeated='2'><table:table-cell/>"
+        "<table:covered-table-cell table:number-columns-repeated='2'/>"
+        "</table:table-row></table:table>"
+    )
+
+    extracted = OdtTextExtractor().extract_odt_blocks(raw)
+    (layout,) = verify_manifest(raw, extracted)["merged_tables"]
+    (merge,) = layout["merges"]
+
+    assert merge["anchor"] == (0, 1, 1)
+    assert merge["logical_anchor"] == (2, 1)
+    assert merge["covered"] == [(0, 1, 2), *((0, 2, 1),) * 4]
+    assert merge["logical_covered"] == [(2, 2), (3, 1), (3, 2), (4, 1), (4, 2)]
+
+
+def test_replay_rejects_large_logical_table_without_expanding_it() -> None:
+    raw = odt_document(
+        "<table:table><table:table-row table:number-rows-repeated='9000'>"
+        "<table:table-cell table:number-columns-repeated='9000'/>"
+        "</table:table-row><table:table-row><table:covered-table-cell/>"
+        "</table:table-row></table:table>"
+    )
+    extracted = OdtTextExtractor().extract_odt_blocks(raw)
+
+    assert verify_manifest(raw, extracted)["merged_tables"] == [
+        {"table_path": (0,), "status": "unresolved", "reason": "logical_table_limit"}
+    ]
