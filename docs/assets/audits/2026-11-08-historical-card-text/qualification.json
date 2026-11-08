@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "status": "not_observed",
+  "reason": "prepared_receipt_unavailable",
+  "database_sha256": "2fa282b623328efa9bec50d3d6da771fd6a8b098565ea619d1a1a4ed38f351b7",
+  "publication_id": 264,
+  "scope": "One historical database-recorded direct card send.",
+  "exclusions": [
+    "Current Telegram content",
+    "live verification",
+    "source-family acceptance"
+  ],
+  "cycle": null,
+  "legacy_submitted_text": {
+    "status": "recorded",
+    "result_id": "result-v1:f0ed8c1c99f5a7df7c7d33c9f228da785d88b9b607c5778d19659a714c0cced4",
+    "request_sha256": "af917502a0a470aa1cb1e1167143699fa96dc6abf732097e1ecd20bff39d8dcd",
+    "text_sha256": "35a3d93fafc38e0471e7d4f11f56bc255584bf8d0aabfb7b66c8e1f2f43e2719",
+    "text_chars": 306100,
+    "input_checkpoint_sha256": "9366b9c6ee89a5535c0d9dbf26be37e4cf03f1b54836964ee9579e24fbd1d304",
+    "frozen_render_sha256": "a75940e39b027f989a7d211e4cc58ea33f76b116488552daed3f163487770409",
+    "physical_source_binding": "unknown"
+  },
+  "wrong_pin_rejected": true,
+  "unsupported_card_unchanged": true
+}

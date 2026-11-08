@@ -43,6 +43,11 @@ from lexinform.models import (
 from lexinform.models.batch import batch_item_meta
 from lexinform.models.primary_projections import PRIMARY_USAGE_FIELDS
 from lexinform.primary_projections import primary_record_matches
+from tools.audit_saved_primary_claims import (
+    ReviewInputCheckpoint,
+    ReviewTextUnavailableError,
+    saved_claim_review,
+)
 from tools.corpus_artifacts import write_json
 from tools.sqlite_snapshot import open_snapshot, snapshot_files
 
@@ -606,6 +611,40 @@ def _observe(
     return status, reason, cycle
 
 
+def _legacy_card_text(
+    db: sqlite3.Connection,
+    database: Path,
+    database_sha256: str,
+    publication_id: int,
+    checkpoint: ReviewInputCheckpoint,
+) -> dict[str, object]:
+    row = db.execute("SELECT * FROM publications WHERE id=?", (publication_id,)).fetchone()
+    plan = _direct_plan(row)
+    bill = Bill.model_validate_json(plan.bill_json)
+    assert bill.analysis is not None and bill.analysis.computation_id is not None, (
+        "the cycle reached the prepared receipt check with an exact frozen result"
+    )
+    try:
+        review = saved_claim_review(
+            database,
+            database_sha256=database_sha256,
+            result_id=bill.analysis.computation_id,
+            input_checkpoint=checkpoint,
+        )
+    except ReviewTextUnavailableError:
+        return {"status": "not_observed", "reason": "exact_submitted_text_unavailable"}
+    return {
+        "status": "recorded",
+        "result_id": bill.analysis.computation_id,
+        "request_sha256": review.request_sha256,
+        "text_sha256": review.text_sha256,
+        "text_chars": len(review.text),
+        "input_checkpoint_sha256": review.input_checkpoint_sha256,
+        "frozen_render_sha256": hashlib.sha256(plan.rendered_text.encode()).hexdigest(),
+        "physical_source_binding": "unknown",
+    }
+
+
 def audit(
     database: Path,
     publication_id: int,
@@ -613,6 +652,7 @@ def audit(
     secondary_application_id: int | None = None,
     include_compact: bool = False,
     include_request_prefix: bool = False,
+    legacy_text_checkpoint: ReviewInputCheckpoint | None = None,
 ) -> dict[str, object]:
     if not 0 < publication_id < 2**63:
         raise ValueError("Publication ID must be a positive SQLite integer")
@@ -622,6 +662,9 @@ def audit(
         raise ValueError("Request identity requires a secondary application")
     if include_compact and secondary_application_id is not None:
         raise ValueError("Compact and secondary evidence modes are mutually exclusive")
+    if legacy_text_checkpoint is not None and secondary_application_id is not None:
+        raise ValueError("Legacy card text requires a primary publication")
+    legacy_text = None
     with open_snapshot(database) as snapshot:
         status, reason, cycle = _observe(
             snapshot.connection,
@@ -630,8 +673,17 @@ def audit(
             include_compact=include_compact,
             include_request_prefix=include_request_prefix,
         )
+        if legacy_text_checkpoint is not None and reason == "prepared_receipt_unavailable":
+            legacy_text = _legacy_card_text(
+                snapshot.connection,
+                database,
+                snapshot.sha256,
+                publication_id,
+                legacy_text_checkpoint,
+            )
         if not snapshot.unchanged():
             status, reason, cycle = "invalid", "database_changed_during_audit", None
+            legacy_text = None
     if secondary_application_id is not None:
         return {
             "version": 1,
@@ -658,6 +710,7 @@ def audit(
         "scope": "One historical database-recorded direct card send.",
         "exclusions": ["Current Telegram content", "live verification", "source-family acceptance"],
         "cycle": cycle,
+        **({"legacy_submitted_text": legacy_text} if legacy_text is not None else {}),
     }
 
 
@@ -741,16 +794,26 @@ def main() -> None:
         action="store_true",
         help="verify retained submitted request identity for an exact secondary status send",
     )
+    parser.add_argument("--legacy-text-checkpoint", nargs=2, metavar=("PATH", "SHA256"))
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+    legacy_text_checkpoint = (
+        ReviewInputCheckpoint(Path(args.legacy_text_checkpoint[0]), args.legacy_text_checkpoint[1])
+        if args.legacy_text_checkpoint
+        else None
+    )
     try:
         if args.census and (
             args.include_request_prefix
             or args.include_compact
             or args.secondary_application_id is not None
+            or legacy_text_checkpoint is not None
         ):
             raise ValueError("Census uses its own primary and secondary evidence modes")
-        if args.output.resolve() in snapshot_files(args.database):
+        protected = snapshot_files(args.database)
+        if legacy_text_checkpoint is not None:
+            protected.update(snapshot_files(legacy_text_checkpoint.database))
+        if args.output.resolve() in protected:
             raise ValueError("Report must be separate from the input database")
         report = (
             census(args.database)
@@ -761,6 +824,7 @@ def main() -> None:
                 secondary_application_id=args.secondary_application_id,
                 include_compact=args.include_compact,
                 include_request_prefix=args.include_request_prefix,
+                legacy_text_checkpoint=legacy_text_checkpoint,
             )
         )
         write_json(args.output, report)
