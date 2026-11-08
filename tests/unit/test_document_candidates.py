@@ -339,12 +339,17 @@ def test_outer_comparison_reads_declared_annex_before_choosing(
     _, file = loader.select_document(document)
 
     trace = file.candidate_trace
-    assert trace is not None and trace.result == result and trace.version_decision is None
+    assert trace is not None and trace.result == result
     assert f"download:{annex_url}" in gateway.calls
     if available:
         assert [part.role for part in file.selection.parts] == ["bill", "normative_annex"]
+        assert trace.version_decision is not None
+        inputs = trace.version_decision.package_inputs
+        assert inputs is not None and len(inputs) == 2
+        assert inputs[0].annex_text_sha256s == inputs[1].annex_text_sha256s
+        assert inputs[0].body_sha256 == inputs[1].body_sha256
     else:
-        assert file.text is None
+        assert file.text is None and trace.version_decision is None
         assert trace.dispositions[1].reason == "normative_part_read_incomplete"
 
 

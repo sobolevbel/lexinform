@@ -98,6 +98,7 @@ from lexinform.models.candidate_trace import (
     SupportingPartExclusion,
     SupportingPartExclusions,
     VersionDecisionEvidence,
+    VersionPackageInput,
     composed_support_sha256,
 )
 from lexinform.models.document_reads import DocumentPhysicalDiagnostics
@@ -1676,11 +1677,11 @@ class TextLoader:
         )
         if (
             composition is not None
-            and not compare_packages
             and 2 <= len(prepared) <= MAX_VERSION_DECISION_ROWS
             and all(item.parts for item in prepared)
             and (
-                not includes_archive
+                compare_packages
+                or not includes_archive
                 or isinstance(choice, AmbiguousCandidates)
                 or (
                     attempts is not None
@@ -1707,6 +1708,23 @@ class TextLoader:
                     ),
                     date_filter=tuple(date.isoformat() for date in comparison.date_filter)
                     if comparison.date_filter is not None
+                    else None,
+                    package_inputs=tuple(
+                        VersionPackageInput.model_validate(
+                            {
+                                "source_sha256": source.sha256,
+                                "body_sha256": hashlib.sha256(
+                                    (item.text or "").encode()
+                                ).hexdigest(),
+                                "annex_text_sha256s": tuple(
+                                    sha for _, sha in item.annex_identities
+                                ),
+                                "amendment_text_sha256s": item.amendment_identities,
+                            }
+                        )
+                        for item, (_, source) in zip(prepared, candidates, strict=True)
+                    )
+                    if compare_packages
                     else None,
                 )
                 composition.version_decision_includes_archive = includes_archive
