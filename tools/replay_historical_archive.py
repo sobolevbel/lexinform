@@ -22,6 +22,7 @@ from tools.audit_saved_primary_claims import (
 )
 from tools.corpus_artifacts import digest, write_json
 from tools.primary_delivery_cycle import audit
+from tools.replay_pdf_page_citation import verify_pdf_span
 from tools.sqlite_snapshot import open_snapshot, snapshot_files
 
 _MAX_ARCHIVE_BYTES = 32_000_000
@@ -46,6 +47,7 @@ class QuotePin:
     start: int
     end: int
     sha256: str
+    pdf_page: int | None = None
 
 
 def _identity(part: DocumentPart) -> tuple[object, ...]:
@@ -277,6 +279,23 @@ def _replay_source(
         if quote is not None
         else None
     )
+    if quote is not None and quote.pdf_page is not None:
+        if archive or len(bodies) != 1 or not bodies[0].startswith(b"%PDF-"):
+            raise ValueError("Physical page replay requires one direct PDF")
+        if literal_quote is None:
+            raise ValueError("Physical page replay requires a verified literal quote")
+        part_span = literal_quote["part_span"]
+        assert isinstance(part_span, list), "literal quote proof records a part span"
+        pages = PypdfTextExtractor().extract_pages(bodies[0])
+        literal_quote["pdf_page"] = verify_pdf_span(
+            pages,
+            part_texts[0],
+            (part_span[0], part_span[1]),
+            projection.text[quote.start : quote.end],
+            artifact_sha256=sources[0].sha256,
+            extraction_sha256=pages.manifest_sha256,
+            expected_page=quote.pdf_page,
+        )
     return {
         "observation_id": observation_id,
         "selection_id": selection_id,
@@ -401,14 +420,19 @@ def main() -> None:
     physical.add_argument("--part", nargs=2, action="append", metavar=("PATH", "SHA256"))
     parser.add_argument("--archive-sha256")
     parser.add_argument("--quote", nargs=3, metavar=("START", "END", "SHA256"))
+    parser.add_argument("--pdf-page", type=int)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     checkpoint = ReviewInputCheckpoint(Path(args.checkpoint[0]), args.checkpoint[1])
     protected = snapshot_files(args.database) | snapshot_files(checkpoint.database)
     try:
         quote = (
-            QuotePin(int(args.quote[0]), int(args.quote[1]), args.quote[2]) if args.quote else None
+            QuotePin(int(args.quote[0]), int(args.quote[1]), args.quote[2], args.pdf_page)
+            if args.quote
+            else None
         )
+        if args.pdf_page is not None and (quote is None or args.pdf_page < 1):
+            raise ValueError("PDF page replay requires a positive page and a quote pin")
         if args.saved_single_pdf and (args.result_id is None or args.archive is not None):
             raise ValueError("Saved Sejm PDF replay requires a result ID and one direct file")
         if quote is not None and args.result_id is None:

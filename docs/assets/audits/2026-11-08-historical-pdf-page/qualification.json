@@ -1,0 +1,87 @@
+{
+  "database_sha256": "2fa282b623328efa9bec50d3d6da771fd6a8b098565ea619d1a1a4ed38f351b7",
+  "cases": [
+    {
+      "file": "3220.pdf",
+      "result_id": "result-v1:a86f266384e5076b0d5d36ee67af54d5d21a2d09579244b9200dd9d811d3afc9",
+      "quote": {
+        "quote_sha256": "3a212fb95169ba257f85b3d94e9220f26c03f3bd892d1939fe22e0302e63cd78",
+        "submitted_span": [
+          1035,
+          1078
+        ],
+        "assembled_span": [
+          1035,
+          1078
+        ],
+        "part_index": 0,
+        "part_role": "bill",
+        "part_sha256": "e7cc9390ca6cdfd69f0a0fccc6c6c035019195dd550d22adb03f2912a60fba0d",
+        "part_members": [],
+        "part_span": [
+          1035,
+          1078
+        ],
+        "part_coordinates": "selected_extracted_text",
+        "pdf_page": {
+          "page": 2,
+          "block_id": "pdf-page:2:0",
+          "raw_page_text_sha256": "8b781b11db3a4d1e1cd361ffbe9f4dbf8ed72f658caddcd46945a90b8376a4ee",
+          "normalized_page_text_sha256": "578b07c59da3d5613c37c47781a9f0fdea4d85bc7d36d0d0cb961cb3961a41e2",
+          "normalized_page_span": [
+            45,
+            88
+          ],
+          "coordinates": "legacy-pdf-single-page-python-string",
+          "artifact_sha256": "e7cc9390ca6cdfd69f0a0fccc6c6c035019195dd550d22adb03f2912a60fba0d",
+          "extraction_sha256": "91b4360c0c3fab9624ba905dba2c984594331b046b2e4c060ed8d2215a0ef86b",
+          "source_text_sha256": "a82f55ab2df72eb51c415f0672848b47d535688397e649c4419250fab586708c",
+          "quote_sha256": "3a212fb95169ba257f85b3d94e9220f26c03f3bd892d1939fe22e0302e63cd78"
+        }
+      },
+      "wrong_page_rejected": true
+    },
+    {
+      "file": "3157_u3.pdf",
+      "result_id": "result-v1:184f3d2e1a51b254cce761e69ab3ab3aa0a118601f3c0ea9569d23c374e85297",
+      "quote": {
+        "quote_sha256": "d53663f0ffc7fac444b049f3bcbec94d3966413de5e438c8b9e1137ac7b9ff0e",
+        "submitted_span": [
+          2102,
+          2145
+        ],
+        "assembled_span": [
+          2102,
+          2145
+        ],
+        "part_index": 0,
+        "part_role": "bill",
+        "part_sha256": "2f5f6ffbaf8d771a53c1e5c1cd485eb396c5952653c54a57c6b468beb15681a4",
+        "part_members": [],
+        "part_span": [
+          2102,
+          2145
+        ],
+        "part_coordinates": "selected_extracted_text",
+        "pdf_page": {
+          "page": 2,
+          "block_id": "pdf-page:2:0",
+          "raw_page_text_sha256": "ad0f8566e1e3fec5dd8f0e7f14ae42203dd9c564479aa2285cf69e2beb44e5a0",
+          "normalized_page_text_sha256": "bd5b0f78c8c56b830e52f80e0486f5533c2838d1a7e80bf63e98fad0390dac3b",
+          "normalized_page_span": [
+            45,
+            88
+          ],
+          "coordinates": "legacy-pdf-single-page-python-string",
+          "artifact_sha256": "2f5f6ffbaf8d771a53c1e5c1cd485eb396c5952653c54a57c6b468beb15681a4",
+          "extraction_sha256": "26ff0992dc43337143196e53daa63dc3f80ce040a9932ab86bab9d1e380e41e7",
+          "source_text_sha256": "3e4a0ea990a2cfba91d534077a98ae64f1500afd31ccf734e6b17e3a87278786",
+          "quote_sha256": "d53663f0ffc7fac444b049f3bcbec94d3966413de5e438c8b9e1137ac7b9ff0e"
+        }
+      },
+      "wrong_page_rejected": true
+    }
+  ],
+  "prior_reports_unchanged": true,
+  "semantic": "not_assessed"
+}

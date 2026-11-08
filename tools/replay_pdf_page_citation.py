@@ -68,11 +68,41 @@ def verify_pdf_page(
     )
     if checked.observed_text_span is None:
         raise ValueError(f"PDF page requires a unique literal citation: {checked.status}")
+    if document.file_sha256 != artifact_sha256:
+        raise ValueError("Pinned PDF artifact, extraction or literal source differs")
+    page = verify_pdf_span(
+        extraction,
+        document.text,
+        checked.observed_text_span,
+        evidence.citation.quote,
+        artifact_sha256=artifact_sha256,
+        extraction_sha256=extraction_sha256,
+        expected_page=expected_page,
+        raw_page_span=raw_page_span,
+    )
+    return {
+        **page,
+        "source_text_sha256": document.sha256,
+        "claim_text_sha256": evidence.claim_text_sha256,
+        "evidence": asdict(checked),
+    }
+
+
+def verify_pdf_span(
+    extraction: PdfTextExtraction,
+    source_text: str,
+    span: tuple[int, int],
+    quote: str,
+    *,
+    artifact_sha256: str,
+    extraction_sha256: str,
+    expected_page: int,
+    raw_page_span: RawPageSpanPin | None = None,
+) -> dict[str, object]:
     if (
-        document.file_sha256 != artifact_sha256
-        or extraction.input_sha256 != artifact_sha256
+        extraction.input_sha256 != artifact_sha256
         or extraction.manifest_sha256 != extraction_sha256
-        or extraction.legacy_text != document.text
+        or extraction.legacy_text != source_text
         or extraction.error_type is not None
         or not extraction.pages
         or any(page.error_type is not None or PAGE_BREAK in page.text for page in extraction.pages)
@@ -82,19 +112,19 @@ def verify_pdf_page(
     offsets = normalized_pdf_page_offsets(tuple(page.text for page in extraction.pages))
     if len(offsets) != len(extraction.pages):
         raise ValueError("PDF page boundaries cannot be reconstructed")
-    start, end = checked.observed_text_span
+    start, end = span
     found: dict[str, object] | None = None
     for page, content_start in zip(extraction.pages, offsets, strict=True):
         if content_start is None:
             continue
         block = legacy_pdf_text((page.text,))
-        if document.text[content_start : content_start + len(block)] != block:
+        if source_text[content_start : content_start + len(block)] != block:
             raise ValueError("Legacy PDF chunk differs from its exact normalized page")
         if content_start <= start < end <= content_start + len(block):
             if page.number != expected_page:
                 raise ValueError("Citation does not belong to the expected physical page")
             local = start - content_start, end - content_start
-            if block[local[0] : local[1]] != evidence.citation.quote:
+            if block[local[0] : local[1]] != quote:
                 raise ValueError("Literal quote differs inside its normalized page block")
             found = {
                 "page": page.number,
@@ -122,10 +152,8 @@ def verify_pdf_page(
         "coordinates": "legacy-pdf-single-page-python-string",
         "artifact_sha256": artifact_sha256,
         "extraction_sha256": extraction_sha256,
-        "source_text_sha256": document.sha256,
-        "quote_sha256": digest(evidence.citation.quote.encode()),
-        "claim_text_sha256": evidence.claim_text_sha256,
-        "evidence": asdict(checked),
+        "source_text_sha256": digest(source_text.encode()),
+        "quote_sha256": digest(quote.encode()),
     }
 
 
