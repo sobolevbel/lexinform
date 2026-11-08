@@ -368,6 +368,18 @@ class PendingBatches(BaseModel):
     batches: list[PendingBatch]
 
 
+class ReanalysisBaselineReference(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    result_id: str = Field(pattern=r"^result-v1:[0-9a-f]{64}$")
+    context_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    def require_context(self, summary: str | None, changes: list[str]) -> None:
+        actual = hashlib.sha256(canonical_json([summary, [*changes]]).encode()).hexdigest()
+        if actual != self.context_sha256:
+            raise ValueError("Reanalysis baseline differs from the previous answer context")
+
+
 class BatchItemMeta(BaseModel):
     """What was already known about a request when it was queued — the provenance `_prepare`
     would otherwise attach to the `AnalysisRecord` right after calling the model, and that the
@@ -393,6 +405,9 @@ class BatchItemMeta(BaseModel):
     located: LocatedText | None = None
     text: str = ""
     input_binding: ComputationInputBinding | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    reanalysis_baseline: ReanalysisBaselineReference | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
     queued_at: dt.datetime | None = Field(default=None, exclude_if=lambda value: value is None)
@@ -666,6 +681,8 @@ def validate_batch_item_meta(
         and (not submitted or kind != "supplement")
     ):
         raise ValueError("Supplement scan input belongs to submitted supplements")
+    if isinstance(decoded, dict) and "reanalysis_baseline" in decoded and kind != "reanalysis":
+        raise ValueError("Reanalysis baseline requires its actual purpose")
     model = BatchItemMeta if kind in ("analysis", "reanalysis") else DigestItemMeta
     parsed = model.model_validate(decoded)
     manifest = parsed.frozen_request_manifest
@@ -693,6 +710,12 @@ def validate_batch_item_meta(
         and parsed.request_sha256 is None
     ):
         raise ValueError("Submitted multipart text receipts require their frozen request checksum")
+    if (
+        isinstance(parsed, BatchItemMeta)
+        and parsed.reanalysis_baseline is not None
+        and (parsed.input_binding is None or (submitted and parsed.request_sha256 is None))
+    ):
+        raise ValueError("Reanalysis baseline requires its bound request")
     timing = parsed.local_timing_witness
     if timing is not None:
         if timing.purpose != kind:
@@ -778,6 +801,9 @@ class BatchIntent(BaseModel):
         value = _typed_secondary_input_metadata(value)
         if isinstance(value, dict):
             meta = value.get("meta")
+            if isinstance(meta, dict) and "reanalysis_baseline" in meta:
+                value = {**value, "meta": BatchItemMeta.model_validate(meta)}
+                meta = value["meta"]
             timing = (
                 meta.get("local_timing_witness")
                 if isinstance(meta, dict)
@@ -861,6 +887,21 @@ class BatchIntent(BaseModel):
         if isinstance(self.meta, DigestItemMeta) and self.meta.amendment_input_ref is not None:
             self.meta.amendment_input_ref.require_carrier(
                 self.request.call_kind, self.request.payload_sha256, self.meta.input_binding
+            )
+        if isinstance(self.meta, BatchItemMeta) and (baseline := self.meta.reanalysis_baseline):
+            request = self.request
+            question = request.question
+            binding = self.meta.input_binding
+            if (
+                not isinstance(question, AnalysisQuestion)
+                or question.kind != "reanalysis"
+                or request.payload_sha256 is None
+                or binding is None
+                or (binding.term, binding.number) != (request.term, request.number)
+            ):
+                raise ValueError("Reanalysis baseline requires its frozen reanalysis question")
+            baseline.require_context(
+                question.ctx.previous_summary, question.ctx.previous_key_changes
             )
         receipt = self.meta.prepared_input_receipt
         if isinstance(self.request.question, AnalysisQuestion):

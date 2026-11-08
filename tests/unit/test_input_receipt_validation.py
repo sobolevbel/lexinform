@@ -10,7 +10,10 @@ from tools.computation_doctor import audit
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.input_receipts import primary_input_receipt
+from lexinform.json_storage import canonical_json
 from lexinform.models import (
+    AnalysisQuestion,
+    AnalysisRecord,
     ArtifactMetadata,
     BatchIntent,
     BatchItemMeta,
@@ -28,7 +31,9 @@ from lexinform.models import (
     SourceObservation,
     TextDocument,
 )
+from lexinform.models.batch import ReanalysisBaselineReference
 from lexinform.text_projection import SourcePiece, project_pieces
+from tests.computations import retained_result
 from tests.harness import summary
 from tests.unit.test_input_receipts import NOW, SOURCE, meta, request, selection
 from tests.unit.test_physical_extraction import docx, extractor
@@ -374,3 +379,63 @@ def test_known_request_requires_its_real_row_key_and_closed_provider(
         with pytest.raises(ValueError, match="invalid_input_intent_snapshot"):
             repo.restore(wrong)
         assert repo.dump() == valid
+
+
+def test_reanalysis_baseline_restores_with_original_owner_after_retargeting(tmp_path: Path) -> None:
+    previous = retained_result("analysis")
+    record = previous.record
+    assert isinstance(record, AnalysisRecord), "the fixture has a validated primary answer"
+    answer = record.analysis
+    baseline = ReanalysisBaselineReference(
+        result_id=previous.result_id,
+        context_sha256=hashlib.sha256(
+            canonical_json([answer.summary, [*answer.key_changes]]).encode()
+        ).hexdigest(),
+    )
+    frozen = request()
+    question = frozen.question
+    assert isinstance(question, AnalysisQuestion), "the fixture supplies a primary question"
+    context = question.ctx.model_copy(
+        update={"previous_summary": answer.summary, "previous_key_changes": answer.key_changes}
+    )
+    reanalysis = frozen.model_copy(
+        update={"question": AnalysisQuestion(kind="reanalysis", ctx=context)}
+    )
+    intent = BatchIntent.from_request(
+        request=reanalysis,
+        meta=meta().model_copy(update={"reanalysis_baseline": baseline}),
+        provider="openai",
+        created_at=NOW,
+    )
+    with closing(SqliteBillRepository(tmp_path / "baseline.db")) as repo:
+        repo.migrate()
+        repo.upsert_summary(summary("3039", "Original owner"), now=NOW)
+        repo.save_computation_result(previous)
+        repo.save_batch_intent(intent)
+        queued = repo.dump()
+        repo.restore(queued)
+        assert repo.list_queued_batch_intents() == [intent]
+        with pytest.raises(ValueError, match="invalid_input_intent_snapshot"):
+            repo.restore(corrupt(queued, "context_sha256", baseline.context_sha256))
+        assert repo.dump() == queued
+
+        batch = LlmBatch(
+            batch_id="baseline-reanalysis",
+            provider="openai",
+            call_kind="reanalysis",
+            submitted_at=NOW,
+            status="submitted",
+            request_count=1,
+            estimated_cost_usd=0,
+        )
+        item = LlmBatchItem.from_intent(batch.batch_id, intent).model_copy(
+            update={"number": "3040"}
+        )
+        repo.save_llm_batch(batch, [item])
+        repo.delete_batch_intents([intent.request.custom_id])
+        submitted = repo.dump()
+        repo.restore(submitted)
+        assert repo.list_llm_batch_items(batch.batch_id) == [item]
+        with pytest.raises(ValueError, match="invalid_input_item_snapshot"):
+            repo.restore(corrupt(submitted, "context_sha256", baseline.context_sha256))
+        assert repo.dump() == submitted

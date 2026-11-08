@@ -28,6 +28,7 @@ from lexinform.models import (
     AmendmentInputReceipt,
     AmendmentsQuestion,
     AnalysisQuestion,
+    AnalysisRecord,
     ArtifactMetadata,
     BatchIntent,
     BatchItemMeta,
@@ -44,7 +45,12 @@ from lexinform.models import (
     SupplementQuestion,
     SupplementRecord,
 )
-from lexinform.models.batch import FrozenRequestManifest, batch_item_meta, validate_batch_item_meta
+from lexinform.models.batch import (
+    FrozenRequestManifest,
+    ReanalysisBaselineReference,
+    batch_item_meta,
+    validate_batch_item_meta,
+)
 from lexinform.models.extractions import ExtractedPartSummary
 from lexinform.models.input_receipts import (
     ArchiveInputPart,
@@ -1259,6 +1265,32 @@ def validate_multipart_item(
     )
 
 
+def _validate_reanalysis_baseline(
+    connection: sqlite3.Connection,
+    baseline: ReanalysisBaselineReference,
+    *,
+    owner: tuple[int, str],
+    custom_id: str,
+    before: datetime,
+) -> None:
+    row = _one(
+        connection, "SELECT * FROM computation_results WHERE result_id=?", (baseline.result_id,)
+    )
+    result = read_computation_result(row)
+    record = result.record
+    if (
+        (result.term, result.number) != owner
+        or result.purpose not in ("analysis", "reanalysis")
+        or result.validation != "validated"
+        or result.request_sha256 is None
+        or result.custom_id == custom_id
+        or result.collected_at > before
+        or not isinstance(record, AnalysisRecord)
+    ):
+        raise ValueError("Reanalysis baseline requires an earlier validated primary result")
+    baseline.require_context(record.analysis.summary, record.analysis.key_changes)
+
+
 def _input_snapshot_checks(
     connection: sqlite3.Connection, *, include_results: bool
 ) -> Iterator[InputSnapshotCheck]:
@@ -1279,6 +1311,7 @@ def _input_snapshot_checks(
                 continue
             has_receipt = meta is not None and meta.get("prepared_input_receipt") is not None
             has_timing = meta is not None and meta.get("local_timing_witness") is not None
+            has_baseline = "reanalysis_baseline" in meta
             frozen = request is not None and request.get("payload_sha256") is not None
             has_text_reference = isinstance(meta.get("text"), dict)
             has_provider_reference = isinstance(request.get("payload_json"), dict)
@@ -1296,6 +1329,7 @@ def _input_snapshot_checks(
             if not (
                 has_receipt
                 or has_timing
+                or has_baseline
                 or frozen
                 or has_text_reference
                 or has_provider_reference
@@ -1318,6 +1352,7 @@ def _input_snapshot_checks(
                 if (
                     has_receipt
                     or has_timing
+                    or has_baseline
                     or has_text_reference
                     or has_manifest
                     or has_submitted_witness
@@ -1333,6 +1368,17 @@ def _input_snapshot_checks(
                             "created_at": row["created_at"],
                         }
                     )
+                    if (
+                        isinstance(intent.meta, BatchItemMeta)
+                        and (baseline := intent.meta.reanalysis_baseline) is not None
+                    ):
+                        _validate_reanalysis_baseline(
+                            connection,
+                            baseline,
+                            owner=(actual.term, actual.number),
+                            custom_id=actual.custom_id,
+                            before=intent.created_at,
+                        )
                     if has_scan_manifest:
                         validate_scan_attachment(intent)
                     if has_word_formula_input(actual):
@@ -1367,10 +1413,12 @@ def _input_snapshot_checks(
                 continue
             has_receipt = raw is not None and raw.get("prepared_input_receipt") is not None
             has_timing = raw is not None and raw.get("local_timing_witness") is not None
+            has_baseline = "reanalysis_baseline" in raw
             has_manifest = raw.get("frozen_request_manifest") is not None
             if not (
                 has_receipt
                 or has_timing
+                or has_baseline
                 or has_manifest
                 or "review_input_witness" in raw
                 or "supplement_scan_input" in raw
@@ -1394,7 +1442,7 @@ def _input_snapshot_checks(
                 parent = _one(
                     connection,
                     "SELECT provider, submitted_at FROM llm_batches WHERE batch_id=?"
-                    if has_timing
+                    if has_timing or has_baseline
                     else "SELECT provider FROM llm_batches WHERE batch_id=?",
                     (row["batch_id"],),
                 )
@@ -1411,6 +1459,20 @@ def _input_snapshot_checks(
                         item_meta.prepared_input_receipt,
                         primary_meta=item_meta if isinstance(item_meta, BatchItemMeta) else None,
                         owner=(row["term"], row["number"]),
+                    )
+                if (
+                    isinstance(item_meta, BatchItemMeta)
+                    and (baseline := item_meta.reanalysis_baseline) is not None
+                ):
+                    binding = item_meta.input_binding
+                    if binding is None:
+                        raise ValueError("Reanalysis baseline requires the original request owner")
+                    _validate_reanalysis_baseline(
+                        connection,
+                        baseline,
+                        owner=(binding.term, binding.number),
+                        custom_id=row["custom_id"],
+                        before=datetime.fromisoformat(parent["submitted_at"]),
                     )
                 if has_timing:
                     timing = item_meta.local_timing_witness
