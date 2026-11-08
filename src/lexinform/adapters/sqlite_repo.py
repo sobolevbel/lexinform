@@ -287,6 +287,7 @@ from lexinform.models.content import (
     SupplementContentEvidence,
     editorial_bill_snapshot,
 )
+from lexinform.models.digest_content import RENDERED_DIGEST_PROFILES
 from lexinform.models.legacy_results import canonical_legacy_json, legacy_json
 from lexinform.models.physical_inventory import PhysicalCapture, PhysicalMetadata
 from lexinform.models.rcl import rcl_number
@@ -2425,7 +2426,7 @@ class SqliteBillRepository:
         if snapshot.snapshot_id != version.plan_snapshot_id:
             raise ValueError("digest capture snapshot differs from its version")
         if len(part_snapshots) > 16 or bool(part_snapshots) != (
-            version.digest_profile == "digest-rendered-v1"
+            version.digest_profile in RENDERED_DIGEST_PROFILES
         ):
             raise ValueError("digest capture part snapshots differ from its profile")
         with self.atomic():

@@ -1,5 +1,7 @@
+import base64
 import hashlib
 import sqlite3
+import zlib
 from contextlib import closing
 from datetime import timedelta
 from pathlib import Path
@@ -27,8 +29,9 @@ from tests.scenario.test_digest_remote_checkpoints import (
 )
 
 
+@pytest.mark.parametrize("retain_semantics", [False, True])
 def test_native_rendered_history_fixture_survives_cleanup(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, retain_semantics: bool
 ) -> None:
     monkeypatch.setattr(digest_module, "record_digest_content", lambda *args, **kwargs: None)
     world, event = pending_event()
@@ -65,13 +68,19 @@ def test_native_rendered_history_fixture_survives_cleanup(
         ),
     )
     part_snapshot = ContentSnapshot(kind="plan", payload_json=part.model_dump_json())
+    raw_digest = large.model_dump_json().encode()
     plan = DigestRenderedPlan(
+        profile="digest-rendered-semantic-v1" if retain_semantics else "digest-rendered-v1",
         channel_id=root.channel_id,
         delivery_ref=root.ref,
         week_ref=large.ref,
         since=large.since,
         until=large.until,
-        upstream_digest_sha256=hashlib.sha256(large.model_dump_json().encode()).hexdigest(),
+        upstream_digest_sha256=hashlib.sha256(raw_digest).hexdigest(),
+        upstream_semantics="retained" if retain_semantics else "not_retained",
+        upstream_digest_zlib=base64.b64encode(zlib.compress(raw_digest)).decode("ascii")
+        if retain_semantics
+        else None,
         parts=(
             DigestRenderedPartRef(publication_id=root.id, snapshot_id=part_snapshot.snapshot_id),
         ),
@@ -83,7 +92,7 @@ def test_native_rendered_history_fixture_survives_cleanup(
         language="ru",
         plan_snapshot_id=plan_snapshot.snapshot_id,
         formatter_version=FORMATTER_VERSION,
-        digest_profile="digest-rendered-v1",
+        digest_profile=plan.profile,
         recorded_at=root.created_at,
     )
     world.repo.save_content_snapshot(part_snapshot)
@@ -108,8 +117,12 @@ def test_native_rendered_history_fixture_survives_cleanup(
             assert [item.id for item in restored.repo.digest_sources(root.id)] == [event.id]
             page = inspect_content_page(restored.repo, publication, page=1)
             assert page.version is not None and page.version.digest_exact_parts_available
-            assert page.version.digest_upstream_semantics == "not_retained"
-            assert page.version.full_context_available is False
+            assert page.version.digest_upstream_semantics == plan.upstream_semantics
+            assert page.version.full_context_available is retain_semantics
+            persisted = restored.repo.get_content_snapshot(plan_snapshot.snapshot_id)
+            assert persisted is not None, "the rendered plan survives cleanup"
+            reopened = DigestRenderedPlan.model_validate_json(persisted.payload_json)
+            assert reopened.retained_digest() == (large if retain_semantics else None)
             with pytest.raises(ValueError, match="Digest history cannot restore a Bill delivery"):
                 restore_content_delivery(restored.repo, version)
             doctor_path = tmp_path / "digest.db"
@@ -117,7 +130,7 @@ def test_native_rendered_history_fixture_survives_cleanup(
                 doctor_db.executescript(clean)
             report = audit(doctor_path, publication_id=root.id)
             assert report["summary"]["digest_exact_rendered_parts"] == 1
-            assert report["summary"]["digest_upstream_semantics_not_retained"] == 1
+            assert report["summary"][f"digest_upstream_semantics_{plan.upstream_semantics}"] == 1
             for mutation, identity in (
                 ("DELETE FROM content_snapshots WHERE snapshot_id=?", part_snapshot.snapshot_id),
                 ("UPDATE publications SET number='other' WHERE id=?", event.id),

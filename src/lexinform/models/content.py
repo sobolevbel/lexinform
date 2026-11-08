@@ -10,6 +10,7 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, PositiveInt, m
 from lexinform.bill_context import continuation_snapshot
 from lexinform.json_storage import read_json
 from lexinform.models.bill import Bill
+from lexinform.models.digest_content import RENDERED_DIGEST_PROFILES, DigestHistoryProfile
 from lexinform.models.enums import PublicationKind, PublicationStatus
 from lexinform.models.grouped_update_witness import GroupedRenderWitness
 from lexinform.models.original_delivery_content import OriginalDeliveryEvidence
@@ -243,7 +244,7 @@ class ContentVersion(BaseModel):
     grouped_stage_evidence: GroupedStageContentEvidence | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
-    digest_profile: Literal["digest-content-v1", "digest-rendered-v1"] | None = Field(
+    digest_profile: DigestHistoryProfile | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
     sitting_profile: Literal["sitting-content-v1"] | None = Field(
@@ -504,13 +505,13 @@ class ContentVersionSummary(BaseModel):
     grouped_stage_evidence: GroupedStageContentEvidence | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
-    digest_profile: Literal["digest-content-v1", "digest-rendered-v1"] | None = Field(
+    digest_profile: DigestHistoryProfile | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
     digest_exact_parts_available: Literal[True] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
-    digest_upstream_semantics: Literal["not_retained"] | None = Field(
+    digest_upstream_semantics: Literal["not_retained", "retained"] | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
     sitting_profile: Literal["sitting-content-v1"] | None = Field(
@@ -559,6 +560,8 @@ class ContentVersionSummary(BaseModel):
             or self.digest_upstream_semantics == "not_retained"
             or self.original_delivery_evidence is not None
             or self.multipart_card_revision is not None
+            else True
+            if self.digest_upstream_semantics == "retained"
             else None
         )
 
@@ -602,10 +605,12 @@ class ContentVersionSummary(BaseModel):
             original_delivery_evidence=version.original_delivery_evidence,
             multipart_card_revision=version.multipart_card_revision,
             digest_exact_parts_available=True
-            if version.digest_profile == "digest-rendered-v1"
+            if version.digest_profile in RENDERED_DIGEST_PROFILES
             else None,
             digest_upstream_semantics="not_retained"
             if version.digest_profile == "digest-rendered-v1"
+            else "retained"
+            if version.digest_profile == "digest-rendered-semantic-v1"
             else None,
             grouped_stage_evidence=version.grouped_stage_evidence,
             computation_ids=result_ids,

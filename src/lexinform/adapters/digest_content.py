@@ -6,8 +6,9 @@ from datetime import datetime
 
 from lexinform.adapters.content_source_refs import ContentSourceRows
 from lexinform.json_storage import read_json
-from lexinform.models import DIGEST_NUMBER, DIGEST_TERM, ContentVersion, PublicationStatus
+from lexinform.models import DIGEST_NUMBER, DIGEST_TERM, ContentVersion, Digest, PublicationStatus
 from lexinform.models.digest_content import (
+    RENDERED_DIGEST_PROFILES,
     DigestContentPlan,
     DigestRenderedPart,
     DigestRenderedPlan,
@@ -20,6 +21,7 @@ from lexinform.models.observations import DeliveryPlan
 class ResolvedDigestRenderedContent:
     plan: DigestRenderedPlan
     parts: tuple[DigestRenderedPart, ...]
+    digest: Digest | None
 
 
 def _rendered_parts(
@@ -55,12 +57,15 @@ def verify_digest_content(
     snapshot = reader.get_content_snapshot(version.plan_snapshot_id)
     if snapshot is None or snapshot.kind != "plan":
         raise ValueError("digest_content_snapshot_missing")
-    if version.digest_profile == "digest-rendered-v1":
+    if version.digest_profile in RENDERED_DIGEST_PROFILES:
         rendered = DigestRenderedPlan.model_validate_json(snapshot.payload_json)
-        if snapshot.payload_json != rendered.model_dump_json():
+        if (
+            rendered.profile != version.digest_profile
+            or snapshot.payload_json != rendered.model_dump_json()
+        ):
             raise ValueError("digest_rendered_plan_serialization")
         resolved: DigestContentPlan | ResolvedDigestRenderedContent = ResolvedDigestRenderedContent(
-            rendered, _rendered_parts(reader, rendered)
+            rendered, _rendered_parts(reader, rendered), rendered.retained_digest()
         )
         channel_id, delivery_ref, week_ref = (
             rendered.channel_id,
@@ -156,7 +161,7 @@ def verify_digest_content(
             ).fetchone()
             if owner is None or owner[0] != channel_id or owner[1] == "digest":
                 raise ValueError("digest_content_event_owner")
-            if isinstance(resolved, DigestContentPlan):
+            if resolved.digest is not None:
                 entries = [
                     entry
                     for entry in (

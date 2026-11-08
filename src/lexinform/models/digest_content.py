@@ -1,7 +1,10 @@
 """Bounded immutable digest input and exact ordered physical parts."""
 
+import base64
+import binascii
 import datetime as dt
 import hashlib
+import zlib
 from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
@@ -12,6 +15,15 @@ from lexinform.models.physical_inventory import Sha256
 from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
 
 MAX_DIGEST_CONTENT_BYTES = 65_536
+MAX_PACKED_DIGEST_BYTES = 16_384
+MAX_UNPACKED_DIGEST_BYTES = 524_288
+MAX_DIGEST_BASE64_CHARS = ((MAX_PACKED_DIGEST_BYTES + 2) // 3) * 4
+
+type DigestRenderedProfile = Literal["digest-rendered-v1", "digest-rendered-semantic-v1"]
+type DigestHistoryProfile = Literal[
+    "digest-content-v1", "digest-rendered-v1", "digest-rendered-semantic-v1"
+]
+RENDERED_DIGEST_PROFILES = ("digest-rendered-v1", "digest-rendered-semantic-v1")
 type DigestSqlId = Annotated[int, Field(gt=0, lt=2**63, strict=True)]
 
 
@@ -91,19 +103,30 @@ class DigestRenderedPartRef(BaseModel):
 class DigestRenderedPlan(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    profile: Literal["digest-rendered-v1"] = "digest-rendered-v1"
+    profile: DigestRenderedProfile = "digest-rendered-v1"
     channel_id: str = Field(min_length=1, max_length=256)
     delivery_ref: str = Field(min_length=1, max_length=128)
     week_ref: str = Field(pattern=r"^[0-9]{4}-W[0-9]{2}$")
     since: dt.date
     until: dt.date
-    upstream_semantics: Literal["not_retained"] = "not_retained"
+    upstream_semantics: Literal["not_retained", "retained"] = "not_retained"
     upstream_semantic_reason: Literal["aggregate_budget"] = "aggregate_budget"
     upstream_digest_sha256: Sha256
+    upstream_digest_zlib: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=MAX_DIGEST_BASE64_CHARS,
+        exclude_if=lambda value: value is None,
+    )
     parts: tuple[DigestRenderedPartRef, ...] = Field(min_length=1, max_length=16)
 
     @model_validator(mode="after")
     def week_and_parts_agree(self) -> Self:
+        semantic = self.profile == "digest-rendered-semantic-v1"
+        if semantic != (self.upstream_semantics == "retained") or semantic != (
+            self.upstream_digest_zlib is not None
+        ):
+            raise ValueError("digest rendered profile differs from its retained semantics")
         draft_of = self.delivery_ref.removeprefix(self.week_ref + ":draft:")
         if (self.since, self.until) != week_bounds(self.week_ref) or (
             self.delivery_ref != self.week_ref
@@ -121,3 +144,34 @@ class DigestRenderedPlan(BaseModel):
         ) != len(self.parts):
             raise ValueError("digest rendered history requires distinct ordered parts")
         return self
+
+    def retained_digest(self) -> Digest | None:
+        packed = self.upstream_digest_zlib
+        if packed is None:
+            return None
+        try:
+            compressed = base64.b64decode(packed, validate=True)
+            if len(compressed) > MAX_PACKED_DIGEST_BYTES or (
+                base64.b64encode(compressed).decode("ascii") != packed
+            ):
+                raise ValueError("digest compressed semantics exceeds its canonical bound")
+            stream = zlib.decompressobj()
+            raw = stream.decompress(compressed, MAX_UNPACKED_DIGEST_BYTES + 1)
+            if (
+                len(raw) > MAX_UNPACKED_DIGEST_BYTES
+                or not stream.eof
+                or stream.unconsumed_tail
+                or stream.unused_data
+                or hashlib.sha256(raw).hexdigest() != self.upstream_digest_sha256
+            ):
+                raise ValueError("digest compressed semantics differs from its recorded input")
+            digest = Digest.model_validate_json(raw)
+        except (binascii.Error, zlib.error) as exc:
+            raise ValueError("invalid digest compressed semantics") from exc
+        if digest.model_dump_json().encode() != raw or (digest.ref, digest.since, digest.until) != (
+            self.week_ref,
+            self.since,
+            self.until,
+        ):
+            raise ValueError("digest compressed semantics differs from its recorded week")
+        return digest

@@ -169,7 +169,10 @@ def _read_history(
             digest = verify_digest_content(db, version, require_bound=True)
             if isinstance(digest, ResolvedDigestRenderedContent):
                 counts["digest_exact_rendered_parts"] += len(digest.parts)
-                counts["digest_upstream_semantics_not_retained"] += 1
+                if digest.digest is None:
+                    counts["digest_upstream_semantics_not_retained"] += 1
+                else:
+                    counts["digest_upstream_semantics_retained"] += 1
         except ValueError:
             findings.add("invalid_digest_content_history", version.content_id)
         if _independent_profile(version):

@@ -2,7 +2,6 @@
 
 import hashlib
 import logging
-from typing import Literal
 
 from pydantic import ValidationError
 
@@ -11,6 +10,7 @@ from lexinform.models.digest_content import (
     DigestContentBudgetError,
     DigestContentPart,
     DigestContentPlan,
+    DigestHistoryProfile,
     DigestRenderedPart,
     DigestRenderedPartRef,
     DigestRenderedPlan,
@@ -56,7 +56,7 @@ def record_digest_content(
         )
         snapshot = ContentSnapshot(kind="plan", payload_json=plan.model_dump_json())
         part_snapshots: tuple[ContentSnapshot, ...] = ()
-        profile: Literal["digest-content-v1", "digest-rendered-v1"] = plan.profile
+        profile: DigestHistoryProfile = plan.profile
     except ValidationError as exc:
         if not any(
             isinstance(issue.get("ctx", {}).get("error"), DigestContentBudgetError)
