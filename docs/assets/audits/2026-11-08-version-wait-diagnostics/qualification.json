@@ -1,0 +1,501 @@
+{
+  "historical": [
+    {
+      "snapshot": "j534-metadata-only-review/17dc57ee.db",
+      "sha256": "8c21e5781d5d89b911bfb0376ca5fc1a90893755f8e51c908287c26bd3d65c57",
+      "gaps": {
+        "status": "available",
+        "denominator": "retained_candidate_trace_rows",
+        "denominator_rows": 0,
+        "valid_trace_rows": 0,
+        "invalid_trace_rows": 0,
+        "normative_annex": {
+          "recorded_rows": 0,
+          "unknown_valid_rows": 0,
+          "reasons": {}
+        },
+        "required_part": {
+          "recorded_rows": 0,
+          "unknown_valid_rows": 0,
+          "reasons": {}
+        },
+        "supporting_positions": {
+          "denominator": "selected_candidate_extra_url_positions",
+          "selected_traces_with_request": 0,
+          "selected_traces_without_request": 0,
+          "declared_positions": 0,
+          "admitted_positions": 0,
+          "excluded_positions": 0,
+          "unknown_positions": 0
+        },
+        "scope": "Typed fields on validated saved traces; shared traces count once. Unrecorded reasons remain unknown. No raw or current blocker inference."
+      },
+      "findings": []
+    },
+    {
+      "snapshot": "j533-frozen-intent-review/eccdc263.db",
+      "sha256": "e78613cba60318f88374caaab31514a49aa77e2bf7cdf726e6ee565ed3b99a12",
+      "gaps": {
+        "status": "available",
+        "denominator": "retained_candidate_trace_rows",
+        "denominator_rows": 8,
+        "valid_trace_rows": 8,
+        "invalid_trace_rows": 0,
+        "normative_annex": {
+          "recorded_rows": 0,
+          "unknown_valid_rows": 8,
+          "reasons": {}
+        },
+        "required_part": {
+          "recorded_rows": 0,
+          "unknown_valid_rows": 8,
+          "reasons": {}
+        },
+        "supporting_positions": {
+          "denominator": "selected_candidate_extra_url_positions",
+          "selected_traces_with_request": 8,
+          "selected_traces_without_request": 0,
+          "declared_positions": 6,
+          "admitted_positions": 0,
+          "excluded_positions": 0,
+          "unknown_positions": 6
+        },
+        "scope": "Typed fields on validated saved traces; shared traces count once. Unrecorded reasons remain unknown. No raw or current blocker inference."
+      },
+      "findings": []
+    },
+    {
+      "snapshot": "j529-supporting-position-census/required_block.db",
+      "sha256": "b0f7f3d1b7cea70737faefc7ef82d90cb9c495505cdf52a686edc32768e45cdb",
+      "gaps": {
+        "status": "available",
+        "denominator": "retained_candidate_trace_rows",
+        "denominator_rows": 1,
+        "valid_trace_rows": 1,
+        "invalid_trace_rows": 0,
+        "normative_annex": {
+          "recorded_rows": 1,
+          "unknown_valid_rows": 0,
+          "reasons": {
+            "download_size_limit": 1
+          }
+        },
+        "required_part": {
+          "recorded_rows": 0,
+          "unknown_valid_rows": 1,
+          "reasons": {}
+        },
+        "supporting_positions": {
+          "denominator": "selected_candidate_extra_url_positions",
+          "selected_traces_with_request": 1,
+          "selected_traces_without_request": 0,
+          "declared_positions": 2,
+          "admitted_positions": 0,
+          "excluded_positions": 0,
+          "unknown_positions": 2
+        },
+        "scope": "Typed fields on validated saved traces; shared traces count once. Unrecorded reasons remain unknown. No raw or current blocker inference."
+      },
+      "findings": []
+    },
+    {
+      "snapshot": "state-7598f545010b8a9a33dd13c35d0487c7396fcd8a/checkpoint.db",
+      "sha256": "1dc2af02598e4add20a7ae623149b44b584333205a7bf4e0a0a7633349f1c34e",
+      "gaps": {
+        "status": "available",
+        "denominator": "retained_candidate_trace_rows",
+        "denominator_rows": 14,
+        "valid_trace_rows": 14,
+        "invalid_trace_rows": 0,
+        "normative_annex": {
+          "recorded_rows": 0,
+          "unknown_valid_rows": 14,
+          "reasons": {}
+        },
+        "required_part": {
+          "recorded_rows": 0,
+          "unknown_valid_rows": 14,
+          "reasons": {}
+        },
+        "supporting_positions": {
+          "denominator": "selected_candidate_extra_url_positions",
+          "selected_traces_with_request": 14,
+          "selected_traces_without_request": 0,
+          "declared_positions": 8,
+          "admitted_positions": 2,
+          "excluded_positions": 0,
+          "unknown_positions": 6
+        },
+        "scope": "Typed fields on validated saved traces; shared traces count once. Unrecorded reasons remain unknown. No raw or current blocker inference."
+      },
+      "findings": []
+    },
+    {
+      "snapshot": "j507-review-and-checkpoints/012f5d7d.db",
+      "sha256": "c09738cc489b93265bc58b7f8e328edde954c5912acff6ab4e0891c94ec1d52f",
+      "gaps": {
+        "status": "available",
+        "denominator": "retained_candidate_trace_rows",
+        "denominator_rows": 14,
+        "valid_trace_rows": 14,
+        "invalid_trace_rows": 0,
+        "normative_annex": {
+          "recorded_rows": 0,
+          "unknown_valid_rows": 14,
+          "reasons": {}
+        },
+        "required_part": {
+          "recorded_rows": 0,
+          "unknown_valid_rows": 14,
+          "reasons": {}
+        },
+        "supporting_positions": {
+          "denominator": "selected_candidate_extra_url_positions",
+          "selected_traces_with_request": 14,
+          "selected_traces_without_request": 0,
+          "declared_positions": 8,
+          "admitted_positions": 2,
+          "excluded_positions": 0,
+          "unknown_positions": 6
+        },
+        "scope": "Typed fields on validated saved traces; shared traces count once. Unrecorded reasons remain unknown. No raw or current blocker inference."
+      },
+      "findings": []
+    },
+    {
+      "snapshot": "j507-review-and-checkpoints/22f9aed8.db",
+      "sha256": "eadc7a3063c612a3b76b0c544769a3952f68b8c7603aa596b5bba399012287c7",
+      "gaps": {
+        "status": "available",
+        "denominator": "retained_candidate_trace_rows",
+        "denominator_rows": 14,
+        "valid_trace_rows": 14,
+        "invalid_trace_rows": 0,
+        "normative_annex": {
+          "recorded_rows": 0,
+          "unknown_valid_rows": 14,
+          "reasons": {}
+        },
+        "required_part": {
+          "recorded_rows": 0,
+          "unknown_valid_rows": 14,
+          "reasons": {}
+        },
+        "supporting_positions": {
+          "denominator": "selected_candidate_extra_url_positions",
+          "selected_traces_with_request": 14,
+          "selected_traces_without_request": 0,
+          "declared_positions": 8,
+          "admitted_positions": 2,
+          "excluded_positions": 0,
+          "unknown_positions": 6
+        },
+        "scope": "Typed fields on validated saved traces; shared traces count once. Unrecorded reasons remain unknown. No raw or current blocker inference."
+      },
+      "findings": []
+    },
+    {
+      "snapshot": "j507-review-and-checkpoints/76f44c85.db",
+      "sha256": "13fd9312c27cc9b127f52e6757179d7d02a8dbf2ff1b9802c31cdaee317b7cfd",
+      "gaps": {
+        "status": "available",
+        "denominator": "retained_candidate_trace_rows",
+        "denominator_rows": 14,
+        "valid_trace_rows": 14,
+        "invalid_trace_rows": 0,
+        "normative_annex": {
+          "recorded_rows": 0,
+          "unknown_valid_rows": 14,
+          "reasons": {}
+        },
+        "required_part": {
+          "recorded_rows": 0,
+          "unknown_valid_rows": 14,
+          "reasons": {}
+        },
+        "supporting_positions": {
+          "denominator": "selected_candidate_extra_url_positions",
+          "selected_traces_with_request": 14,
+          "selected_traces_without_request": 0,
+          "declared_positions": 8,
+          "admitted_positions": 2,
+          "excluded_positions": 0,
+          "unknown_positions": 6
+        },
+        "scope": "Typed fields on validated saved traces; shared traces count once. Unrecorded reasons remain unknown. No raw or current blocker inference."
+      },
+      "findings": []
+    },
+    {
+      "snapshot": "j507-review-and-checkpoints/79ed7caf.db",
+      "sha256": "570d29a6c0b609620d508db177885c38f7157cee700ef403cb2e20aa6fe8fb41",
+      "gaps": {
+        "status": "available",
+        "denominator": "retained_candidate_trace_rows",
+        "denominator_rows": 14,
+        "valid_trace_rows": 14,
+        "invalid_trace_rows": 0,
+        "normative_annex": {
+          "recorded_rows": 0,
+          "unknown_valid_rows": 14,
+          "reasons": {}
+        },
+        "required_part": {
+          "recorded_rows": 0,
+          "unknown_valid_rows": 14,
+          "reasons": {}
+        },
+        "supporting_positions": {
+          "denominator": "selected_candidate_extra_url_positions",
+          "selected_traces_with_request": 14,
+          "selected_traces_without_request": 0,
+          "declared_positions": 8,
+          "admitted_positions": 2,
+          "excluded_positions": 0,
+          "unknown_positions": 6
+        },
+        "scope": "Typed fields on validated saved traces; shared traces count once. Unrecorded reasons remain unknown. No raw or current blocker inference."
+      },
+      "findings": []
+    },
+    {
+      "snapshot": "j507-review-and-checkpoints/8e7a715b.db",
+      "sha256": "2fa282b623328efa9bec50d3d6da771fd6a8b098565ea619d1a1a4ed38f351b7",
+      "gaps": {
+        "status": "available",
+        "denominator": "retained_candidate_trace_rows",
+        "denominator_rows": 14,
+        "valid_trace_rows": 14,
+        "invalid_trace_rows": 0,
+        "normative_annex": {
+          "recorded_rows": 0,
+          "unknown_valid_rows": 14,
+          "reasons": {}
+        },
+        "required_part": {
+          "recorded_rows": 0,
+          "unknown_valid_rows": 14,
+          "reasons": {}
+        },
+        "supporting_positions": {
+          "denominator": "selected_candidate_extra_url_positions",
+          "selected_traces_with_request": 14,
+          "selected_traces_without_request": 0,
+          "declared_positions": 8,
+          "admitted_positions": 2,
+          "excluded_positions": 0,
+          "unknown_positions": 6
+        },
+        "scope": "Typed fields on validated saved traces; shared traces count once. Unrecorded reasons remain unknown. No raw or current blocker inference."
+      },
+      "findings": []
+    }
+  ],
+  "controlled": {
+    "input_sha256": {
+      "669532.pdf": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f",
+      "667159.pdf": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+    },
+    "cases": [
+      {
+        "alternative": "669532.pdf",
+        "mode": "ordinary",
+        "state": "unverified",
+        "result": "selected",
+        "reason": "version_choice",
+        "dispositions": [
+          {
+            "phase": "version_comparison",
+            "index": 0,
+            "outcome": "selected",
+            "reason": "version_choice",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          },
+          {
+            "phase": "version_comparison",
+            "index": 1,
+            "outcome": "policy_excluded",
+            "reason": "version_preference",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          }
+        ],
+        "text_sha256": "8ced185a4c1c86090a14343dd39476b9c41883dee10179805b553b9f1dd34e67",
+        "coverage": null,
+        "sql_bytes": 47505,
+        "gzip_bytes": 9851,
+        "database_sha256": "4cc6e0df7f766f25f167fc84cb9cff117729070f006dbb9bc5203e572c927f21"
+      },
+      {
+        "alternative": "669532.pdf",
+        "mode": "blank",
+        "state": "ambiguous",
+        "result": "ambiguous",
+        "reason": "version_conflict",
+        "dispositions": [
+          {
+            "phase": "version_comparison",
+            "index": 0,
+            "outcome": "policy_excluded",
+            "reason": "version_conflict",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          },
+          {
+            "phase": "version_comparison",
+            "index": 1,
+            "outcome": "policy_excluded",
+            "reason": "version_conflict",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          }
+        ],
+        "text_sha256": null,
+        "coverage": null,
+        "sql_bytes": 45187,
+        "gzip_bytes": 9389,
+        "database_sha256": "97cbd5ca3091b842a26e4772d237f56b0b39afa979ff68dd60c6b7b7f4c5e683"
+      },
+      {
+        "alternative": "669532.pdf",
+        "mode": "failure",
+        "state": "waiting",
+        "result": "waiting",
+        "reason": "version_input_incomplete",
+        "dispositions": [
+          {
+            "phase": "version_comparison",
+            "index": 0,
+            "outcome": "unclassified",
+            "reason": "version_comparison_deferred",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          },
+          {
+            "phase": "version_comparison",
+            "index": 1,
+            "outcome": "unclassified",
+            "reason": "pdf_page_extraction_failed",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          }
+        ],
+        "text_sha256": null,
+        "coverage": {
+          "deferred_comparisons": 1,
+          "deferred_without_dispositions": 0,
+          "retained_pdf_failure_positions": 1,
+          "version_conflicts": 0
+        },
+        "sql_bytes": 43534,
+        "gzip_bytes": 8906,
+        "database_sha256": "4ba095d91eff347caff2814f63d898d7cc92863af24006a3d472927064289da4"
+      },
+      {
+        "alternative": "667159.pdf",
+        "mode": "ordinary",
+        "state": "ambiguous",
+        "result": "ambiguous",
+        "reason": "version_conflict",
+        "dispositions": [
+          {
+            "phase": "version_comparison",
+            "index": 0,
+            "outcome": "policy_excluded",
+            "reason": "version_conflict",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          },
+          {
+            "phase": "version_comparison",
+            "index": 1,
+            "outcome": "policy_excluded",
+            "reason": "version_conflict",
+            "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+          }
+        ],
+        "text_sha256": null,
+        "coverage": null,
+        "sql_bytes": 55848,
+        "gzip_bytes": 12157,
+        "database_sha256": "4e9b68139e74126063437e4acefa796856c8614a7f19cdca17d1a6e7238b569d"
+      },
+      {
+        "alternative": "667159.pdf",
+        "mode": "blank",
+        "state": "ambiguous",
+        "result": "ambiguous",
+        "reason": "version_conflict",
+        "dispositions": [
+          {
+            "phase": "version_comparison",
+            "index": 0,
+            "outcome": "policy_excluded",
+            "reason": "version_conflict",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          },
+          {
+            "phase": "version_comparison",
+            "index": 1,
+            "outcome": "policy_excluded",
+            "reason": "version_conflict",
+            "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+          }
+        ],
+        "text_sha256": null,
+        "coverage": null,
+        "sql_bytes": 55775,
+        "gzip_bytes": 12183,
+        "database_sha256": "022c9cbfe30bdc6b5ad4371651ef584222bc4fe43e92bcea4ac4a5f60e90e7ae"
+      },
+      {
+        "alternative": "667159.pdf",
+        "mode": "failure",
+        "state": "waiting",
+        "result": "waiting",
+        "reason": "version_input_incomplete",
+        "dispositions": [
+          {
+            "phase": "version_comparison",
+            "index": 0,
+            "outcome": "unclassified",
+            "reason": "version_comparison_deferred",
+            "observed_sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          },
+          {
+            "phase": "version_comparison",
+            "index": 1,
+            "outcome": "unclassified",
+            "reason": "pdf_page_extraction_failed",
+            "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+          }
+        ],
+        "text_sha256": null,
+        "coverage": {
+          "deferred_comparisons": 1,
+          "deferred_without_dispositions": 0,
+          "retained_pdf_failure_positions": 1,
+          "version_conflicts": 0
+        },
+        "sql_bytes": 43796,
+        "gzip_bytes": 9007,
+        "database_sha256": "28e93cbc2028eb310257edc7d1b93ba0e4014cf6f413d74457fde46921e7be42"
+      }
+    ],
+    "combined_ci_corpus": {
+      "baseline_sha": "e6107b5b317a0236292c3068c0b4e33da643f1a7",
+      "queued_stages": "J552\u2013J565",
+      "manifest_sha256": "1cf2ec9a0a7cd7e462b05fa9650c5cfab373278ccece2c20cbbb99be64840f2d",
+      "profiles": {
+        "comparison": "passed",
+        "delivery": "passed",
+        "extraction": "passed",
+        "selection": "passed"
+      },
+      "cases": 7,
+      "baseline_report_sha256": "b46597cece61e82be86e7fbba88257b07def768f5e3cfcefa77587ddea0ba608",
+      "candidate_report_sha256": "efc57727d8e53cc984294a695de2748d08e82d8d1e88aa9f20967785a5cd2915",
+      "identical_case_results": true,
+      "excluded_from_equality": [
+        "corpus",
+        "output",
+        "source_sha256"
+      ],
+      "includes_archive_heading_failure_change": true
+    }
+  }
+}

@@ -392,6 +392,7 @@ def candidate_trace_inventory(
     amendment_reasons: Counter[str] = Counter()
     supporting_reasons: Counter[str] = Counter()
     supporting_positions: Counter[str] = Counter()
+    version_wait: Counter[str] = Counter()
     supporting_omitted = 0
     admitted_roles: Counter[str] = Counter()
     admitted_traces = admitted_omitted = 0
@@ -416,6 +417,17 @@ def candidate_trace_inventory(
                         admitted_roles.update(item.role for item in trace.admitted_support.rows)
                         admitted_omitted += trace.admitted_support.omitted
                     if include_gaps:
+                        if trace.result == "waiting":
+                            version_wait["deferred_comparisons"] += 1
+                            version_wait["deferred_without_dispositions"] += (
+                                trace.coverage == "omitted_over_limit"
+                            )
+                            version_wait["retained_pdf_failure_positions"] += sum(
+                                row.reason == "pdf_page_extraction_failed"
+                                for row in trace.dispositions
+                            )
+                        elif trace.result == "ambiguous":
+                            version_wait["version_conflicts"] += 1
                         supporting_positions.update(_supporting_positions(trace))
                         if trace.normative_annex_gap is not None:
                             annex_reasons[trace.normative_annex_gap.reason] += 1
@@ -473,6 +485,22 @@ def candidate_trace_inventory(
             "denominator_rows": total,
             "valid_trace_rows": valid,
             "invalid_trace_rows": total - valid if total is not None else None,
+            **(
+                {
+                    "version_comparison_wait": {
+                        "deferred_comparisons": version_wait["deferred_comparisons"],
+                        "deferred_without_dispositions": version_wait[
+                            "deferred_without_dispositions"
+                        ],
+                        "retained_pdf_failure_positions": version_wait[
+                            "retained_pdf_failure_positions"
+                        ],
+                        "version_conflicts": version_wait["version_conflicts"],
+                    }
+                }
+                if version_wait["deferred_comparisons"]
+                else {}
+            ),
             "normative_annex": _gap_counts(valid, annex_reasons),
             "required_part": _gap_counts(valid, required_reasons),
             "supporting_positions": {
