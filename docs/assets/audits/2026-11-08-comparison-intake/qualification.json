@@ -1,0 +1,14 @@
+{
+  "database_sha256": "44f2dda934b74932d96a978ac936ab37e2fc23df641e541658f25a658b7797b0",
+  "result_id": "result-v1:c4fc0489db0161cf78437b3e4f989c31edc133d9a6af5f85b24567855b0b3383",
+  "baseline": {
+    "result_id": "result-v1:1c1b24482b4eb4f8abb54efdca150146ce004fa3fd1534a3738c77257f5c7332",
+    "request_sha256": "7988a7e3ad50a5a4aa1bf52907c8e2980db74b5675d96609d08282cad0abec12",
+    "text_sha256": "e0a5462bb0a1e766b5e7da4789163ce58a8167e63db3e653e4b55620cfab7486"
+  },
+  "both_literal_spans_verified": true,
+  "missing_citation_rejected": true,
+  "wrong_edition_rejected": true,
+  "wrong_previous_pin_rejected": true,
+  "synthetic_control_did_not_create_labels": true
+}

@@ -394,6 +394,10 @@ reanalysis with a recorded baseline. Use `--baseline-checkpoint PATH SHA256` and
 Create a review sheet and use the intake command below with `--template` in place of
 `--answers` to prepare a blank answer file. Fill the review fields and remove unanswered
 slots before recording the completed JSON.
+For comparison judgments, use `--comparison` both when creating the template and when
+recording answers. A supported or unsupported comparison needs an exact citation in
+`before_citation` from `previous-submitted-context` and in `citation` from
+`submitted-context`. Keep the template's baseline pins.
 
 ```bash
 uv run --offline --frozen python -m tools.record_primary_claim_review \
