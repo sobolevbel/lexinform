@@ -16580,3 +16580,42 @@ Unknown delivery stayed unconfirmed without a resend.
   снимках подтверждены также сообщения с поправками и дополнениями
   после очистки. Отчёт по закреплённому снимку состояния совпал.
   [Квалификация](../assets/audits/2026-11-08-direct-stage-content-diagnostics/qualification.json).
+
+<a id="j570"></a>
+
+### J570. Подтверждения выпусков
+
+В таблице указан итоговый коммит каждого выпуска. Для каждого подтверждены
+успешный CI, точный переход реле, проверка после перезапуска и включённый таймер.
+Для группового выпуска проверки отдельных этапов описаны в записях выше.
+
+| Этапы | Коммит выпуска | Проверки | Развёртывание |
+| --- | --- | --- | --- |
+| J527 | `a1741814` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42445135160) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42445634869) |
+| J528 | `e69dac3f` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42445743351) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42446245508) |
+| J529 | `42fc832f` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42446332700) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42446909320) |
+| J530 | `6e04acbb` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42446993224) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42447409727) |
+| J531 | `66b7d06c` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42447514553) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42447922352) |
+| J532 | `0e309e68` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42448000941) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42448621043) |
+| J533 | `6d32724f` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42448731737) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42449159041) |
+| J534 | `5a0b1dd7` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42449256454) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42449647903) |
+| J535 | `776585e4` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42449727662) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42450130417) |
+| J536 | `fd509c23` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42450232971) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42450843498) |
+| J537 | `e1665a6e` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42450936745) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42451540483) |
+| J538 | `987089c6` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42451638152) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42452124818) |
+| J539 | `1cb3bd1a` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42452219652) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42452689921) |
+| J540 | `6180bd3b` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42452763014) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42453268147) |
+| J541 | `92f5e1d2` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42453347517) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42453771194) |
+| J542 | `fc12bbc9` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42453864163) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42454518943) |
+| J543 | `9119dd3c` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42454605148) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42455108544) |
+| J544 | `192b1c4d` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42455203003) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42455799299) |
+| J545 | `988e3327` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42455882295) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42456487288) |
+| J546 | `ad0dfda6` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42456593913) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42457135330) |
+| J547 | `367119ef` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42457212557) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42457866497) |
+| J548 | `01b5ec44` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42457964122) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42458392822) |
+| J549–J558 | `0b9b5b99` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42458494494) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42458946867) |
+| J559 | `0e6bdcc9` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42459036002) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42459629803) |
+| J560–J562 | `d37805a8` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42459976739) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42460616922) |
+| J563–J569 | `5dd8a343` | [CI](https://github.com/sobolevbel/lexinform/actions/runs/42462921363) | [Реле](https://github.com/sobolevbel/lexinform/actions/runs/42463492205) |
+
+Для J567–J569 повторная сверка на 6 закреплённых снимках подтвердила совпадение отчётов по 29 историям с J566. Контрольные случаи, в которых диагностика меняется, описаны в соответствующих этапах.
