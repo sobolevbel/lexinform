@@ -1,0 +1,24 @@
+{
+  "scope": "Offline RPW checkpoint after delivery plan and provider payload cleanup",
+  "status": "exact_retained_compact_cycle",
+  "request_sha256": "d8d8696688c2833c5fe66f8fdaadff9e85cfec836343eec2701486f28177d5c7",
+  "page_10": {
+    "page": 10,
+    "request_span": [
+      15350,
+      18208
+    ],
+    "normalized_page_span": [
+      0,
+      2858
+    ],
+    "normalized_page_sha256": "ae4ac8d7aa4d3af7f0ebd41066f79da2feb4a78b9c87070bc1925ca41e4d7c0b"
+  },
+  "article_7_request_span": [
+    15579,
+    15650
+  ],
+  "reported_ranges": 19,
+  "old_profile_reports_no_map": true,
+  "snapshot_unchanged": true
+}

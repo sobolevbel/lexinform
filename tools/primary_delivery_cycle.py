@@ -15,6 +15,7 @@ from lexinform.adapters.content_history import read_expired_card_primary_cycle
 from lexinform.adapters.content_source_refs import ContentSourceRows, validate_projected_application
 from lexinform.adapters.document_source_rows import DocumentSourceRows
 from lexinform.adapters.input_receipts import (
+    retained_pdf_page_ranges,
     validate_input_snapshots,
     validate_secondary_receipt_parents,
 )
@@ -211,7 +212,9 @@ def _inspect(db: sqlite3.Connection, publication_id: int) -> dict[str, object]:
         or not paid.collected_at <= item.consumed_at <= projection.created_at
     ):
         raise ValueError("recorded source, computation and delivery chronology disagree")
+    ranges = retained_pdf_page_ranges(db, receipt)
     return {
+        **({"normalized_pdf_page_ranges": ranges} if ranges else {}),
         "source_kind": source.document.kind,
         "source_observation_id": source.observation_id,
         "source_selection_id": receipt.source_selection_id,

@@ -45,6 +45,7 @@ from lexinform.models import (
     SupplementRecord,
 )
 from lexinform.models.batch import FrozenRequestManifest, batch_item_meta, validate_batch_item_meta
+from lexinform.models.extractions import ExtractedPartSummary
 from lexinform.models.input_receipts import (
     ArchiveInputPart,
     LooseMultipartInputReceipt,
@@ -950,12 +951,12 @@ def _parents(
     *,
     primary_meta: BatchItemMeta | None = None,
     owner: tuple[int, str] | None = None,
-) -> None:
+) -> ExtractedPartSummary | None:
     if isinstance(receipt, MultipartTextInputReceipt):
         if primary_meta is None:
             raise ValueError("Multipart receipt requires its fitted selection")
         _multipart_parents(connection, receipt, primary_meta, owner)
-        return
+        return None
     _block_parents(connection, receipt)
     selection = None
     if receipt.source_selection_id is not None:
@@ -1021,11 +1022,35 @@ def _parents(
                 (receipt.source_selection_id, receipt.extraction_id),
             )
 
+        return part_summary
+    return None
 
-def validate_primary_receipt_parents(
+
+def retained_pdf_page_ranges(
     connection: sqlite3.Connection, receipt: PrimaryInputReceipt
-) -> None:
-    _parents(connection, receipt)
+) -> list[dict[str, object]]:
+    """Project retained request spans onto the validated normalized PDF page map."""
+    part = _parents(connection, receipt)
+    if part is None or part.pdf_page_map is None or receipt.source_selection_id is None:
+        return []
+    ranges: list[dict[str, object]] = []
+    for segment in receipt.segments:
+        if segment.origin != "source" or segment.source_start is None or segment.source_end is None:
+            continue
+        for page in part.pdf_page_map.pages:
+            start = max(page.start, segment.source_start)
+            end = min(page.end, segment.source_end)
+            if start < end:
+                request_start = segment.start + start - segment.source_start
+                ranges.append(
+                    {
+                        "page": page.page,
+                        "request_span": [request_start, request_start + end - start],
+                        "normalized_page_span": [start - page.start, end - page.start],
+                        "normalized_page_sha256": page.normalized_sha256,
+                    }
+                )
+    return ranges
 
 
 def validate_secondary_receipt_parents(

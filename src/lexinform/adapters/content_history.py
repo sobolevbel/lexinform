@@ -10,8 +10,8 @@ from lexinform.adapters.content_applications import verify_content_applications
 from lexinform.adapters.content_source_refs import ContentSourceRows
 from lexinform.adapters.digest_content import verify_digest_content
 from lexinform.adapters.input_receipts import (
+    retained_pdf_page_ranges,
     validate_multipart_item,
-    validate_primary_receipt_parents,
 )
 from lexinform.adapters.status_changes import read_status_change
 from lexinform.bill_context import continuation_snapshot
@@ -302,11 +302,13 @@ def _verify_card_primary_evidence(
     if isinstance(receipt, PrimaryInputReceipt):
         if receipt.artifact_sha256 is None or receipt.extraction_id is None:
             raise CardPrimaryEvidenceError("card_primary_item_scope")
-        validate_primary_receipt_parents(connection, receipt)
+        ranges = retained_pdf_page_ranges(connection, receipt)
         physical = {
             "artifact_sha256": receipt.artifact_sha256,
             "extraction_id": receipt.extraction_id,
         }
+        if ranges:
+            physical["normalized_pdf_page_ranges"] = ranges
     else:
         if receipt.source_observation_id != reference.source_observation_id:
             raise CardPrimaryEvidenceError("card_primary_source_scope")
