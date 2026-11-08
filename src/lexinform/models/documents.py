@@ -2,7 +2,7 @@ import datetime as dt
 import hashlib
 import json
 import re
-from typing import Literal, Self
+from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -540,12 +540,29 @@ class UnlocatedPartExtraction(BaseModel):
     extraction: UnlocatedTextExtraction
 
 
+class ArchiveMemberReadFailure(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    members: tuple[str, ...] = Field(min_length=1)
+    ordinals: tuple[Annotated[int, Field(ge=0)], ...] = Field(min_length=1)
+    error_type: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def matching_path_depth(self) -> Self:
+        if len(self.members) != len(self.ordinals):
+            raise ValueError("Archive member names and ordinals must have the same depth")
+        return self
+
+
 class ExtractedParts(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     input_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     parts: tuple[DocumentPart, ...] = ()
     rejected: tuple[str, ...] = ()
+    unreadable_members: tuple[ArchiveMemberReadFailure, ...] = Field(
+        default=(), exclude_if=lambda value: not value
+    )
     pdf_pages: tuple[PdfPartExtraction, ...] = ()
     word_blocks: tuple[WordPartExtraction, ...] = ()
     word_notes: tuple[WordPartNoteExtraction, ...] = ()

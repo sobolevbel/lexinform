@@ -44,6 +44,21 @@ def refuse_legal_selection(*args: object, **kwargs: object) -> Never:
     raise AssertionError("physical extraction must not decide the legal role or bundle")
 
 
+def test_corrupt_archive_member_keeps_its_nested_physical_occurrence() -> None:
+    body = b"%PDF-1.7 unique test payload"
+    inner = archive({"z.pdf": body, "a.docx": docx("Readable sibling")})
+    corrupt = inner.replace(body, body[:-1] + b"X", 1)
+    outer = archive({"z.docx": docx("Readable root sibling"), "a.zip": corrupt})
+
+    physical = extractor().extract_parts(outer)
+
+    (failure,) = physical.unreadable_members
+    assert failure.members == ("a.zip", "z.pdf")
+    assert failure.ordinals == (1, 0) and failure.error_type == "BadZipFile"
+    assert [part.members for part in physical.parts] == [("a.zip", "a.docx"), ("z.docx",)]
+    assert not extractor().extract_parts(inner).unreadable_members
+
+
 @pytest.mark.parametrize(
     "data",
     [

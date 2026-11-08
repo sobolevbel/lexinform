@@ -67,6 +67,7 @@ from lexinform.models.doc_notes import (
     DocPartNoteCapture,
 )
 from lexinform.models.documents import (
+    ArchiveMemberReadFailure,
     DocumentPart,
     ExtractedDocument,
     ExtractedParts,
@@ -1449,6 +1450,7 @@ class _PhysicalOrigins:
     doc_notes: list[DocPartNoteCapture] | None = None
     capture_doc_note_projection: bool = False
     capture_doc_note_cfspec: bool = False
+    unreadable_members: list[ArchiveMemberReadFailure] = field(default_factory=list)
 
 
 class DocumentTextExtractor:
@@ -1589,7 +1591,7 @@ class DocumentTextExtractor:
             _physical_event(capture, lambda: capture.recipe(self._physical_recipe(origins)))
         walk_complete = False
         try:
-            self._collect(data, (), digest, parts, rejected, [0, 0], origins)
+            self._collect(data, (), digest, parts, rejected, [0, 0], origins, ordinals=())
             walk_complete = True
         finally:
             if capture is not None:
@@ -1598,6 +1600,7 @@ class DocumentTextExtractor:
             input_sha256=digest,
             parts=tuple(parts),
             rejected=tuple(rejected),
+            unreadable_members=tuple(origins.unreadable_members),
             pdf_pages=tuple(origins.pdf_pages or ()),
             word_blocks=tuple(origins.word_blocks or ()),
             word_notes=tuple(origins.word_notes or ()),
@@ -1807,13 +1810,19 @@ class DocumentTextExtractor:
         rejected: list[str],
         usage: list[int],
         origins: _PhysicalOrigins,
+        *,
+        ordinals: tuple[int, ...],
     ) -> None:
         capture = current_physical_walk_capture()
         if capture is None:
-            self._collect_content(data, members, container, parts, rejected, usage, origins)
+            self._collect_content(
+                data, members, container, parts, rejected, usage, origins, ordinals
+            )
         else:
             with _physical_collect(capture, data):
-                self._collect_content(data, members, container, parts, rejected, usage, origins)
+                self._collect_content(
+                    data, members, container, parts, rejected, usage, origins, ordinals
+                )
 
     def _collect_content(
         self,
@@ -1824,6 +1833,7 @@ class DocumentTextExtractor:
         rejected: list[str],
         usage: list[int],
         origins: _PhysicalOrigins,
+        ordinals: tuple[int, ...],
     ) -> None:
         pdf_result: PdfTextExtraction | None = None
         word_result: WordTextExtraction | None = None
@@ -1948,7 +1958,9 @@ class DocumentTextExtractor:
                             _physical_depth(archive)
                             rejected.append(f"{members}: archive depth limit")
                             return
-                        for info in sorted(archive.infolist(), key=lambda i: i.filename):
+                        for ordinal, info in sorted(
+                            enumerate(archive.infolist()), key=lambda entry: entry[1].filename
+                        ):
                             if not _is_readable(info.filename):
                                 _physical_disposition(archive, info, "readability_rejected")
                                 continue
@@ -1965,8 +1977,10 @@ class DocumentTextExtractor:
                                 )
                                 rejected.append(f"{(*members, info.filename)}: unpacking limit")
                                 continue
+                            read_completed = False
                             try:
                                 payload = _read_member(archive, info, data, limit)
+                                read_completed = True
                                 self._collect(
                                     payload,
                                     (*members, info.filename),
@@ -1975,8 +1989,17 @@ class DocumentTextExtractor:
                                     rejected,
                                     usage,
                                     origins,
+                                    ordinals=(*ordinals, ordinal),
                                 )
                             except Exception as exc:
+                                if not read_completed:
+                                    origins.unreadable_members.append(
+                                        ArchiveMemberReadFailure(
+                                            members=(*members, info.filename),
+                                            ordinals=(*ordinals, ordinal),
+                                            error_type=type(exc).__name__,
+                                        )
+                                    )
                                 rejected.append(
                                     f"{(*members, info.filename)}: {type(exc).__name__}: {exc}"
                                 )
