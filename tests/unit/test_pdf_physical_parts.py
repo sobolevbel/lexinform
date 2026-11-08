@@ -220,3 +220,36 @@ def test_legal_coverage_exception_cannot_hide_a_failed_edge_page(error_type: str
     assert any(fact.value == "body_through_commencement" for fact in selection.facts) == (
         error_type is None
     )
+
+
+@pytest.mark.parametrize("complete", [True, False])
+def test_loader_reuses_only_a_complete_pdf_page_count(complete: bool) -> None:
+    class CountedPdf(FakeTextExtractor):
+        calls = 0
+
+        def extract_pages(self, data: bytes) -> PdfTextExtraction:
+            return PdfTextExtraction(
+                input_sha256=hashlib.sha256(data).hexdigest(),
+                pypdf_version="fixture",
+                pages=(
+                    PdfPageText(number=1, text="Art. 1. Projekt ustawy. " * 30),
+                    PdfPageText(number=2, text="Uzasadnienie." if complete else ""),
+                ),
+            )
+
+        def pages(self, data: bytes) -> int:
+            self.calls += 1
+            return super().pages(data)
+
+    pdf = CountedPdf(page_count=2)
+    loader = TextLoader(
+        {"example.test": lambda _url, max_bytes=None: b"%PDF-1.7 fixture"},
+        extractor(pdf),
+        max_bytes=1024,
+    )
+
+    loaded = loader.read("https://example.test/report.pdf")
+
+    assert loaded.text is not None and loaded.pages == 2
+    assert loaded.complete_pdf_pages == (2 if complete else None)
+    assert pdf.calls == (1 if complete else 2)

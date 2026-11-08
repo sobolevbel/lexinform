@@ -1,0 +1,248 @@
+{
+  "cases": 40,
+  "reads_before": 80,
+  "reads_after": 54,
+  "loaded_text_page_count_and_selection_unchanged": true,
+  "source_pins": [
+    {
+      "path": "sejm/term10/files/1000__1000.pdf",
+      "sha256": "3015b94279b3bb2f45a609154420c1c48e7b9f5a89c24d14b76295197b41bc53",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 2
+    },
+    {
+      "path": "sejm/term10/files/1133__1133.pdf",
+      "sha256": "8c32d72bbe34e25da3e11364df5f5dd758962eb9a7f91306510fd12e9588a3be",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 1
+    },
+    {
+      "path": "sejm/term10/files/1270__1270.pdf",
+      "sha256": "de9b33802d946fdaaaacac6557905a84b07dc4b7b22e35f1ff90ccf74260a3e6",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 1
+    },
+    {
+      "path": "sejm/term10/files/1387__1387.pdf",
+      "sha256": "9bebef05ece0001e5d64db32eb3dc4b28cdcb849f6d1cc2d71bf7e89d978ed43",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 2
+    },
+    {
+      "path": "sejm/term10/files/1459__1459.pdf",
+      "sha256": "e1cca6035517ad0ac380e0946add7fd7c266ace9ef020ecf6427677a67bf5e5d",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 2
+    },
+    {
+      "path": "sejm/term10/files/1651__1651.pdf",
+      "sha256": "f0d8e9942667965afa8faba956bb1c3a273696a81a3b08b94ad38eef31751eb7",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 2
+    },
+    {
+      "path": "sejm/term10/files/1813__1813.pdf",
+      "sha256": "d25bc462e6995d4f567a6c17f1dbb39e538f95f36a8e8605a04cc80a072251c6",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 2
+    },
+    {
+      "path": "sejm/term10/files/1938__1938.pdf",
+      "sha256": "066f24970985ea7c1a1ed5ae44c1f0e90d07919a06748c5e766ef47bddf40fa0",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 1
+    },
+    {
+      "path": "sejm/term10/files/206__206.pdf",
+      "sha256": "cd276b6b5438c3a472dd5b744427c467cb45a632600bab8cd3f2ce8fbf7c2d25",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 2
+    },
+    {
+      "path": "sejm/term10/files/2201__2201.pdf",
+      "sha256": "c1321adc7038ceaa21e255e2d65ede0f2350c223643bb751d0d0aa5ab16cd6fa",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 1
+    },
+    {
+      "path": "sejm/term10/files/2387__2387.pdf",
+      "sha256": "b8440fbbbfb9105c6758d3e3fee31ede5e29c43c0041788cc4b5429cca16c589",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 1
+    },
+    {
+      "path": "sejm/term10/files/258__258.pdf",
+      "sha256": "86c6e8fee79d85c1f0c64b810148b16c34890346c89950553b61bbc56ee5b439",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 2
+    },
+    {
+      "path": "sejm/term10/files/2772__2772.pdf",
+      "sha256": "dacb36f4b0f626e331f3e0723bda8e805ab6ae2d66bdbc4aceaf207ddb7e2330",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 2
+    },
+    {
+      "path": "sejm/term10/files/3009__3009.pdf",
+      "sha256": "94242980a51770f0997198a6b861edc481d5fb3d8350b97bdb01e148d2209045",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 1
+    },
+    {
+      "path": "sejm/term10/files/3150__3150-trzyletni plan limitu mianowa\u0144 urz\u0119dnik\u00f3w.pdf",
+      "sha256": "6ee82ea45d3c717d5aff9be4be6224685faab6d0db29b6a88045df516abe5cbf",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 1
+    },
+    {
+      "path": "sejm/term10/files/439__439.pdf",
+      "sha256": "7481146c9b6dc92c0e3eefb1bdb33b03a879845a581ad5d76716c499ab5c6a63",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 2
+    },
+    {
+      "path": "sejm/term10/files/607__607.pdf",
+      "sha256": "2ad209fcebbb0b7fc25981b331e896509917559ab0590046b20b921cdd2c9e46",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 1
+    },
+    {
+      "path": "sejm/term10/files/748__748.pdf",
+      "sha256": "3dc92bec9f49cb8cde6db440afe8cdd8999732337e429d8d77fc8f672dea3bfe",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 2
+    },
+    {
+      "path": "sejm/term10/files/868__868.pdf",
+      "sha256": "9f760b7f8d3bc84a73812e2f7573ecef7e6b8e5e8e8694cf79d39596aa7afd6f",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 2
+    },
+    {
+      "path": "sejm/term10/files/999__999.pdf",
+      "sha256": "aa2bf42e8ec1285241932fc33e1411a78c54559481a7d698a89036892b62af52",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 2
+    },
+    {
+      "path": "documents/files/158276.pdf",
+      "sha256": "80f8d4d4f773ba5f65d2a2e378072e9d820401c083916bf49c1c09742f061acf",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 2
+    },
+    {
+      "path": "documents/files/447875.pdf",
+      "sha256": "5d649fccde8dddcc9e64a31573db782277259b736eebc83311a3912bb63ce99d",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 1
+    },
+    {
+      "path": "documents/files/538402.pdf",
+      "sha256": "f1652eb9ba94397086d2206297621278be19efdb8431aa33a7db0e294697a705",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 1
+    },
+    {
+      "path": "documents/files/618828.pdf",
+      "sha256": "7e7ebb205677453903db07e5b149b814198a075b790b26b80770118abc3b412f",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 1
+    },
+    {
+      "path": "documents/files/665064.pdf",
+      "sha256": "0a8eb11b7895a9bdcfc7890ccf1b4335fbfea01a518a6e2e9e1500049b616aa4",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 1
+    },
+    {
+      "path": "documents/files/677749.pdf",
+      "sha256": "7ea9169125f2dd1e862d860a70a9f0f0517d21eaefa4ffda8073ab56db4b79e5",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 1
+    },
+    {
+      "path": "documents/files/685697.pdf",
+      "sha256": "e137cfb21e80db7ced051e700932828b75b0cad400a24fb9b32de2b2b677daad",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 1
+    },
+    {
+      "path": "documents/files/695531.pdf",
+      "sha256": "d8e378a4ed4f182fab4d808860a2b0e2e17dd5feb6cef46aad3822bda1b7cf0b",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 2
+    },
+    {
+      "path": "documents/files/707847.pdf",
+      "sha256": "040a92d7c64015d8b8d70eb21808822bfaf72ea82214c239131bc094b320902b",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 1
+    },
+    {
+      "path": "documents/files/716067.pdf",
+      "sha256": "5081b7389277939376099248d2d90413f182f3d4bdde4f194af35faeaf8602b4",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 1
+    },
+    {
+      "path": "documents/files/722933.pdf",
+      "sha256": "5f4734920661074c67bebe216ce3cfc94c4efbeec1abd9ef95632664447cd7df",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 1
+    },
+    {
+      "path": "documents/files/732845.pdf",
+      "sha256": "d20d9f10e57b67b6200a43903ceb3354c95af69b165b0d89792075fd5bbb009c",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 1
+    },
+    {
+      "path": "documents/files/739592.pdf",
+      "sha256": "35df50544c51ddb2e9c3a25e72af11f51535c479faa14ae5ea84da9e4904013c",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 1
+    },
+    {
+      "path": "documents/files/747463.pdf",
+      "sha256": "ccd3337102e8fd55639fc3d6aacb6a55f5f6c95a9961534f1cc4d1be0aa00810",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 1
+    },
+    {
+      "path": "documents/files/759187.pdf",
+      "sha256": "9e2a9a0f64acc840cf5f80e446690e03208638b03879c8ee7f282ce5517d3545",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 1
+    },
+    {
+      "path": "documents/files/768974.pdf",
+      "sha256": "7100e0994ffab3aba6814b9b1b6476251bc0e81af3283aa650bbd66e00c94ef5",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 1
+    },
+    {
+      "path": "documents/files/776183.pdf",
+      "sha256": "120ea6734a0718fba2af4c20287ffda1215c17b99929510de0e17d124908e55c",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 1
+    },
+    {
+      "path": "documents/files/783951.pdf",
+      "sha256": "82f8e9f21c07f23d7c9a2ec44e5f26910f5a518d9beb41a5f252a0e00d065c5b",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 1
+    },
+    {
+      "path": "documents/files/791031.pdf",
+      "sha256": "04364bcc922c6a44cb6200bfc4d730262cdd296818dcfaf0868203f9136517be",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 1
+    },
+    {
+      "path": "documents/files/799711.pdf",
+      "sha256": "1ba46057a171bfa74a214131cdb39bb9327f3cd6ac2852257d26544b101843d3",
+      "page_count_reads_before": 2,
+      "page_count_reads_after": 1
+    }
+  ]
+}

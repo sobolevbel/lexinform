@@ -1602,7 +1602,7 @@ class TextLoader:
                     }
                 )
                 digest = artifact.sha256
-                pages = self._extractor.pages(data)
+                pages = complete_pdf_pages or self._extractor.pages(data)
                 log.info(
                     "%s: %d chars extracted in %.1fs", url, len(text), time.perf_counter() - started
                 )
