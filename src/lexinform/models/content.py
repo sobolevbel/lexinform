@@ -10,7 +10,7 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, PositiveInt, m
 from lexinform.bill_context import continuation_snapshot
 from lexinform.json_storage import read_json
 from lexinform.models.bill import Bill
-from lexinform.models.enums import PublicationStatus
+from lexinform.models.enums import PublicationKind, PublicationStatus
 from lexinform.models.grouped_update_witness import GroupedRenderWitness
 from lexinform.models.original_delivery_content import OriginalDeliveryEvidence
 
@@ -77,6 +77,22 @@ def original_delivery_bill_snapshot(raw: str, *, review_notice: bool = False) ->
             kind="bill", payload_json=json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
         )
     return snapshot
+
+
+def validate_review_notice(bill: Bill, kind: PublicationKind, ref: str | None) -> None:
+    record = (
+        bill.consultation_review
+        if kind is PublicationKind.CONSULTATION_REVIEW
+        else bill.commission_review
+    )
+    if (
+        record is None
+        or record.review.purpose != kind.value
+        or record.context.purpose != kind.value
+        or record.context.number != bill.number
+        or record.context.memo_key(bill.term) != ref
+    ):
+        raise ValueError("original_delivery_review_scope")
 
 
 def card_bill_snapshot(raw: str) -> ContentSnapshot:

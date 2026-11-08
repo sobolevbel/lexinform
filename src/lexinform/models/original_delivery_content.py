@@ -32,8 +32,7 @@ OriginalPublicationKind = Literal[
     PublicationKind.JOINT_BILL,
 ]
 ORIGINAL_CARD_KINDS = frozenset((PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL))
-# Review notices are reader-only until the compatible reader is deployed.
-ORIGINAL_DELIVERY_KINDS = ORIGINAL_NOTICE_KINDS | ORIGINAL_CARD_KINDS
+ORIGINAL_DELIVERY_KINDS = ORIGINAL_NOTICE_KINDS | ORIGINAL_CARD_KINDS | REVIEW_NOTICE_KINDS
 DATED_NOTICES = frozenset(
     (
         PublicationKind.IN_FORCE,

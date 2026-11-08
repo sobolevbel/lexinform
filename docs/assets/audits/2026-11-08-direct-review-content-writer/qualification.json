@@ -1,0 +1,139 @@
+{
+  "baseline": "0c2d42c7",
+  "physical_sends_and_html_unchanged": true,
+  "offline_delivery_controls": [
+    {
+      "kind": "consultation_review",
+      "attention": "off",
+      "valid_ref": true,
+      "sent": true,
+      "destination": "direct",
+      "physical_sends": 1,
+      "render_sha256": [
+        "15401256ce4ff4b9bb0f4f4fab36867954b0e8d6bc505672e3f21879320dd06f"
+      ],
+      "captured": true,
+      "gzip_after": 13044,
+      "baseline_gzip_after": 12233,
+      "additional_gzip_bytes": 811
+    },
+    {
+      "kind": "commission_review",
+      "attention": "off",
+      "valid_ref": true,
+      "sent": true,
+      "destination": "direct",
+      "physical_sends": 1,
+      "render_sha256": [
+        "3373f36465bceed884e2855265b9933e5fd607677a2485a156ebcf1acc484654"
+      ],
+      "captured": true,
+      "gzip_after": 13019,
+      "baseline_gzip_after": 12240,
+      "additional_gzip_bytes": 779
+    },
+    {
+      "kind": "consultation_review",
+      "attention": "off",
+      "valid_ref": false,
+      "sent": true,
+      "destination": "direct",
+      "physical_sends": 1,
+      "render_sha256": [
+        "15401256ce4ff4b9bb0f4f4fab36867954b0e8d6bc505672e3f21879320dd06f"
+      ],
+      "captured": false,
+      "gzip_after": 12183,
+      "baseline_gzip_after": 12183,
+      "additional_gzip_bytes": 0
+    },
+    {
+      "kind": "consultation_review",
+      "attention": "on",
+      "valid_ref": true,
+      "sent": false,
+      "destination": "digest_only",
+      "physical_sends": 0,
+      "render_sha256": [],
+      "captured": false,
+      "gzip_after": 13942,
+      "baseline_gzip_after": 13942,
+      "additional_gzip_bytes": 0
+    }
+  ],
+  "previous_reader_restore": [
+    {
+      "case": "commission_review-pruned",
+      "sql_sha256": "f00346f9ed72ecacfe68db38f75a239955810f5abf8ce2595dca121fb0175408",
+      "content_id": "content-v1:6ca227c870fe465fb482d2ba04506d1401a86db03cd6bf1581fb7dbce7e20032"
+    },
+    {
+      "case": "commission_review-sent",
+      "sql_sha256": "f61136d338ba17a7f0beab931cb90a457f48217c2050ec8cd822bc9392d4a2b4",
+      "content_id": "content-v1:6ca227c870fe465fb482d2ba04506d1401a86db03cd6bf1581fb7dbce7e20032"
+    },
+    {
+      "case": "consultation_review-pruned",
+      "sql_sha256": "2551df5d57ad327df04c75d440cdf1adf7ebf8caf38db504938678c19c84958d",
+      "content_id": "content-v1:aa06e4b26c44c87f7ba77e340fb8303d65b1444f2690f51daea3390efc08c712"
+    },
+    {
+      "case": "consultation_review-sent",
+      "sql_sha256": "62f32452e46e0e633d593a2de89b7f5a168afd5e57f386cc14637ebe8edb5c54",
+      "content_id": "content-v1:aa06e4b26c44c87f7ba77e340fb8303d65b1444f2690f51daea3390efc08c712"
+    }
+  ],
+  "saved_state_reports_unchanged": [
+    {
+      "state_sha": "daf986cfaa1cbe1a4623ffd1aa8e784bb1378c94",
+      "sql_sha256": "463271a294bd611494b7774a0c81d4672ee6324205ed2840805208ed0c7e0ee9",
+      "sqlite_sha256": "de8cf170e057a217c329be6dd3e7b8228ae7651f1e9863ccc3f6a35cb0fda42c",
+      "doctor_sha256": "d0c72c2fd9a335d0f224bf28a410bed8ca8e7dcea16ebf7cadc4901a8ad89ee4",
+      "histories": 1,
+      "review_counts_by_kind_status_destination": [
+        [
+          "consultation_review",
+          "queued",
+          "digest_only",
+          2
+        ]
+      ],
+      "review_plans_with_exact_key": 2,
+      "review_plans_examined": 2
+    },
+    {
+      "state_sha": "175b03b53e3d17a2cb87fd361325749d758e16dd",
+      "sql_sha256": "86631b80b725d7581a9da3000449c54dbbddec364841b219bfb99ad934372023",
+      "sqlite_sha256": "de8d9bd1ebf1e16cf84cb318e38d96c07a411786985d3733744fcbdae6d28f60",
+      "doctor_sha256": "c8263098a12a4fd715d4ad84e350e8285284b8f68d73e7a82665c96be5f34227",
+      "histories": 4,
+      "review_counts_by_kind_status_destination": [
+        [
+          "consultation_review",
+          "queued",
+          "digest_only",
+          2
+        ]
+      ],
+      "review_plans_with_exact_key": 2,
+      "review_plans_examined": 2
+    },
+    {
+      "state_sha": "7598f545010b8a9a33dd13c35d0487c7396fcd8a",
+      "sql_sha256": "a9b23fd06114bd44b8e2d228457f91763b9d485f05361a80e15a527544e9c17d",
+      "sqlite_sha256": "c3540c2808ff788dde9fb4874bccdc30610f730429573f872755f707bc933554",
+      "doctor_sha256": "00091c5a562027c362c3bd854c7367311852a72fd35ae22c91417fe92a495f46",
+      "histories": 5,
+      "review_counts_by_kind_status_destination": [
+        [
+          "consultation_review",
+          "queued",
+          "digest_only",
+          2
+        ]
+      ],
+      "review_plans_with_exact_key": 2,
+      "review_plans_examined": 2
+    }
+  ]
+}

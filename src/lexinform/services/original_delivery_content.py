@@ -3,13 +3,14 @@
 import logging
 
 from lexinform.models import Bill, ContentSnapshot, ContentVersion, Publication, PublicationKind
-from lexinform.models.content import original_delivery_bill_snapshot
+from lexinform.models.content import original_delivery_bill_snapshot, validate_review_notice
 from lexinform.models.enums import PublicationStatus
 from lexinform.models.original_delivery_content import (
     MAX_ORIGINAL_DELIVERY_BYTES,
     MAX_ORIGINAL_DELIVERY_PARTS,
     ORIGINAL_CARD_KINDS,
     ORIGINAL_DELIVERY_KINDS,
+    REVIEW_NOTICE_KINDS,
     JointPrimaryEvidence,
     OriginalDeliveryEvidence,
     OriginalDeliveryPart,
@@ -103,7 +104,12 @@ def record_original_delivery_content(
             parts=tuple(parts),
         )
         original.validate_original(origin.kind)
-        bill = original_delivery_bill_snapshot(plan.bill_json)
+        review_notice = origin.kind in REVIEW_NOTICE_KINDS
+        bill = original_delivery_bill_snapshot(plan.bill_json, review_notice=review_notice)
+        if review_notice:
+            validate_review_notice(
+                Bill.model_validate_json(bill.payload_json), origin.kind, origin.ref
+            )
         snapshot = ContentSnapshot(kind="plan", payload_json=original.model_dump_json())
         if (
             len(bill.payload_json.encode())

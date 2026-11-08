@@ -64,6 +64,7 @@ from lexinform.models.content import (
     card_bill_snapshot,
     grouped_stage_content_budget,
     original_delivery_bill_snapshot,
+    validate_review_notice,
 )
 from lexinform.models.events import amendments_stage, has_single_amendments_stage
 from lexinform.models.input_receipts import (
@@ -1679,19 +1680,7 @@ def verify_original_delivery_content(
         raise ValueError("original_delivery_bill_profile")
     bill = Bill.model_validate(read_json(bill_snapshot.payload_json))
     if review_notice:
-        record = (
-            bill.consultation_review
-            if evidence.kind is PublicationKind.CONSULTATION_REVIEW
-            else bill.commission_review
-        )
-        if (
-            record is None
-            or record.review.purpose != evidence.kind.value
-            or record.context.purpose != evidence.kind.value
-            or record.context.number != bill.number
-            or record.context.memo_key(bill.term) != evidence.ref
-        ):
-            raise ValueError("original_delivery_review_scope")
+        validate_review_notice(bill, evidence.kind, evidence.ref)
     if evidence.kind is PublicationKind.ACT_PUBLISHED and bill.act is None:
         raise ValueError("original_delivery_act_missing")
     primary_snapshot = None

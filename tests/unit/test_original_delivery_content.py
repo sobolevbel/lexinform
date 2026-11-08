@@ -31,6 +31,7 @@ from lexinform.models.reviews import (
     ReviewDocument,
 )
 from lexinform.services.content_inspection import inspect_content
+from lexinform.services.original_delivery_content import record_original_delivery_content
 from tests.computations import NOW
 from tests.harness import summary
 
@@ -179,8 +180,24 @@ def test_direct_review_history_reads_exact_render_after_cleanup(kind: ReviewNoti
         )
         with pytest.raises(ValueError, match="original_delivery_review_scope"), repo.atomic():
             repo.save_original_delivery_content(projected, snapshot, wrong)
+        stored = repo.publication_by_id(root)
+        assert stored is not None, "the freeze retains its queued publication"
+        origin = stored.model_copy(
+            update={"delivery": frozen.model_copy(update={"rendered_text": ""})}
+        )
         with repo.atomic():
-            repo.save_original_delivery_content(projected, snapshot, version)
+            record_original_delivery_content(
+                repo,
+                origin.model_copy(update={"ref": "other"}),
+                stored,
+                language="ru",
+                formatter_version="fixture-v1",
+            )
+            assert repo.get_publication_content(root) is None
+            record_original_delivery_content(
+                repo, origin, stored, language="ru", formatter_version="fixture-v1"
+            )
+        assert repo.get_publication_content(root) == version
         repo.mark_publication(root, PublicationStatus.SENT, message_id=11, sent_at=NOW)
         if child is not None:
             parent = repo.publication_by_id(root)
