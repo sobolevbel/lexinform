@@ -254,6 +254,7 @@ def _select_parts(
             note(index, "unclassified", "no_bill_candidate")
         return finish(
             ExtractedDocument(
+                archive_unpack_blocked=bool(unreadable_drafts),
                 selection=DocumentSelection(
                     observed_parts=tuple(parts),
                     state="waiting",
@@ -266,7 +267,7 @@ def _select_parts(
                             else ()
                         ),
                     ),
-                )
+                ),
             )
         )
     if not candidates:
@@ -327,6 +328,7 @@ def _select_parts(
             note(index, "unclassified", "archive_comparison_deferred")
         return finish(
             ExtractedDocument(
+                archive_unpack_blocked=unreadable_peer,
                 selection=DocumentSelection(
                     observed_parts=tuple(parts),
                     state="waiting",
@@ -339,7 +341,7 @@ def _select_parts(
                             else ()
                         ),
                     ),
-                )
+                ),
             )
         )
     if len(confirmed) > 1:

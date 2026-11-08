@@ -1,0 +1,444 @@
+{
+  "baseline_commit": "5628d33d42812dd9bbb7271d6d203d5e0b32b06d",
+  "input_pins": {
+    "667159.pdf": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8",
+    "669532.pdf": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+  },
+  "changed_cases": [
+    "same_family_crc",
+    "singleton_crc"
+  ],
+  "baseline": {
+    "same_family_crc": {
+      "state": "unverified",
+      "calls": [
+        "https://source.test/archive.zip",
+        "https://source.test/alternative.pdf"
+      ],
+      "text_sha256": "9dd7524c574121ac8980c33595bb1ec129c1babcdb7e566b57ad701eaeede444",
+      "selection_sha256_ignoring_policy_version": "ac38b28aa367e55c0c2f1c0b86bacadf1d1b1d505ab6dc4d866d1bc397847c90",
+      "trace_reason": "version_choice",
+      "dispositions": [
+        {
+          "phase": "version_comparison",
+          "index": 0,
+          "outcome": "unclassified",
+          "reason": "no_readable_body",
+          "observed_sha256": "15c0bdb1f27c3d29f12284662b33852bf71a844eea1b9a4e3fc5d01b8524bc8f"
+        },
+        {
+          "phase": "version_comparison",
+          "index": 1,
+          "outcome": "selected",
+          "reason": "version_choice",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "observed_parts": [
+        "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+      ],
+      "part_roles": [
+        "bill"
+      ],
+      "page_failure_parts": 0,
+      "injected_pages": 0,
+      "archive_sha256": "15c0bdb1f27c3d29f12284662b33852bf71a844eea1b9a4e3fc5d01b8524bc8f"
+    },
+    "different_family_crc": {
+      "state": "unverified",
+      "calls": [
+        "https://source.test/archive.zip",
+        "https://source.test/alternative.pdf"
+      ],
+      "text_sha256": "9dd7524c574121ac8980c33595bb1ec129c1babcdb7e566b57ad701eaeede444",
+      "selection_sha256_ignoring_policy_version": "f9e5cb2bd1187946831820ceb0f8ec5de5a4358455d0af5f74ef650863a443ae",
+      "trace_reason": "version_choice",
+      "dispositions": [
+        {
+          "phase": "version_comparison",
+          "index": 0,
+          "outcome": "selected",
+          "reason": "version_choice",
+          "observed_sha256": "03a60b7e7a39d6fbacaab7e5413e8824b757abc057a8e21bd7cf4dd65d8373a6"
+        },
+        {
+          "phase": "version_comparison",
+          "index": 1,
+          "outcome": "policy_excluded",
+          "reason": "version_preference",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "observed_parts": [
+        "03a60b7e7a39d6fbacaab7e5413e8824b757abc057a8e21bd7cf4dd65d8373a6",
+        "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+      ],
+      "part_roles": [
+        "bill"
+      ],
+      "page_failure_parts": 0,
+      "injected_pages": 0,
+      "archive_sha256": "03a60b7e7a39d6fbacaab7e5413e8824b757abc057a8e21bd7cf4dd65d8373a6"
+    },
+    "unnamed_crc": {
+      "state": "unverified",
+      "calls": [
+        "https://source.test/archive.zip",
+        "https://source.test/alternative.pdf"
+      ],
+      "text_sha256": "9dd7524c574121ac8980c33595bb1ec129c1babcdb7e566b57ad701eaeede444",
+      "selection_sha256_ignoring_policy_version": "c6788dfb558359dd37d25431299ba1d0110e37ad071cd18b2b6d627152a3c408",
+      "trace_reason": "version_choice",
+      "dispositions": [
+        {
+          "phase": "version_comparison",
+          "index": 0,
+          "outcome": "selected",
+          "reason": "version_choice",
+          "observed_sha256": "7a8ca806e65b03f18d0fc7cc2e2151479b1510029e2c1c9998285b727d6c1b36"
+        },
+        {
+          "phase": "version_comparison",
+          "index": 1,
+          "outcome": "policy_excluded",
+          "reason": "version_preference",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "observed_parts": [
+        "7a8ca806e65b03f18d0fc7cc2e2151479b1510029e2c1c9998285b727d6c1b36",
+        "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+      ],
+      "part_roles": [
+        "bill"
+      ],
+      "page_failure_parts": 0,
+      "injected_pages": 0,
+      "archive_sha256": "7a8ca806e65b03f18d0fc7cc2e2151479b1510029e2c1c9998285b727d6c1b36"
+    },
+    "support_crc": {
+      "state": "unverified",
+      "calls": [
+        "https://source.test/archive.zip",
+        "https://source.test/alternative.pdf"
+      ],
+      "text_sha256": "9dd7524c574121ac8980c33595bb1ec129c1babcdb7e566b57ad701eaeede444",
+      "selection_sha256_ignoring_policy_version": "ae9c2d8d9244bf1e90da4307384d7558a533019faf1f420b5d1501e7c9208269",
+      "trace_reason": "version_choice",
+      "dispositions": [
+        {
+          "phase": "version_comparison",
+          "index": 0,
+          "outcome": "selected",
+          "reason": "version_choice",
+          "observed_sha256": "d3565b7304ee7b77d390a24b5301573aafe72cc7be03fa1b265e91e292b1eaa0"
+        },
+        {
+          "phase": "version_comparison",
+          "index": 1,
+          "outcome": "policy_excluded",
+          "reason": "version_preference",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "observed_parts": [
+        "d3565b7304ee7b77d390a24b5301573aafe72cc7be03fa1b265e91e292b1eaa0",
+        "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+      ],
+      "part_roles": [
+        "bill"
+      ],
+      "page_failure_parts": 0,
+      "injected_pages": 0,
+      "archive_sha256": "d3565b7304ee7b77d390a24b5301573aafe72cc7be03fa1b265e91e292b1eaa0"
+    },
+    "singleton_crc": {
+      "state": "unverified",
+      "calls": [
+        "https://source.test/archive.zip",
+        "https://source.test/alternative.pdf"
+      ],
+      "text_sha256": "9dd7524c574121ac8980c33595bb1ec129c1babcdb7e566b57ad701eaeede444",
+      "selection_sha256_ignoring_policy_version": "ac38b28aa367e55c0c2f1c0b86bacadf1d1b1d505ab6dc4d866d1bc397847c90",
+      "trace_reason": "version_choice",
+      "dispositions": [
+        {
+          "phase": "version_comparison",
+          "index": 0,
+          "outcome": "unclassified",
+          "reason": "no_readable_body",
+          "observed_sha256": "cbd49afab3a9eba97792d6d8e00936f36c383557e6944c9f0f1d65113fd2881e"
+        },
+        {
+          "phase": "version_comparison",
+          "index": 1,
+          "outcome": "selected",
+          "reason": "version_choice",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "observed_parts": [
+        "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+      ],
+      "part_roles": [
+        "bill"
+      ],
+      "page_failure_parts": 0,
+      "injected_pages": 0,
+      "archive_sha256": "cbd49afab3a9eba97792d6d8e00936f36c383557e6944c9f0f1d65113fd2881e"
+    },
+    "intact": {
+      "state": "unverified",
+      "calls": [
+        "https://source.test/archive.zip",
+        "https://source.test/alternative.pdf"
+      ],
+      "text_sha256": "9dd7524c574121ac8980c33595bb1ec129c1babcdb7e566b57ad701eaeede444",
+      "selection_sha256_ignoring_policy_version": "ac38b28aa367e55c0c2f1c0b86bacadf1d1b1d505ab6dc4d866d1bc397847c90",
+      "trace_reason": "version_choice",
+      "dispositions": [
+        {
+          "phase": "version_comparison",
+          "index": 0,
+          "outcome": "unclassified",
+          "reason": "ambiguous_extraction",
+          "observed_sha256": "4222833e9ccec6c13869c433d336658164d7ae11d3199b1697fdb718f1462c52"
+        },
+        {
+          "phase": "version_comparison",
+          "index": 1,
+          "outcome": "selected",
+          "reason": "version_choice",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "observed_parts": [
+        "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+      ],
+      "part_roles": [
+        "bill"
+      ],
+      "page_failure_parts": 0,
+      "injected_pages": 0,
+      "archive_sha256": "4222833e9ccec6c13869c433d336658164d7ae11d3199b1697fdb718f1462c52"
+    }
+  },
+  "candidate": {
+    "same_family_crc": {
+      "state": "waiting",
+      "calls": [
+        "https://source.test/archive.zip",
+        "https://source.test/alternative.pdf"
+      ],
+      "text_sha256": null,
+      "selection_sha256_ignoring_policy_version": "f7c2e68f60686e425ab26f0a1493456ebbf134117fe75a7c3164ae566b95790d",
+      "trace_reason": "version_input_incomplete",
+      "dispositions": [
+        {
+          "phase": "version_comparison",
+          "index": 0,
+          "outcome": "unclassified",
+          "reason": "archive_member_unpack_failed",
+          "observed_sha256": "15c0bdb1f27c3d29f12284662b33852bf71a844eea1b9a4e3fc5d01b8524bc8f"
+        },
+        {
+          "phase": "version_comparison",
+          "index": 1,
+          "outcome": "unclassified",
+          "reason": "version_comparison_deferred",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "observed_parts": [
+        "15c0bdb1f27c3d29f12284662b33852bf71a844eea1b9a4e3fc5d01b8524bc8f",
+        "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+      ],
+      "part_roles": [
+        "bill"
+      ],
+      "page_failure_parts": 0,
+      "injected_pages": 0,
+      "archive_sha256": "15c0bdb1f27c3d29f12284662b33852bf71a844eea1b9a4e3fc5d01b8524bc8f"
+    },
+    "different_family_crc": {
+      "state": "unverified",
+      "calls": [
+        "https://source.test/archive.zip",
+        "https://source.test/alternative.pdf"
+      ],
+      "text_sha256": "9dd7524c574121ac8980c33595bb1ec129c1babcdb7e566b57ad701eaeede444",
+      "selection_sha256_ignoring_policy_version": "f9e5cb2bd1187946831820ceb0f8ec5de5a4358455d0af5f74ef650863a443ae",
+      "trace_reason": "version_choice",
+      "dispositions": [
+        {
+          "phase": "version_comparison",
+          "index": 0,
+          "outcome": "selected",
+          "reason": "version_choice",
+          "observed_sha256": "03a60b7e7a39d6fbacaab7e5413e8824b757abc057a8e21bd7cf4dd65d8373a6"
+        },
+        {
+          "phase": "version_comparison",
+          "index": 1,
+          "outcome": "policy_excluded",
+          "reason": "version_preference",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "observed_parts": [
+        "03a60b7e7a39d6fbacaab7e5413e8824b757abc057a8e21bd7cf4dd65d8373a6",
+        "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+      ],
+      "part_roles": [
+        "bill"
+      ],
+      "page_failure_parts": 0,
+      "injected_pages": 0,
+      "archive_sha256": "03a60b7e7a39d6fbacaab7e5413e8824b757abc057a8e21bd7cf4dd65d8373a6"
+    },
+    "unnamed_crc": {
+      "state": "unverified",
+      "calls": [
+        "https://source.test/archive.zip",
+        "https://source.test/alternative.pdf"
+      ],
+      "text_sha256": "9dd7524c574121ac8980c33595bb1ec129c1babcdb7e566b57ad701eaeede444",
+      "selection_sha256_ignoring_policy_version": "c6788dfb558359dd37d25431299ba1d0110e37ad071cd18b2b6d627152a3c408",
+      "trace_reason": "version_choice",
+      "dispositions": [
+        {
+          "phase": "version_comparison",
+          "index": 0,
+          "outcome": "selected",
+          "reason": "version_choice",
+          "observed_sha256": "7a8ca806e65b03f18d0fc7cc2e2151479b1510029e2c1c9998285b727d6c1b36"
+        },
+        {
+          "phase": "version_comparison",
+          "index": 1,
+          "outcome": "policy_excluded",
+          "reason": "version_preference",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "observed_parts": [
+        "7a8ca806e65b03f18d0fc7cc2e2151479b1510029e2c1c9998285b727d6c1b36",
+        "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+      ],
+      "part_roles": [
+        "bill"
+      ],
+      "page_failure_parts": 0,
+      "injected_pages": 0,
+      "archive_sha256": "7a8ca806e65b03f18d0fc7cc2e2151479b1510029e2c1c9998285b727d6c1b36"
+    },
+    "support_crc": {
+      "state": "unverified",
+      "calls": [
+        "https://source.test/archive.zip",
+        "https://source.test/alternative.pdf"
+      ],
+      "text_sha256": "9dd7524c574121ac8980c33595bb1ec129c1babcdb7e566b57ad701eaeede444",
+      "selection_sha256_ignoring_policy_version": "ae9c2d8d9244bf1e90da4307384d7558a533019faf1f420b5d1501e7c9208269",
+      "trace_reason": "version_choice",
+      "dispositions": [
+        {
+          "phase": "version_comparison",
+          "index": 0,
+          "outcome": "selected",
+          "reason": "version_choice",
+          "observed_sha256": "d3565b7304ee7b77d390a24b5301573aafe72cc7be03fa1b265e91e292b1eaa0"
+        },
+        {
+          "phase": "version_comparison",
+          "index": 1,
+          "outcome": "policy_excluded",
+          "reason": "version_preference",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "observed_parts": [
+        "d3565b7304ee7b77d390a24b5301573aafe72cc7be03fa1b265e91e292b1eaa0",
+        "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+      ],
+      "part_roles": [
+        "bill"
+      ],
+      "page_failure_parts": 0,
+      "injected_pages": 0,
+      "archive_sha256": "d3565b7304ee7b77d390a24b5301573aafe72cc7be03fa1b265e91e292b1eaa0"
+    },
+    "singleton_crc": {
+      "state": "waiting",
+      "calls": [
+        "https://source.test/archive.zip",
+        "https://source.test/alternative.pdf"
+      ],
+      "text_sha256": null,
+      "selection_sha256_ignoring_policy_version": "dd00d9eff756528badbe971af6d7ad3c224df58136ce6b190edcfdcb1d94931a",
+      "trace_reason": "version_input_incomplete",
+      "dispositions": [
+        {
+          "phase": "version_comparison",
+          "index": 0,
+          "outcome": "unclassified",
+          "reason": "archive_member_unpack_failed",
+          "observed_sha256": "cbd49afab3a9eba97792d6d8e00936f36c383557e6944c9f0f1d65113fd2881e"
+        },
+        {
+          "phase": "version_comparison",
+          "index": 1,
+          "outcome": "unclassified",
+          "reason": "version_comparison_deferred",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "observed_parts": [
+        "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+      ],
+      "part_roles": [],
+      "page_failure_parts": 0,
+      "injected_pages": 0,
+      "archive_sha256": "cbd49afab3a9eba97792d6d8e00936f36c383557e6944c9f0f1d65113fd2881e"
+    },
+    "intact": {
+      "state": "unverified",
+      "calls": [
+        "https://source.test/archive.zip",
+        "https://source.test/alternative.pdf"
+      ],
+      "text_sha256": "9dd7524c574121ac8980c33595bb1ec129c1babcdb7e566b57ad701eaeede444",
+      "selection_sha256_ignoring_policy_version": "ac38b28aa367e55c0c2f1c0b86bacadf1d1b1d505ab6dc4d866d1bc397847c90",
+      "trace_reason": "version_choice",
+      "dispositions": [
+        {
+          "phase": "version_comparison",
+          "index": 0,
+          "outcome": "unclassified",
+          "reason": "ambiguous_extraction",
+          "observed_sha256": "4222833e9ccec6c13869c433d336658164d7ae11d3199b1697fdb718f1462c52"
+        },
+        {
+          "phase": "version_comparison",
+          "index": 1,
+          "outcome": "selected",
+          "reason": "version_choice",
+          "observed_sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        }
+      ],
+      "observed_parts": [
+        "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+      ],
+      "part_roles": [
+        "bill"
+      ],
+      "page_failure_parts": 0,
+      "injected_pages": 0,
+      "archive_sha256": "4222833e9ccec6c13869c433d336658164d7ae11d3199b1697fdb718f1462c52"
+    }
+  },
+  "unchanged_native_archives_excluding_policy_label": 16,
+  "native_comparison_sha256": "e813562d9d8caba0d5d3d60f613d61d07eee4b626fa3a0a7ef2504f540564feb",
+  "reader_floor_note": "The locally verified reader floor is the J622 commit. Deployment is confirmed separately before this writer is pushed.",
+  "j622_reader_floor_roundtrip_byte_identical": true
+}

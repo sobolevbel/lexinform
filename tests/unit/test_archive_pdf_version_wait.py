@@ -24,7 +24,10 @@ ALTERNATIVE = "https://source.test/older.pdf"
         ("draft/material.pdf", False),
     ],
 )
-def test_archive_fallback_keeps_a_failed_draft_in_its_family(name: str, waiting: bool) -> None:
+@pytest.mark.parametrize("compare_versions", [False, True])
+def test_archive_selection_keeps_a_failed_draft_in_its_family(
+    name: str, waiting: bool, compare_versions: bool
+) -> None:
     failed = b"%PDF-failed"
     data = archive({"draft/projekt.pdf": b"%PDF-readable", name: failed})
     data = data.replace(failed, b"%PDF-broken", 1)
@@ -39,12 +42,23 @@ def test_archive_fallback_keeps_a_failed_draft_in_its_family(name: str, waiting:
 
     loader = TextLoader({"source.test": download}, reader, max_bytes=100_000)
     document = TextDocument(
-        url=ROOT, kind="rcl", alternatives=(TextDocument(url=ALTERNATIVE, kind="rcl"),)
+        url=ROOT,
+        kind="rcl",
+        compare_versions=compare_versions,
+        alternatives=(TextDocument(url=ALTERNATIVE, kind="rcl"),),
     )
 
     selected, file = loader.select_document(document)
 
-    assert selected.url == ROOT and reads == [ROOT]
+    assert selected.url == ROOT
+    assert reads == ([ROOT, ALTERNATIVE] if compare_versions else [ROOT])
+    if waiting and compare_versions:
+        trace = file.candidate_trace
+        assert trace is not None and trace.result == "waiting"
+        assert [row.reason for row in trace.dispositions] == [
+            "archive_member_unpack_failed",
+            "version_comparison_deferred",
+        ]
     assert (file.selection.state == "waiting") == waiting
     assert (file.text is None) == waiting
     assert all(part.members[-1] != name for part in file.selection.parts)

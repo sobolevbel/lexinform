@@ -1493,6 +1493,7 @@ class TextLoader:
         prepared: list[DocumentCandidate] = []
         candidate_indices: list[int] = []
         incomplete: dict[int, DocumentSelection] = {}
+        unpack_blocked: set[int] = set()
         observed: dict[int, tuple[DocumentPart, ...]] = {}
         decisions: list[CandidateDisposition] = []
         for index, candidate in enumerate((document, *document.alternatives)):
@@ -1520,8 +1521,11 @@ class TextLoader:
                     )
                 )
                 continue
-            if file.sha256 is not None and file.selection.has_normative_pdf_page_failure:
-                incomplete[index] = file.selection
+            if file.sha256 is not None:
+                if file.archive_unpack_blocked:
+                    unpack_blocked.add(index)
+                if file.archive_unpack_blocked or file.selection.has_normative_pdf_page_failure:
+                    incomplete[index] = file.selection
             item = DocumentCandidate(
                 candidate.url, file.text, file.selection.parts, file.selection.observed_parts
             )
@@ -1567,7 +1571,9 @@ class TextLoader:
                     update={
                         "outcome": "unclassified",
                         "reason": (
-                            "pdf_page_extraction_failed"
+                            "archive_member_unpack_failed"
+                            if item.index in unpack_blocked
+                            else "pdf_page_extraction_failed"
                             if item.index in incomplete
                             else "version_comparison_deferred"
                         ),
@@ -1581,7 +1587,11 @@ class TextLoader:
                 state="waiting",
                 parts=tuple(part for failed in incomplete.values() for part in failed.parts),
                 observed_parts=tuple(part for parts in observed.values() for part in parts),
-                rejected=("PDF page extraction failed during version comparison",),
+                rejected=(
+                    ("Archive draft could not be unpacked during version comparison",)
+                    if unpack_blocked
+                    else ("PDF page extraction failed during version comparison",)
+                ),
             )
             return (
                 document,
@@ -1772,6 +1782,7 @@ class TextLoader:
                 first_pdf_page = None
                 complete_pdf_pages = None
                 word_formula_source = None
+                archive_unpack_blocked = False
                 if isinstance(self._extractor, ProvenanceTextExtractor):
                     observed = self._extractor.extract_document_with_provenance(data)
                     if self._capture_word_formulas is not None and urlparse(
@@ -1790,6 +1801,7 @@ class TextLoader:
                     complete_pdf_pages = observed.complete_pdf_pages
                     text = observed.document.text
                     selection = observed.document.selection
+                    archive_unpack_blocked = observed.document.archive_unpack_blocked
                     with self._lock:
                         self._extractions[observed.result.artifact_sha256] = observed.result
                     if invocation is not None:
@@ -1806,6 +1818,7 @@ class TextLoader:
                     extracted = self._extractor.extract_document(data)
                     text = extracted.text
                     selection = extracted.selection
+                    archive_unpack_blocked = extracted.archive_unpack_blocked
                 else:
                     text = self._extractor.extract(data)
                     selection = DocumentSelection(
@@ -1849,6 +1862,7 @@ class TextLoader:
                     word_formula_source=word_formula_source,
                     native_complete_standalone=native_standalone,
                     complete_unlocated_doc_support=complete_unlocated_doc,
+                    archive_unpack_blocked=archive_unpack_blocked,
                 )
                 completed = True
         finally:

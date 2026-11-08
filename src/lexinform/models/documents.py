@@ -637,6 +637,7 @@ class ExtractedDocument(BaseModel):
 
     text: str = ""
     selection: DocumentSelection = DocumentSelection()
+    archive_unpack_blocked: bool = Field(default=False, exclude=True)
 
 
 DocumentDeferReason = Literal[

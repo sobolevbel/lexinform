@@ -172,6 +172,7 @@ class LoadedFile:
     native_complete_standalone: bool = field(default=False, compare=False, repr=False)
     complete_unlocated_doc_support: bool = field(default=False, compare=False, repr=False)
     opaque_failure_prose: bool = field(default=False, compare=False, repr=False)
+    archive_unpack_blocked: bool = field(default=False, compare=False, repr=False)
     archive_version_evidence: (
         ArchiveVersionDecisionEvidence | ArchiveVersionConflictEvidence | None
     ) = field(default=None, compare=False, repr=False)
