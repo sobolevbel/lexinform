@@ -2,7 +2,7 @@
 
 import hashlib
 import re
-from collections.abc import Mapping, Sequence, Set
+from collections.abc import Callable, Mapping, Sequence, Set
 from dataclasses import dataclass
 from typing import Literal
 
@@ -14,8 +14,12 @@ from lexinform.models.content import (
     editorial_bill_snapshot,
 )
 from lexinform.models.enums import PublicationKind, PublicationStatus
+from lexinform.models.multipart_card_history import MultipartCardPlan
 from lexinform.models.observations import DeliveryPlan
-from lexinform.models.original_delivery_content import original_notice_context_matches
+from lexinform.models.original_delivery_content import (
+    OriginalDeliveryPlan,
+    original_notice_context_matches,
+)
 
 
 @dataclass(frozen=True)
@@ -316,3 +320,39 @@ def card_confirmation_matches(
         and version is not None
         and version.content_id == current_id
     )
+
+
+def confirmed_multipart_card(
+    root: Publication,
+    latest: Sequence[Publication],
+    *,
+    alias_count: int,
+    version_for: Callable[[int], ContentVersion | None],
+    snapshot_for: Callable[[str], ContentSnapshot | None],
+) -> ContentVersion | None:
+    if (
+        not latest
+        or root.message_id is None
+        or alias_count != 1
+        or not all(row.status is PublicationStatus.SENT and row.message_id for row in latest)
+        or latest[0].message_id != root.message_id
+        or latest[0].id is None
+    ):
+        return None
+    candidate = version_for(latest[0].id)
+    if candidate is None:
+        return None
+    snapshot = snapshot_for(candidate.plan_snapshot_id)
+    if snapshot is None:
+        raise ValueError("multipart card plan unavailable")
+    if candidate.multipart_card_revision is not None:
+        expected = MultipartCardPlan.model_validate_json(snapshot.payload_json).bindings
+    elif candidate.original_delivery_evidence is not None:
+        expected = OriginalDeliveryPlan.model_validate_json(snapshot.payload_json).bindings
+    else:
+        expected = (latest[0].id,)
+    if tuple(row.id for row in latest) != expected or any(
+        version_for(identity) != candidate for identity in expected
+    ):
+        return None
+    return candidate

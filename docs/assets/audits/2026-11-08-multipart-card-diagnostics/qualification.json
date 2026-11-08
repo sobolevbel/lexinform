@@ -1,0 +1,132 @@
+[
+  {
+    "profile": "single_many",
+    "database_sha256": "2e9dc2511a48e25d0d02741b5bc501eefadaafdbf1b2196b08139fe98074996e",
+    "root_publication_id": 1,
+    "runtime_current_id": "content-v1:ab5f66c927e24fba69e7d1bc1f86a6f045019d3fa58e5f525d13c548399b68b0",
+    "report_current_id": null,
+    "findings": [
+      {
+        "code": "card_content_physical_unavailable",
+        "ref": "content-v1:ab5f66c927e24fba69e7d1bc1f86a6f045019d3fa58e5f525d13c548399b68b0",
+        "level": "warning"
+      },
+      {
+        "code": "content_frozen_text_mismatch",
+        "ref": "2",
+        "level": "error"
+      },
+      {
+        "code": "content_frozen_text_mismatch",
+        "ref": "3",
+        "level": "error"
+      },
+      {
+        "code": "content_message_target_mismatch",
+        "ref": "3",
+        "level": "error"
+      },
+      {
+        "code": "content_frozen_text_mismatch",
+        "ref": "4",
+        "level": "error"
+      },
+      {
+        "code": "content_message_target_mismatch",
+        "ref": "4",
+        "level": "error"
+      },
+      {
+        "code": "content_frozen_text_mismatch",
+        "ref": "5",
+        "level": "error"
+      },
+      {
+        "code": "content_message_target_mismatch",
+        "ref": "5",
+        "level": "error"
+      }
+    ],
+    "verified_report_current_id": "content-v1:ab5f66c927e24fba69e7d1bc1f86a6f045019d3fa58e5f525d13c548399b68b0"
+  },
+  {
+    "profile": "many_same",
+    "database_sha256": "3dba25f5370ddda6c51c1b97488d4ee3086a5eae55525ec178d860bc76733e25",
+    "root_publication_id": 1,
+    "runtime_current_id": "content-v1:1fa601ffc89feed774e97a15b714ab6301328ac820132e3952b751ccfadb2752",
+    "report_current_id": null,
+    "findings": [
+      {
+        "code": "card_content_physical_unavailable",
+        "ref": "content-v1:c46672b5170163621a8e5368466bac02b5bb1b75b85cd9e5980abb5e2d6d9593",
+        "level": "warning"
+      },
+      {
+        "code": "card_content_physical_unavailable",
+        "ref": "content-v1:1fa601ffc89feed774e97a15b714ab6301328ac820132e3952b751ccfadb2752",
+        "level": "warning"
+      },
+      {
+        "code": "content_frozen_text_mismatch",
+        "ref": "1",
+        "level": "error"
+      },
+      {
+        "code": "content_frozen_text_mismatch",
+        "ref": "2",
+        "level": "error"
+      },
+      {
+        "code": "content_binding_role_mismatch",
+        "ref": "2",
+        "level": "error"
+      },
+      {
+        "code": "content_message_target_mismatch",
+        "ref": "2",
+        "level": "error"
+      },
+      {
+        "code": "content_frozen_text_mismatch",
+        "ref": "3",
+        "level": "error"
+      },
+      {
+        "code": "content_binding_role_mismatch",
+        "ref": "3",
+        "level": "error"
+      },
+      {
+        "code": "content_message_target_mismatch",
+        "ref": "3",
+        "level": "error"
+      },
+      {
+        "code": "content_frozen_text_mismatch",
+        "ref": "4",
+        "level": "error"
+      },
+      {
+        "code": "content_frozen_text_mismatch",
+        "ref": "5",
+        "level": "error"
+      },
+      {
+        "code": "content_message_target_mismatch",
+        "ref": "5",
+        "level": "error"
+      },
+      {
+        "code": "content_frozen_text_mismatch",
+        "ref": "6",
+        "level": "error"
+      },
+      {
+        "code": "content_message_target_mismatch",
+        "ref": "6",
+        "level": "error"
+      }
+    ],
+    "verified_report_current_id": "content-v1:1fa601ffc89feed774e97a15b714ab6301328ac820132e3952b751ccfadb2752"
+  }
+]

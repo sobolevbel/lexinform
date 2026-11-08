@@ -1,8 +1,13 @@
+import sqlite3
+from contextlib import closing
 from datetime import timedelta
+from pathlib import Path
 from typing import Literal
 
 import pytest
+from tools.content_history_doctor import audit
 
+from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models import PublicationKind
 from lexinform.models.multipart_card_history import MultipartCardPlan
 from lexinform.services.card_edits import edit_card
@@ -16,6 +21,7 @@ from tests.scenario.test_single_card_revision_producer import change
 @pytest.mark.parametrize("shape", ["single_many", "many_same"])
 def test_multipart_revision_preserves_ordered_history_after_cleanup(
     shape: Literal["single_many", "many_same"],
+    tmp_path: Path,
 ) -> None:
     case = prepare("off", shape)
     world = case.world
@@ -30,9 +36,36 @@ def test_multipart_revision_preserves_ordered_history_after_cleanup(
     version = world.repo.get_publication_content(first.id)
     assert version is not None and version.previous_version_id == predecessor.content_id
     assert version.multipart_card_revision == "card-multipart-revision-v1"
+    database = tmp_path / "multipart-card.db"
+    with closing(SqliteBillRepository(database)) as repo:
+        repo.migrate()
+        repo.restore(world.repo.dump())
+    report = audit(database, publication_id=owner.id)
+    assert report["status"] == "recorded" and not report["findings"]
+    assert report["histories"][0]["current_content_id"] == version.content_id
+    with closing(sqlite3.connect(database)) as db, db:
+        db.execute(
+            "UPDATE publications SET status='unknown', message_id=NULL, sent_at=NULL WHERE id=?",
+            (slots[-1].id,),
+        )
+    pending = audit(database, publication_id=owner.id)
+    assert pending["status"] == "recorded" and not pending["findings"]
+    assert pending["histories"][0]["current_content_id"] is None
+    with closing(sqlite3.connect(database)) as db, db:
+        db.execute("DELETE FROM publication_content WHERE publication_id=?", (slots[-1].id,))
+    corrupted = audit(database, publication_id=owner.id)
+    assert corrupted["status"] == "failed"
+    assert "invalid_multipart_card_history" in {row["code"] for row in corrupted["findings"]}
     cutoff = world.clock.now() + timedelta(days=999)
     world.repo.prune_history(before=cutoff, memo_before=cutoff)
     sql = world.repo.dump()
+    retained_database = tmp_path / "retained-card.db"
+    with closing(SqliteBillRepository(retained_database)) as repo:
+        repo.migrate()
+        repo.restore(sql)
+    retained = audit(retained_database, publication_id=owner.id)
+    assert retained["status"] == "recorded" and not retained["findings"]
+    assert retained["histories"][0]["current_content_id"] == version.content_id
     for _ in range(2):
         with saved_state(sql) as durable:
             assert durable.repo.dump() == sql

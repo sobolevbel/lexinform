@@ -3,6 +3,7 @@
 from lexinform.content_versions import (
     card_confirmation_matches,
     confirmed_content_version,
+    confirmed_multipart_card,
     content_delivery_mismatch,
     content_snapshot_refs,
     grouped_revision_obscures_current,
@@ -22,8 +23,6 @@ from lexinform.models.content import (
     ContentHistoryPage,
     OriginalAmendmentInputStatus,
 )
-from lexinform.models.multipart_card_history import MultipartCardPlan
-from lexinform.models.original_delivery_content import OriginalDeliveryPlan
 from lexinform.ports import BillRepository
 from lexinform.services.amendment_input_history import original_amendment_input
 
@@ -45,32 +44,17 @@ def _inspect_multipart_card(
     original = repo.get_publication_content(root_id)
     if original is None:
         return ContentHistoryView(integrity="unavailable")
-    latest = repo.card_refresh_parts(root_id) if root is not None else []
-    current = None
-    if (
-        latest
-        and root is not None
-        and root.message_id is not None
-        and len(repo.card_aliases(root.channel_id, root.message_id)) == 1
-        and all(row.status is PublicationStatus.SENT and row.message_id for row in latest)
-        and latest[0].message_id == root.message_id
-        and latest[0].id is not None
-    ):
-        candidate = repo.get_publication_content(latest[0].id)
-        if candidate is not None:
-            snapshot = repo.get_content_snapshot(candidate.plan_snapshot_id)
-            if snapshot is None:
-                return ContentHistoryView(integrity="unavailable")
-            if candidate.multipart_card_revision is not None:
-                expected = MultipartCardPlan.model_validate_json(snapshot.payload_json).bindings
-            elif candidate.original_delivery_evidence is not None:
-                expected = OriginalDeliveryPlan.model_validate_json(snapshot.payload_json).bindings
-            else:
-                expected = (latest[0].id,)
-            if tuple(row.id for row in latest) == expected and all(
-                repo.get_publication_content(identity) == candidate for identity in expected
-            ):
-                current = candidate
+    current = (
+        confirmed_multipart_card(
+            root,
+            repo.card_refresh_parts(root_id),
+            alias_count=len(repo.card_aliases(root.channel_id, root.message_id)),
+            version_for=repo.get_publication_content,
+            snapshot_for=repo.get_content_snapshot,
+        )
+        if root is not None and root.message_id is not None
+        else None
+    )
     versions_by_id = {item.content_id: item for item in (selected, original)}
     if current is not None:
         versions_by_id[current.content_id] = current

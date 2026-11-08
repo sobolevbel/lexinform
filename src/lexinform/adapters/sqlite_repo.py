@@ -46,6 +46,7 @@ from lexinform.adapters.content_applications import (
 from lexinform.adapters.content_history import (
     card_primary_evidence_candidate,
     card_publication_rows,
+    card_refresh_rows,
     read_content_version,
     read_grouped_stage_telegram_target,
     recorded_command_matches,
@@ -6443,26 +6444,7 @@ class SqliteBillRepository:
         return [self._row_to_publication(row) for row in rows]
 
     def card_refresh_parts(self, card_id: int) -> list[Publication]:
-        root = self._conn.execute(
-            "SELECT ref FROM publications WHERE kind = 'message_part' AND ref LIKE ?"
-            " ORDER BY id DESC LIMIT 1",
-            (f"card/{card_id}/%/1",),
-        ).fetchone()
-        if root is None:
-            card = self.publication_by_id(card_id)
-            rows = self._conn.execute(
-                "SELECT * FROM publications WHERE kind = 'message_part' AND ref LIKE ? ORDER BY id",
-                (f"message/{card_id}/%",),
-            ).fetchall()
-            return ([card] if card is not None else []) + [
-                self._row_to_publication(row) for row in rows
-            ]
-        prefix = root["ref"].rsplit("/", 1)[0]
-        rows = self._conn.execute(
-            "SELECT * FROM publications WHERE kind = 'message_part' AND ref LIKE ? ORDER BY id",
-            (f"{prefix}/%",),
-        ).fetchall()
-        return [self._row_to_publication(row) for row in rows]
+        return [self._row_to_publication(row) for row in card_refresh_rows(self._conn, card_id)]
 
     def set_card_digest(self, publication_id: int, digest: str) -> None:
         """Remember what the card said when it was last sent or edited."""

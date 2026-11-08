@@ -11,12 +11,15 @@ from lexinform.adapters.content_applications import verify_content_applications
 from lexinform.adapters.content_history import (
     ContentVersionRowError,
     card_current_content,
+    card_refresh_rows,
+    read_content_publication,
     read_content_version,
     read_grouped_stage_telegram_target,
     verify_act_published_content,
     verify_card_content,
     verify_direct_stage_content,
     verify_grouped_stage_content,
+    verify_multipart_card_revision,
     verify_original_delivery_content,
     verify_sitting_content,
 )
@@ -24,6 +27,7 @@ from lexinform.adapters.content_source_refs import verify_content_source
 from lexinform.adapters.digest_content import ResolvedDigestRenderedContent, verify_digest_content
 from lexinform.content_versions import (
     confirmed_content_version,
+    confirmed_multipart_card,
     content_delivery_mismatch,
     content_snapshot_refs,
     grouped_revision_obscures_current,
@@ -33,6 +37,7 @@ from lexinform.models import (
     ContentVersion,
     ContentVersionSummary,
     DeliveryPlan,
+    PublicationKind,
     PublicationStatus,
 )
 from lexinform.models.commands import read_delivery_resolution
@@ -43,9 +48,17 @@ from tools.sqlite_snapshot import open_snapshot, snapshot_files
 _TABLES = {"content_snapshots", "content_versions", "publication_content"}
 
 
+def _multipart_card_profile(version: ContentVersion) -> bool:
+    return version.multipart_card_revision is not None or (
+        version.original_delivery_evidence is not None
+        and version.original_delivery_evidence.kind is PublicationKind.NEW_BILL
+    )
+
+
 def _independent_profile(version: ContentVersion) -> bool:
     return (
-        version.sitting_profile is not None
+        _multipart_card_profile(version)
+        or version.sitting_profile is not None
         or version.act_published_evidence is not None
         or (
             version.original_delivery_evidence is not None
@@ -159,6 +172,7 @@ def _read_history(
                 ("invalid_sitting_content_history", verify_sitting_content),
                 ("invalid_act_content_history", verify_act_published_content),
                 ("invalid_original_delivery_history", verify_original_delivery_content),
+                ("invalid_multipart_card_history", verify_multipart_card_revision),
             ):
                 try:
                     verify(db, version, require_bound=True)
@@ -413,9 +427,43 @@ def audit(database: Path, *, publication_id: int | None = None) -> dict[str, Any
             findings.add("content_publication_layout_unavailable", "publications")
             bindings = {}
         cards: dict[int, str | None] = {}
+        multipart_roots = {
+            value.root_publication_id
+            for value in versions.values()
+            if _multipart_card_profile(value)
+        }
+        bound_versions = {
+            physical["publication_id"]: versions[identity]
+            for identity, rows in bindings.items()
+            for physical in rows
+        }
+        for root_id in multipart_roots:
+            cards[root_id] = None
+            try:
+                row = db.execute("SELECT * FROM publications WHERE id=?", (root_id,)).fetchone()
+                if row is None:
+                    continue
+                root = read_content_publication(row)
+                aliases = db.execute(
+                    "SELECT count(*) FROM publications WHERE kind='new_bill' AND status='sent'"
+                    " AND channel_id=? AND message_id=?",
+                    (root.channel_id, root.message_id),
+                ).fetchone()[0]
+                current = confirmed_multipart_card(
+                    root,
+                    [read_content_publication(part) for part in card_refresh_rows(db, root_id)],
+                    alias_count=aliases,
+                    version_for=bound_versions.get,
+                    snapshot_for=snapshots.get,
+                )
+                if current is not None:
+                    cards[root_id] = current.content_id
+            except ValueError, TypeError, RecursionError, sqlite3.Error, IndexError, KeyError:
+                findings.add("invalid_multipart_card_current_history", str(root_id))
         for value in versions.values():
             if (
-                value.change_snapshot_id is None
+                value.root_publication_id not in multipart_roots
+                and value.change_snapshot_id is None
                 and value.digest_profile is None
                 and not _independent_profile(value)
             ):

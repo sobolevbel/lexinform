@@ -2252,3 +2252,25 @@ def card_current_content(connection: sqlite3.Connection, root_id: int) -> str | 
         )
         else None
     )
+
+
+def card_refresh_rows(connection: sqlite3.Connection, card_id: int) -> list[sqlite3.Row]:
+    root = _query(
+        connection,
+        "SELECT ref FROM publications WHERE kind = 'message_part' AND ref LIKE ?"
+        " ORDER BY id DESC LIMIT 1",
+        (f"card/{card_id}/%/1",),
+    ).fetchone()
+    if root is None:
+        card = _query(connection, "SELECT * FROM publications WHERE id=?", (card_id,)).fetchone()
+        children = _query(
+            connection,
+            "SELECT * FROM publications WHERE kind = 'message_part' AND ref LIKE ? ORDER BY id",
+            (f"message/{card_id}/%",),
+        ).fetchall()
+        return ([card] if card is not None else []) + children
+    return _query(
+        connection,
+        "SELECT * FROM publications WHERE kind = 'message_part' AND ref LIKE ? ORDER BY id",
+        (f"{root['ref'].rsplit('/', 1)[0]}/%",),
+    ).fetchall()
