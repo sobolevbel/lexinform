@@ -4,6 +4,7 @@ import pytest
 
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.models import PdfPageText, PdfTextExtraction, TextDocument
+from lexinform.physical_observations import PhysicalObservationCollector
 from lexinform.services.documents import TextLoader
 from tests.fakes import FakeTextExtractor
 from tests.scenario.test_document_selection_contract import law
@@ -42,7 +43,12 @@ def test_failed_pdf_inside_an_archive_defers_selection_of_the_draft(
         downloads.append(url)
         return data if url == ROOT else b"%PDF-old"
 
-    loader = TextLoader({"source.test": download}, reader, max_bytes=100_000)
+    loader = TextLoader(
+        {"source.test": download},
+        reader,
+        max_bytes=100_000,
+        physical_factory=PhysicalObservationCollector,
+    )
     document = TextDocument(
         url=ROOT,
         kind="rcl",
@@ -60,6 +66,18 @@ def test_failed_pdf_inside_an_archive_defers_selection_of_the_draft(
         assert file.selection.state == "waiting" and file.text is None
         assert file.selection.has_normative_pdf_page_failure
         assert len(file.selection.parts) == 2
+        trace = file.candidate_trace
+        assert trace is not None and trace.archive_members is not None
+        assert trace.archive_version_conflict is None
+        decisions = {
+            row.leaf_sha256: row for row in trace.archive_members.rows if row.stage == "policy"
+        }
+        for data, reason in (
+            (b"%PDF-old", "archive_comparison_deferred"),
+            (b"%PDF-new", "archive_pdf_page_failure"),
+        ):
+            row = decisions[hashlib.sha256(data).hexdigest()]
+            assert row.outcome == "unclassified" and row.reason == reason
     else:
         assert file.text is not None and "2 września" in file.text
 

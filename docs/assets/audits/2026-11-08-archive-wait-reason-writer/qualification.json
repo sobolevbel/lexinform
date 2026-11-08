@@ -1,0 +1,293 @@
+{
+  "rollback_floor": "e24886d47bf5ac913188c3224858c2246425ab7a",
+  "before": {
+    "controlled_source_sha256": {
+      "669532.pdf": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f",
+      "667159.pdf": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+    },
+    "cases": [
+      {
+        "archive": "controlled_rcl_bundle",
+        "mode": "original",
+        "state": "ambiguous",
+        "text_sha256": null,
+        "parts": [
+          [
+            "bill",
+            "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          ],
+          [
+            "bill",
+            "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+          ]
+        ],
+        "reported_archive_version_failure": false
+      },
+      {
+        "archive": "controlled_rcl_bundle",
+        "mode": "blank",
+        "state": "ambiguous",
+        "text_sha256": null,
+        "parts": [
+          [
+            "bill",
+            "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          ],
+          [
+            "bill",
+            "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+          ]
+        ],
+        "reported_archive_version_failure": false
+      },
+      {
+        "archive": "controlled_rcl_bundle",
+        "restored_history": {
+          "state": "waiting",
+          "source_text_retained": false,
+          "reported_archive_version_failure": true,
+          "failed_member_sha256": [
+            "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+          ],
+          "archive_conflict_witnesses": 0,
+          "archive_wait_members": [],
+          "rollback_reader_verified": true
+        },
+        "mode": "failure",
+        "state": "waiting",
+        "text_sha256": null,
+        "parts": [
+          [
+            "bill",
+            "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          ],
+          [
+            "bill",
+            "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+          ]
+        ],
+        "reported_archive_version_failure": true
+      },
+      {
+        "archive": "735247.zip",
+        "mode": "original",
+        "state": "unverified",
+        "text_sha256": "e4dcb2ce8e726274e5074204b659e854f4eaa0e6de5a20b8a8a013cdc90f27ff",
+        "parts": [
+          [
+            "bill",
+            "5ba68bcabceac7c7d4e3af8d10ccdb36163ec7c4b948245dcf1d05591b240ac9"
+          ],
+          [
+            "justification",
+            "175f8fcf1712cd84f280addac784e15fdcf93ac5025696c180e4b7ac340e5e73"
+          ],
+          [
+            "osr",
+            "7ca1c87415978c1a2a5bbcc925329a3eb687f40804ebc0c053fc103eef4ded6f"
+          ]
+        ],
+        "reported_archive_version_failure": false,
+        "sha256": "f6de7e216cdaec994ed1cc19eb38e64b7a99e5bbd17abf69f419c7c850960128"
+      },
+      {
+        "archive": "738682.zip",
+        "mode": "original",
+        "state": "unsupported",
+        "text_sha256": "ae9e54a61735683c55989d496f8e876db68e7cdaab6077c5f590291089548236",
+        "parts": [
+          [
+            "osr",
+            "2119ae52140192ad5c99715e2d133e5034732145c430799527d85301d7cb8e90"
+          ]
+        ],
+        "reported_archive_version_failure": false,
+        "sha256": "2aadd75698fd556fe54616468b81d08fd4927dfce9b9dbacdd93d35d2279a9ef"
+      }
+    ],
+    "heading_failure": {
+      "archive": "controlled_rcl_bundle",
+      "restored_history": {
+        "state": "waiting",
+        "source_text_retained": false,
+        "reported_archive_version_failure": true,
+        "failed_member_sha256": [
+          "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        ],
+        "archive_conflict_witnesses": 0,
+        "archive_wait_members": [],
+        "rollback_reader_verified": true
+      },
+      "mode": "heading_failure",
+      "state": "waiting",
+      "text_sha256": null,
+      "parts": [
+        [
+          "bill",
+          "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+        ],
+        [
+          "unknown",
+          "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        ]
+      ],
+      "reported_archive_version_failure": true
+    }
+  },
+  "after": {
+    "controlled_source_sha256": {
+      "669532.pdf": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f",
+      "667159.pdf": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+    },
+    "cases": [
+      {
+        "archive": "controlled_rcl_bundle",
+        "mode": "original",
+        "state": "ambiguous",
+        "text_sha256": null,
+        "parts": [
+          [
+            "bill",
+            "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          ],
+          [
+            "bill",
+            "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+          ]
+        ],
+        "reported_archive_version_failure": false
+      },
+      {
+        "archive": "controlled_rcl_bundle",
+        "mode": "blank",
+        "state": "ambiguous",
+        "text_sha256": null,
+        "parts": [
+          [
+            "bill",
+            "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          ],
+          [
+            "bill",
+            "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+          ]
+        ],
+        "reported_archive_version_failure": false
+      },
+      {
+        "archive": "controlled_rcl_bundle",
+        "restored_history": {
+          "state": "waiting",
+          "source_text_retained": false,
+          "reported_archive_version_failure": true,
+          "failed_member_sha256": [
+            "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+          ],
+          "archive_conflict_witnesses": 0,
+          "archive_wait_members": [
+            {
+              "reason": "archive_comparison_deferred",
+              "sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f",
+              "outcome": "unclassified"
+            },
+            {
+              "reason": "archive_pdf_page_failure",
+              "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8",
+              "outcome": "unclassified"
+            }
+          ],
+          "rollback_reader_verified": true
+        },
+        "mode": "failure",
+        "state": "waiting",
+        "text_sha256": null,
+        "parts": [
+          [
+            "bill",
+            "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+          ],
+          [
+            "bill",
+            "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+          ]
+        ],
+        "reported_archive_version_failure": true
+      },
+      {
+        "archive": "735247.zip",
+        "mode": "original",
+        "state": "unverified",
+        "text_sha256": "e4dcb2ce8e726274e5074204b659e854f4eaa0e6de5a20b8a8a013cdc90f27ff",
+        "parts": [
+          [
+            "bill",
+            "5ba68bcabceac7c7d4e3af8d10ccdb36163ec7c4b948245dcf1d05591b240ac9"
+          ],
+          [
+            "justification",
+            "175f8fcf1712cd84f280addac784e15fdcf93ac5025696c180e4b7ac340e5e73"
+          ],
+          [
+            "osr",
+            "7ca1c87415978c1a2a5bbcc925329a3eb687f40804ebc0c053fc103eef4ded6f"
+          ]
+        ],
+        "reported_archive_version_failure": false,
+        "sha256": "f6de7e216cdaec994ed1cc19eb38e64b7a99e5bbd17abf69f419c7c850960128"
+      },
+      {
+        "archive": "738682.zip",
+        "mode": "original",
+        "state": "unsupported",
+        "text_sha256": "ae9e54a61735683c55989d496f8e876db68e7cdaab6077c5f590291089548236",
+        "parts": [
+          [
+            "osr",
+            "2119ae52140192ad5c99715e2d133e5034732145c430799527d85301d7cb8e90"
+          ]
+        ],
+        "reported_archive_version_failure": false,
+        "sha256": "2aadd75698fd556fe54616468b81d08fd4927dfce9b9dbacdd93d35d2279a9ef"
+      }
+    ],
+    "heading_failure": {
+      "archive": "controlled_rcl_bundle",
+      "restored_history": {
+        "state": "waiting",
+        "source_text_retained": false,
+        "reported_archive_version_failure": true,
+        "failed_member_sha256": [
+          "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        ],
+        "archive_conflict_witnesses": 0,
+        "archive_wait_members": [
+          {
+            "reason": "archive_comparison_deferred",
+            "sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f",
+            "outcome": "unclassified"
+          },
+          {
+            "reason": "archive_pdf_page_failure",
+            "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8",
+            "outcome": "unclassified"
+          }
+        ],
+        "rollback_reader_verified": true
+      },
+      "mode": "heading_failure",
+      "state": "waiting",
+      "text_sha256": null,
+      "parts": [
+        [
+          "bill",
+          "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f"
+        ],
+        [
+          "unknown",
+          "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+        ]
+      ],
+      "reported_archive_version_failure": true
+    }
+  }
+}
