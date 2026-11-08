@@ -105,6 +105,8 @@ ArchiveMemberPolicyReason = Literal[
     "regulation_support",
     "empty_text",
     "long_unknown_text",
+    "archive_pdf_page_failure",
+    "archive_comparison_deferred",
 ]
 
 
@@ -145,6 +147,10 @@ class ArchiveMemberDisposition(BaseModel):
             raise ValueError("policy rows require a policy outcome and branch reason")
         elif (self.outcome == "selected") != self.reason.startswith("selected_"):
             raise ValueError("selected policy outcomes require their actual selection role")
+        if self.reason in ("archive_pdf_page_failure", "archive_comparison_deferred") and (
+            self.outcome != "unclassified" or self.leaf_sha256 is None
+        ):
+            raise ValueError("a deferred archive row requires an observed body without a verdict")
         return self
 
 
@@ -313,6 +319,8 @@ _PACKED_REASONS = (
     "format_complete",
     "format_failed",
     "format_returned_length_differs",
+    "archive_pdf_page_failure",
+    "archive_comparison_deferred",
 )
 type _PackedArchiveRow = tuple[
     Position,

@@ -254,6 +254,33 @@ def test_pack_recovers_all_rows_only_after_legacy_truncation() -> None:
     assert pack_archive_trace(complete, actual[:1]) is complete
 
 
+def test_deferred_archive_reasons_keep_existing_packed_codes() -> None:
+    actual = rows(11, large=True)
+    old_prefix = enrich_archive_trace(legacy(), actual, walk="finished", unvisited="known")
+    old_packed = pack_archive_trace(old_prefix, actual).archive_members
+    assert isinstance(old_packed, PackedArchiveMemberDispositions)
+    deferred = (
+        actual[0].model_copy(
+            update={"reason": "archive_pdf_page_failure", "outcome": "unclassified"}
+        ),
+        actual[1].model_copy(
+            update={"reason": "archive_comparison_deferred", "outcome": "unclassified"}
+        ),
+        *actual[2:],
+    )
+    prefix = enrich_archive_trace(legacy(), deferred, walk="finished", unvisited="known")
+    packed = pack_archive_trace(prefix, deferred).archive_members
+    assert isinstance(packed, PackedArchiveMemberDispositions)
+    assert packed.packed_rows[2:] == old_packed.packed_rows[2:]
+    assert (
+        PackedArchiveMemberDispositions.model_validate_json(packed.model_dump_json()).rows
+        == deferred
+    )
+    for changes in ({"outcome": "policy_excluded"}, {"leaf_sha256": None}):
+        with pytest.raises(ValueError, match="observed body without a verdict"):
+            ArchiveMemberDisposition.model_validate({**deferred[0].model_dump(), **changes})
+
+
 @pytest.mark.parametrize("fault", ["count", "section", "parent"])
 def test_pack_failure_preserves_legacy_prefix(fault: str) -> None:
     actual = (
