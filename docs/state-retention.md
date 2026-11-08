@@ -107,6 +107,12 @@ The result ID names a provider/batch/custom item,
 whereas `request_sha256` names its frozen input. Reuse retains the same result ID and does not
 create another paid computation. Current provider identities have the repository's existing
 single-account scope; they do not claim cross-account uniqueness.
+A verified reanalysis reference keeps the previous result ID and the checksum of the
+previous answer context. This reference survives batch-body cleanup without extending
+text retention. `batch_integrity_doctor --payload-retention` counts referenced results
+and nonempty stored text separately. The comparison review can use a pinned earlier
+checkpoint if the operational text has expired.
+
 The result reader also accepts schema v2 for secondary purposes, with no primary generation.
 It validates the purpose-specific record and matching request/result refs; review output and
 context must agree on the purpose. Nullable computation refs on secondary records are omitted

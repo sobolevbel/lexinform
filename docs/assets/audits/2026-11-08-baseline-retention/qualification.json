@@ -1,0 +1,49 @@
+{
+  "snapshots": {
+    "eligible": {
+      "snapshot_sha256": "3ff80a65f4cad54afd38aaa9fb0977df10407fea0c96b98e626913c5e5b4b47d",
+      "status": "available",
+      "payload_rows": 2,
+      "eligible_rows": 2,
+      "eligible_by_call_kind": {
+        "analysis": 1,
+        "reanalysis": 1
+      },
+      "unmet_gates": {},
+      "declared_reanalysis_baselines": {
+        "referencing_items": 1,
+        "previous_results": 1,
+        "previous_result_missing": 0,
+        "previous_item_missing": 0,
+        "saved_text_present": 1,
+        "saved_text_absent": 0
+      }
+    },
+    "cleaned": {
+      "snapshot_sha256": "05bde030630d2d5aecf6316cb2db96361cfbc67120e7ea6d85ae66ed7f7849ee",
+      "status": "available",
+      "payload_rows": 0,
+      "eligible_rows": 0,
+      "eligible_by_call_kind": {},
+      "unmet_gates": {},
+      "declared_reanalysis_baselines": {
+        "referencing_items": 1,
+        "previous_results": 1,
+        "previous_result_missing": 0,
+        "previous_item_missing": 0,
+        "saved_text_present": 0,
+        "saved_text_absent": 1
+      }
+    },
+    "8e7a715b": {
+      "snapshot_sha256": "2fa282b623328efa9bec50d3d6da771fd6a8b098565ea619d1a1a4ed38f351b7",
+      "status": "available",
+      "payload_rows": 0,
+      "eligible_rows": 0,
+      "eligible_by_call_kind": {},
+      "unmet_gates": {}
+    }
+  },
+  "default_report_unchanged": true,
+  "operational_text_cleared_and_previous_result_retained": true
+}

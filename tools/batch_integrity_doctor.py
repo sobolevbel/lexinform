@@ -197,6 +197,32 @@ def _active(
     }
 
 
+def _baseline_payload_retention(connection: sqlite3.Connection) -> dict[str, int]:
+    if not {"result_id", "batch_id", "custom_id"} <= _columns(connection, "computation_results"):
+        return {}
+    row = connection.execute(
+        "WITH refs AS ("
+        " SELECT json_extract(meta_json,'$.reanalysis_baseline.result_id') AS result_id,"
+        " count(*) AS item_count FROM llm_batch_items WHERE call_kind='reanalysis'"
+        " AND json_type(meta_json,'$.reanalysis_baseline.result_id')='text'"
+        " GROUP BY result_id"
+        "), availability AS ("
+        " SELECT refs.item_count, r.result_id AS retained_result, i.custom_id AS retained_item,"
+        " COALESCE(json_type(i.meta_json,'$.text')='text'"
+        " AND length(json_extract(i.meta_json,'$.text'))>0,0) AS has_text"
+        " FROM refs LEFT JOIN computation_results r USING (result_id)"
+        " LEFT JOIN llm_batch_items i ON (i.batch_id,i.custom_id)=(r.batch_id,r.custom_id)"
+        ") SELECT sum(item_count) AS referencing_items, count(*) AS previous_results,"
+        " count(*) FILTER (WHERE retained_result IS NULL) AS previous_result_missing,"
+        " count(*) FILTER (WHERE retained_result IS NOT NULL AND retained_item IS NULL)"
+        " AS previous_item_missing,"
+        " count(*) FILTER (WHERE has_text) AS saved_text_present,"
+        " count(*) FILTER (WHERE retained_item IS NOT NULL AND NOT has_text) AS saved_text_absent"
+        " FROM availability"
+    ).fetchone()
+    return dict(row) if row["previous_results"] else {}
+
+
 def _payload_retention(connection: sqlite3.Connection) -> dict[str, object]:
     blockers: Counter[str] = Counter()
     eligible_by_kind: Counter[str] = Counter()
@@ -207,12 +233,14 @@ def _payload_retention(connection: sqlite3.Connection) -> dict[str, object]:
         blockers.update(failed)
         if not failed:
             eligible_by_kind[row["call_kind"]] += 1
+    baselines = _baseline_payload_retention(connection)
     return {
         "status": "available",
         "payload_rows": payload_rows,
         "eligible_rows": eligible_by_kind.total(),
         "eligible_by_call_kind": dict(sorted(eligible_by_kind.items())),
         "unmet_gates": dict(sorted(blockers.items())),
+        **({"declared_reanalysis_baselines": baselines} if baselines else {}),
     }
 
 
