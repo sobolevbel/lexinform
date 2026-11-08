@@ -1,4 +1,4 @@
-"""Audit ODT note acceptance separately in original download roots and observed leaf contexts."""
+"""Audit retained ODT notes and table coordinates in original roots and observed leaves."""
 
 import argparse
 import io
@@ -16,6 +16,7 @@ from lexinform.document_candidates import select_document_parts
 from lexinform.extraction_records import summarize_extraction
 from lexinform.models.extractions import ExtractionResult
 from lexinform.models.odt_notes import OdtNoteCall
+from lexinform.models.odt_tables import OdtTableMerges
 from tools.corpus_artifacts import digest, read_artifact, write_json
 from tools.corpus_manifests import RawReplayManifest
 from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
@@ -53,6 +54,43 @@ def xml_inventory(
 
     visit(body, ())
     return nodes, definitions
+
+
+def verify_retained_tables(
+    stored: OdtTableMerges | None, layouts: list[dict[str, Any]]
+) -> dict[str, int | str]:
+    verified = {row["table_path"]: row["merges"] for row in layouts if row["status"] == "verified"}
+    unresolved = sum(row["status"] == "unresolved" for row in layouts)
+    counts: dict[str, int | str] = {
+        "verified_xml_tables": len(verified),
+        "unresolved_xml_tables": unresolved,
+        "retained_tables": 0,
+        "retained_merges": 0,
+        "status": "not_retained",
+    }
+    if stored is None:
+        return counts
+    if (stored.verified_tables, stored.unresolved_tables) != (len(verified), unresolved):
+        raise ValueError("Stored ODT table counts differ from the pinned XML")
+    for table in stored.tables:
+        expected = verified.get(table.path)
+        actual = [
+            {
+                "anchor": merge.anchor,
+                "covered": list(merge.covered),
+                "logical_anchor": merge.position,
+                "logical_covered": sorted(merge.positions() - {merge.position}),
+            }
+            for merge in table.merges
+        ]
+        if actual != expected:
+            raise ValueError("Stored ODT merge coordinates differ from the pinned XML")
+    counts.update(
+        status="verified",
+        retained_tables=len(stored.tables),
+        retained_merges=sum(len(table.merges) for table in stored.tables),
+    )
+    return counts
 
 
 def audit_context(data: bytes, *, context: str) -> tuple[dict[str, Any], list[tuple[str, bytes]]]:
@@ -209,6 +247,10 @@ def audit_context(data: bytes, *, context: str) -> tuple[dict[str, Any], list[tu
                 "text_view": coordinates["text_view"],
                 "tracked_changes": coordinates["tracked_changes"],
                 "table_repetitions": coordinates["table_repetitions"],
+                "table_merges": verify_retained_tables(
+                    summary.odt_table_merges if summary is not None else None,
+                    coordinates["merged_tables"],
+                ),
                 "body_manifest_sha256": body.manifest_sha256,
             }
         )
@@ -314,6 +356,12 @@ def run(corpus: Path, manifest_path: Path, output: Path) -> dict[str, Any]:
         "standalone_retained_note_positive": sum(
             leaf["selected"] and leaf["note_count"] > 0 and leaf["retained_prefix"]
             for leaf in leaf_runs
+        ),
+        "original_retained_table_merges": sum(
+            leaf["table_merges"]["retained_merges"] for leaf in original_leaves
+        ),
+        "standalone_retained_table_merges": sum(
+            leaf["table_merges"]["retained_merges"] for leaf in leaf_runs
         ),
         "changed_inputs": changed,
         "verified_input_paths": len(reads.paths),

@@ -1,0 +1,37 @@
+{
+  "official_leaf_pins": "docs/assets/audits/2026-11-08-odt-table-geometry/qualification.json",
+  "official_leaf_count": 21,
+  "positive_controls": [
+    {
+      "official_id": "rcl-file:684340",
+      "input_sha256": "743d88976846877fcc7d9c4a81ed0e1128822b1c2f5e70c71b1b518a1027143f",
+      "verified_xml_tables": 1,
+      "unresolved_xml_tables": 0,
+      "retained_tables": 1,
+      "retained_merges": 35,
+      "status": "verified"
+    }
+  ],
+  "original_roots_report_sha256": "679fa4cc803b7bc9596eeb0b3ce38d6c71e6816f86ed33f2a24a0fe232d1209c",
+  "archive_summary": {
+    "changed_inputs": [],
+    "original_download_roots": 6,
+    "original_independent_inline_space_spans": 8,
+    "original_independent_plain_spans": 0,
+    "original_odt_leaf_occurrences": 8,
+    "original_raw_xml_notes": 4,
+    "original_raw_xml_separate_refs": 0,
+    "original_retained_table_merges": 0,
+    "original_selected_note_positive": 0,
+    "original_selected_odt_leaves": 1,
+    "original_verified_xml_call_paths": 4,
+    "original_verified_xml_note_paths": 4,
+    "source_fingerprints_unchanged": true,
+    "standalone_independent_inline_space_spans": 8,
+    "standalone_retained_note_positive": 4,
+    "standalone_retained_table_merges": 0,
+    "standalone_selected_note_positive": 4,
+    "unique_standalone_leaf_runs": 8,
+    "verified_input_paths": 7
+  }
+}

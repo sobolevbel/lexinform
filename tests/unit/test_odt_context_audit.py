@@ -6,13 +6,14 @@ import os
 from pathlib import Path
 
 import pytest
-from tools.audit_odt_context import run
-from tools.replay_odt_blocks import verify_note_origins
+from tools.audit_odt_context import audit_context, run, verify_retained_tables
+from tools.replay_odt_blocks import snapshot, verify_note_origins
 
 from lexinform.adapters.document_text import DocumentTextExtractor
 from lexinform.models.odt_notes import OdtNotedParts
 from tests.unit.test_odt_blocks import odt_document
 from tests.unit.test_odt_note_capture import note, observed
+from tests.unit.test_odt_table_history import table_merges
 from tests.unit.test_physical_extraction import archive, docx
 
 MARKER = "CORPUS-BODY-MUST-NOT-APPEAR-IN-THE-REPORT"
@@ -159,3 +160,25 @@ def test_qualified_inline_spacing_is_checked_independently(spacing: str, expecte
         )
         with pytest.raises(ValueError, match="differs from independent XML text"):
             verify_note_origins(raw, body, origins.model_copy(update={"entries": (shortened,)}))
+
+
+def test_odt_audit_verifies_native_retention_and_rejects_changed_coordinates() -> None:
+    raw = odt_document(
+        "<table:table><table:table-row><table:table-cell table:number-columns-spanned='2'>"
+        "<text:p>" + "USTAWA Art. 1. Cudzoziemiec. " * 20 + "</text:p>"
+        "</table:table-cell><table:covered-table-cell/></table:table-row></table:table>"
+    )
+
+    audited, _ = audit_context(raw, context="fixture")
+
+    assert audited["odt_leaves"][0]["table_merges"] == {
+        "status": "verified",
+        "verified_xml_tables": 1,
+        "unresolved_xml_tables": 0,
+        "retained_tables": 1,
+        "retained_merges": 1,
+    }
+    _, (physical,) = snapshot(raw, "adapter")
+    wrong = table_merges().model_copy(update={"verified_tables": 1, "unresolved_tables": 0})
+    with pytest.raises(ValueError, match="coordinates differ"):
+        verify_retained_tables(wrong, physical["merged_tables"])
