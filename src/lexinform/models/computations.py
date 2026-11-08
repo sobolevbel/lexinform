@@ -26,6 +26,7 @@ from lexinform.models.reviews import (
     ReviewContext,
     ReviewForum,
     ReviewPurpose,
+    ReviewSourceObservationId,
 )
 from lexinform.senate_documents import validate_senate_scan
 
@@ -46,10 +47,8 @@ class ReviewSourceReference(BaseModel):
     draft_date: dt.date | None = None
     body: str = ""
     forum: ReviewForum = "unknown"
-    source_observation_id: str | None = Field(
-        default=None,
-        pattern=r"^source-observation-v1:[0-9a-f]{64}$",
-        exclude_if=lambda value: value is None,
+    source_observation_id: ReviewSourceObservationId | None = Field(
+        default=None, exclude_if=lambda value: value is None
     )
 
 
@@ -82,18 +81,29 @@ class ReviewInputReference(BaseModel):
 
     @classmethod
     def from_context(
-        cls, context: ReviewContext, *, term: int, recorded_key: str | None = None
+        cls,
+        context: ReviewContext,
+        *,
+        term: int,
+        recorded_key: str | None = None,
+        source_observation_ids: tuple[ReviewSourceObservationId | None, ...] = (),
     ) -> Self:
+        documents = tuple(
+            ReviewSourceReference.model_validate(document, from_attributes=True)
+            for document in context.documents
+        )
+        if source_observation_ids:
+            documents = tuple(
+                document.model_copy(update={"source_observation_id": identity})
+                for document, identity in zip(documents, source_observation_ids, strict=True)
+            )
         return cls(
             key=context.memo_key(term) if recorded_key is None else recorded_key,
             term=term,
             number=context.number,
             title=context.title,
             purpose=context.purpose,
-            documents=tuple(
-                ReviewSourceReference.model_validate(document, from_attributes=True)
-                for document in context.documents
-            ),
+            documents=documents,
             act_eli=context.act_eli,
             promulgation_date=context.promulgation_date,
             canonical_date=context.canonical_date,

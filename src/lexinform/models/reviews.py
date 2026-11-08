@@ -3,12 +3,13 @@ import datetime as dt
 import hashlib
 import json
 import re
-from typing import Literal
+from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from lexinform.models.sejm import TextDocument, is_rcl_number
 
+ReviewSourceObservationId = Annotated[str, Field(pattern=r"^source-observation-v1:[0-9a-f]{64}$")]
 ReviewPurpose = Literal["consultation_review", "commission_review", "act_application"]
 DocumentRole = Literal[
     "response",
@@ -52,6 +53,21 @@ class ReviewContext(BaseModel):
     promulgation_date: dt.date | None = None
     canonical_date: dt.date | None = None
     comparison_sha256: str | None = None
+    source_observation_ids: tuple[ReviewSourceObservationId | None, ...] = Field(
+        default=(), exclude_if=lambda value: not value
+    )
+
+    source_observation_term: int | None = Field(
+        default=None, gt=0, exclude_if=lambda value: value is None
+    )
+
+    @model_validator(mode="after")
+    def observation_slots(self) -> Self:
+        if bool(self.source_observation_ids) != (self.source_observation_term is not None) or (
+            self.source_observation_ids and len(self.source_observation_ids) != len(self.documents)
+        ):
+            raise ValueError("Review observations must align with the input documents")
+        return self
 
     @property
     def text(self) -> str:

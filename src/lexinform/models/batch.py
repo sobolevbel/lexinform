@@ -53,7 +53,7 @@ from lexinform.models.observations import DeliveryPlan
 from lexinform.models.physical_inventory import Sha256
 from lexinform.models.report import CallKind
 from lexinform.models.review_prepared_input import ReviewPreparedInputWitness
-from lexinform.models.reviews import DocumentReview, ReviewContext
+from lexinform.models.reviews import DocumentReview, ReviewContext, ReviewSourceObservationId
 from lexinform.models.scan_input import ScanInputManifest
 from lexinform.models.senate import SenateResolutionIdentity
 from lexinform.models.supplement_inputs import SupplementScanInputWitness
@@ -498,6 +498,9 @@ class DigestItemMeta(BaseModel):
     title: str = ""
     compared_with: list[str] = Field(default_factory=list)
     review_context: ReviewContext | None = None
+    review_source_observation_ids: tuple[ReviewSourceObservationId | None, ...] = Field(
+        default=(), exclude_if=lambda value: not value
+    )
     amendment_revision: AmendmentRevisionTarget | None = None
     revision_application_work_key: str | None = Field(
         default=None,
@@ -626,6 +629,12 @@ class DigestItemMeta(BaseModel):
                 self.supplement_scan_input.term,
                 self.supplement_scan_input.context_without_scan.number,
             )
+        if (
+            self.review_source_observation_ids
+            and self.review_context is not None
+            and (len(self.review_source_observation_ids) != len(self.review_context.documents))
+        ):
+            raise ValueError("Review observations must align with the queued input")
         witness = self.review_input_witness
         if witness is not None:
             manifest, binding = self.frozen_request_manifest, self.input_binding
@@ -687,6 +696,12 @@ def validate_batch_item_meta(
         raise ValueError("Supplement scan input belongs to submitted supplements")
     if isinstance(decoded, dict) and "reanalysis_baseline" in decoded and kind != "reanalysis":
         raise ValueError("Reanalysis baseline requires its actual purpose")
+    if (
+        isinstance(decoded, dict)
+        and "review_source_observation_ids" in decoded
+        and kind not in ("consultation_review", "commission_review", "act_application")
+    ):
+        raise ValueError("Review observations require their actual batch purpose")
     model = BatchItemMeta if kind in ("analysis", "reanalysis") else DigestItemMeta
     parsed = model.model_validate(decoded)
     manifest = parsed.frozen_request_manifest

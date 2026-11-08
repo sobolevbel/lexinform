@@ -1356,6 +1356,7 @@ class AnalysisService:
                         meta.review_context,
                         term=item.term,
                         recorded_key=meta.input_binding.reuse_key if meta.input_binding else None,
+                        source_observation_ids=meta.review_source_observation_ids,
                     )
                     if review and meta.review_context is not None
                     else None
@@ -2080,6 +2081,7 @@ class AnalysisService:
         if not self.review_enabled(purpose):
             return None
         sources: list[ReviewDocument] = []
+        observations: list[str | None] = []
         reads: list[LocalReadTiming | None] = []
         omission_owner = SourceReferenceOmissionOwner(
             term=bill.term, number=bill.number, purpose="review"
@@ -2109,13 +2111,27 @@ class AnalysisService:
                 except _SourceReadError as failure:
                     self._record_source_read(bill, failure.source, purpose="review")
                     raise failure.cause from failure
-                if read.source_read is not None:
-                    self._record_source_read(bill, read.source_read, purpose="review")
+                captured = read.source_read
+                observation_id = (
+                    self._record_source_read(bill, captured, purpose="review")
+                    if captured is not None
+                    else None
+                )
                 source = read.document
                 reads.append(read.local_read)
                 if source is not None:
                     sources.append(source)
+                    observations.append(
+                        observation_id
+                        if isinstance(captured, DocumentSourceRead)
+                        and captured.document.url == source.url
+                        and captured.selection.selection.matches_review_source(
+                            source.url, source.file_sha256, source.sha256
+                        )
+                        else None
+                    )
                 elif purpose == "commission_review":
+                    observations.append(None)
                     sources.append(
                         ReviewDocument(
                             identity=requested.identity,
@@ -2142,6 +2158,8 @@ class AnalysisService:
             title=bill.summary.title,
             purpose=purpose,
             documents=tuple(sources),
+            source_observation_ids=tuple(observations) if any(observations) else (),
+            source_observation_term=bill.term if any(observations) else None,
             act_eli=act.eli if act else None,
             promulgation_date=act.promulgation_date if act else None,
             canonical_date=act.entry_into_force if act else None,
@@ -2271,6 +2289,13 @@ class AnalysisService:
     ) -> DocumentReviewRecord | Waiting:
         if context.number != bill.number:
             raise ValueError("document review context belongs to a different bill")
+        observations = (
+            context.source_observation_ids if context.source_observation_term == bill.term else ()
+        )
+        if context.source_observation_ids:
+            context = context.model_copy(
+                update={"source_observation_ids": (), "source_observation_term": None}
+            )
         if (
             context.purpose == "consultation_review"
             and not self._options.consultation_reviews_enabled
@@ -2349,6 +2374,7 @@ class AnalysisService:
                         meta=DigestItemMeta(
                             memo_key=key,
                             review_context=context,
+                            review_source_observation_ids=observations,
                             queued_at=self._clock.now(),
                             prompt_version=request.prompt_version,
                         ),
@@ -3030,9 +3056,9 @@ class AnalysisService:
         source: SourceReadCapture,
         *,
         purpose: Literal["analysis", "review"] = "analysis",
-    ) -> None:
+    ) -> str | None:
         with self._repo.atomic():
-            record_source_read(
+            return record_source_read(
                 self._repo,
                 source,
                 term=bill.term,

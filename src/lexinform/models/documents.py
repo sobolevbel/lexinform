@@ -154,6 +154,16 @@ class DocumentSelection(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
 
+    def matches_review_source(self, url: str, file_sha256: str | None, text_sha256: str) -> bool:
+        return (
+            bool(file_sha256 and text_sha256)
+            and sum(
+                (part.url, part.source_sha256, part.text_sha256) == (url, file_sha256, text_sha256)
+                for part in self.parts
+            )
+            == 1
+        )
+
     def without_text(self) -> DocumentSelection:
         return self.model_copy(
             update={

@@ -6,12 +6,15 @@ import pytest
 from lexinform.document_fingerprints import text_digest
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
+    DigestItemMeta,
     DocumentSelectionRecord,
     ReviewDocument,
     ReviewSource,
     SourceObservation,
     TextDocument,
 )
+from lexinform.models.batch import DocumentReviewQuestion
+from lexinform.services.analysis import Waiting
 from tests.harness import World, print_url
 
 
@@ -220,3 +223,59 @@ def test_review_metadata_failure_rolls_back_the_entire_source_graph(
         world.analysis.review_context(world.bill("4100"), "consultation_review", (source,))
 
     assert world.repo.dump() == before
+
+
+@pytest.mark.parametrize("same_term", [True, False])
+def test_review_observation_survives_frozen_batch_only_for_its_owner(same_term: bool) -> None:
+    world = World(
+        batch=True,
+        analysis_model="gpt-5.1",
+        consultation_reviews_enabled=True,
+        batch_kinds=frozenset({"consultation_review"}),
+    )
+    world.add_bill("4100", "Projekt ustawy o cudzoziemcach")
+    world.run(track=False)
+    world.analysis.start_run()
+    source = ReviewSource(
+        identity="review/1",
+        role="response",
+        document=TextDocument(url=print_url("4100"), kind="print"),
+    )
+    bill = world.bill("4100")
+    context = world.analysis.review_context(bill, "consultation_review", (source,))
+    assert context is not None, "the fixture source has readable consultation text"
+    (observation,) = review_observations(world)
+    assert context.source_observation_ids == (observation.observation_id,)
+    assert context.source_observation_term == bill.term
+    if not same_term:
+        context = context.model_copy(update={"source_observation_term": bill.term - 1})
+
+    assert isinstance(world.analysis.request_document_review(bill, context), Waiting)
+    (intent,) = world.repo.list_queued_batch_intents()
+    assert isinstance(intent.meta, DigestItemMeta), "review requests use secondary batch metadata"
+    assert intent.meta.review_source_observation_ids == (
+        context.source_observation_ids if same_term else ()
+    )
+    assert isinstance(intent.request.question, DocumentReviewQuestion), (
+        "the intent carries a review"
+    )
+    assert intent.request.question.ctx.source_observation_ids == ()
+    assert intent.request.payload_json is not None, "the fake backend freezes exact request bytes"
+    assert observation.observation_id not in intent.request.payload_json
+    assert intent.request.question.ctx.memo_key(bill.term) == context.memo_key(bill.term)
+    world.repo.restore(world.repo.dump())
+    world.analysis.submit_queued_batches()
+    world.batch.resolve()
+    world.analysis.collect_batches()
+    world.analysis.acknowledge_batch_costs()
+
+    world.clock.advance(days=200)
+    cutoff = world.clock.now()
+    world.repo.prune_history(before=cutoff, memo_before=cutoff)
+    world.repo.restore(world.repo.dump())
+    (result,) = world.repo.list_computation_results(10, "4100", purpose="consultation_review")
+    assert result.review_input is not None, "the paid review retains its compact inputs"
+    assert result.review_input.documents[0].source_observation_id == (
+        observation.observation_id if same_term else None
+    )
+    assert result.request_sha256 == intent.request.payload_sha256

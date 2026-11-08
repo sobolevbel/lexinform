@@ -69,19 +69,11 @@ class DocumentSourceRows:
                 != (reference.term, reference.number, "review")
                 or observation.document.url != document.url
                 or observation.recorded_at > before
-                or not document.file_sha256
-                or not document.sha256
             ):
                 raise ValueError("review_source_observation_conflict")
             record = self.get_document_selection(observation.selection_id)
-            if (
-                record is None
-                or sum(
-                    (part.url, part.source_sha256, part.text_sha256)
-                    == (document.url, document.file_sha256, document.sha256)
-                    for part in record.selection.parts
-                )
-                != 1
+            if record is None or not record.selection.matches_review_source(
+                document.url, document.file_sha256, document.sha256
             ):
                 raise ValueError("review_source_observation_conflict")
             confirmed.append((index, identity))

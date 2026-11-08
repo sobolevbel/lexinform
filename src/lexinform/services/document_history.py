@@ -183,7 +183,7 @@ def record_source_read(
     number: str,
     purpose: Literal["prefilter", "analysis", "review"],
     recorded_at: dt.datetime,
-) -> None:
+) -> str | None:
     """Record a consumer's source metadata inside its caller-owned transaction."""
     if isinstance(source, PhysicalSourceRead):
         record_artifacts(repo, source.artifacts, recorded_at=recorded_at)
@@ -198,7 +198,7 @@ def record_source_read(
                 owner.purpose,
             ) != (term, number, purpose):
                 raise ValueError("source omission must match its actual calling owner and purpose")
-        return
+        return None
     observation = SourceObservation(
         term=term,
         number=number,
@@ -232,6 +232,7 @@ def record_source_read(
     if source.defer_archive_trace is not None:
         with suppress(Exception):
             source.defer_archive_trace(observation.observation_id)
+    return observation.observation_id
 
 
 def record_source_omission(
