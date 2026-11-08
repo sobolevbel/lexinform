@@ -15,7 +15,11 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from lexinform.adapters.content_source_refs import ContentSourceRows
 from lexinform.adapters.doc_text import DocTextExtractor
-from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
+from lexinform.adapters.document_text import (
+    DocumentTextExtractor,
+    DocxTextExtractor,
+    OdtTextExtractor,
+)
 from lexinform.adapters.input_receipts import (
     intent_metadata,
     parse_batch_request,
@@ -36,6 +40,7 @@ from lexinform.primary_claim_input import _validate_key_change_input, multipart_
 from lexinform.primary_claims import KeyChangeEvidence
 from tools.corpus_artifacts import digest, read_artifact, write_json
 from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
+from tools.replay_odt_blocks import OFFICE, TABLE, TEXT, _soft_break_paragraph, xml_node
 from tools.replay_pdf_page_citation import RawPageSpanPin, verify_pdf_page
 from tools.replay_primary_claims import technical_answer
 from tools.replay_proposal_edition import PinnedInput
@@ -67,6 +72,15 @@ class WordTableRowCitationPin(BaseModel):
     path: tuple[XmlIndex, XmlIndex, XmlIndex]
 
 
+class OdtTableRowCitationPin(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    xml_sha256: Sha256
+    manifest_sha256: Sha256
+    row_sha256: Sha256
+    path: tuple[XmlIndex, ...] = Field(min_length=2, max_length=64)
+
+
 class PdfPageCitationPin(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -91,6 +105,7 @@ class MultipartCitationCase(BaseModel):
     word_paragraph: WordParagraphCitationPin | None = None
     pdf_page: PdfPageCitationPin | None = None
     word_table_row: WordTableRowCitationPin | None = None
+    odt_table_row: OdtTableRowCitationPin | None = None
 
 
 _W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
@@ -101,7 +116,7 @@ def _bounded_zip_member(raw: bytes, name: str) -> bytes:
     with zipfile.ZipFile(io.BytesIO(raw)) as package:
         entries = [entry for entry in package.infolist() if entry.filename == name]
         if len(entries) != 1 or entries[0].file_size > _MAX_BYTES:
-            raise ValueError("Word proof requires one bounded exact ZIP member")
+            raise ValueError("Physical citation requires one bounded exact ZIP member")
         return package.read(entries[0])
 
 
@@ -239,6 +254,76 @@ def verify_word_table_row_citation(
     }
 
 
+def verify_odt_table_row_citation(
+    raw: bytes,
+    pin: OdtTableRowCitationPin,
+    *,
+    text: str,
+    quote_span: tuple[int, int],
+) -> dict[str, object]:
+    xml = _bounded_zip_member(raw, "content.xml")
+    extracted = OdtTextExtractor().extract_odt_blocks(raw)
+    if (
+        extracted.body_state != "read"
+        or digest(xml) != pin.xml_sha256
+        or extracted.manifest_sha256 != pin.manifest_sha256
+        or extracted.legacy_text != text
+    ):
+        raise ValueError("ODT citation row extraction differs from its pins")
+    body = ET.fromstring(xml).find(OFFICE + "body/" + OFFICE + "text")
+    if body is None:
+        raise ValueError("ODT citation requires a readable XML body")
+    blocks = {block.block_id: block for block in extracted.blocks}
+    start = 0
+    for identity in extracted.legacy_blocks:
+        block = blocks[identity]
+        if block.path == pin.path:
+            break
+        start += len(block.text) + 1
+    else:
+        raise ValueError("ODT citation row is absent from the selected text projection")
+    end = start + len(block.text)
+    if (
+        block.kind != "table_row"
+        or block.text_sha256 != pin.row_sha256
+        or (start, end) != quote_span
+        or start == end
+    ):
+        raise ValueError("ODT citation requires the entire pinned row at its original offset")
+    row = xml_node(body, pin.path)
+    if row.tag != TABLE + "table-row" or not 0 < len(row) <= 64:
+        raise ValueError("ODT citation requires a bounded physical table row")
+    spans: list[list[int]] = []
+    chunks: list[str] = []
+    offset = start
+    for cell in row:
+        if cell.tag not in (TABLE + "table-cell", TABLE + "covered-table-cell"):
+            raise ValueError("ODT citation requires physical XML cells")
+        plain = ""
+        if len(cell):
+            if len(cell) != 1 or cell[0].tag != TEXT + "p":
+                raise ValueError("ODT citation requires at most one plain paragraph per cell")
+            parsed = _soft_break_paragraph(cell[0])
+            if parsed is None or parsed[1]:
+                raise ValueError("ODT citation cell has unsupported inline content")
+            plain = parsed[0]
+        spans.append([offset, offset + len(plain)])
+        chunks.append(plain)
+        offset += len(plain) + 1
+    if "\t".join(chunks) != text[start:end]:
+        raise ValueError("ODT citation cells differ from the selected row")
+    return {
+        "xml_part": "content.xml",
+        "xml_sha256": pin.xml_sha256,
+        "manifest_sha256": pin.manifest_sha256,
+        "block_id": block.block_id,
+        "block_sha256": pin.row_sha256,
+        "coordinates": "odt-xml-plain-row-python-string",
+        "selected_text_span": list(quote_span),
+        "cell_text_spans": spans,
+    }
+
+
 def _intent(db: sqlite3.Connection, case: MultipartCitationCase) -> BatchIntent:
     row = db.execute(
         "SELECT * FROM llm_batch_intents WHERE custom_id=?", (case.custom_id,)
@@ -370,11 +455,17 @@ def _verify(
         "claim_text_sha256": evidence.claim_text_sha256,
         "check": asdict(checked),
     }
-    physical_pins = (case.word_paragraph, case.word_table_row, case.pdf_page)
+    physical_pins = (case.word_paragraph, case.word_table_row, case.pdf_page, case.odt_table_row)
     if sum(pin is not None for pin in physical_pins) > 1:
         raise ValueError("Citation must specify a single physical format")
     if any(pin is not None for pin in physical_pins):
-        proof_format = "PDF" if case.pdf_page is not None else "Word"
+        proof_format = (
+            "PDF"
+            if case.pdf_page is not None
+            else "ODT"
+            if case.odt_table_row is not None
+            else "Word"
+        )
         if checked.status != "retained" or len(part.members) > 1:
             raise ValueError(
                 f"{proof_format} citation requires an exactly retained direct file"
@@ -399,8 +490,15 @@ def _verify(
                 text=text,
                 quote_span=(case.quote_start, case.quote_end),
             )
+        elif case.odt_table_row is not None:
+            proof["odt_table_row"] = verify_odt_table_row_citation(
+                member,
+                case.odt_table_row,
+                text=text,
+                quote_span=(case.quote_start, case.quote_end),
+            )
         else:
-            assert case.pdf_page is not None, "the physical citation names a PDF or Word range"
+            assert case.pdf_page is not None, "the remaining physical citation names a PDF range"
             proof["pdf_page"] = verify_pdf_page(
                 record,
                 evidence,
