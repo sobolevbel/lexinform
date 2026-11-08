@@ -1,0 +1,184 @@
+{
+  "scope": "Pinned official leaf bytes and pinned corpus archive roots; declarations and physical paths only. No logical grid or source-role inference.",
+  "archive_roots": 6,
+  "archive_odt_leaves": 8,
+  "archive_observations_equal": true,
+  "official_leaf_count": 21,
+  "official_leaf_observations_equal": true,
+  "official_leaves": [
+    {
+      "official_id": "rcl-file:740893",
+      "name": "740893.odt",
+      "sha256": "9ad997ba5f210a0a238573e807a9bfab8ea1571fe0ec1ee18c52a961467a0d9c",
+      "xml_sha256": "e5bcc2d76685f7a41c70239ab13f4fe21e7168c8890c117141f4530fb8448066",
+      "geometry": {}
+    },
+    {
+      "official_id": "rcl-file:691342",
+      "name": "691342.odt",
+      "sha256": "89e448da806b40396e5626fa06ab10bacda06b0bec387e75752732ada8cd18bc",
+      "xml_sha256": "4f3110bc76ad58ca7f6d62614535e70c1e9847e8f24e7b4d1d6af533b54dccc8",
+      "geometry": {}
+    },
+    {
+      "official_id": "rcl-file:684324",
+      "name": "684324.odt",
+      "sha256": "9492775b9d8dee10c2818fb62b6bbc1922f1df5fd40b7da4f7841e4527cf5eef",
+      "xml_sha256": "515b85e7e90231e65a32b4b0b6db45cd41ded1b6204027cb3e084cd724fcf43c",
+      "geometry": {}
+    },
+    {
+      "official_id": "rcl-file:684340",
+      "name": "684340.odt",
+      "sha256": "743d88976846877fcc7d9c4a81ed0e1128822b1c2f5e70c71b1b518a1027143f",
+      "xml_sha256": "7c70ee46b818ce5fe1f9a4aaa79906ac61927f444cfe19fec1530c06892f8e91",
+      "geometry": {
+        "covered-table-cell": {
+          "declared_nodes": 70,
+          "nodes_with_blocks": 70
+        },
+        "number-rows-spanned": {
+          "declared_nodes": 35,
+          "nodes_with_blocks": 35
+        }
+      }
+    },
+    {
+      "official_id": "rcl-file:721275",
+      "name": "721275.odt",
+      "sha256": "7d7dfde6c55ff94589b6ba135631b1392b7db9fe94dbbc1bd09da447e4496e67",
+      "xml_sha256": "6d375ef48b22055dbb50ae1317be384d2e1e37e6b1653054fbb8ce955813ce94",
+      "geometry": {}
+    },
+    {
+      "official_id": "sejm:8:286",
+      "name": "term8-286-uchwa\u0142a.odt",
+      "sha256": "e61dad76c2cebcfa72306573ecc4f6fe409dc215500c24c49e98f6bb4634721e",
+      "xml_sha256": "c8766c9ea0d2e5b6f99b08d38f24e52e9101a9533b6626392fd604a37948ca76",
+      "geometry": {}
+    },
+    {
+      "official_id": "sejm:8:348",
+      "name": "term8-348-ustawa.odt",
+      "sha256": "c2677e87d2248c27c33890298e7e0d7207f54ad6f093d5755a0a5bc83371211e",
+      "xml_sha256": "866ab9995fce173ee32c8be19912b9f330f3da695c94008b08087b3dd35274d3",
+      "geometry": {}
+    },
+    {
+      "official_id": "sejm:8:729",
+      "name": "term8-729-ustawa-1.odt",
+      "sha256": "4b33303e6caee1deb3b9c2a9ba10194328943b6ba30aabaf98bff50f2654a04b",
+      "xml_sha256": "776984823db0c88ca583b8d87d2952ffe4e102bff35833e144d8b36706ea76a3",
+      "geometry": {}
+    },
+    {
+      "official_id": "sejm:8:729",
+      "name": "term8-729-ustawa-2.odt",
+      "sha256": "125a49f2f7b81107b97adc72c789080361b4f4bef89fedd5465e1b448490c968",
+      "xml_sha256": "59fe0470292ab245338026d9c61cf88f5e9e141692f180ce49cbfd498105e68b",
+      "geometry": {}
+    },
+    {
+      "official_id": "sejm:8:1197",
+      "name": "term8-1197-ustawa.odt",
+      "sha256": "35b204c0633a2d06a56d819488e5e9a2adf00ab798c93a04f2efbba20730e9f4",
+      "xml_sha256": "efd9d2022e9ec2a4f2e3fce3e2c2fd9683bc3c11d1a1058cca918bd793f29d06",
+      "geometry": {}
+    },
+    {
+      "official_id": "sejm:8:1249",
+      "name": "term8-1249-ustawa.odt",
+      "sha256": "91c0697729090b9fda66f6175303869376631c38e8fa438addc11117a8c2ed1d",
+      "xml_sha256": "0e033f222c9caa2401419375e002040b6b360b46ad0dd9e6c211cc88824cc9c5",
+      "geometry": {}
+    },
+    {
+      "official_id": "sejm:8:1657",
+      "name": "term8-1657-uchwa\u0142a.odt",
+      "sha256": "218c554fbaef37dd5f6235b704594d3bd1c12dc27b86c5af5d6a6422cc102d62",
+      "xml_sha256": "a91798596988429e21caa3995dbfc5919115c86dd6f86520b05cee0af29b6dc7",
+      "geometry": {}
+    },
+    {
+      "official_id": "sejm:8:1967",
+      "name": "term8-1967-ustawa.odt",
+      "sha256": "01d0bfc39c0892f660b7f075d1f2fb86aceffe6d38f1991e732c395c7587921a",
+      "xml_sha256": "e9169b0c2621f932acc15b08c2f06ac2881937324e3299e94e36f6ab87d53fb1",
+      "geometry": {}
+    },
+    {
+      "official_id": "sejm:8:2252",
+      "name": "term8-2252-ustawa.odt",
+      "sha256": "9f72ab78dd2b235b52cef82ed6f34cf6f84592a41cf54365a08eeb147927ff7b",
+      "xml_sha256": "b64a04e1ac1f2f575873eab681aac62a1af5b3750f82adbcce0f140896a4d051",
+      "geometry": {}
+    },
+    {
+      "official_id": "sejm:8:2410",
+      "name": "term8-2410-uzasadnienie.odt",
+      "sha256": "11e451a93966f9a7d4c6bff1389fda7e1e983423d45e3adf5b5629328bf8d9cf",
+      "xml_sha256": "4fcc35748998468ac9a1be7b388fdfcdd60087a577f1feaa811b772f8e140935",
+      "geometry": {}
+    },
+    {
+      "official_id": "sejm:9:412",
+      "name": "term9-412-uchwa\u0142a.odt",
+      "sha256": "73ac94fb9b3b08d124ccae423cd2b21acc6e2f8ade5f6aed7ba1ebbd710844e2",
+      "xml_sha256": "88f3db40fd216d49c708f47e163424fd4f06474e661ccce271003dcf2e5b9403",
+      "geometry": {}
+    },
+    {
+      "official_id": "sejm:9:2294",
+      "name": "term9-2294-uchwa\u0142a.odt",
+      "sha256": "6e0835b46131ee3c9da4ce90e3a2f57713d7d3a7edad2cd2dab324fbd02ee1b5",
+      "xml_sha256": "53c4152bf5de94b552dd1c187849c96f688aa55cda4ab1cc1a3fe02cd2ffc11c",
+      "geometry": {}
+    },
+    {
+      "official_id": "sejm:9:2320",
+      "name": "term9-2320-uchwa\u0142a.odt",
+      "sha256": "f230dd46730b636f20b85b566484f315916591039d97367932f4913f9a20011b",
+      "xml_sha256": "d4294e803b23217328ebbf241706980440cb80655f7c243cb2b6484ad18a494b",
+      "geometry": {}
+    },
+    {
+      "official_id": "sejm:9:3210",
+      "name": "term9-3210-uchwa\u0142a.odt",
+      "sha256": "ff3672f8f867bf2767a5b20de5d534e29534bb5323fdf3c2d9e9c6d98c688a7d",
+      "xml_sha256": "3f30ba44683fe232edcf0b0742908c7087ae86e2ffb369f98f8c847ac87e71e7",
+      "geometry": {}
+    },
+    {
+      "official_id": "sejm:10:178",
+      "name": "term10-178-uchwa\u0142a.odt",
+      "sha256": "8529db11efa0049921509c6e26fed300ac3b9c410d8c671e243ce35c0edf985a",
+      "xml_sha256": "e67c1d449e74674005e4cc5efaf410b1adf6e502c403030bae19d1df7145ce3e",
+      "geometry": {}
+    },
+    {
+      "official_id": "sejm:10:1614",
+      "name": "term10-1614-uchwa\u0142a.odt",
+      "sha256": "072d8e6cc811fbe7094369ed8ee40e36f05f363bc432318da272f35debf95722",
+      "xml_sha256": "f744f398b5f1de37655dd270786bb5dd473bf467ad7b2d83384f94a03e3b74f3",
+      "geometry": {}
+    }
+  ],
+  "corpus_replay": {
+    "case_manifest": "docs/assets/audits/2026-10-28-odt-replay/cases.json",
+    "case_manifest_sha256": "2ce1ac6cb30dff66526502ab8bf213a70a90c4504a23220c8a649e2c4d21fd5b",
+    "library_report_sha256": "08d76341c022c7994c9e891fdc4c1cbf0d0ecc4feefebfa9297db0e7e41b113a",
+    "adapter_report_sha256": "3bb280b12464a63b365cd3c81609ebba1d5afd01a29fce87ff45bd208468790c",
+    "roots": {
+      "documents/files/584479.zip": 0,
+      "documents/files/700362.zip": 0,
+      "documents/files/738682.zip": 2,
+      "documents/files/744252.zip": 2,
+      "documents/files/763369.zip": 3,
+      "sejm/term10/files/1614__1614-uchwa\u0142a.odt": 1
+    }
+  },
+  "official_leaf_inventories": [
+    "docs/assets/audits/2026-11-07-official-odt/inventory.json",
+    "docs/assets/audits/2026-11-07-official-odt/rcl-review-inventory.json"
+  ]
+}

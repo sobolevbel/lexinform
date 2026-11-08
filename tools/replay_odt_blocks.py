@@ -5,6 +5,7 @@ import io
 import json
 import logging
 import zipfile
+from collections import Counter
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, Literal
@@ -92,6 +93,42 @@ def xml_node(body: ET.Element, path: tuple[int, ...]) -> ET.Element:
     return node
 
 
+_TABLE_GEOMETRY_ATTRIBUTES = frozenset(
+    TABLE + name
+    for name in (
+        "number-rows-spanned",
+        "number-columns-spanned",
+        "number-rows-repeated",
+        "number-columns-repeated",
+    )
+)
+_TABLE_GEOMETRY_NODES = frozenset(
+    TABLE + name for name in ("table-row", "table-column", "table-cell", "covered-table-cell")
+)
+
+
+def table_geometry_counts(
+    body: ET.Element, block_nodes: set[ET.Element]
+) -> dict[str, dict[str, int]]:
+    declared: Counter[str] = Counter()
+    addressed: Counter[str] = Counter()
+    for node in body.iter():
+        if node.tag not in _TABLE_GEOMETRY_NODES:
+            continue
+        features = [
+            name.removeprefix(TABLE) for name in node.attrib.keys() & _TABLE_GEOMETRY_ATTRIBUTES
+        ]
+        if node.tag == TABLE + "covered-table-cell":
+            features.append("covered-table-cell")
+        declared.update(features)
+        if node in block_nodes:
+            addressed.update(features)
+    return {
+        name: {"declared_nodes": count, "nodes_with_blocks": addressed[name]}
+        for name, count in sorted(declared.items())
+    }
+
+
 def verify_manifest(data: bytes, extracted: OdtTextExtraction) -> dict[str, Any]:
     restored = OdtTextExtraction.model_validate_json(extracted.model_dump_json())
     if restored.manifest_sha256 != extracted.manifest_sha256:
@@ -104,6 +141,7 @@ def verify_manifest(data: bytes, extracted: OdtTextExtraction) -> dict[str, Any]
         xml = archive.read("content.xml")
     if digest(xml) != extracted.xml_sha256:
         raise ValueError("ODT manifest refers to different XML bytes")
+    geometry: dict[str, dict[str, int]] | None = None
     if extracted.body_state == "read":
         body = ET.fromstring(xml).find(f"{OFFICE}body/{OFFICE}text")
         if body is None:
@@ -114,12 +152,17 @@ def verify_manifest(data: bytes, extracted: OdtTextExtraction) -> dict[str, Any]
             "table_row": (TABLE + "table-row",),
             "table_cell": (TABLE + "table-cell", TABLE + "covered-table-cell"),
         }
+        table_blocks = set()
         for block in extracted.blocks:
-            if xml_node(body, block.path).tag not in tags[block.kind]:
+            node = xml_node(body, block.path)
+            if node.tag in _TABLE_GEOMETRY_NODES:
+                table_blocks.add(node)
+            if node.tag not in tags[block.kind]:
                 raise ValueError("ODT block path does not address its declared XML element")
         for ignored in extracted.ignored_nodes:
             if xml_node(body, ignored.path).tag != ignored.tag:
                 raise ValueError("Ignored ODT path does not address its declared XML element")
+        geometry = table_geometry_counts(body, table_blocks)
     return {
         "manifest_sha256": extracted.manifest_sha256,
         "xml_sha256": extracted.xml_sha256,
@@ -130,6 +173,7 @@ def verify_manifest(data: bytes, extracted: OdtTextExtraction) -> dict[str, Any]
         "inline_notes": extracted.inline_notes,
         "tracked_changes": extracted.tracked_changes,
         "table_repetitions": extracted.table_repetitions,
+        "table_geometry": geometry,
     }
 
 

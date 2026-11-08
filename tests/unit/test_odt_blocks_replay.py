@@ -282,3 +282,24 @@ def test_soft_page_breaks_leave_unsupported_inline_shape_unverified() -> None:
     assert result["status"] == "partial"
     assert result["unverified_paths"] == [(0, 0, 0)]
     assert not result["emitted"]
+
+
+def test_replay_reports_declared_table_geometry_without_expanding_text() -> None:
+    raw = odt_document(
+        "<table:table><table:table-column table:number-columns-repeated='2'/>"
+        "<table:table-row><table:table-cell table:number-rows-spanned='2'>"
+        "<text:p>Art. 1</text:p></table:table-cell></table:table-row>"
+        "<table:table-row><table:covered-table-cell/></table:table-row>"
+        "<table:table-row table:number-rows-repeated='3'><table:table-cell>"
+        "<text:p>Termin</text:p></table:table-cell></table:table-row></table:table>"
+    )
+
+    extracted = OdtTextExtractor().extract_odt_blocks(raw)
+
+    assert extracted.legacy_text == "Art. 1\n\nTermin"
+    assert verify_manifest(raw, extracted)["table_geometry"] == {
+        "covered-table-cell": {"declared_nodes": 1, "nodes_with_blocks": 1},
+        "number-columns-repeated": {"declared_nodes": 1, "nodes_with_blocks": 0},
+        "number-rows-repeated": {"declared_nodes": 1, "nodes_with_blocks": 1},
+        "number-rows-spanned": {"declared_nodes": 1, "nodes_with_blocks": 1},
+    }
