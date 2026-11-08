@@ -126,6 +126,14 @@ def test_native_extraction_retains_merge_coordinates_without_changing_selection(
 
     assert observed.document == reader.extract_document(raw)
     (part,) = observed.result.selected_parts
+    witness = part.block_copy_witness
+    assert witness is not None, "the native ODT exposes exact copied blocks"
+    assert [row.block_id for row in witness.runs] == [
+        "odt-xml:content.xml:body:0",
+        "odt-xml:content.xml:body:1/0",
+    ]
+    row = witness.runs[1]
+    assert observed.document.text[row.source_start : row.source_end] == "Termin\t"
     metadata = part.odt_table_merges
     assert metadata is not None, "the selected native ODT has one verified merge"
     assert metadata.verified_tables == 1 and metadata.unresolved_tables == 0

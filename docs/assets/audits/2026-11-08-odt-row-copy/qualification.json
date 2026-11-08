@@ -1,0 +1,152 @@
+{
+  "scope": "Offline native selected ODT row-to-text copies, verified against original physical XML. No paid request or semantic conclusion.",
+  "official_odts": 21,
+  "retained_previous_witness_runs": 217,
+  "new_verified_rows": 11,
+  "positive_controls": [
+    {
+      "official_id": "rcl-file:684340",
+      "input_sha256": "743d88976846877fcc7d9c4a81ed0e1128822b1c2f5e70c71b1b518a1027143f",
+      "verified_rows": [
+        {
+          "path": [
+            1,
+            1
+          ],
+          "span": [
+            155,
+            434
+          ],
+          "text_sha256": "ae3df599e78f05ed90594cc5abf4e3656a028aeca224411afc91d003bad7a886",
+          "physical_cells": 6
+        },
+        {
+          "path": [
+            1,
+            2
+          ],
+          "span": [
+            435,
+            1186
+          ],
+          "text_sha256": "e436250d1f103a2371893961f566b445352eda761baeaa34caee5405a255339f",
+          "physical_cells": 6
+        },
+        {
+          "path": [
+            1,
+            3
+          ],
+          "span": [
+            1187,
+            1428
+          ],
+          "text_sha256": "44af89ffad8028f5b8c770da6e14b348b74d25eddcc0ae69c9cecf49102b1bc4",
+          "physical_cells": 6
+        },
+        {
+          "path": [
+            1,
+            4
+          ],
+          "span": [
+            1429,
+            2085
+          ],
+          "text_sha256": "c03822dd15d882b6efba28f27992c2f58bf9527a2c314c77df44a613ef7191ba",
+          "physical_cells": 6
+        },
+        {
+          "path": [
+            1,
+            5
+          ],
+          "span": [
+            2086,
+            2634
+          ],
+          "text_sha256": "9a86e4aa5c8164fadccee665255571547e52f28b64eb2281104dbfe9e7e3a499",
+          "physical_cells": 6
+        },
+        {
+          "path": [
+            1,
+            6
+          ],
+          "span": [
+            2635,
+            2807
+          ],
+          "text_sha256": "c8ad101b83e31fee7d4f451b8c3e2843944686c5082f8d7cc0bc3c3bd228bc2d",
+          "physical_cells": 6
+        },
+        {
+          "path": [
+            1,
+            7
+          ],
+          "span": [
+            2808,
+            3835
+          ],
+          "text_sha256": "2a8df65313d0379dd5d44f4d48f320814d58770ede6547facd03f03f991bba97",
+          "physical_cells": 6
+        },
+        {
+          "path": [
+            1,
+            9
+          ],
+          "span": [
+            4298,
+            4370
+          ],
+          "text_sha256": "c548bfc94bff30571c2e020cb45843c87d1477cdb718c033cec70846a3ff3ea1",
+          "physical_cells": 6
+        },
+        {
+          "path": [
+            1,
+            10
+          ],
+          "span": [
+            4371,
+            5005
+          ],
+          "text_sha256": "a77f12d8187e3912efa4b79030f83f068081296349142a14be26bf9570405a71",
+          "physical_cells": 6
+        },
+        {
+          "path": [
+            1,
+            11
+          ],
+          "span": [
+            5006,
+            5156
+          ],
+          "text_sha256": "437e2236547c08477d58f9f1f9463d35fcd1e09d0fc4a59e914d2a8424cee448",
+          "physical_cells": 6
+        },
+        {
+          "path": [
+            1,
+            12
+          ],
+          "span": [
+            5157,
+            5201
+          ],
+          "text_sha256": "5b4af6ab99378b361576d85dc8e3d7c397d03802fe2b3754226e0c2107ec7c4b",
+          "physical_cells": 6
+        }
+      ]
+    }
+  ],
+  "report_sha256": "ddb98ecc635e1fad45e43e5c7716762e8950de4dcdc90d5cc2e20426f8601f00",
+  "archive_controls": {
+    "roots": 6,
+    "standalone_leaves": 8,
+    "report_sha256": "a85677dc73be7597514017fcace9ccd7595049e33baf731b200f53b4158dc4f3"
+  }
+}

@@ -68,6 +68,7 @@ def pdf_block_copies(body: PdfTextExtraction) -> BlockCopyWitness | None:
 class NativeBlockCopies:
     def __init__(self) -> None:
         self.odt: dict[str, BlockCopyWitness] = {}
+        self.odt_rows: dict[str, BlockCopyWitness] = {}
 
     @contextmanager
     def scope(self) -> Iterator[None]:
@@ -77,7 +78,12 @@ class NativeBlockCopies:
         finally:
             _CURRENT.reset(token)
 
-    def finish_odt(self, body: OdtTextExtraction, supported: set[tuple[int, ...]]) -> None:
+    def finish_odt(
+        self,
+        body: OdtTextExtraction,
+        supported: set[tuple[int, ...]],
+        supported_rows: set[tuple[int, ...]],
+    ) -> None:
         if body.body_state != "read":
             return
         text = body.legacy_text
@@ -94,12 +100,12 @@ class NativeBlockCopies:
             "text_chars": len(text),
         }
 
-        def rows() -> Iterator[BlockCopyRun]:
+        def rows(paths: set[tuple[int, ...]]) -> Iterator[BlockCopyRun]:
             start = 0
             for identity in body.legacy_blocks:
                 block = blocks[identity]
                 end = start + len(block.text)
-                if block.path in supported and block.text and text[start:end] == block.text:
+                if block.path in paths and block.text and text[start:end] == block.text:
                     yield BlockCopyRun(
                         source_start=start,
                         source_end=end,
@@ -112,9 +118,22 @@ class NativeBlockCopies:
                     )
                 start = end + 1
 
-        witness = _witness(parent, rows())
+        witness = _witness(parent, rows(supported))
         if witness is not None:
             self.odt[body.input_sha256] = witness
+        runs = witness.runs if witness is not None else ()
+        initial_count = len(runs)
+        for row in rows(supported_rows):
+            if len(runs) == MAX_BLOCK_INPUT_ROWS:
+                break
+            offered = tuple(sorted((*runs, row), key=lambda item: item.source_start))
+            try:
+                witness = BlockCopyWitness.model_validate({**parent, "runs": offered})
+            except ValueError:
+                break
+            runs = offered
+        if witness is not None and len(runs) > initial_count:
+            self.odt_rows[body.input_sha256] = witness
 
 
 def current_native_block_copies() -> NativeBlockCopies | None:

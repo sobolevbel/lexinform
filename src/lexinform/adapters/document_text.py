@@ -1105,6 +1105,26 @@ class _WordMl:
         structure.report_support(path, node.tag, len(node), view)
 
 
+_ODT_COPYABLE_INLINE = frozenset(
+    _ODT_TEXT + name for name in ("p", "h", "span", "a", "s", "tab", "line-break")
+)
+
+
+def _odt_copyable_row(row: ET.Element) -> bool:
+    return all(
+        cell.tag in _ODT_CELLS
+        and (
+            not len(cell)
+            or (
+                len(cell) == 1
+                and cell[0].tag == _ODT_TEXT + "p"
+                and all(node.tag in _ODT_COPYABLE_INLINE for node in cell[0].iter())
+            )
+        )
+        for cell in row
+    )
+
+
 @dataclass
 class _OdtOrigins:
     blocks: list[OdtTextBlock] = field(default_factory=list)
@@ -1112,6 +1132,7 @@ class _OdtOrigins:
     ignored_nodes: list[OdtIgnoredNode] = field(default_factory=list)
     notes: OdtNoteCollector | None = None
     copyable_paths: set[tuple[int, ...]] = field(default_factory=set)
+    copyable_rows: set[tuple[int, ...]] = field(default_factory=set)
 
     def record(
         self,
@@ -1177,7 +1198,7 @@ class OdtTextExtractor:
         copies = current_native_block_copies()
         if copies is not None:
             with suppress(Exception):
-                copies.finish_odt(extracted, origins.copyable_paths)
+                copies.finish_odt(extracted, origins.copyable_paths, origins.copyable_rows)
         if body is not None and tables is not None and extracted.input_sha256 not in tables:
             with suppress(Exception):
                 captured = capture_odt_tables(body, extracted)
@@ -1248,19 +1269,7 @@ def _odt_blocks(
                 if (
                     current_native_block_copies() is not None
                     and len(origins.copyable_paths) < MAX_BLOCK_INPUT_ROWS
-                    and all(
-                        element.tag
-                        in {
-                            _ODT_TEXT + "p",
-                            _ODT_TEXT + "h",
-                            _ODT_TEXT + "span",
-                            _ODT_TEXT + "a",
-                            _ODT_TEXT + "s",
-                            _ODT_TEXT + "tab",
-                            _ODT_TEXT + "line-break",
-                        }
-                        for element in child.iter()
-                    )
+                    and all(element.tag in _ODT_COPYABLE_INLINE for element in child.iter())
                 ):
                     origins.copyable_paths.add(child_path)
                 origins.record(
@@ -1290,6 +1299,14 @@ def _odt_blocks(
                 text = "\t".join(cells)
                 if origins is not None:
                     origins.record("table_row", row_path, text, projected=projected)
+                    if (
+                        projected
+                        and text.strip()
+                        and current_native_block_copies() is not None
+                        and len(origins.copyable_rows) < MAX_BLOCK_INPUT_ROWS
+                        and _odt_copyable_row(row)
+                    ):
+                        origins.copyable_rows.add(row_path)
                 yield text
         elif child.tag in _ODT_CONTAINERS:
             yield from _odt_blocks(child, path=child_path, origins=origins, projected=projected)
@@ -1684,6 +1701,14 @@ class DocumentTextExtractor:
         result = summarize_word_block_copies(result, native_witnesses)
         result = summarize_pdf_page_maps(result, physical)
         result = summarize_odt_tables(result, odt_tables)
+        result = summarize_word_block_copies(
+            result,
+            {
+                body.part_index: native_copies.odt_rows[body.extraction.input_sha256]
+                for body in physical.odt_blocks
+                if body.extraction.input_sha256 in native_copies.odt_rows
+            },
+        )
         capture = current_physical_walk_capture()
         if capture is not None:
             _physical_event(capture, lambda: capture.extraction(result))
