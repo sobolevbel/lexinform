@@ -8,6 +8,7 @@ from typing import Any
 
 from lexinform.adapters.computation_history import read_result_application
 from lexinform.adapters.input_receipts import intent_metadata, parse_batch_request
+from lexinform.adapters.memo_retention import batch_payload_retention_query
 from lexinform.json_storage import read_json
 from lexinform.models import BatchIntent, LlmBatchItem
 from lexinform.models.batch import batch_item_meta
@@ -196,7 +197,28 @@ def _active(
     }
 
 
-def audit(database: Path, *, include_batch_receipts: bool = False) -> dict[str, Any]:
+def _payload_retention(connection: sqlite3.Connection) -> dict[str, object]:
+    blockers: Counter[str] = Counter()
+    eligible_by_kind: Counter[str] = Counter()
+    payload_rows = 0
+    for row in _rows(connection, batch_payload_retention_query()):
+        payload_rows += 1
+        failed = [gate for gate in row.keys()[1:] if not row[gate]]
+        blockers.update(failed)
+        if not failed:
+            eligible_by_kind[row["call_kind"]] += 1
+    return {
+        "status": "available",
+        "payload_rows": payload_rows,
+        "eligible_rows": eligible_by_kind.total(),
+        "eligible_by_call_kind": dict(sorted(eligible_by_kind.items())),
+        "unmet_gates": dict(sorted(blockers.items())),
+    }
+
+
+def audit(
+    database: Path, *, include_batch_receipts: bool = False, include_payload_retention: bool = False
+) -> dict[str, Any]:
     findings: list[dict[str, str]] = []
     with open_snapshot(database) as snapshot:
         connection = snapshot.connection
@@ -218,6 +240,19 @@ def audit(database: Path, *, include_batch_receipts: bool = False) -> dict[str, 
                 _issue(findings, "integrity_schema_unavailable", name, warning=True)
         if include_batch_receipts:
             sections.update(audit_receipts(connection, findings))
+        if include_payload_retention:
+            try:
+                sections["payload_retention"] = _payload_retention(connection)
+            except sqlite3.Error:
+                sections["payload_retention"] = _unavailable(
+                    set(), ("payload_rows", "eligible_rows")
+                )
+                _issue(
+                    findings,
+                    "payload_retention_schema_unavailable",
+                    "llm_batch_items",
+                    warning=True,
+                )
         if not snapshot.unchanged():
             _issue(findings, "database_changed_during_audit", "database")
     findings.sort(key=lambda item: (item["level"], item["code"], item["ref"]))
@@ -258,10 +293,20 @@ def audit(database: Path, *, include_batch_receipts: bool = False) -> dict[str, 
     return report
 
 
-def run(database: Path, output: Path, *, include_batch_receipts: bool = False) -> int:
+def run(
+    database: Path,
+    output: Path,
+    *,
+    include_batch_receipts: bool = False,
+    include_payload_retention: bool = False,
+) -> int:
     if output.resolve() in snapshot_files(database):
         raise ValueError("Report must be separate from the input database")
-    report = audit(database, include_batch_receipts=include_batch_receipts)
+    report = audit(
+        database,
+        include_batch_receipts=include_batch_receipts,
+        include_payload_retention=include_payload_retention,
+    )
     output.parent.mkdir(parents=True, exist_ok=True)
     write_json(output, report)
     return 1 if report["status"] == "failed" else 2 if report["status"] == "partial" else 0
@@ -272,9 +317,15 @@ def main() -> None:
     parser.add_argument("--database", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--batch-receipts", action="store_true")
+    parser.add_argument("--payload-retention", action="store_true")
     args = parser.parse_args()
     try:
-        code = run(args.database, args.output, include_batch_receipts=args.batch_receipts)
+        code = run(
+            args.database,
+            args.output,
+            include_batch_receipts=args.batch_receipts,
+            include_payload_retention=args.payload_retention,
+        )
     except (OSError, sqlite3.Error, ValueError) as exc:
         parser.error(str(exc))
     raise SystemExit(code)

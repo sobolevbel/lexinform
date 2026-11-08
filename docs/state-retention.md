@@ -756,3 +756,14 @@ stage без producer, backfill или новой cleanup policy. Пустая �
 в новое request-bound чтение. Root-original result без ref остаётся unavailable, даже если
 поздняя revision сохранила собственный ref. Writer activation/storage budget квалифицируются отдельно;
 глобальная body-граница по измеренному subset не заявляется.
+
+### Диагностика оперативных batch-данных
+
+На изолированной копии SQLite сводка показывает записи с сохранённым
+оперативным payload, число записей, подходящих под очистку, и невыполненные
+условия. У одной записи может быть несколько причин удержания.
+
+```sh
+uv run --offline --frozen python -m tools.batch_integrity_doctor --payload-retention \
+  --database /path/to/state.db --output out/corpus/batch-payload-retention.json
+```

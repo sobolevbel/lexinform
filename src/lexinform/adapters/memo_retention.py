@@ -1,4 +1,4 @@
-"""Shared SQLite eligibility for operational memo cleanup and inspection."""
+"""Shared SQLite eligibility for operational payload cleanup and inspection."""
 
 _OWNER_SEED = """
     SELECT DISTINCT number, term, term FROM analysis_memo
@@ -62,6 +62,58 @@ def _owner_chain_cte(seed: str, *, owner_moves: bool) -> str:
 def memo_retention_cte(*, owner_moves: bool) -> str:
     return _owner_chain_cte(_OWNER_SEED, owner_moves=owner_moves) + (
         f", memo_retention AS ({_MEMO_ROWS})"
+    )
+
+
+_BATCH_CLEANUP_GATES = (
+    ("consumed", "i.consumed_at IS NOT NULL"),
+    ("accounted", "i.accounted_at IS NOT NULL"),
+    (
+        "provider_forgotten",
+        "i.batch_id IN (SELECT batch_id FROM llm_batches WHERE forgotten_at IS NOT NULL)",
+    ),
+    (
+        "settled_owner",
+        """
+  EXISTS (
+    SELECT 1 FROM bills b
+    WHERE b.number=i.number
+      AND (b.term=i.term OR (
+        i.call_kind='name'
+        AND EXISTS (
+          SELECT 1 FROM terminal t
+          WHERE (t.origin,t.number,t.term)=(i.term,i.number,b.term) AND t.term>t.origin
+        )
+      ))
+      AND b.status IN ('analyzed', 'linked', 'skipped_prefilter',
+                       'skipped_text_prefilter', 'skipped_closed')
+      AND b.awaiting_batch_since IS NULL AND b.ready_analysis_json IS NULL
+  )
+        """,
+    ),
+)
+
+_BATCH_PAYLOAD = """
+length(json_extract(meta_json, '$.text')) > 0
+   OR json_type(meta_json, '$.located') = 'object'
+   OR json_type(meta_json, '$.review_context') = 'object'
+   OR length(json_extract(meta_json, '$.explanation.text')) > 0
+   OR json_type(meta_json, '$.explanation.located') = 'object'
+   OR json_type(result_json, '$.answer') = 'object'
+   OR json_type(result_json, '$.analysis') = 'object'
+"""
+
+
+def batch_payload_cleanup_filter() -> str:
+    return " AND ".join(f"({predicate})" for _, predicate in _BATCH_CLEANUP_GATES) + (
+        f" AND ({_BATCH_PAYLOAD})"
+    )
+
+
+def batch_payload_retention_query() -> str:
+    flags = ", ".join(f"({predicate}) AS {name}" for name, predicate in _BATCH_CLEANUP_GATES)
+    return batch_retention_cte() + (
+        f"SELECT i.call_kind, {flags} FROM llm_batch_items i WHERE ({_BATCH_PAYLOAD})"
     )
 
 

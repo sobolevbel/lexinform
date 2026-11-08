@@ -1,9 +1,12 @@
 import json
 import sqlite3
 from collections.abc import Iterator
+from contextlib import closing
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import pytest
+from tools.batch_integrity_doctor import audit
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models import (
@@ -187,6 +190,7 @@ def batch(
 )
 def test_batch_payload_cleanup_requires_consumption_accounting_and_provider_cleanup(
     repo: SqliteBillRepository,
+    tmp_path: Path,
     consumed: bool,
     accounted: bool,
     forgotten: bool,
@@ -194,9 +198,31 @@ def test_batch_payload_cleanup_requires_consumption_accounting_and_provider_clea
     batch(repo, consumed=consumed, accounted=accounted, forgotten=forgotten)
     repo.save_analysis_memo("paid", "{}", term=10, number="3039", used_at=OLD)
 
+    snapshot = tmp_path / "batch-retention.db"
+    with closing(sqlite3.connect(snapshot)) as connection:
+        connection.executescript(repo.dump())
+    before = snapshot.read_bytes()
+
+    report = audit(snapshot, include_payload_retention=True)
     counts = prune(repo)
 
     eligible = consumed and accounted and forgotten
+    assert report["sections"]["payload_retention"] == {
+        "status": "available",
+        "payload_rows": 1,
+        "eligible_rows": counts["batch_payloads"],
+        "eligible_by_call_kind": {"analysis": 1} if eligible else {},
+        "unmet_gates": {
+            gate: 1
+            for gate, met in (
+                ("consumed", consumed),
+                ("accounted", accounted),
+                ("provider_forgotten", forgotten),
+            )
+            if not met
+        },
+    }
+    assert snapshot.read_bytes() == before
     assert counts["batch_payloads"] == int(eligible)
     if not consumed or not accounted:
         assert "paid" in repo.load_analysis_memo()
