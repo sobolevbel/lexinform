@@ -1,0 +1,171 @@
+{
+  "version": 1,
+  "queue_manifest_sha256": "3b8846cd6f625a19d1da4033d88b0ed8e4764d4f7b2c013d0a2c8a23f208c820",
+  "reviewer": "Codex (agent draft)",
+  "reviewer_kind": "agent",
+  "reviewed_at": "2026-11-08",
+  "cases": {
+    "rpw:RPW/35346/2026": {
+      "read_ranges": [
+        {
+          "original_sha256": "a6909d881ba9d4798daca1bf5be0ab7de59b88e6950cbb6222f56982727d642d",
+          "pages": [
+            1,
+            2,
+            3
+          ]
+        }
+      ],
+      "answers": {
+        "independent_initiative": "yes",
+        "role": "bill",
+        "required_annexes": "none",
+        "scan_norm_pages": "none"
+      },
+      "evidence": [
+        {
+          "original_sha256": "a6909d881ba9d4798daca1bf5be0ab7de59b88e6950cbb6222f56982727d642d",
+          "page": 1,
+          "quote": "Komisja do Spraw Petycji wnosi projekt ustawy",
+          "transcription": "visual",
+          "supports": [
+            "independent_initiative"
+          ]
+        },
+        {
+          "original_sha256": "a6909d881ba9d4798daca1bf5be0ab7de59b88e6950cbb6222f56982727d642d",
+          "page": 2,
+          "quote": "po art. 44 dodaje się art. 44a",
+          "transcription": "text_layer",
+          "supports": [
+            "role",
+            "scan_norm_pages"
+          ]
+        },
+        {
+          "original_sha256": "a6909d881ba9d4798daca1bf5be0ab7de59b88e6950cbb6222f56982727d642d",
+          "page": 2,
+          "quote": "Ustawa wchodzi w życie po upływie 6 miesięcy od dnia ogłoszenia.",
+          "transcription": "text_layer",
+          "supports": [
+            "required_annexes"
+          ]
+        }
+      ],
+      "notes": "Стр. 1 — скан письма. В заголовке проекта на стр. 2 указан только год. В нормативном блоке нет отсылок к обязательным приложениям. Связь с другим проектом не установлена. Черновик агента для проверки."
+    },
+    "rpw:RPW/35635/2026": {
+      "read_ranges": [
+        {
+          "original_sha256": "33761f4ec89a0677f646a3de6547c08683bf93c826a67c3daa5f304b367b115e",
+          "pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ]
+        }
+      ],
+      "answers": {
+        "independent_initiative": "yes",
+        "role": "bill",
+        "required_annexes": "none",
+        "scan_norm_pages": "none"
+      },
+      "evidence": [
+        {
+          "original_sha256": "33761f4ec89a0677f646a3de6547c08683bf93c826a67c3daa5f304b367b115e",
+          "page": 1,
+          "quote": "niżej podpisani posłowie wnoszą projekt ustawy",
+          "transcription": "visual",
+          "supports": [
+            "independent_initiative"
+          ]
+        },
+        {
+          "original_sha256": "33761f4ec89a0677f646a3de6547c08683bf93c826a67c3daa5f304b367b115e",
+          "page": 4,
+          "quote": "Ustawa określa dodatkowe źródła finansowania działań",
+          "transcription": "text_layer",
+          "supports": [
+            "role",
+            "scan_norm_pages"
+          ]
+        },
+        {
+          "original_sha256": "33761f4ec89a0677f646a3de6547c08683bf93c826a67c3daa5f304b367b115e",
+          "page": 10,
+          "quote": "Ustawa wchodzi w życie z dniem następującym po dniu ogłoszenia.",
+          "transcription": "text_layer",
+          "supports": [
+            "required_annexes"
+          ]
+        }
+      ],
+      "notes": "Стр. 1–3 — сканы письма и подписей. В заголовке проекта на стр. 4 день и месяц не указаны. В нормативном блоке нет отсылок к обязательным приложениям. Связь с другим проектом не установлена. Черновик агента для проверки."
+    },
+    "rpw:RPW/35783/2026": {
+      "read_ranges": [
+        {
+          "original_sha256": "f1399ebb12e6887b8c316c8130ed0fff3f319905d8880be3a746089954f6fa36",
+          "pages": [
+            1,
+            2,
+            3,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ]
+        }
+      ],
+      "answers": {
+        "independent_initiative": "yes",
+        "role": "bill",
+        "required_annexes": "none",
+        "scan_norm_pages": "none"
+      },
+      "evidence": [
+        {
+          "original_sha256": "f1399ebb12e6887b8c316c8130ed0fff3f319905d8880be3a746089954f6fa36",
+          "page": 1,
+          "quote": "niżej podpisani posłowie wnoszą poselski projekt ustawy",
+          "transcription": "visual",
+          "supports": [
+            "independent_initiative"
+          ]
+        },
+        {
+          "original_sha256": "f1399ebb12e6887b8c316c8130ed0fff3f319905d8880be3a746089954f6fa36",
+          "page": 2,
+          "quote": "w art. 9 wprowadza się następujące zmiany",
+          "transcription": "text_layer",
+          "supports": [
+            "role",
+            "scan_norm_pages"
+          ]
+        },
+        {
+          "original_sha256": "f1399ebb12e6887b8c316c8130ed0fff3f319905d8880be3a746089954f6fa36",
+          "page": 2,
+          "quote": "Ustawa wchodzi w życie po upływie 14 dni od dnia ogłoszenia.",
+          "transcription": "text_layer",
+          "supports": [
+            "required_annexes"
+          ]
+        }
+      ],
+      "notes": "Стр. 1 и 13–20 — сканы письма и подписей. В заголовке проекта на стр. 2 дата не заполнена. В нормативном блоке нет отсылок к обязательным приложениям. Связь с другим проектом не установлена. Черновик агента для проверки."
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "reader": "9fa36356576adeb7260958833627df86ad7682db",
+  "schema": 73,
+  "snapshots": [
+    {
+      "commit": "22f9aed85f3eba7a45db8459f915c9e27cd52e18",
+      "sql_sha256": "3afdaf8be419cd6cd42fa751a7ffc4182ccdbb61eb40faf2192901af6fa107ed",
+      "database_sha256": "eadc7a3063c612a3b76b0c544769a3952f68b8c7603aa596b5bba399012287c7"
+    },
+    {
+      "commit": "76f44c850ed927bd139114ff508f3ed968b83633",
+      "sql_sha256": "f30a9ee5cca39a360fa70a40a1053a852cff27ea05beda886dcfaec26c232367",
+      "database_sha256": "13fd9312c27cc9b127f52e6757179d7d02a8dbf2ff1b9802c31cdaee317b7cfd"
+    },
+    {
+      "commit": "79ed7caf524ff89de15ffd9d7ffc88d4e6471f22",
+      "sql_sha256": "d6e0f2c1e0b0a3b9c6baa0f3865c8647a4f77667ce0e02a9de8ce184422bf8bb",
+      "database_sha256": "570d29a6c0b609620d508db177885c38f7157cee700ef403cb2e20aa6fe8fb41"
+    },
+    {
+      "commit": "012f5d7da739bde362ee2059c2688eace0108c32",
+      "sql_sha256": "87dea39f29b43b3f6dd20cb72e4552f51a3914f2423fbc72577789cce8848fcf",
+      "database_sha256": "c09738cc489b93265bc58b7f8e328edde954c5912acff6ab4e0891c94ec1d52f"
+    }
+  ],
+  "retained_census_identical": true,
+  "primary_census": {
+    "consumed_projection_unavailable": 4,
+    "exact_retained_cycle": 1,
+    "frozen_paid_reference_unavailable": 3,
+    "frozen_plan_unavailable": 27,
+    "frozen_render_context_unavailable": 13,
+    "prepared_receipt_unavailable": 1,
+    "publication_outside_direct_original_scope": 1,
+    "recorded_send_unavailable": 1
+  },
+  "secondary_candidates": 5
+}
