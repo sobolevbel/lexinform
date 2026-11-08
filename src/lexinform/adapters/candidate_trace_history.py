@@ -17,6 +17,7 @@ from lexinform.models.candidate_trace import (
     SejmAdoptedText,
     SejmPrintRepresentation,
     archive_conflict_attempt,
+    archive_version_group_members,
     archive_version_main,
     composed_support_sha256,
 )
@@ -43,6 +44,7 @@ class CandidateTraceRowError(ValueError):
             "candidate_trace_recommendation_parent_mismatch",
             "candidate_trace_archive_version_parent_mismatch",
             "candidate_trace_archive_conflict_parent_mismatch",
+            "candidate_trace_archive_group_parent_mismatch",
             "candidate_trace_admitted_support_parent_mismatch",
             "candidate_trace_composed_support_parent_mismatch",
             "candidate_trace_duplicate_support_parent_mismatch",
@@ -553,6 +555,105 @@ def _validate_archive_conflict_link(
         raise CandidateTraceRowError("candidate_trace_archive_conflict_parent_mismatch") from None
 
 
+def _validate_archive_group_link(
+    connection: sqlite3.Connection, trace: CandidateDispositionTrace, observation_id: str
+) -> None:
+    evidence = trace.archive_version_group
+    if evidence is None:
+        return
+    try:
+        parent, members = archive_version_group_members(trace, evidence)
+        requested = trace.requested_document
+        if requested is None:
+            raise ValueError("archive group requires its original request")
+        candidates = (requested, *requested.alternatives)
+        candidate = candidates[parent.index]
+        winner = next((row for row in trace.dispositions if row.outcome == "selected"), None)
+        expected = candidates[winner.index] if winner is not None else requested
+        source_reader = DocumentSourceRows(connection)
+        source = source_reader.get_source_observation(observation_id)
+        if source is None or source.document != expected:
+            raise ValueError("archive group differs from its exact source observation")
+        selection = source_reader.get_document_selection(source.selection_id)
+        if selection is None or selection.selection.state != trace.selection_state:
+            raise ValueError("archive group selection is unavailable")
+
+        old_factory = connection.row_factory
+        connection.row_factory = sqlite3.Row
+        try:
+            saved = connection.execute(
+                "SELECT * FROM physical_captures WHERE capture_id=?", (evidence.capture_id,)
+            ).fetchone()
+            if saved is None:
+                raise ValueError("archive group physical capture is unavailable")
+            reader = PhysicalInventoryReader(connection)
+            capture = reader.capture(saved)
+            if capture.artifact_sha256 != parent.observed_sha256 or capture.extraction_id is None:
+                raise ValueError("archive group capture differs from its extraction root")
+            read = connection.execute(
+                "SELECT 1 FROM artifact_reads WHERE requested_url=? AND artifact_sha256=?",
+                (candidate.url, capture.artifact_sha256),
+            ).fetchone()
+            extraction_row = connection.execute(
+                "SELECT * FROM extraction_results WHERE extraction_id=?", (capture.extraction_id,)
+            ).fetchone()
+            if read is None or extraction_row is None:
+                raise ValueError("archive group requires its exact extraction and body read")
+            extraction = read_extraction_result(extraction_row)
+            execution = reader.typed(capture.execution_id, "execution")
+            order = execution.metadata
+            if (
+                extraction.artifact_sha256 != capture.artifact_sha256
+                or execution.coverage != "complete"
+                or not isinstance(order, PhysicalRootOrder)
+            ):
+                raise ValueError("archive group requires retained physical execution")
+            for member in members:
+                _archive_peer_in_execution(reader, order, member)
+            if evidence.selected_slot is not None:
+                main = members[evidence.candidate_slots.index(evidence.selected_slot)]
+                linked = connection.execute(
+                    "SELECT 1 FROM selection_extractions WHERE selection_id=? AND extraction_id=?",
+                    (source.selection_id, capture.extraction_id),
+                ).fetchone()
+                selected = [
+                    part
+                    for part in selection.selection.parts
+                    if part.role == "bill"
+                    and part.members
+                    and (part.url, part.source_sha256, part.sha256, part.text_sha256)
+                    == (candidate.url, main.root_sha256, main.leaf_sha256, main.text_sha256)
+                ]
+                if linked is None or len(selected) != 1:
+                    raise ValueError("archive group selected position differs from its saved bill")
+            else:
+                compared = {part.physical_index: part for part in extraction.selected_parts}
+                slots = set(evidence.candidate_slots)
+                if (
+                    extraction.output_chars != 0
+                    or extraction.omitted_selected_parts
+                    or not slots.issubset(compared)
+                    or (compared.keys() == slots) != (evidence.outcome == "text_conflict")
+                    or any(
+                        part.source_sha256 == capture.artifact_sha256 or part.url == candidate.url
+                        for part in selection.selection.parts
+                    )
+                ):
+                    raise ValueError("archive group conflict differs from the saved extraction")
+                for member in members:
+                    slot = member.physical_part_index
+                    assert slot is not None, "archive group validation requires a physical position"
+                    part = compared[slot]
+                    if (part.sha256, part.text_sha256) != (member.leaf_sha256, member.text_sha256):
+                        raise ValueError(
+                            "archive group extraction differs from its physical member"
+                        )
+        finally:
+            connection.row_factory = old_factory
+    except ValueError, TypeError, RecursionError, IndexError, KeyError, sqlite3.Error:
+        raise CandidateTraceRowError("candidate_trace_archive_group_parent_mismatch") from None
+
+
 def _admitted_selection(
     connection: sqlite3.Connection,
     trace: CandidateDispositionTrace,
@@ -702,6 +803,7 @@ def validate_candidate_trace_link(
     _validate_admitted_normative_link(connection, trace, observation_id)
     _validate_archive_version_link(connection, trace, observation_id)
     _validate_archive_conflict_link(connection, trace, observation_id)
+    _validate_archive_group_link(connection, trace, observation_id)
     validate_sejm_proposal_link(connection, trace, observation_id)
     validate_rcl_proposal_link(connection, trace, observation_id)
     validate_committee_recommendation_link(connection, trace, observation_id)
@@ -804,6 +906,7 @@ def validate_candidate_trace_links(
         "candidate_trace_rcl_proposal_parent_mismatch",
         "candidate_trace_archive_version_parent_mismatch",
         "candidate_trace_archive_conflict_parent_mismatch",
+        "candidate_trace_archive_group_parent_mismatch",
         "candidate_trace_admitted_support_parent_mismatch",
         "candidate_trace_composed_support_parent_mismatch",
         "candidate_trace_duplicate_support_parent_mismatch",
@@ -819,6 +922,8 @@ def validate_candidate_trace_links(
         code = "candidate_trace_composed_support_parent_mismatch"
     elif trace.admitted_support is not None:
         code = "candidate_trace_admitted_support_parent_mismatch"
+    elif trace.archive_version_group is not None:
+        code = "candidate_trace_archive_group_parent_mismatch"
     elif trace.archive_version_conflict is not None:
         code = "candidate_trace_archive_conflict_parent_mismatch"
     elif trace.archive_version_decision is not None:

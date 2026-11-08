@@ -1056,6 +1056,52 @@ class ArchiveVersionConflictEvidence(BaseModel):
         return self
 
 
+class ArchiveVersionGroupEvidence(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    capture_id: Sha256
+    phase: Literal["version_comparison", "fallback"]
+    index: Position
+    candidate_slots: tuple[Position, ...] = Field(min_length=3, max_length=32)
+    members: tuple[ArchiveMemberDisposition, ...] = Field(min_length=3, max_length=32)
+    retained_slots: tuple[Position, ...] = Field(min_length=1, max_length=32)
+    matching_slots: tuple[Position, ...] = Field(max_length=32)
+    date_filter: tuple[VersionDate, ...] | None = Field(
+        default=None, max_length=32, exclude_if=lambda value: value is None
+    )
+    selected_slot: Position | None = Field(default=None, exclude_if=lambda value: value is None)
+    outcome: Literal["selected", "text_conflict", "annex_conflict"]
+
+    @model_validator(mode="after")
+    def comparison_steps(self) -> Self:
+        expected = self.candidate_slots
+        if (
+            len(set(expected)) != len(expected)
+            or tuple(member.physical_part_index for member in self.members) != expected
+            or len({member.ordinals for member in self.members}) != len(expected)
+        ):
+            raise ValueError("archive comparison group requires distinct physical positions")
+        if self.date_filter is not None:
+            dates = tuple(dt.date.fromisoformat(value) for value in self.date_filter)
+            if len(dates) != len(expected) or len(set(dates)) < 2:
+                raise ValueError("archive group dates must eliminate a compared position")
+            latest = max(dates)
+            expected = tuple(
+                slot for slot, date in zip(expected, dates, strict=True) if date == latest
+            )
+        matches = () if self.outcome == "text_conflict" else expected
+        selected = matches[0] if self.outcome == "selected" else None
+        if (
+            self.retained_slots != expected
+            or self.matching_slots != matches
+            or self.selected_slot != selected
+            or self.outcome != "selected"
+            and len(expected) < 2
+        ):
+            raise ValueError("archive comparison group differs from the recorded outcome")
+        return self
+
+
 class CandidateDispositionTrace(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -1128,6 +1174,10 @@ class CandidateDispositionTrace(BaseModel):
     )
 
     archive_version_conflict: ArchiveVersionConflictEvidence | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
+    archive_version_group: ArchiveVersionGroupEvidence | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
 
@@ -1309,6 +1359,8 @@ class CandidateDispositionTrace(BaseModel):
             archive_version_main(self, self.archive_version_decision)
         if self.archive_version_conflict is not None:
             archive_conflict_attempt(self, self.archive_version_conflict)
+        if self.archive_version_group is not None:
+            archive_version_group_members(self, self.archive_version_group)
         if len(self.model_dump_json(exclude_defaults=True).encode()) > MAX_CANDIDATE_TRACE_BYTES:
             raise ValueError("candidate trace exceeds its metadata limit")
         return self
@@ -1344,6 +1396,7 @@ class CandidateDispositionTrace(BaseModel):
             and self.version_decision is None
             and self.archive_version_decision is None
             and self.archive_version_conflict is None
+            and self.archive_version_group is None
         )
 
 
@@ -1880,3 +1933,59 @@ def archive_conflict_attempt(
     ):
         raise ValueError("archive conflict differs from the retained member policy")
     return parent
+
+
+def archive_version_group_members(
+    trace: CandidateDispositionTrace, evidence: ArchiveVersionGroupEvidence
+) -> tuple[CandidateDisposition, tuple[ArchiveMemberDisposition, ...]]:
+    parent = _parent_disposition(trace, evidence.phase, evidence.index)
+    members = trace.archive_members
+    selected = evidence.outcome == "selected"
+    if (
+        trace.coverage != "complete"
+        or parent is None
+        or parent.observed_sha256 is None
+        or members is None
+        or trace.archive_version_decision is not None
+        or trace.archive_version_conflict is not None
+        or (selected and (trace.result != "selected" or parent.outcome != "selected"))
+        or (
+            not selected
+            and (parent.outcome, parent.reason) != ("unclassified", "ambiguous_extraction")
+        )
+    ):
+        raise ValueError("archive group requires its exact outer attempt")
+    expected_rows = {}
+    for slot, row in zip(evidence.candidate_slots, evidence.members, strict=True):
+        expected = (
+            "version_conflict"
+            if not selected
+            else "selected_main"
+            if slot == evidence.selected_slot
+            else "version_preference"
+        )
+        if (
+            (row.phase, row.index, row.stage) != (evidence.phase, evidence.index, "policy")
+            or row.reason != expected
+            or row.association != "known"
+            or row.root_sha256 != parent.observed_sha256
+            or row.leaf_sha256 is None
+            or row.text_sha256 is None
+        ):
+            raise ValueError("archive group differs from its retained member policy")
+        expected_rows[slot] = row
+    observed = set()
+    for row in members.rows:
+        if (row.phase, row.index, row.stage) != (evidence.phase, evidence.index, "policy"):
+            continue
+        observed_slot = row.physical_part_index
+        expected_row = expected_rows.get(observed_slot) if observed_slot is not None else None
+        if expected_row is not None:
+            if row != expected_row:
+                raise ValueError("archive group contradicts an observed member")
+            observed.add(observed_slot)
+        elif row.reason in ("selected_main", "version_preference"):
+            raise ValueError("archive group omits a retained compared position")
+    if members.retention == "complete" and observed != set(evidence.candidate_slots):
+        raise ValueError("archive group differs from the complete retained member policy")
+    return parent, evidence.members
