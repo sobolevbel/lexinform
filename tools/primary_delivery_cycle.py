@@ -11,7 +11,10 @@ from pathlib import Path
 from pydantic import TypeAdapter
 
 from lexinform.adapters.computation_history import read_result_application
-from lexinform.adapters.content_history import read_expired_card_primary_cycle
+from lexinform.adapters.content_history import (
+    read_bound_card_primary_cycle,
+    read_expired_card_primary_cycle,
+)
 from lexinform.adapters.content_source_refs import ContentSourceRows, validate_projected_application
 from lexinform.adapters.document_source_rows import DocumentSourceRows
 from lexinform.adapters.input_receipts import (
@@ -542,6 +545,10 @@ def _inspect_card(
             compact = read_expired_card_primary_cycle(db, publication_id)
             if compact is not None:
                 return "exact_retained_compact_cycle", compact
+        if include_compact and str(exc) == "receipt_outside_single_part_scope":
+            bound = read_bound_card_primary_cycle(db, publication_id)
+            if bound is not None:
+                return "exact_retained_bound_cycle", bound
         raise
 
 
@@ -701,7 +708,7 @@ def main() -> None:
     mode.add_argument(
         "--include-compact",
         action="store_true",
-        help="allow validated compact original history after the frozen plan expires",
+        help="allow validated original card evidence before and after plan expiry",
     )
     parser.add_argument(
         "--include-request-prefix",

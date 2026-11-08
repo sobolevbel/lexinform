@@ -756,7 +756,9 @@ uv run --offline --frozen python -m tools.primary_delivery_cycle --census \
 ```
 
 The report counts reasons for all sent new-bill rows, including linked aliases,
-and lists sent status changes with a retained projection application. Secondary
+and lists sent status changes with a retained projection application. The census
+and single-card audits with `--include-compact` use validated original card
+bindings before and after delivery-plan cleanup. Secondary
 request identity, prepared-input receipt, source selection, projection and send
 are reported separately. Exact retained source selection requires a unique scoped
 observation and verified selection, artifact and extraction parents. Original

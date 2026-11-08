@@ -2068,6 +2068,13 @@ def read_expired_card_primary_cycle(
     connection: sqlite3.Connection, publication_id: int
 ) -> dict[str, object] | None:
     """Read a confirmed original using its validated compact evidence and expired plan."""
+    return read_bound_card_primary_cycle(connection, publication_id, require_expired=True)
+
+
+def read_bound_card_primary_cycle(
+    connection: sqlite3.Connection, publication_id: int, *, require_expired: bool = False
+) -> dict[str, object] | None:
+    """Read an original card's validated evidence and compare any retained delivery plan."""
     if (
         _query(
             connection,
@@ -2087,7 +2094,8 @@ def read_expired_card_primary_cycle(
         or root.message_id <= 0
         or root.sent_at is None
         or not root.channel_id
-        or root.delivery is not None
+        or require_expired
+        and root.delivery is not None
     ):
         return None
     binding = _query(

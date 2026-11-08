@@ -8,6 +8,10 @@ from pathlib import Path
 import pytest
 from tools.primary_delivery_cycle import audit
 
+from lexinform.adapters.content_history import (
+    read_bound_card_primary_cycle,
+    read_expired_card_primary_cycle,
+)
 from lexinform.models import PublicationStatus
 from tests.unit.test_card_primary_evidence_reader import store_marked_card
 from tests.unit.test_content_sources import Case
@@ -32,6 +36,18 @@ def test_compact_cycle_uses_only_the_opt_in_original_binding_after_plan_expiry(
     checkpoint(case, live)
     full = audit(live, pub.id)
     assert full["status"] == "recorded" and audit(live, pub.id, include_compact=True) == full
+    with closing(sqlite3.connect(live)) as connection:
+        assert read_expired_card_primary_cycle(connection, pub.id) is None
+        bound_cycle = read_bound_card_primary_cycle(connection, pub.id)
+        assert isinstance(full["cycle"], dict), "the direct report contains its verified cycle"
+        assert bound_cycle == {**full["cycle"], "content_version_id": version.content_id}
+        connection.execute(
+            "UPDATE publications SET delivery_json=json_set(delivery_json,'$.rendered_text',?)"
+            " WHERE id=?",
+            ("Changed frozen render", pub.id),
+        )
+        with pytest.raises(ValueError, match="card_content_binding_scope"):
+            read_bound_card_primary_cycle(connection, pub.id)
     case.repo.prune_history(before=NOW + timedelta(days=91), memo_before=NOW + timedelta(days=1))
     expired = tmp_path / "after-prune.db"
     checkpoint(case, expired)
