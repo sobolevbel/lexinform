@@ -572,6 +572,9 @@ class AdmittedSupport(BaseModel):
         return self
 
 
+MAX_COMPOSED_SUPPORT = 8
+
+
 class ComposedSupportPart(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
 
@@ -586,7 +589,7 @@ class ComposedSupport(BaseModel):
 
     phase: Literal["version_comparison", "fallback"]
     index: Position
-    rows: tuple[ComposedSupportPart, ...] = Field(min_length=1, max_length=8)
+    rows: tuple[ComposedSupportPart, ...] = Field(min_length=1, max_length=MAX_COMPOSED_SUPPORT)
 
     @model_validator(mode="after")
     def ordered_disjoint_parts(self) -> Self:

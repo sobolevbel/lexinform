@@ -12,7 +12,7 @@ from lexinform.services.documents import TextLoader
 from tests.fakes import FakeTextExtractor
 from tests.unit.test_doc_note_extraction import source_notes
 from tests.unit.test_doc_note_physical_parts import ole_document
-from tests.unit.test_physical_extraction import docx, extractor
+from tests.unit.test_physical_extraction import archive, docx, extractor
 from tests.unit.test_required_part_writer import BODY, MAIN, REQUIRED
 
 SUPPORT = "UZASADNIENIE\n" + "Opis skutków wprowadzenia przepisu. " * 30
@@ -115,3 +115,45 @@ def test_unlocated_doc_support_requires_the_complete_exact_extraction() -> None:
         }
     )
     assert not complete_standalone_root(damaged, digest, allow_unlocated_doc=True)
+
+
+def test_composed_support_keeps_every_included_archive_part_after_deduplication() -> None:
+    alternate = MAIN + "-alternate"
+    duplicate = REQUIRED + "-duplicate"
+    zipped = archive(
+        {
+            "uzasadnienie.docx": docx(SUPPORT),
+            "osr.docx": docx("OCENA SKUTKÓW REGULACJI\n" + "Koszt i zakres przepisu. " * 30),
+        }
+    )
+    bodies = {MAIN: b"", alternate: docx(BODY), REQUIRED: zipped, duplicate: zipped}
+    reads: list[str] = []
+
+    def download(url: str, *, max_bytes: int | None = None) -> bytes:
+        reads.append(url)
+        return bodies[url]
+
+    loader = TextLoader({"source.test": download}, extractor(), max_bytes=100_000)
+    document = TextDocument(url=alternate, kind="print", extra_urls=(REQUIRED, duplicate))
+    request = TextDocument(url=MAIN, kind="print", alternatives=(document,))
+
+    selected, loaded = loader.select_document(request)
+
+    assert selected == document
+    assert reads == [MAIN, alternate, REQUIRED, duplicate]
+    assert [part.url for part in loaded.selection.parts] == [alternate, REQUIRED, REQUIRED]
+    trace = loaded.candidate_trace
+    assert trace is not None and trace.composed_support is not None
+    assert trace.admitted_support is None
+    (row,) = trace.composed_support.rows
+    assert (trace.composed_support.index, row.extra_index, row.first_part, row.part_count) == (
+        1,
+        0,
+        1,
+        2,
+    )
+    requested = loader.capture_source_read(
+        request, selected, loaded, record_requested_document=True
+    )
+    assert isinstance(requested, DocumentSourceRead) and requested.candidate_trace is not None
+    assert requested.candidate_trace.composed_support is None

@@ -78,6 +78,7 @@ from lexinform.models import (
 from lexinform.models.candidate_trace import (
     MAX_ADMITTED_NORMATIVE_ANNEXES,
     MAX_ADMITTED_SUPPORT,
+    MAX_COMPOSED_SUPPORT,
     MAX_SUPPORTING_EXCLUSIONS,
     MAX_VERSION_DECISION_ROWS,
     AdmittedNormativeAnnex,
@@ -89,12 +90,15 @@ from lexinform.models.candidate_trace import (
     ArchiveVersionDecisionEvidence,
     CandidateTraceReason,
     CandidateTraceResult,
+    ComposedSupport,
+    ComposedSupportPart,
     NormativeAnnexGap,
     RequiredPartGap,
     SupportingExclusionReason,
     SupportingPartExclusion,
     SupportingPartExclusions,
     VersionDecisionEvidence,
+    composed_support_sha256,
 )
 from lexinform.models.document_reads import DocumentPhysicalDiagnostics
 from lexinform.models.document_reads import LoadedFile as LoadedFile
@@ -179,6 +183,9 @@ class _CompositionCapture:
     supporting: list[SupportingPartExclusion] = field(default_factory=list)
     supporting_omitted: int = 0
     admitted_support: dict[tuple[Phase, int, int], tuple[str, str]] = field(default_factory=dict)
+    composed_support: dict[tuple[Phase, int, int], tuple[DocumentPart, ...]] = field(
+        default_factory=dict
+    )
     version_decision: VersionDecisionEvidence | None = None
     version_decision_includes_archive: bool = False
 
@@ -242,6 +249,62 @@ def _selected_admitted_support(
     return AdmittedSupport(
         phase=parent.phase, index=parent.index, rows=tuple(rows), omitted=omitted
     )
+
+
+def _selected_composed_support(
+    trace: CandidateDispositionTrace,
+    selected: TextDocument,
+    loaded: LoadedFile,
+    capture: _CompositionCapture,
+) -> tuple[ComposedSupportPart, ...]:
+    parent = next((row for row in trace.dispositions if row.outcome == "selected"), None)
+    if parent is None:
+        return ()
+    admitted = trace.admitted_support.rows if trace.admitted_support is not None else ()
+    excluded = trace.supporting_exclusions.rows if trace.supporting_exclusions is not None else ()
+    known = {row.extra_index for row in admitted} | {row.extra_index for row in excluded}
+    other_urls = {
+        selected.url,
+        *selected.required_urls,
+        *selected.amendment_urls,
+        *selected.normative_urls,
+    }
+    occurrences = Counter(selected.extra_urls)
+    rows: list[ComposedSupportPart] = []
+    for position, url in enumerate(selected.extra_urls):
+        appended = capture.composed_support.get((parent.phase, parent.index, position))
+        if (
+            not appended
+            or position in known
+            or occurrences[url] != 1
+            or url in other_urls
+            or not metadata_url_decision(url).admitted
+        ):
+            continue
+        indices = [index for index, part in enumerate(loaded.selection.parts) if part.url == url]
+        if len(indices) != len(appended):
+            continue
+        start = indices[0]
+        end = start + len(appended)
+        if indices != list(range(start, end)):
+            continue
+        selected_parts = loaded.selection.parts[start:end]
+        if any(
+            before.model_copy(update={"role": after.role}) != after
+            for before, after in zip(appended, selected_parts, strict=True)
+        ):
+            continue
+        rows.append(
+            ComposedSupportPart(
+                extra_index=position,
+                first_part=start,
+                part_count=len(selected_parts),
+                parts_sha256=composed_support_sha256(selected_parts),
+            )
+        )
+        if len(rows) == MAX_COMPOSED_SUPPORT:
+            break
+    return tuple(rows)
 
 
 def _selected_admitted_annexes(
@@ -699,10 +762,18 @@ class TextLoader:
             record_requested_document
             and requested != resolved
             and trace is not None
-            and (trace.admitted_support is not None or trace.admitted_normative_annexes is not None)
+            and (
+                trace.admitted_support is not None
+                or trace.admitted_normative_annexes is not None
+                or trace.composed_support is not None
+            )
         ):
             trace = trace.model_copy(
-                update={"admitted_support": None, "admitted_normative_annexes": None}
+                update={
+                    "admitted_support": None,
+                    "admitted_normative_annexes": None,
+                    "composed_support": None,
+                }
             )
         defer_archive_trace = None
         evidence = file.archive_version_evidence
@@ -1006,6 +1077,11 @@ class TextLoader:
                 part = composed.evidence[-1]
                 with suppress(Exception):
                     capture.admitted_support[phase, index, position] = part.sha256, part.text_sha256
+            if attempt is not None and len(composed.evidence) > len(bundle.evidence):
+                capture, phase, index = attempt
+                capture.composed_support[phase, index, position] = composed.evidence[
+                    len(bundle.evidence) :
+                ]
             bundle = composed
         return finish_bundle(bundle, document)
 
@@ -1151,6 +1227,28 @@ class TextLoader:
                 if packed is not trace and archive_version_evidence is not None:
                     _trace_with_archive_evidence(packed, archive_version_evidence)
                 trace = packed
+        base_trace = trace or routine_trace
+        if base_trace is not None and composition is not None and composition.composed_support:
+            with suppress(Exception):
+                rows = _selected_composed_support(base_trace, selected, loaded, composition)
+                parent = next(row for row in base_trace.dispositions if row.outcome == "selected")
+                while rows:
+                    try:
+                        enriched = CandidateDispositionTrace.model_validate(
+                            {
+                                **base_trace.model_dump(),
+                                "composed_support": ComposedSupport(
+                                    phase=parent.phase, index=parent.index, rows=rows
+                                ),
+                            }
+                        )
+                        if archive_version_evidence is not None:
+                            _trace_with_archive_evidence(enriched, archive_version_evidence)
+                    except ValueError:
+                        rows = rows[:-1]
+                    else:
+                        trace = enriched
+                        break
         return selected, replace(
             loaded,
             archive_version_evidence=archive_version_evidence,
