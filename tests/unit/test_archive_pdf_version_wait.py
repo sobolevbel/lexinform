@@ -186,3 +186,36 @@ def test_partially_read_named_draft_has_one_physical_slot(recognised: bool) -> N
     assert part.role == ("bill" if recognised else "unknown") and part.has_pdf_page_failure
     (observed,) = loaded.selection.observed_parts
     assert observed.sha256 == part.sha256
+
+
+@pytest.mark.parametrize("failed_folder", ["b", "other"])
+def test_named_pdf_failure_considers_every_confirmed_comparison_family(failed_folder: str) -> None:
+    class Pdf(FakeTextExtractor):
+        def extract_pages(self, data: bytes) -> PdfTextExtraction:
+            pages = (
+                (PdfPageText(number=1, error_type="ValueError"),)
+                if data == b"%PDF-failed"
+                else (PdfPageText(number=1, text=law(day=2 if data == b"%PDF-new" else 1)),)
+            )
+            return PdfTextExtraction(
+                input_sha256=hashlib.sha256(data).hexdigest(), pypdf_version="fixture", pages=pages
+            )
+
+    reader = DocumentTextExtractor(Pdf(page_count=1), DocxTextExtractor(), FakeTextExtractor())
+    data = archive(
+        {
+            "a/projekt.pdf": b"%PDF-old",
+            "b/projekt.pdf": b"%PDF-new",
+            f"{failed_folder}/projekt-dodatkowy.pdf": b"%PDF-failed",
+        }
+    )
+
+    loaded = reader.extract_document_with_provenance(data).document
+
+    if failed_folder == "b":
+        assert loaded.selection.state == "waiting" and not loaded.text
+        assert len(loaded.selection.parts) == 3
+        (failed,) = tuple(part for part in loaded.selection.parts if part.has_pdf_page_failure)
+        assert failed.members[-1] == "b/projekt-dodatkowy.pdf"
+    else:
+        assert "2 września" in loaded.text

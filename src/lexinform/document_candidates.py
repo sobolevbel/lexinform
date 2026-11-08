@@ -269,12 +269,14 @@ def _select_parts(
     peers = [(index, p) for r, index, p in candidates if r[0] == rank[0]]
     peer_set = CandidateSet.from_parts([p for _, p in peers])
     confirmed = [peers[index] for index in peer_set.bill_indices()]
-    main_folder = main.members[-1].rpartition("/")[0]
+    comparison_peers = confirmed or [(main_index, main)]
+    comparison_families = {
+        (part.members[:-1], part.members[-1].rpartition("/")[0]) for _, part in comparison_peers
+    }
     incomplete_peers = tuple(
         (index, part)
         for index, part in incomplete_named_bills
-        if part.members[:-1] == main.members[:-1]
-        and part.members[-1].rpartition("/")[0] == main_folder
+        if (part.members[:-1], part.members[-1].rpartition("/")[0]) in comparison_families
     )
     if (
         main.has_pdf_page_failure
@@ -282,9 +284,8 @@ def _select_parts(
         or (len(confirmed) > 1 and any(part.has_pdf_page_failure for _, part in confirmed))
     ):
         incomplete_indices = {index for index, _ in incomplete_peers}
-        readable_peers = confirmed or [(main_index, main)]
         waiting_parts = (
-            *((index, part) for index, part in readable_peers if index not in incomplete_indices),
+            *((index, part) for index, part in comparison_peers if index not in incomplete_indices),
             *incomplete_peers,
         )
         failures = {index for index, part in waiting_parts if part.has_pdf_page_failure}
