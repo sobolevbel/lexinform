@@ -61,6 +61,10 @@ def _independent_profile(version: ContentVersion) -> bool:
         or version.sitting_profile is not None
         or version.act_published_evidence is not None
         or (
+            version.direct_stage_evidence is not None
+            and version.direct_stage_evidence.multipart is not None
+        )
+        or (
             version.original_delivery_evidence is not None
             and version.original_delivery_evidence.kind not in ORIGINAL_CARD_KINDS
         )

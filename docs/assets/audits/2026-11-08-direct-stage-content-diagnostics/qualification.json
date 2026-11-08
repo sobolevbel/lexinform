@@ -1,0 +1,141 @@
+[
+  {
+    "outcome": "sent",
+    "database_sha256": "41dd49a47000fda80c9fdbfbbd3b792a8e8e628856b069b2bb2965b5e114c404",
+    "before": [
+      {
+        "code": "content_binding_role_mismatch",
+        "ref": "3",
+        "level": "error"
+      },
+      {
+        "code": "content_binding_kind_mismatch",
+        "ref": "3",
+        "level": "error"
+      },
+      {
+        "code": "content_message_target_mismatch",
+        "ref": "3",
+        "level": "error"
+      },
+      {
+        "code": "content_binding_role_mismatch",
+        "ref": "4",
+        "level": "error"
+      },
+      {
+        "code": "content_binding_kind_mismatch",
+        "ref": "4",
+        "level": "error"
+      },
+      {
+        "code": "content_message_target_mismatch",
+        "ref": "4",
+        "level": "error"
+      }
+    ],
+    "current_content_id": "content-v1:9e41d9e0eac017ed75a1d82cc2ed6888cc9b2c035586b623a5d38b735bca7d9e"
+  },
+  {
+    "outcome": "unknown",
+    "database_sha256": "82a11588efa6553614f8dbb45c11f8735470ded6c7313f10fc68f72a0916486a",
+    "before": [
+      {
+        "code": "content_frozen_text_mismatch",
+        "ref": "2",
+        "level": "error"
+      },
+      {
+        "code": "content_frozen_text_mismatch",
+        "ref": "3",
+        "level": "error"
+      },
+      {
+        "code": "content_binding_role_mismatch",
+        "ref": "3",
+        "level": "error"
+      },
+      {
+        "code": "content_binding_kind_mismatch",
+        "ref": "3",
+        "level": "error"
+      },
+      {
+        "code": "content_frozen_text_mismatch",
+        "ref": "4",
+        "level": "error"
+      },
+      {
+        "code": "content_binding_role_mismatch",
+        "ref": "4",
+        "level": "error"
+      },
+      {
+        "code": "content_binding_kind_mismatch",
+        "ref": "4",
+        "level": "error"
+      }
+    ],
+    "current_content_id": null
+  },
+  {
+    "application": "amendments-retained",
+    "database_sha256": "c10ec07cdef298a026283abd5dc9d4b15aee5fb698e618dbbfec7725e8aed18d",
+    "current_content_id": "content-v1:fe53f1063e697f5b38d0aae66a1d0d451cf27a7be0208b627c1878286a6edc75"
+  },
+  {
+    "application": "amendments_multistage-retained",
+    "database_sha256": "07bf69296a7d24550add037f29131465df80450004939e6ced0e51099fb19bc3",
+    "current_content_id": "content-v1:3e6e64d3a8a7e16fedda71765475a469e7bcabe827dc041d51d46d4520314038"
+  },
+  {
+    "application": "supplement-retained",
+    "database_sha256": "3b8b8000ab7a6b18a8355fc340932ad52482433ef41ced53dff640b959867a18",
+    "current_content_id": "content-v1:e8b2a5f043814eab8173b2fd9e20bfb9bed16bd6b95efde8faae08f1585bc18a"
+  },
+  {
+    "database_sha256": "1dc2af02598e4add20a7ae623149b44b584333205a7bf4e0a0a7633349f1c34e",
+    "unchanged": true,
+    "status": "recorded"
+  },
+  {
+    "snapshot": "012f5d7d.db",
+    "database_sha256": "c09738cc489b93265bc58b7f8e328edde954c5912acff6ab4e0891c94ec1d52f",
+    "unchanged": true,
+    "status": "recorded",
+    "histories": 5,
+    "findings": 0
+  },
+  {
+    "snapshot": "22f9aed8.db",
+    "database_sha256": "eadc7a3063c612a3b76b0c544769a3952f68b8c7603aa596b5bba399012287c7",
+    "unchanged": true,
+    "status": "recorded",
+    "histories": 4,
+    "findings": 0
+  },
+  {
+    "snapshot": "76f44c85.db",
+    "database_sha256": "13fd9312c27cc9b127f52e6757179d7d02a8dbf2ff1b9802c31cdaee317b7cfd",
+    "unchanged": true,
+    "status": "recorded",
+    "histories": 5,
+    "findings": 0
+  },
+  {
+    "snapshot": "79ed7caf.db",
+    "database_sha256": "570d29a6c0b609620d508db177885c38f7157cee700ef403cb2e20aa6fe8fb41",
+    "unchanged": true,
+    "status": "recorded",
+    "histories": 5,
+    "findings": 0
+  },
+  {
+    "snapshot": "8e7a715b.db",
+    "database_sha256": "2fa282b623328efa9bec50d3d6da771fd6a8b098565ea619d1a1a4ed38f351b7",
+    "unchanged": true,
+    "status": "recorded",
+    "histories": 5,
+    "findings": 0
+  }
+]

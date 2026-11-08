@@ -1,8 +1,12 @@
+import sqlite3
+from contextlib import closing
 from datetime import timedelta
 from pathlib import Path
 
 import pytest
+from tools.content_history_doctor import audit
 
+from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.errors import DeliveryUncertainError
 from lexinform.models import (
     AmendmentsRecord,
@@ -136,6 +140,31 @@ def test_direct_multipart_history_follows_original_physical_send(
         world.repo.prune_history(before=cutoff, memo_before=cutoff)
     sql = world.repo.dump()
     (tmp_path / f"{outcome}.sql").write_text(sql)
+    database = tmp_path / f"{outcome}.db"
+    with closing(SqliteBillRepository(database)) as repo:
+        repo.migrate()
+        repo.restore(sql)
+    report = audit(database, publication_id=root)
+    assert report["status"] == "recorded" and not report["findings"]
+    assert report["histories"][0]["current_content_id"] == (
+        history.content_id if outcome == "sent" else None
+    )
+    if outcome == "sent":
+        corrupted_database = tmp_path / "missing-part.db"
+        with closing(SqliteBillRepository(corrupted_database)) as repo:
+            repo.migrate()
+            repo.restore(sql)
+        with closing(sqlite3.connect(corrupted_database)) as connection, connection:
+            connection.execute(
+                "DELETE FROM publication_content WHERE publication_id=?",
+                (plan.bindings[-1],),
+            )
+        corrupted = audit(corrupted_database, publication_id=root)
+        assert corrupted["status"] == "failed"
+        assert corrupted["histories"][0]["current_content_id"] is None
+        assert "invalid_direct_stage_content_history" in {
+            finding["code"] for finding in corrupted["findings"]
+        }
     for command in (
         f"DELETE FROM publication_content WHERE publication_id={plan.bindings[-1]}",
         f"UPDATE publications SET channel_id='foreign' WHERE id={plan.bindings[-1]}",

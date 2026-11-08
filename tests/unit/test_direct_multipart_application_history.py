@@ -4,6 +4,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import pytest
+from tools.content_history_doctor import audit
 from tools.replay_content_applications import NOW, poster, queued
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
@@ -164,6 +165,13 @@ def verify_history(
             assert repo.dump() == dump
             assert repo.get_publication_content(original.id) == version
         if version is not None:
+            database = tmp_path / f"{purpose}-retained.db"
+            with closing(SqliteBillRepository(database)) as restored:
+                restored.migrate()
+                restored.restore(dump)
+            report = audit(database, publication_id=original.id)
+            assert report["status"] == "recorded" and not report["findings"]
+            assert report["histories"][0]["current_content_id"] == version.content_id
             for identity in delivered.delivery.continuation_ids:
                 assert repo.get_publication_content(identity) == version
             tampered = (
