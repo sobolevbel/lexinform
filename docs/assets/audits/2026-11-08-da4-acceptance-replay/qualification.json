@@ -1,0 +1,2564 @@
+{
+  "baseline_commit": "5fd83caf3fa861703f2d33944e9229d3574fa5a3",
+  "candidate_commit": "43c0ae67b828467cdbc8ea36cc5eae1c85951871",
+  "senate": {
+    "report_sha256": "b0548b7bfaa4d9163ba79cdc29eb67c3b9ea959b6b89e798413d066714a96ba7",
+    "rows": 816,
+    "counts": {
+      "8/selected": 203,
+      "mutation_probes": 4903,
+      "8/scan_pending_verification": 5,
+      "8/no_unique_stage_date": 1,
+      "9/selected": 333,
+      "9/not_amendments": 90,
+      "9/scan_pending_verification": 14,
+      "10/selected": 165,
+      "10/scan_pending_verification": 4,
+      "10/no_unique_stage_date": 1
+    },
+    "negative_controls": {
+      "sejm": 980,
+      "rcl": 10418
+    }
+  },
+  "packaging": {
+    "input_pins": {
+      "280566.pdf": "f7b9132ebf61d23096aef07ed1e0c7fc9f561e0631aca2ef8a444d464419cee9",
+      "272563.pdf": "b93f4af610d9b013f757a3bfe4404762f9ce4e65b0df82b66a1c780459953da4"
+    },
+    "cases": {
+      "280566.pdf:loose": {
+        "state": "unverified",
+        "calls": [
+          "https://source.test/280566.pdf",
+          "https://source.test/272563.pdf"
+        ],
+        "text_sha256": "fbfc869dd40970a63baa1dbe4daf221b0a80cf7105ef48a85a3740f3a945ca1d",
+        "selected_parts": [
+          "f7b9132ebf61d23096aef07ed1e0c7fc9f561e0631aca2ef8a444d464419cee9"
+        ],
+        "trace_result": "selected",
+        "package_sha256": null
+      },
+      "280566.pdf:zip": {
+        "state": "unverified",
+        "calls": [
+          "https://source.test/versions.zip"
+        ],
+        "text_sha256": "fbfc869dd40970a63baa1dbe4daf221b0a80cf7105ef48a85a3740f3a945ca1d",
+        "selected_parts": [
+          "f7b9132ebf61d23096aef07ed1e0c7fc9f561e0631aca2ef8a444d464419cee9"
+        ],
+        "trace_result": null,
+        "package_sha256": "eb15f8c17a17efa02cf884ebfe01e3d2dc69a778a3176c93618720040682ce5d"
+      },
+      "280566.pdf:nested": {
+        "state": "unverified",
+        "calls": [
+          "https://source.test/versions.zip"
+        ],
+        "text_sha256": "fbfc869dd40970a63baa1dbe4daf221b0a80cf7105ef48a85a3740f3a945ca1d",
+        "selected_parts": [
+          "f7b9132ebf61d23096aef07ed1e0c7fc9f561e0631aca2ef8a444d464419cee9"
+        ],
+        "trace_result": null,
+        "package_sha256": "4710afa3cbd4f58c6b903a7d89009d80bd3f7d2635f57398a934f8cd1ac40e36"
+      },
+      "280566.pdf:renamed": {
+        "state": "unverified",
+        "calls": [
+          "https://source.test/versions.zip"
+        ],
+        "text_sha256": "fbfc869dd40970a63baa1dbe4daf221b0a80cf7105ef48a85a3740f3a945ca1d",
+        "selected_parts": [
+          "f7b9132ebf61d23096aef07ed1e0c7fc9f561e0631aca2ef8a444d464419cee9"
+        ],
+        "trace_result": null,
+        "package_sha256": "5dd54804855534fae454e7fed30471ab41f13350df895b65187e0e5312bc5050"
+      },
+      "272563.pdf:loose": {
+        "state": "unverified",
+        "calls": [
+          "https://source.test/272563.pdf",
+          "https://source.test/280566.pdf"
+        ],
+        "text_sha256": "fbfc869dd40970a63baa1dbe4daf221b0a80cf7105ef48a85a3740f3a945ca1d",
+        "selected_parts": [
+          "f7b9132ebf61d23096aef07ed1e0c7fc9f561e0631aca2ef8a444d464419cee9"
+        ],
+        "trace_result": "selected",
+        "package_sha256": null
+      },
+      "272563.pdf:zip": {
+        "state": "unverified",
+        "calls": [
+          "https://source.test/versions.zip"
+        ],
+        "text_sha256": "fbfc869dd40970a63baa1dbe4daf221b0a80cf7105ef48a85a3740f3a945ca1d",
+        "selected_parts": [
+          "f7b9132ebf61d23096aef07ed1e0c7fc9f561e0631aca2ef8a444d464419cee9"
+        ],
+        "trace_result": null,
+        "package_sha256": "567399c7fdc10537b6c760b2d3092433af200d27dc549efe0608c8024e7bb127"
+      },
+      "272563.pdf:nested": {
+        "state": "unverified",
+        "calls": [
+          "https://source.test/versions.zip"
+        ],
+        "text_sha256": "fbfc869dd40970a63baa1dbe4daf221b0a80cf7105ef48a85a3740f3a945ca1d",
+        "selected_parts": [
+          "f7b9132ebf61d23096aef07ed1e0c7fc9f561e0631aca2ef8a444d464419cee9"
+        ],
+        "trace_result": null,
+        "package_sha256": "7fb80161f9368546933805d03863852aa6a916c993eaedcb14bb93ec353c92af"
+      },
+      "272563.pdf:renamed": {
+        "state": "unverified",
+        "calls": [
+          "https://source.test/versions.zip"
+        ],
+        "text_sha256": "fbfc869dd40970a63baa1dbe4daf221b0a80cf7105ef48a85a3740f3a945ca1d",
+        "selected_parts": [
+          "f7b9132ebf61d23096aef07ed1e0c7fc9f561e0631aca2ef8a444d464419cee9"
+        ],
+        "trace_result": null,
+        "package_sha256": "e2796201a0426481cf7e75790f86466d368b5a48c35ecd708bf149d9ebc958c9"
+      }
+    }
+  },
+  "rcl": {
+    "cases": 4276,
+    "missing_inputs": 1383,
+    "read_inputs_added": {
+      "documents/text/671254.txt.gz": "c65cff720c5db999b2039d4c12bcaf31e1ea6fbe21344e8e2787e38ae0d38c58",
+      "documents/text/769783.txt.gz": "2eb1cf5403bd14d767cf7d3d7da868ed6e92e715f332e9a48305ad9af54ec663"
+    },
+    "baseline_counts": {
+      "ambiguous": 123,
+      "no_candidate": 205,
+      "selected": 2273,
+      "unsupported": 669,
+      "unverified": 925,
+      "waiting": 81
+    },
+    "candidate_counts": {
+      "ambiguous": 118,
+      "no_candidate": 205,
+      "selected": 2269,
+      "unsupported": 669,
+      "unverified": 923,
+      "waiting": 92
+    },
+    "changed_cases": {
+      "12350601/12": {
+        "baseline": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12350601/12811982/12811983/dokument636802.zip",
+            "https://legislacja.rcl.gov.pl/docs//2/12350601/12811993/12811994/dokument636767.pdf"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "https://legislacja.rcl.gov.pl/docs//2/12350601/12811982/12811983/dokument636802.zip: self-amendment unavailable"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12350601/12811993/12811994/dokument636772.zip"
+        },
+        "candidate": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12350601/12811982/12811983/dokument636802.zip",
+            "https://legislacja.rcl.gov.pl/docs//2/12350601/12811993/12811994/dokument636767.pdf"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "A declared normative part could not be read during version comparison"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12350601/12811993/12811994/dokument636766.zip"
+        }
+      },
+      "12350601/14": {
+        "baseline": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12350601/12811982/12811983/dokument636802.zip",
+            "https://legislacja.rcl.gov.pl/docs//2/12350601/12811993/12811994/dokument636767.pdf"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "https://legislacja.rcl.gov.pl/docs//2/12350601/12811982/12811983/dokument636802.zip: self-amendment unavailable"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12350601/12811993/12811994/dokument636772.zip"
+        },
+        "candidate": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12350601/12811982/12811983/dokument636802.zip",
+            "https://legislacja.rcl.gov.pl/docs//2/12350601/12811993/12811994/dokument636767.pdf"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "A declared normative part could not be read during version comparison"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12350601/12811993/12811994/dokument636766.zip"
+        }
+      },
+      "12383101/10": {
+        "baseline": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument731045.pdf"
+          ],
+          "chars": 280978,
+          "extras": [],
+          "kind": "bill",
+          "normative": [],
+          "reasons": [],
+          "state": "selected",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument729529.zip"
+        },
+        "candidate": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument731045.pdf"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "A declared normative part could not be read during version comparison"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument729529.zip"
+        }
+      },
+      "12383101/9": {
+        "baseline": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument731045.pdf"
+          ],
+          "chars": 280978,
+          "extras": [],
+          "kind": "bill",
+          "normative": [],
+          "reasons": [],
+          "state": "selected",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument729529.zip"
+        },
+        "candidate": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument731045.pdf"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "A declared normative part could not be read during version comparison"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument729529.zip"
+        }
+      },
+      "12383852/10": {
+        "baseline": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12383852/13050740/13050741/dokument705812.zip"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "https://legislacja.rcl.gov.pl/docs//2/12383852/13050740/13050741/dokument705812.zip: self-amendment unavailable"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12383852/13050740/13050741/dokument705536.zip"
+        },
+        "candidate": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12383852/13050740/13050741/dokument705812.zip"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "A declared normative part could not be read during version comparison"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12383852/13050740/13050741/dokument705536.zip"
+        }
+      },
+      "12383852/9": {
+        "baseline": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12383852/13050740/13050741/dokument705812.zip"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "https://legislacja.rcl.gov.pl/docs//2/12383852/13050740/13050741/dokument705812.zip: self-amendment unavailable"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12383852/13050740/13050741/dokument705536.zip"
+        },
+        "candidate": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12383852/13050740/13050741/dokument705812.zip"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "A declared normative part could not be read during version comparison"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12383852/13050740/13050741/dokument705536.zip"
+        }
+      },
+      "12386552/10": {
+        "baseline": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12386552/13066490/13066491/dokument711612.zip"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "https://legislacja.rcl.gov.pl/docs//2/12386552/13066490/13066491/dokument711612.zip: self-amendment unavailable"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12386552/13066490/13066491/dokument708120.zip"
+        },
+        "candidate": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12386552/13066490/13066491/dokument711612.zip"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "A declared normative part could not be read during version comparison"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12386552/13066490/13066491/dokument708120.zip"
+        }
+      },
+      "12386552/9": {
+        "baseline": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12386552/13066490/13066491/dokument711612.zip"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "https://legislacja.rcl.gov.pl/docs//2/12386552/13066490/13066491/dokument711612.zip: self-amendment unavailable"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12386552/13066490/13066491/dokument708120.zip"
+        },
+        "candidate": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12386552/13066490/13066491/dokument711612.zip"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "A declared normative part could not be read during version comparison"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12386552/13066490/13066491/dokument708120.zip"
+        }
+      },
+      "12386961/10": {
+        "baseline": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument753689.zip"
+          ],
+          "chars": 533399,
+          "extras": [],
+          "kind": "bill",
+          "normative": [],
+          "reasons": [],
+          "state": "unverified",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument748258.zip"
+        },
+        "candidate": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument753689.zip"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "A declared normative part could not be read during version comparison"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument748258.zip"
+        }
+      },
+      "12386961/9": {
+        "baseline": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument753689.zip"
+          ],
+          "chars": 533399,
+          "extras": [],
+          "kind": "bill",
+          "normative": [],
+          "reasons": [],
+          "state": "unverified",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument748258.zip"
+        },
+        "candidate": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument753689.zip"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "A declared normative part could not be read during version comparison"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument748258.zip"
+        }
+      },
+      "12387153/10": {
+        "baseline": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12387153/13070098/13070099/dokument715915.zip"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "https://legislacja.rcl.gov.pl/docs//2/12387153/13070098/13070099/dokument715915.zip: self-amendment unavailable"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12387153/13070098/13070099/dokument713746.zip"
+        },
+        "candidate": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12387153/13070098/13070099/dokument715915.zip"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "A declared normative part could not be read during version comparison"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12387153/13070098/13070099/dokument713746.zip"
+        }
+      },
+      "12387153/9": {
+        "baseline": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12387153/13070098/13070099/dokument715915.zip"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "https://legislacja.rcl.gov.pl/docs//2/12387153/13070098/13070099/dokument715915.zip: self-amendment unavailable"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12387153/13070098/13070099/dokument713746.zip"
+        },
+        "candidate": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12387153/13070098/13070099/dokument715915.zip"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "A declared normative part could not be read during version comparison"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12387153/13070098/13070099/dokument713746.zip"
+        }
+      },
+      "12388700/9": {
+        "baseline": {
+          "amendments": [],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "https://legislacja.rcl.gov.pl/docs//2/12388700/13077189/13077190/dokument796182.zip: conflicting bill version",
+            "https://legislacja.rcl.gov.pl/docs//2/12388700/13077189/13077190/dokument734392.zip: conflicting bill version",
+            "https://legislacja.rcl.gov.pl/docs//2/12388700/13077189/13077190/dokument756294.zip: conflicting bill version"
+          ],
+          "state": "ambiguous",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12388700/13077189/13077190/dokument796182.zip"
+        },
+        "candidate": {
+          "amendments": [],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "A declared normative part could not be read during version comparison"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12388700/13077189/13077190/dokument796182.zip"
+        }
+      },
+      "12390551/10": {
+        "baseline": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12390551/13087932/13087933/dokument762601.zip"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "https://legislacja.rcl.gov.pl/docs//2/12390551/13087932/13087933/dokument762601.zip: self-amendment unavailable"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12390551/13087932/13087933/dokument760993.zip"
+        },
+        "candidate": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12390551/13087932/13087933/dokument762601.zip"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "A declared normative part could not be read during version comparison"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12390551/13087932/13087933/dokument760993.zip"
+        }
+      },
+      "12390551/9": {
+        "baseline": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12390551/13087932/13087933/dokument762601.zip"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "https://legislacja.rcl.gov.pl/docs//2/12390551/13087932/13087933/dokument762601.zip: self-amendment unavailable"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12390551/13087932/13087933/dokument760993.zip"
+        },
+        "candidate": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12390551/13087932/13087933/dokument762601.zip"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "A declared normative part could not be read during version comparison"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12390551/13087932/13087933/dokument760993.zip"
+        }
+      },
+      "12390651/9": {
+        "baseline": {
+          "amendments": [],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "https://legislacja.rcl.gov.pl/docs//2/12390651/13088532/13088533/dokument753540.zip: conflicting bill version",
+            "https://legislacja.rcl.gov.pl/docs//2/12390651/13088532/13088533/dokument713463.zip: conflicting bill version"
+          ],
+          "state": "ambiguous",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12390651/13088532/13088533/dokument753540.zip"
+        },
+        "candidate": {
+          "amendments": [],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "A declared normative part could not be read during version comparison"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12390651/13088532/13088533/dokument753540.zip"
+        }
+      },
+      "12390652/9": {
+        "baseline": {
+          "amendments": [],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "https://legislacja.rcl.gov.pl/docs//2/12390652/13088590/13088591/dokument753539.zip: conflicting bill version",
+            "https://legislacja.rcl.gov.pl/docs//2/12390652/13088590/13088591/dokument713464.zip: conflicting bill version"
+          ],
+          "state": "ambiguous",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12390652/13088590/13088591/dokument753539.zip"
+        },
+        "candidate": {
+          "amendments": [],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "A declared normative part could not be read during version comparison"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12390652/13088590/13088591/dokument753539.zip"
+        }
+      },
+      "12392400/10": {
+        "baseline": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument735406.pdf"
+          ],
+          "chars": 495013,
+          "extras": [],
+          "kind": "bill",
+          "normative": [],
+          "reasons": [],
+          "state": "selected",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument735247.zip"
+        },
+        "candidate": {
+          "amendments": [],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "A declared normative part could not be read during version comparison"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument738682.zip"
+        }
+      },
+      "12392400/9": {
+        "baseline": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument735406.pdf"
+          ],
+          "chars": 495013,
+          "extras": [],
+          "kind": "bill",
+          "normative": [],
+          "reasons": [],
+          "state": "selected",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument735247.zip"
+        },
+        "candidate": {
+          "amendments": [],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "A declared normative part could not be read during version comparison"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument738682.zip"
+        }
+      },
+      "12393550/12": {
+        "baseline": {
+          "amendments": [],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument734614.zip: conflicting bill version",
+            "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument730644.zip: conflicting bill version"
+          ],
+          "state": "ambiguous",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument734614.zip"
+        },
+        "candidate": {
+          "amendments": [],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "A declared normative part could not be read during version comparison"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument734614.zip"
+        }
+      },
+      "12393550/14": {
+        "baseline": {
+          "amendments": [],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument734614.zip: conflicting bill version",
+            "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument730644.zip: conflicting bill version"
+          ],
+          "state": "ambiguous",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument734614.zip"
+        },
+        "candidate": {
+          "amendments": [],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "A declared normative part could not be read during version comparison"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument734614.zip"
+        }
+      },
+      "12396003/10": {
+        "baseline": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12396003/13118118/13118119/dokument753424.pdf",
+            "https://legislacja.rcl.gov.pl/docs//2/12396003/13118118/13118119/dokument754701.zip"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "https://legislacja.rcl.gov.pl/docs//2/12396003/13118118/13118119/dokument754701.zip: self-amendment unavailable"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12396003/13118118/13118119/dokument752694.zip"
+        },
+        "candidate": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12396003/13118118/13118119/dokument753424.pdf",
+            "https://legislacja.rcl.gov.pl/docs//2/12396003/13118118/13118119/dokument754701.zip"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "A declared normative part could not be read during version comparison"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12396003/13118118/13118119/dokument752694.zip"
+        }
+      },
+      "12396003/9": {
+        "baseline": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12396003/13118118/13118119/dokument753424.pdf",
+            "https://legislacja.rcl.gov.pl/docs//2/12396003/13118118/13118119/dokument754701.zip"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "https://legislacja.rcl.gov.pl/docs//2/12396003/13118118/13118119/dokument754701.zip: self-amendment unavailable"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12396003/13118118/13118119/dokument752694.zip"
+        },
+        "candidate": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12396003/13118118/13118119/dokument753424.pdf",
+            "https://legislacja.rcl.gov.pl/docs//2/12396003/13118118/13118119/dokument754701.zip"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "A declared normative part could not be read during version comparison"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12396003/13118118/13118119/dokument752694.zip"
+        }
+      },
+      "12401602/10": {
+        "baseline": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12401602/13153040/13153041/dokument761165.zip",
+            "https://legislacja.rcl.gov.pl/docs//2/12401602/13153040/13153041/dokument761333.zip"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "https://legislacja.rcl.gov.pl/docs//2/12401602/13153040/13153041/dokument761165.zip: self-amendment unavailable"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12401602/13153040/13153041/dokument760742.zip"
+        },
+        "candidate": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12401602/13153040/13153041/dokument761165.zip",
+            "https://legislacja.rcl.gov.pl/docs//2/12401602/13153040/13153041/dokument761333.zip"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "A declared normative part could not be read during version comparison"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12401602/13153040/13153041/dokument760742.zip"
+        }
+      },
+      "12401602/9": {
+        "baseline": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12401602/13153040/13153041/dokument761165.zip",
+            "https://legislacja.rcl.gov.pl/docs//2/12401602/13153040/13153041/dokument761333.zip"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "https://legislacja.rcl.gov.pl/docs//2/12401602/13153040/13153041/dokument761165.zip: self-amendment unavailable"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12401602/13153040/13153041/dokument760742.zip"
+        },
+        "candidate": {
+          "amendments": [
+            "https://legislacja.rcl.gov.pl/docs//2/12401602/13153040/13153041/dokument761165.zip",
+            "https://legislacja.rcl.gov.pl/docs//2/12401602/13153040/13153041/dokument761333.zip"
+          ],
+          "chars": 0,
+          "extras": [],
+          "kind": "unknown",
+          "normative": [],
+          "reasons": [
+            "A declared normative part could not be read during version comparison"
+          ],
+          "state": "waiting",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12401602/13153040/13153041/dokument760742.zip"
+        }
+      }
+    },
+    "state_transitions": [
+      [
+        "ambiguous",
+        "waiting",
+        5
+      ],
+      [
+        "selected",
+        "waiting",
+        4
+      ],
+      [
+        "unverified",
+        "waiting",
+        2
+      ]
+    ],
+    "raw_transitions": {
+      "baseline": {
+        "12383101/10": {
+          "project_sha256": "0b7108f840429adc30d0991d981c6d92848d705a0ce58a22a8a81cebad23512a",
+          "reads": {
+            "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument729529.zip": {
+              "status": "read",
+              "path": "documents/files/729529.zip",
+              "sha256": "5ecc0466d179ae520f98f5a5f0ceb1b88682e37117f7dafcfc5b28a8bae4ca51"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument697517.zip": {
+              "status": "read",
+              "path": "documents/files/697517.zip",
+              "sha256": "14c81e7191480ada7f42fc8800f30f4631f1a66af0358c4619c96ab25f38250c"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument699840.zip": {
+              "status": "read",
+              "path": "documents/files/699840.zip",
+              "sha256": "b5f05a39de7d4fec34a853c84d80c5821c118d584b77098b821053ee6076be44"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument731045.pdf": {
+              "status": "read",
+              "path": "documents/files/731045.pdf",
+              "sha256": "5279ece0a7e51a2cf7848cc82590e7c67b496bee58b137f02893f455aee2b146"
+            }
+          },
+          "state": "selected",
+          "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument729529.zip",
+          "text_sha256": "11abb1efaf77a3f5789f8843330e6c068fca290811ea13ed7361b15e43ba8bda",
+          "trace_result": "selected",
+          "dispositions": [
+            {
+              "phase": "version_comparison",
+              "index": 0,
+              "outcome": "selected",
+              "reason": "version_choice",
+              "observed_sha256": "5ecc0466d179ae520f98f5a5f0ceb1b88682e37117f7dafcfc5b28a8bae4ca51"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 1,
+              "outcome": "policy_excluded",
+              "reason": "version_preference",
+              "observed_sha256": "14c81e7191480ada7f42fc8800f30f4631f1a66af0358c4619c96ab25f38250c"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 2,
+              "outcome": "unclassified",
+              "reason": "no_readable_body",
+              "observed_sha256": "b5f05a39de7d4fec34a853c84d80c5821c118d584b77098b821053ee6076be44"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 3,
+              "outcome": "non_bill",
+              "reason": "non_bill_body",
+              "observed_sha256": "5279ece0a7e51a2cf7848cc82590e7c67b496bee58b137f02893f455aee2b146"
+            }
+          ],
+          "limitations": []
+        },
+        "12383101/9": {
+          "project_sha256": "0b7108f840429adc30d0991d981c6d92848d705a0ce58a22a8a81cebad23512a",
+          "reads": {
+            "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument729529.zip": {
+              "status": "read",
+              "path": "documents/files/729529.zip",
+              "sha256": "5ecc0466d179ae520f98f5a5f0ceb1b88682e37117f7dafcfc5b28a8bae4ca51"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument697517.zip": {
+              "status": "read",
+              "path": "documents/files/697517.zip",
+              "sha256": "14c81e7191480ada7f42fc8800f30f4631f1a66af0358c4619c96ab25f38250c"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument699840.zip": {
+              "status": "read",
+              "path": "documents/files/699840.zip",
+              "sha256": "b5f05a39de7d4fec34a853c84d80c5821c118d584b77098b821053ee6076be44"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument731045.pdf": {
+              "status": "read",
+              "path": "documents/files/731045.pdf",
+              "sha256": "5279ece0a7e51a2cf7848cc82590e7c67b496bee58b137f02893f455aee2b146"
+            }
+          },
+          "state": "selected",
+          "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument729529.zip",
+          "text_sha256": "11abb1efaf77a3f5789f8843330e6c068fca290811ea13ed7361b15e43ba8bda",
+          "trace_result": "selected",
+          "dispositions": [
+            {
+              "phase": "version_comparison",
+              "index": 0,
+              "outcome": "selected",
+              "reason": "version_choice",
+              "observed_sha256": "5ecc0466d179ae520f98f5a5f0ceb1b88682e37117f7dafcfc5b28a8bae4ca51"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 1,
+              "outcome": "policy_excluded",
+              "reason": "version_preference",
+              "observed_sha256": "14c81e7191480ada7f42fc8800f30f4631f1a66af0358c4619c96ab25f38250c"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 2,
+              "outcome": "unclassified",
+              "reason": "no_readable_body",
+              "observed_sha256": "b5f05a39de7d4fec34a853c84d80c5821c118d584b77098b821053ee6076be44"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 3,
+              "outcome": "non_bill",
+              "reason": "non_bill_body",
+              "observed_sha256": "5279ece0a7e51a2cf7848cc82590e7c67b496bee58b137f02893f455aee2b146"
+            }
+          ],
+          "limitations": []
+        },
+        "12386961/10": {
+          "project_sha256": "0451cc828ec50a19d1e753d4bc588a076f76cbec6a43e9dd31ddbd485c791359",
+          "reads": {
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument748258.zip": {
+              "status": "read",
+              "path": "documents/files/748258.zip",
+              "sha256": "e714649ae7854db7a183d4d0c8718365069514907f79e9616b09e144432e5ad7"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument726551.zip": {
+              "status": "read",
+              "path": "documents/files/726551.zip",
+              "sha256": "75711a0205038ef48acdf9611a6b9f424e25d3512e024c6bb0c0f3711db2e433"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument727951.zip": {
+              "status": "read",
+              "path": "documents/files/727951.zip",
+              "sha256": "2cfea628c9047b66e6f80e4e649b54d7ea38fa0ad49413fb01466cc29f02b9cd"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument727952.zip": {
+              "status": "read",
+              "path": "documents/files/727952.zip",
+              "sha256": "1fb4aba0e2eaab8bd90669d87b9a5060fe21b3eea422782b1695f4fa4fea3d75"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument736714.zip": {
+              "status": "read",
+              "path": "documents/files/736714.zip",
+              "sha256": "2c4c236a0f1dc0367d7aef2130757e17e4b4e39cfb3a12a523795be209fbad06"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument738754.docx": {
+              "status": "read",
+              "path": "documents/files/738754.docx",
+              "sha256": "6221d12726562141b5c50c6b1a72efef4efd5955ffe9e2adace44f6445056aae"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument753689.zip": {
+              "status": "read",
+              "path": "documents/files/753689.zip",
+              "sha256": "46fde7459959dbace839d69ac0e10d02aa8cef84525950d4fb94976aa15fcbec"
+            }
+          },
+          "state": "unverified",
+          "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument748258.zip",
+          "text_sha256": "175ebc64a47b4d4592ce14419521e68ca177f4f7b5a7a6ef094c5927f6e013b7",
+          "trace_result": "selected",
+          "dispositions": [],
+          "limitations": [
+            "annex_link_unknown",
+            "support_applicability_unknown",
+            "missing_evidence"
+          ]
+        },
+        "12386961/9": {
+          "project_sha256": "0451cc828ec50a19d1e753d4bc588a076f76cbec6a43e9dd31ddbd485c791359",
+          "reads": {
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument748258.zip": {
+              "status": "read",
+              "path": "documents/files/748258.zip",
+              "sha256": "e714649ae7854db7a183d4d0c8718365069514907f79e9616b09e144432e5ad7"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument726551.zip": {
+              "status": "read",
+              "path": "documents/files/726551.zip",
+              "sha256": "75711a0205038ef48acdf9611a6b9f424e25d3512e024c6bb0c0f3711db2e433"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument727951.zip": {
+              "status": "read",
+              "path": "documents/files/727951.zip",
+              "sha256": "2cfea628c9047b66e6f80e4e649b54d7ea38fa0ad49413fb01466cc29f02b9cd"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument727952.zip": {
+              "status": "read",
+              "path": "documents/files/727952.zip",
+              "sha256": "1fb4aba0e2eaab8bd90669d87b9a5060fe21b3eea422782b1695f4fa4fea3d75"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument736714.zip": {
+              "status": "read",
+              "path": "documents/files/736714.zip",
+              "sha256": "2c4c236a0f1dc0367d7aef2130757e17e4b4e39cfb3a12a523795be209fbad06"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument738754.docx": {
+              "status": "read",
+              "path": "documents/files/738754.docx",
+              "sha256": "6221d12726562141b5c50c6b1a72efef4efd5955ffe9e2adace44f6445056aae"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument753689.zip": {
+              "status": "read",
+              "path": "documents/files/753689.zip",
+              "sha256": "46fde7459959dbace839d69ac0e10d02aa8cef84525950d4fb94976aa15fcbec"
+            }
+          },
+          "state": "unverified",
+          "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument748258.zip",
+          "text_sha256": "175ebc64a47b4d4592ce14419521e68ca177f4f7b5a7a6ef094c5927f6e013b7",
+          "trace_result": "selected",
+          "dispositions": [],
+          "limitations": [
+            "annex_link_unknown",
+            "support_applicability_unknown",
+            "missing_evidence"
+          ]
+        },
+        "12388700/9": {
+          "project_sha256": "178f4fe3984b21e33fa472e424b9c364e736ab2f52ea98c476a0a11f1afc09b8",
+          "reads": {
+            "https://legislacja.rcl.gov.pl/docs//2/12388700/13077189/13077190/dokument796182.zip": {
+              "status": "read",
+              "path": "documents/files/796182.zip",
+              "sha256": "2e2eced58aa1697c08bb271646332ce446904e608dd2a7ef18f76e28ef90e205"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12388700/13077189/13077190/dokument734392.zip": {
+              "status": "read",
+              "path": "documents/files/734392.zip",
+              "sha256": "81c78bea66d0b569589a99b564d764e5b380edacd2d835d44aae111f8281c723"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12388700/13077189/13077190/dokument746005.pdf": {
+              "status": "read",
+              "path": "documents/files/746005.pdf",
+              "sha256": "749e4d9c30434876a197bea1d836cd3b278e98d28b4c056777fc427ae9563ac5"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12388700/13077189/13077190/dokument756294.zip": {
+              "status": "read",
+              "path": "documents/files/756294.zip",
+              "sha256": "c8f11ac8fd1abaf8bafae9741c31660be61100fae2a1ed333ac006b19093ee35"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12388700/13077189/13077190/dokument759150.zip": {
+              "status": "read",
+              "path": "documents/files/759150.zip",
+              "sha256": "8b69d17d10c3d31d2993803a73214dcfe641ead3170fcdff7105380e299207e6"
+            }
+          },
+          "state": "ambiguous",
+          "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12388700/13077189/13077190/dokument796182.zip",
+          "text_sha256": null,
+          "trace_result": "ambiguous",
+          "dispositions": [
+            {
+              "phase": "version_comparison",
+              "index": 0,
+              "outcome": "policy_excluded",
+              "reason": "version_conflict",
+              "observed_sha256": "2e2eced58aa1697c08bb271646332ce446904e608dd2a7ef18f76e28ef90e205"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 1,
+              "outcome": "policy_excluded",
+              "reason": "version_conflict",
+              "observed_sha256": "81c78bea66d0b569589a99b564d764e5b380edacd2d835d44aae111f8281c723"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 2,
+              "outcome": "non_bill",
+              "reason": "non_bill_body",
+              "observed_sha256": "749e4d9c30434876a197bea1d836cd3b278e98d28b4c056777fc427ae9563ac5"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 3,
+              "outcome": "policy_excluded",
+              "reason": "version_conflict",
+              "observed_sha256": "c8f11ac8fd1abaf8bafae9741c31660be61100fae2a1ed333ac006b19093ee35"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 4,
+              "outcome": "unclassified",
+              "reason": "no_readable_body",
+              "observed_sha256": "8b69d17d10c3d31d2993803a73214dcfe641ead3170fcdff7105380e299207e6"
+            }
+          ],
+          "limitations": []
+        },
+        "12390651/9": {
+          "project_sha256": "d8c302c8a3984f0a713ad8b81c91e3e48b8226afe462a0b1fc55fe636bfe5c36",
+          "reads": {
+            "https://legislacja.rcl.gov.pl/docs//2/12390651/13088532/13088533/dokument753540.zip": {
+              "status": "read",
+              "path": "documents/files/753540.zip",
+              "sha256": "85270f353effb5ab90633327f895efe77cfb5db8f51317f6e2d0e7d1f8c2ee61"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12390651/13088532/13088533/dokument713463.zip": {
+              "status": "read",
+              "path": "documents/files/713463.zip",
+              "sha256": "9dd06808713065235eb749ad25798181e4288fd118e09b5b9683faf43f9de402"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12390651/13088532/13088533/dokument713953.pdf": {
+              "status": "read",
+              "path": "documents/files/713953.pdf",
+              "sha256": "11044cf3a9f8cf17ae6ae43f264e89b9a59f36f10fabc2a696f68ad68f6506fc"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12390651/13088532/13088533/dokument714248.pdf": {
+              "status": "read",
+              "path": "documents/files/714248.pdf",
+              "sha256": "2aa06c19bbc5ccedd824ef1e1d703845276a444711f8b9c20ee6ef77d7787b28"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12390651/13088532/13088533/dokument714973.zip": {
+              "status": "read",
+              "path": "documents/files/714973.zip",
+              "sha256": "3212474a7f350b012d5e5474066cc8eb03f29cb8b4545a53bcd368ab7adef273"
+            }
+          },
+          "state": "ambiguous",
+          "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12390651/13088532/13088533/dokument753540.zip",
+          "text_sha256": null,
+          "trace_result": "ambiguous",
+          "dispositions": [
+            {
+              "phase": "version_comparison",
+              "index": 0,
+              "outcome": "policy_excluded",
+              "reason": "version_conflict",
+              "observed_sha256": "85270f353effb5ab90633327f895efe77cfb5db8f51317f6e2d0e7d1f8c2ee61"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 1,
+              "outcome": "policy_excluded",
+              "reason": "version_conflict",
+              "observed_sha256": "9dd06808713065235eb749ad25798181e4288fd118e09b5b9683faf43f9de402"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 2,
+              "outcome": "non_bill",
+              "reason": "non_bill_body",
+              "observed_sha256": "11044cf3a9f8cf17ae6ae43f264e89b9a59f36f10fabc2a696f68ad68f6506fc"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 3,
+              "outcome": "non_bill",
+              "reason": "non_bill_body",
+              "observed_sha256": "2aa06c19bbc5ccedd824ef1e1d703845276a444711f8b9c20ee6ef77d7787b28"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 4,
+              "outcome": "unclassified",
+              "reason": "no_readable_body",
+              "observed_sha256": "3212474a7f350b012d5e5474066cc8eb03f29cb8b4545a53bcd368ab7adef273"
+            }
+          ],
+          "limitations": []
+        },
+        "12390652/9": {
+          "project_sha256": "08459d41ba9de6e5589f0a3a6aaa37514946b85e3b4f240dd37676640c5ef75b",
+          "reads": {
+            "https://legislacja.rcl.gov.pl/docs//2/12390652/13088590/13088591/dokument753539.zip": {
+              "status": "read",
+              "path": "documents/files/753539.zip",
+              "sha256": "6d4d2306ca881082d5fdc72039dbd54455ecb27f2e9518a2699ee72f821ac7ee"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12390652/13088590/13088591/dokument713464.zip": {
+              "status": "read",
+              "path": "documents/files/713464.zip",
+              "sha256": "31f7563761b28c254ad3b69686766f358253bb534032887741f299bc439b5109"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12390652/13088590/13088591/dokument713945.pdf": {
+              "status": "read",
+              "path": "documents/files/713945.pdf",
+              "sha256": "11044cf3a9f8cf17ae6ae43f264e89b9a59f36f10fabc2a696f68ad68f6506fc"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12390652/13088590/13088591/dokument714255.pdf": {
+              "status": "read",
+              "path": "documents/files/714255.pdf",
+              "sha256": "2aa06c19bbc5ccedd824ef1e1d703845276a444711f8b9c20ee6ef77d7787b28"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12390652/13088590/13088591/dokument714974.zip": {
+              "status": "read",
+              "path": "documents/files/714974.zip",
+              "sha256": "cee7a372f2f0d7a016f6c8c82c59139985cbcf6237b9d9b1a532bb8f85ba6964"
+            }
+          },
+          "state": "ambiguous",
+          "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12390652/13088590/13088591/dokument753539.zip",
+          "text_sha256": null,
+          "trace_result": "ambiguous",
+          "dispositions": [
+            {
+              "phase": "version_comparison",
+              "index": 0,
+              "outcome": "policy_excluded",
+              "reason": "version_conflict",
+              "observed_sha256": "6d4d2306ca881082d5fdc72039dbd54455ecb27f2e9518a2699ee72f821ac7ee"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 1,
+              "outcome": "policy_excluded",
+              "reason": "version_conflict",
+              "observed_sha256": "31f7563761b28c254ad3b69686766f358253bb534032887741f299bc439b5109"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 2,
+              "outcome": "non_bill",
+              "reason": "non_bill_body",
+              "observed_sha256": "11044cf3a9f8cf17ae6ae43f264e89b9a59f36f10fabc2a696f68ad68f6506fc"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 3,
+              "outcome": "non_bill",
+              "reason": "non_bill_body",
+              "observed_sha256": "2aa06c19bbc5ccedd824ef1e1d703845276a444711f8b9c20ee6ef77d7787b28"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 4,
+              "outcome": "unclassified",
+              "reason": "no_readable_body",
+              "observed_sha256": "cee7a372f2f0d7a016f6c8c82c59139985cbcf6237b9d9b1a532bb8f85ba6964"
+            }
+          ],
+          "limitations": []
+        },
+        "12392400/10": {
+          "project_sha256": "8904f1446bccb9579877673f8df6f49e37407b7e6d65331469a99d19057a4b5a",
+          "reads": {
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument738682.zip": {
+              "status": "read",
+              "path": "documents/files/738682.zip",
+              "sha256": "2aadd75698fd556fe54616468b81d08fd4927dfce9b9dbacdd93d35d2279a9ef"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument715437.zip": {
+              "status": "read",
+              "path": "documents/files/715437.zip",
+              "sha256": "693b0fefd5e098f4df7daac8e57144ab976f2251f809f609f4e797341b922af6"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument716022.zip": {
+              "status": "read",
+              "path": "documents/files/716022.zip",
+              "sha256": "8e605ee701789fbb78e2fff2bbb06b97f04fd3b5a08d681775cc4aa2608ac1a4"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument733043.zip": {
+              "status": "read",
+              "path": "documents/files/733043.zip",
+              "sha256": "e8ed8ec6e5bfbf3c3de2b29b28cfde6e3d6e5eb746d574478c2c92e4de1d1a7c"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument734029.pdf": {
+              "status": "read",
+              "path": "documents/files/734029.pdf",
+              "sha256": "2ea96f4296771ce69ca433f6e5ba47d101e47db41a26b6d2cb96a0399cb13a76"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument734039.pdf": {
+              "status": "read",
+              "path": "documents/files/734039.pdf",
+              "sha256": "653fbd05008ff197f55d6fabf55408665af1c78ff19948c1640a8a357ec7d718"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument735247.zip": {
+              "status": "read",
+              "path": "documents/files/735247.zip",
+              "sha256": "f6de7e216cdaec994ed1cc19eb38e64b7a99e5bbd17abf69f419c7c850960128"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument735406.pdf": {
+              "status": "read",
+              "path": "documents/files/735406.pdf",
+              "sha256": "6816307f27f363dbf093bc980d8f4e6a1a4891ced3b08f6f3fc756595fa3d341"
+            }
+          },
+          "state": "selected",
+          "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument735247.zip",
+          "text_sha256": "e4dcb2ce8e726274e5074204b659e854f4eaa0e6de5a20b8a8a013cdc90f27ff",
+          "trace_result": "selected",
+          "dispositions": [],
+          "limitations": [
+            "support_applicability_unknown"
+          ]
+        },
+        "12392400/9": {
+          "project_sha256": "8904f1446bccb9579877673f8df6f49e37407b7e6d65331469a99d19057a4b5a",
+          "reads": {
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument738682.zip": {
+              "status": "read",
+              "path": "documents/files/738682.zip",
+              "sha256": "2aadd75698fd556fe54616468b81d08fd4927dfce9b9dbacdd93d35d2279a9ef"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument715437.zip": {
+              "status": "read",
+              "path": "documents/files/715437.zip",
+              "sha256": "693b0fefd5e098f4df7daac8e57144ab976f2251f809f609f4e797341b922af6"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument716022.zip": {
+              "status": "read",
+              "path": "documents/files/716022.zip",
+              "sha256": "8e605ee701789fbb78e2fff2bbb06b97f04fd3b5a08d681775cc4aa2608ac1a4"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument733043.zip": {
+              "status": "read",
+              "path": "documents/files/733043.zip",
+              "sha256": "e8ed8ec6e5bfbf3c3de2b29b28cfde6e3d6e5eb746d574478c2c92e4de1d1a7c"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument734029.pdf": {
+              "status": "read",
+              "path": "documents/files/734029.pdf",
+              "sha256": "2ea96f4296771ce69ca433f6e5ba47d101e47db41a26b6d2cb96a0399cb13a76"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument734039.pdf": {
+              "status": "read",
+              "path": "documents/files/734039.pdf",
+              "sha256": "653fbd05008ff197f55d6fabf55408665af1c78ff19948c1640a8a357ec7d718"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument735247.zip": {
+              "status": "read",
+              "path": "documents/files/735247.zip",
+              "sha256": "f6de7e216cdaec994ed1cc19eb38e64b7a99e5bbd17abf69f419c7c850960128"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument735406.pdf": {
+              "status": "read",
+              "path": "documents/files/735406.pdf",
+              "sha256": "6816307f27f363dbf093bc980d8f4e6a1a4891ced3b08f6f3fc756595fa3d341"
+            }
+          },
+          "state": "selected",
+          "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument735247.zip",
+          "text_sha256": "e4dcb2ce8e726274e5074204b659e854f4eaa0e6de5a20b8a8a013cdc90f27ff",
+          "trace_result": "selected",
+          "dispositions": [],
+          "limitations": [
+            "support_applicability_unknown"
+          ]
+        },
+        "12393550/12": {
+          "project_sha256": "8925a9c90155049d281a5cccbabb42a44357621f044f3038b6ac0cab5c9f9c10",
+          "reads": {
+            "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument734614.zip": {
+              "status": "read",
+              "path": "documents/files/734614.zip",
+              "sha256": "e025586a6442a027828ecc29068abbb981db0116f5700f831b90f639049faa13"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument730644.zip": {
+              "status": "read",
+              "path": "documents/files/730644.zip",
+              "sha256": "d3703beb66836bb68ec247c06c2005e71cf4917aa79f7e9fc1fe7e849bfb7695"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument730661.zip": {
+              "status": "read",
+              "path": "documents/files/730661.zip",
+              "sha256": "4725af91aba4607fd0bef43e82209bd083a59aebe56c54eee67f9648691a7f44"
+            }
+          },
+          "state": "ambiguous",
+          "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument734614.zip",
+          "text_sha256": null,
+          "trace_result": "ambiguous",
+          "dispositions": [
+            {
+              "phase": "version_comparison",
+              "index": 0,
+              "outcome": "policy_excluded",
+              "reason": "version_conflict",
+              "observed_sha256": "e025586a6442a027828ecc29068abbb981db0116f5700f831b90f639049faa13"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 1,
+              "outcome": "policy_excluded",
+              "reason": "version_conflict",
+              "observed_sha256": "d3703beb66836bb68ec247c06c2005e71cf4917aa79f7e9fc1fe7e849bfb7695"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 2,
+              "outcome": "unclassified",
+              "reason": "no_readable_body",
+              "observed_sha256": "4725af91aba4607fd0bef43e82209bd083a59aebe56c54eee67f9648691a7f44"
+            }
+          ],
+          "limitations": []
+        },
+        "12393550/14": {
+          "project_sha256": "8925a9c90155049d281a5cccbabb42a44357621f044f3038b6ac0cab5c9f9c10",
+          "reads": {
+            "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument734614.zip": {
+              "status": "read",
+              "path": "documents/files/734614.zip",
+              "sha256": "e025586a6442a027828ecc29068abbb981db0116f5700f831b90f639049faa13"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument730644.zip": {
+              "status": "read",
+              "path": "documents/files/730644.zip",
+              "sha256": "d3703beb66836bb68ec247c06c2005e71cf4917aa79f7e9fc1fe7e849bfb7695"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument730661.zip": {
+              "status": "read",
+              "path": "documents/files/730661.zip",
+              "sha256": "4725af91aba4607fd0bef43e82209bd083a59aebe56c54eee67f9648691a7f44"
+            }
+          },
+          "state": "ambiguous",
+          "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument734614.zip",
+          "text_sha256": null,
+          "trace_result": "ambiguous",
+          "dispositions": [
+            {
+              "phase": "version_comparison",
+              "index": 0,
+              "outcome": "policy_excluded",
+              "reason": "version_conflict",
+              "observed_sha256": "e025586a6442a027828ecc29068abbb981db0116f5700f831b90f639049faa13"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 1,
+              "outcome": "policy_excluded",
+              "reason": "version_conflict",
+              "observed_sha256": "d3703beb66836bb68ec247c06c2005e71cf4917aa79f7e9fc1fe7e849bfb7695"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 2,
+              "outcome": "unclassified",
+              "reason": "no_readable_body",
+              "observed_sha256": "4725af91aba4607fd0bef43e82209bd083a59aebe56c54eee67f9648691a7f44"
+            }
+          ],
+          "limitations": []
+        }
+      },
+      "candidate": {
+        "12383101/10": {
+          "project_sha256": "0b7108f840429adc30d0991d981c6d92848d705a0ce58a22a8a81cebad23512a",
+          "reads": {
+            "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument729529.zip": {
+              "status": "read",
+              "path": "documents/files/729529.zip",
+              "sha256": "5ecc0466d179ae520f98f5a5f0ceb1b88682e37117f7dafcfc5b28a8bae4ca51"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument731045.pdf": {
+              "status": "read",
+              "path": "documents/files/731045.pdf",
+              "sha256": "5279ece0a7e51a2cf7848cc82590e7c67b496bee58b137f02893f455aee2b146"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument697517.zip": {
+              "status": "read",
+              "path": "documents/files/697517.zip",
+              "sha256": "14c81e7191480ada7f42fc8800f30f4631f1a66af0358c4619c96ab25f38250c"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument699840.zip": {
+              "status": "read",
+              "path": "documents/files/699840.zip",
+              "sha256": "b5f05a39de7d4fec34a853c84d80c5821c118d584b77098b821053ee6076be44"
+            }
+          },
+          "state": "waiting",
+          "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument729529.zip",
+          "text_sha256": null,
+          "trace_result": "waiting",
+          "dispositions": [
+            {
+              "phase": "version_comparison",
+              "index": 0,
+              "outcome": "unclassified",
+              "reason": "version_comparison_deferred",
+              "observed_sha256": "5ecc0466d179ae520f98f5a5f0ceb1b88682e37117f7dafcfc5b28a8bae4ca51"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 1,
+              "outcome": "unclassified",
+              "reason": "normative_part_read_incomplete",
+              "observed_sha256": "14c81e7191480ada7f42fc8800f30f4631f1a66af0358c4619c96ab25f38250c"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 2,
+              "outcome": "unclassified",
+              "reason": "no_readable_body",
+              "observed_sha256": "b5f05a39de7d4fec34a853c84d80c5821c118d584b77098b821053ee6076be44"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 3,
+              "outcome": "non_bill",
+              "reason": "non_bill_body",
+              "observed_sha256": "5279ece0a7e51a2cf7848cc82590e7c67b496bee58b137f02893f455aee2b146"
+            }
+          ],
+          "limitations": []
+        },
+        "12383101/9": {
+          "project_sha256": "0b7108f840429adc30d0991d981c6d92848d705a0ce58a22a8a81cebad23512a",
+          "reads": {
+            "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument729529.zip": {
+              "status": "read",
+              "path": "documents/files/729529.zip",
+              "sha256": "5ecc0466d179ae520f98f5a5f0ceb1b88682e37117f7dafcfc5b28a8bae4ca51"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument731045.pdf": {
+              "status": "read",
+              "path": "documents/files/731045.pdf",
+              "sha256": "5279ece0a7e51a2cf7848cc82590e7c67b496bee58b137f02893f455aee2b146"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument697517.zip": {
+              "status": "read",
+              "path": "documents/files/697517.zip",
+              "sha256": "14c81e7191480ada7f42fc8800f30f4631f1a66af0358c4619c96ab25f38250c"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument699840.zip": {
+              "status": "read",
+              "path": "documents/files/699840.zip",
+              "sha256": "b5f05a39de7d4fec34a853c84d80c5821c118d584b77098b821053ee6076be44"
+            }
+          },
+          "state": "waiting",
+          "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument729529.zip",
+          "text_sha256": null,
+          "trace_result": "waiting",
+          "dispositions": [
+            {
+              "phase": "version_comparison",
+              "index": 0,
+              "outcome": "unclassified",
+              "reason": "version_comparison_deferred",
+              "observed_sha256": "5ecc0466d179ae520f98f5a5f0ceb1b88682e37117f7dafcfc5b28a8bae4ca51"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 1,
+              "outcome": "unclassified",
+              "reason": "normative_part_read_incomplete",
+              "observed_sha256": "14c81e7191480ada7f42fc8800f30f4631f1a66af0358c4619c96ab25f38250c"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 2,
+              "outcome": "unclassified",
+              "reason": "no_readable_body",
+              "observed_sha256": "b5f05a39de7d4fec34a853c84d80c5821c118d584b77098b821053ee6076be44"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 3,
+              "outcome": "non_bill",
+              "reason": "non_bill_body",
+              "observed_sha256": "5279ece0a7e51a2cf7848cc82590e7c67b496bee58b137f02893f455aee2b146"
+            }
+          ],
+          "limitations": []
+        },
+        "12386961/10": {
+          "project_sha256": "0451cc828ec50a19d1e753d4bc588a076f76cbec6a43e9dd31ddbd485c791359",
+          "reads": {
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument748258.zip": {
+              "status": "read",
+              "path": "documents/files/748258.zip",
+              "sha256": "e714649ae7854db7a183d4d0c8718365069514907f79e9616b09e144432e5ad7"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument753689.zip": {
+              "status": "read",
+              "path": "documents/files/753689.zip",
+              "sha256": "46fde7459959dbace839d69ac0e10d02aa8cef84525950d4fb94976aa15fcbec"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument726551.zip": {
+              "status": "read",
+              "path": "documents/files/726551.zip",
+              "sha256": "75711a0205038ef48acdf9611a6b9f424e25d3512e024c6bb0c0f3711db2e433"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument727951.zip": {
+              "status": "read",
+              "path": "documents/files/727951.zip",
+              "sha256": "2cfea628c9047b66e6f80e4e649b54d7ea38fa0ad49413fb01466cc29f02b9cd"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument727952.zip": {
+              "status": "read",
+              "path": "documents/files/727952.zip",
+              "sha256": "1fb4aba0e2eaab8bd90669d87b9a5060fe21b3eea422782b1695f4fa4fea3d75"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument736714.zip": {
+              "status": "read",
+              "path": "documents/files/736714.zip",
+              "sha256": "2c4c236a0f1dc0367d7aef2130757e17e4b4e39cfb3a12a523795be209fbad06"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument738754.docx": {
+              "status": "read",
+              "path": "documents/files/738754.docx",
+              "sha256": "6221d12726562141b5c50c6b1a72efef4efd5955ffe9e2adace44f6445056aae"
+            }
+          },
+          "state": "waiting",
+          "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument748258.zip",
+          "text_sha256": null,
+          "trace_result": "waiting",
+          "dispositions": [],
+          "limitations": []
+        },
+        "12386961/9": {
+          "project_sha256": "0451cc828ec50a19d1e753d4bc588a076f76cbec6a43e9dd31ddbd485c791359",
+          "reads": {
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument748258.zip": {
+              "status": "read",
+              "path": "documents/files/748258.zip",
+              "sha256": "e714649ae7854db7a183d4d0c8718365069514907f79e9616b09e144432e5ad7"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument753689.zip": {
+              "status": "read",
+              "path": "documents/files/753689.zip",
+              "sha256": "46fde7459959dbace839d69ac0e10d02aa8cef84525950d4fb94976aa15fcbec"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument726551.zip": {
+              "status": "read",
+              "path": "documents/files/726551.zip",
+              "sha256": "75711a0205038ef48acdf9611a6b9f424e25d3512e024c6bb0c0f3711db2e433"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument727951.zip": {
+              "status": "read",
+              "path": "documents/files/727951.zip",
+              "sha256": "2cfea628c9047b66e6f80e4e649b54d7ea38fa0ad49413fb01466cc29f02b9cd"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument727952.zip": {
+              "status": "read",
+              "path": "documents/files/727952.zip",
+              "sha256": "1fb4aba0e2eaab8bd90669d87b9a5060fe21b3eea422782b1695f4fa4fea3d75"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument736714.zip": {
+              "status": "read",
+              "path": "documents/files/736714.zip",
+              "sha256": "2c4c236a0f1dc0367d7aef2130757e17e4b4e39cfb3a12a523795be209fbad06"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument738754.docx": {
+              "status": "read",
+              "path": "documents/files/738754.docx",
+              "sha256": "6221d12726562141b5c50c6b1a72efef4efd5955ffe9e2adace44f6445056aae"
+            }
+          },
+          "state": "waiting",
+          "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument748258.zip",
+          "text_sha256": null,
+          "trace_result": "waiting",
+          "dispositions": [],
+          "limitations": []
+        },
+        "12388700/9": {
+          "project_sha256": "178f4fe3984b21e33fa472e424b9c364e736ab2f52ea98c476a0a11f1afc09b8",
+          "reads": {
+            "https://legislacja.rcl.gov.pl/docs//2/12388700/13077189/13077190/dokument796182.zip": {
+              "status": "read",
+              "path": "documents/files/796182.zip",
+              "sha256": "2e2eced58aa1697c08bb271646332ce446904e608dd2a7ef18f76e28ef90e205"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12388700/13077189/13077190/dokument734392.zip": {
+              "status": "read",
+              "path": "documents/files/734392.zip",
+              "sha256": "81c78bea66d0b569589a99b564d764e5b380edacd2d835d44aae111f8281c723"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12388700/13077189/13077190/dokument746005.pdf": {
+              "status": "read",
+              "path": "documents/files/746005.pdf",
+              "sha256": "749e4d9c30434876a197bea1d836cd3b278e98d28b4c056777fc427ae9563ac5"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12388700/13077189/13077190/dokument759150.zip": {
+              "status": "read",
+              "path": "documents/files/759150.zip",
+              "sha256": "8b69d17d10c3d31d2993803a73214dcfe641ead3170fcdff7105380e299207e6"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12388700/13077189/13077190/dokument756294.zip": {
+              "status": "read",
+              "path": "documents/files/756294.zip",
+              "sha256": "c8f11ac8fd1abaf8bafae9741c31660be61100fae2a1ed333ac006b19093ee35"
+            }
+          },
+          "state": "waiting",
+          "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12388700/13077189/13077190/dokument796182.zip",
+          "text_sha256": null,
+          "trace_result": "waiting",
+          "dispositions": [
+            {
+              "phase": "version_comparison",
+              "index": 0,
+              "outcome": "unclassified",
+              "reason": "version_comparison_deferred",
+              "observed_sha256": "2e2eced58aa1697c08bb271646332ce446904e608dd2a7ef18f76e28ef90e205"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 1,
+              "outcome": "unclassified",
+              "reason": "normative_part_read_incomplete",
+              "observed_sha256": "81c78bea66d0b569589a99b564d764e5b380edacd2d835d44aae111f8281c723"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 2,
+              "outcome": "non_bill",
+              "reason": "non_bill_body",
+              "observed_sha256": "749e4d9c30434876a197bea1d836cd3b278e98d28b4c056777fc427ae9563ac5"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 3,
+              "outcome": "unclassified",
+              "reason": "normative_part_read_incomplete",
+              "observed_sha256": "c8f11ac8fd1abaf8bafae9741c31660be61100fae2a1ed333ac006b19093ee35"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 4,
+              "outcome": "unclassified",
+              "reason": "no_readable_body",
+              "observed_sha256": "8b69d17d10c3d31d2993803a73214dcfe641ead3170fcdff7105380e299207e6"
+            }
+          ],
+          "limitations": []
+        },
+        "12390651/9": {
+          "project_sha256": "d8c302c8a3984f0a713ad8b81c91e3e48b8226afe462a0b1fc55fe636bfe5c36",
+          "reads": {
+            "https://legislacja.rcl.gov.pl/docs//2/12390651/13088532/13088533/dokument753540.zip": {
+              "status": "read",
+              "path": "documents/files/753540.zip",
+              "sha256": "85270f353effb5ab90633327f895efe77cfb5db8f51317f6e2d0e7d1f8c2ee61"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12390651/13088532/13088533/dokument713463.zip": {
+              "status": "read",
+              "path": "documents/files/713463.zip",
+              "sha256": "9dd06808713065235eb749ad25798181e4288fd118e09b5b9683faf43f9de402"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12390651/13088532/13088533/dokument713953.pdf": {
+              "status": "read",
+              "path": "documents/files/713953.pdf",
+              "sha256": "11044cf3a9f8cf17ae6ae43f264e89b9a59f36f10fabc2a696f68ad68f6506fc"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12390651/13088532/13088533/dokument714248.pdf": {
+              "status": "read",
+              "path": "documents/files/714248.pdf",
+              "sha256": "2aa06c19bbc5ccedd824ef1e1d703845276a444711f8b9c20ee6ef77d7787b28"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12390651/13088532/13088533/dokument714973.zip": {
+              "status": "read",
+              "path": "documents/files/714973.zip",
+              "sha256": "3212474a7f350b012d5e5474066cc8eb03f29cb8b4545a53bcd368ab7adef273"
+            }
+          },
+          "state": "waiting",
+          "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12390651/13088532/13088533/dokument753540.zip",
+          "text_sha256": null,
+          "trace_result": "waiting",
+          "dispositions": [
+            {
+              "phase": "version_comparison",
+              "index": 0,
+              "outcome": "unclassified",
+              "reason": "version_comparison_deferred",
+              "observed_sha256": "85270f353effb5ab90633327f895efe77cfb5db8f51317f6e2d0e7d1f8c2ee61"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 1,
+              "outcome": "unclassified",
+              "reason": "normative_part_read_incomplete",
+              "observed_sha256": "9dd06808713065235eb749ad25798181e4288fd118e09b5b9683faf43f9de402"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 2,
+              "outcome": "non_bill",
+              "reason": "non_bill_body",
+              "observed_sha256": "11044cf3a9f8cf17ae6ae43f264e89b9a59f36f10fabc2a696f68ad68f6506fc"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 3,
+              "outcome": "non_bill",
+              "reason": "non_bill_body",
+              "observed_sha256": "2aa06c19bbc5ccedd824ef1e1d703845276a444711f8b9c20ee6ef77d7787b28"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 4,
+              "outcome": "unclassified",
+              "reason": "no_readable_body",
+              "observed_sha256": "3212474a7f350b012d5e5474066cc8eb03f29cb8b4545a53bcd368ab7adef273"
+            }
+          ],
+          "limitations": []
+        },
+        "12390652/9": {
+          "project_sha256": "08459d41ba9de6e5589f0a3a6aaa37514946b85e3b4f240dd37676640c5ef75b",
+          "reads": {
+            "https://legislacja.rcl.gov.pl/docs//2/12390652/13088590/13088591/dokument753539.zip": {
+              "status": "read",
+              "path": "documents/files/753539.zip",
+              "sha256": "6d4d2306ca881082d5fdc72039dbd54455ecb27f2e9518a2699ee72f821ac7ee"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12390652/13088590/13088591/dokument713464.zip": {
+              "status": "read",
+              "path": "documents/files/713464.zip",
+              "sha256": "31f7563761b28c254ad3b69686766f358253bb534032887741f299bc439b5109"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12390652/13088590/13088591/dokument713945.pdf": {
+              "status": "read",
+              "path": "documents/files/713945.pdf",
+              "sha256": "11044cf3a9f8cf17ae6ae43f264e89b9a59f36f10fabc2a696f68ad68f6506fc"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12390652/13088590/13088591/dokument714255.pdf": {
+              "status": "read",
+              "path": "documents/files/714255.pdf",
+              "sha256": "2aa06c19bbc5ccedd824ef1e1d703845276a444711f8b9c20ee6ef77d7787b28"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12390652/13088590/13088591/dokument714974.zip": {
+              "status": "read",
+              "path": "documents/files/714974.zip",
+              "sha256": "cee7a372f2f0d7a016f6c8c82c59139985cbcf6237b9d9b1a532bb8f85ba6964"
+            }
+          },
+          "state": "waiting",
+          "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12390652/13088590/13088591/dokument753539.zip",
+          "text_sha256": null,
+          "trace_result": "waiting",
+          "dispositions": [
+            {
+              "phase": "version_comparison",
+              "index": 0,
+              "outcome": "unclassified",
+              "reason": "version_comparison_deferred",
+              "observed_sha256": "6d4d2306ca881082d5fdc72039dbd54455ecb27f2e9518a2699ee72f821ac7ee"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 1,
+              "outcome": "unclassified",
+              "reason": "normative_part_read_incomplete",
+              "observed_sha256": "31f7563761b28c254ad3b69686766f358253bb534032887741f299bc439b5109"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 2,
+              "outcome": "non_bill",
+              "reason": "non_bill_body",
+              "observed_sha256": "11044cf3a9f8cf17ae6ae43f264e89b9a59f36f10fabc2a696f68ad68f6506fc"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 3,
+              "outcome": "non_bill",
+              "reason": "non_bill_body",
+              "observed_sha256": "2aa06c19bbc5ccedd824ef1e1d703845276a444711f8b9c20ee6ef77d7787b28"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 4,
+              "outcome": "unclassified",
+              "reason": "no_readable_body",
+              "observed_sha256": "cee7a372f2f0d7a016f6c8c82c59139985cbcf6237b9d9b1a532bb8f85ba6964"
+            }
+          ],
+          "limitations": []
+        },
+        "12392400/10": {
+          "project_sha256": "8904f1446bccb9579877673f8df6f49e37407b7e6d65331469a99d19057a4b5a",
+          "reads": {
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument738682.zip": {
+              "status": "read",
+              "path": "documents/files/738682.zip",
+              "sha256": "2aadd75698fd556fe54616468b81d08fd4927dfce9b9dbacdd93d35d2279a9ef"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument715437.zip": {
+              "status": "read",
+              "path": "documents/files/715437.zip",
+              "sha256": "693b0fefd5e098f4df7daac8e57144ab976f2251f809f609f4e797341b922af6"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument716022.zip": {
+              "status": "read",
+              "path": "documents/files/716022.zip",
+              "sha256": "8e605ee701789fbb78e2fff2bbb06b97f04fd3b5a08d681775cc4aa2608ac1a4"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument733043.zip": {
+              "status": "read",
+              "path": "documents/files/733043.zip",
+              "sha256": "e8ed8ec6e5bfbf3c3de2b29b28cfde6e3d6e5eb746d574478c2c92e4de1d1a7c"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument734029.pdf": {
+              "status": "read",
+              "path": "documents/files/734029.pdf",
+              "sha256": "2ea96f4296771ce69ca433f6e5ba47d101e47db41a26b6d2cb96a0399cb13a76"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument734039.pdf": {
+              "status": "read",
+              "path": "documents/files/734039.pdf",
+              "sha256": "653fbd05008ff197f55d6fabf55408665af1c78ff19948c1640a8a357ec7d718"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument735406.pdf": {
+              "status": "read",
+              "path": "documents/files/735406.pdf",
+              "sha256": "6816307f27f363dbf093bc980d8f4e6a1a4891ced3b08f6f3fc756595fa3d341"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument735247.zip": {
+              "status": "read",
+              "path": "documents/files/735247.zip",
+              "sha256": "f6de7e216cdaec994ed1cc19eb38e64b7a99e5bbd17abf69f419c7c850960128"
+            }
+          },
+          "state": "waiting",
+          "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument738682.zip",
+          "text_sha256": null,
+          "trace_result": "waiting",
+          "dispositions": [],
+          "limitations": []
+        },
+        "12392400/9": {
+          "project_sha256": "8904f1446bccb9579877673f8df6f49e37407b7e6d65331469a99d19057a4b5a",
+          "reads": {
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument738682.zip": {
+              "status": "read",
+              "path": "documents/files/738682.zip",
+              "sha256": "2aadd75698fd556fe54616468b81d08fd4927dfce9b9dbacdd93d35d2279a9ef"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument715437.zip": {
+              "status": "read",
+              "path": "documents/files/715437.zip",
+              "sha256": "693b0fefd5e098f4df7daac8e57144ab976f2251f809f609f4e797341b922af6"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument716022.zip": {
+              "status": "read",
+              "path": "documents/files/716022.zip",
+              "sha256": "8e605ee701789fbb78e2fff2bbb06b97f04fd3b5a08d681775cc4aa2608ac1a4"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument733043.zip": {
+              "status": "read",
+              "path": "documents/files/733043.zip",
+              "sha256": "e8ed8ec6e5bfbf3c3de2b29b28cfde6e3d6e5eb746d574478c2c92e4de1d1a7c"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument734029.pdf": {
+              "status": "read",
+              "path": "documents/files/734029.pdf",
+              "sha256": "2ea96f4296771ce69ca433f6e5ba47d101e47db41a26b6d2cb96a0399cb13a76"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument734039.pdf": {
+              "status": "read",
+              "path": "documents/files/734039.pdf",
+              "sha256": "653fbd05008ff197f55d6fabf55408665af1c78ff19948c1640a8a357ec7d718"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument735406.pdf": {
+              "status": "read",
+              "path": "documents/files/735406.pdf",
+              "sha256": "6816307f27f363dbf093bc980d8f4e6a1a4891ced3b08f6f3fc756595fa3d341"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument735247.zip": {
+              "status": "read",
+              "path": "documents/files/735247.zip",
+              "sha256": "f6de7e216cdaec994ed1cc19eb38e64b7a99e5bbd17abf69f419c7c850960128"
+            }
+          },
+          "state": "waiting",
+          "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument738682.zip",
+          "text_sha256": null,
+          "trace_result": "waiting",
+          "dispositions": [],
+          "limitations": []
+        },
+        "12393550/12": {
+          "project_sha256": "8925a9c90155049d281a5cccbabb42a44357621f044f3038b6ac0cab5c9f9c10",
+          "reads": {
+            "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument734614.zip": {
+              "status": "read",
+              "path": "documents/files/734614.zip",
+              "sha256": "e025586a6442a027828ecc29068abbb981db0116f5700f831b90f639049faa13"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument730644.zip": {
+              "status": "read",
+              "path": "documents/files/730644.zip",
+              "sha256": "d3703beb66836bb68ec247c06c2005e71cf4917aa79f7e9fc1fe7e849bfb7695"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument730661.zip": {
+              "status": "read",
+              "path": "documents/files/730661.zip",
+              "sha256": "4725af91aba4607fd0bef43e82209bd083a59aebe56c54eee67f9648691a7f44"
+            }
+          },
+          "state": "waiting",
+          "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument734614.zip",
+          "text_sha256": null,
+          "trace_result": "waiting",
+          "dispositions": [
+            {
+              "phase": "version_comparison",
+              "index": 0,
+              "outcome": "unclassified",
+              "reason": "version_comparison_deferred",
+              "observed_sha256": "e025586a6442a027828ecc29068abbb981db0116f5700f831b90f639049faa13"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 1,
+              "outcome": "unclassified",
+              "reason": "normative_part_read_incomplete",
+              "observed_sha256": "d3703beb66836bb68ec247c06c2005e71cf4917aa79f7e9fc1fe7e849bfb7695"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 2,
+              "outcome": "unclassified",
+              "reason": "no_readable_body",
+              "observed_sha256": "4725af91aba4607fd0bef43e82209bd083a59aebe56c54eee67f9648691a7f44"
+            }
+          ],
+          "limitations": []
+        },
+        "12393550/14": {
+          "project_sha256": "8925a9c90155049d281a5cccbabb42a44357621f044f3038b6ac0cab5c9f9c10",
+          "reads": {
+            "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument734614.zip": {
+              "status": "read",
+              "path": "documents/files/734614.zip",
+              "sha256": "e025586a6442a027828ecc29068abbb981db0116f5700f831b90f639049faa13"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument730644.zip": {
+              "status": "read",
+              "path": "documents/files/730644.zip",
+              "sha256": "d3703beb66836bb68ec247c06c2005e71cf4917aa79f7e9fc1fe7e849bfb7695"
+            },
+            "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument730661.zip": {
+              "status": "read",
+              "path": "documents/files/730661.zip",
+              "sha256": "4725af91aba4607fd0bef43e82209bd083a59aebe56c54eee67f9648691a7f44"
+            }
+          },
+          "state": "waiting",
+          "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument734614.zip",
+          "text_sha256": null,
+          "trace_result": "waiting",
+          "dispositions": [
+            {
+              "phase": "version_comparison",
+              "index": 0,
+              "outcome": "unclassified",
+              "reason": "version_comparison_deferred",
+              "observed_sha256": "e025586a6442a027828ecc29068abbb981db0116f5700f831b90f639049faa13"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 1,
+              "outcome": "unclassified",
+              "reason": "normative_part_read_incomplete",
+              "observed_sha256": "d3703beb66836bb68ec247c06c2005e71cf4917aa79f7e9fc1fe7e849bfb7695"
+            },
+            {
+              "phase": "version_comparison",
+              "index": 2,
+              "outcome": "unclassified",
+              "reason": "no_readable_body",
+              "observed_sha256": "4725af91aba4607fd0bef43e82209bd083a59aebe56c54eee67f9648691a7f44"
+            }
+          ],
+          "limitations": []
+        }
+      }
+    },
+    "raw_waiting_without_outer_trace": [],
+    "declared_amendment_reads": {
+      "12383101/10": {
+        "project_sha256": "0b7108f840429adc30d0991d981c6d92848d705a0ce58a22a8a81cebad23512a",
+        "reads": {
+          "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument729529.zip": {
+            "status": "read",
+            "path": "documents/files/729529.zip",
+            "sha256": "5ecc0466d179ae520f98f5a5f0ceb1b88682e37117f7dafcfc5b28a8bae4ca51"
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument731045.pdf": {
+            "status": "read",
+            "path": "documents/files/731045.pdf",
+            "sha256": "5279ece0a7e51a2cf7848cc82590e7c67b496bee58b137f02893f455aee2b146"
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument697517.zip": {
+            "status": "read",
+            "path": "documents/files/697517.zip",
+            "sha256": "14c81e7191480ada7f42fc8800f30f4631f1a66af0358c4619c96ab25f38250c"
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument699840.zip": {
+            "status": "read",
+            "path": "documents/files/699840.zip",
+            "sha256": "b5f05a39de7d4fec34a853c84d80c5821c118d584b77098b821053ee6076be44"
+          }
+        },
+        "state": "waiting",
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument729529.zip",
+        "text_sha256": null,
+        "trace_result": "waiting",
+        "dispositions": [
+          {
+            "phase": "version_comparison",
+            "index": 0,
+            "outcome": "unclassified",
+            "reason": "version_comparison_deferred",
+            "observed_sha256": "5ecc0466d179ae520f98f5a5f0ceb1b88682e37117f7dafcfc5b28a8bae4ca51"
+          },
+          {
+            "phase": "version_comparison",
+            "index": 1,
+            "outcome": "unclassified",
+            "reason": "normative_part_read_incomplete",
+            "observed_sha256": "14c81e7191480ada7f42fc8800f30f4631f1a66af0358c4619c96ab25f38250c"
+          },
+          {
+            "phase": "version_comparison",
+            "index": 2,
+            "outcome": "unclassified",
+            "reason": "no_readable_body",
+            "observed_sha256": "b5f05a39de7d4fec34a853c84d80c5821c118d584b77098b821053ee6076be44"
+          },
+          {
+            "phase": "version_comparison",
+            "index": 3,
+            "outcome": "non_bill",
+            "reason": "non_bill_body",
+            "observed_sha256": "5279ece0a7e51a2cf7848cc82590e7c67b496bee58b137f02893f455aee2b146"
+          }
+        ],
+        "limitations": [],
+        "parts": {
+          "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument731045.pdf": {
+            "role": "amendment",
+            "state": "unverified",
+            "text_chars": 29079,
+            "kind": "unknown",
+            "oversize": false,
+            "pdf_failure": false,
+            "root_urls": [
+              "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument729529.zip",
+              "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument697517.zip",
+              "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument699840.zip"
+            ]
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument699840.zip": {
+            "role": "amendment",
+            "state": "unsupported",
+            "text_chars": 0,
+            "kind": "unknown",
+            "oversize": false,
+            "pdf_failure": false,
+            "root_urls": [
+              "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument697517.zip"
+            ]
+          }
+        }
+      },
+      "12386961/10": {
+        "project_sha256": "0451cc828ec50a19d1e753d4bc588a076f76cbec6a43e9dd31ddbd485c791359",
+        "reads": {
+          "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument748258.zip": {
+            "status": "read",
+            "path": "documents/files/748258.zip",
+            "sha256": "e714649ae7854db7a183d4d0c8718365069514907f79e9616b09e144432e5ad7"
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument753689.zip": {
+            "status": "read",
+            "path": "documents/files/753689.zip",
+            "sha256": "46fde7459959dbace839d69ac0e10d02aa8cef84525950d4fb94976aa15fcbec"
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument726551.zip": {
+            "status": "read",
+            "path": "documents/files/726551.zip",
+            "sha256": "75711a0205038ef48acdf9611a6b9f424e25d3512e024c6bb0c0f3711db2e433"
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument727951.zip": {
+            "status": "read",
+            "path": "documents/files/727951.zip",
+            "sha256": "2cfea628c9047b66e6f80e4e649b54d7ea38fa0ad49413fb01466cc29f02b9cd"
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument727952.zip": {
+            "status": "read",
+            "path": "documents/files/727952.zip",
+            "sha256": "1fb4aba0e2eaab8bd90669d87b9a5060fe21b3eea422782b1695f4fa4fea3d75"
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument736714.zip": {
+            "status": "read",
+            "path": "documents/files/736714.zip",
+            "sha256": "2c4c236a0f1dc0367d7aef2130757e17e4b4e39cfb3a12a523795be209fbad06"
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument738754.docx": {
+            "status": "read",
+            "path": "documents/files/738754.docx",
+            "sha256": "6221d12726562141b5c50c6b1a72efef4efd5955ffe9e2adace44f6445056aae"
+          }
+        },
+        "state": "waiting",
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument748258.zip",
+        "text_sha256": null,
+        "trace_result": "waiting",
+        "dispositions": [],
+        "limitations": [],
+        "parts": {
+          "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument753689.zip": {
+            "role": "amendment",
+            "state": "unverified",
+            "text_chars": 14383,
+            "kind": "unknown",
+            "oversize": false,
+            "pdf_failure": false,
+            "root_urls": [
+              "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument748258.zip",
+              "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument726551.zip",
+              "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument727951.zip",
+              "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument727952.zip",
+              "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument736714.zip",
+              "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument738754.docx"
+            ]
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument727951.zip": {
+            "role": "amendment",
+            "state": "unsupported",
+            "text_chars": 0,
+            "kind": "unknown",
+            "oversize": false,
+            "pdf_failure": false,
+            "root_urls": [
+              "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument726551.zip",
+              "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument727952.zip"
+            ]
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument727952.zip": {
+            "role": "amendment",
+            "state": "unsupported",
+            "text_chars": 0,
+            "kind": "unknown",
+            "oversize": false,
+            "pdf_failure": false,
+            "root_urls": [
+              "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument726551.zip",
+              "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument727951.zip"
+            ]
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument738754.docx": {
+            "role": "amendment",
+            "state": "unverified",
+            "text_chars": 3195,
+            "kind": "unknown",
+            "oversize": false,
+            "pdf_failure": false,
+            "root_urls": [
+              "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument726551.zip",
+              "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument727951.zip",
+              "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument727952.zip",
+              "https://legislacja.rcl.gov.pl/docs//2/12386961/13069035/13069036/dokument736714.zip"
+            ]
+          }
+        }
+      },
+      "12392400/10": {
+        "project_sha256": "8904f1446bccb9579877673f8df6f49e37407b7e6d65331469a99d19057a4b5a",
+        "reads": {
+          "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument738682.zip": {
+            "status": "read",
+            "path": "documents/files/738682.zip",
+            "sha256": "2aadd75698fd556fe54616468b81d08fd4927dfce9b9dbacdd93d35d2279a9ef"
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument715437.zip": {
+            "status": "read",
+            "path": "documents/files/715437.zip",
+            "sha256": "693b0fefd5e098f4df7daac8e57144ab976f2251f809f609f4e797341b922af6"
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument716022.zip": {
+            "status": "read",
+            "path": "documents/files/716022.zip",
+            "sha256": "8e605ee701789fbb78e2fff2bbb06b97f04fd3b5a08d681775cc4aa2608ac1a4"
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument733043.zip": {
+            "status": "read",
+            "path": "documents/files/733043.zip",
+            "sha256": "e8ed8ec6e5bfbf3c3de2b29b28cfde6e3d6e5eb746d574478c2c92e4de1d1a7c"
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument734029.pdf": {
+            "status": "read",
+            "path": "documents/files/734029.pdf",
+            "sha256": "2ea96f4296771ce69ca433f6e5ba47d101e47db41a26b6d2cb96a0399cb13a76"
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument734039.pdf": {
+            "status": "read",
+            "path": "documents/files/734039.pdf",
+            "sha256": "653fbd05008ff197f55d6fabf55408665af1c78ff19948c1640a8a357ec7d718"
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument735406.pdf": {
+            "status": "read",
+            "path": "documents/files/735406.pdf",
+            "sha256": "6816307f27f363dbf093bc980d8f4e6a1a4891ced3b08f6f3fc756595fa3d341"
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument735247.zip": {
+            "status": "read",
+            "path": "documents/files/735247.zip",
+            "sha256": "f6de7e216cdaec994ed1cc19eb38e64b7a99e5bbd17abf69f419c7c850960128"
+          }
+        },
+        "state": "waiting",
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument738682.zip",
+        "text_sha256": null,
+        "trace_result": "waiting",
+        "dispositions": [],
+        "limitations": [],
+        "parts": {
+          "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument716022.zip": {
+            "role": "amendment",
+            "state": "unsupported",
+            "text_chars": 0,
+            "kind": "unknown",
+            "oversize": false,
+            "pdf_failure": false,
+            "root_urls": [
+              "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument715437.zip"
+            ]
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument734029.pdf": {
+            "role": "amendment",
+            "state": "unverified",
+            "text_chars": 21242,
+            "kind": "unknown",
+            "oversize": false,
+            "pdf_failure": false,
+            "root_urls": [
+              "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument715437.zip",
+              "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument716022.zip",
+              "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument733043.zip",
+              "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument734039.pdf"
+            ]
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument734039.pdf": {
+            "role": "amendment",
+            "state": "unverified",
+            "text_chars": 54996,
+            "kind": "unknown",
+            "oversize": false,
+            "pdf_failure": false,
+            "root_urls": [
+              "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument715437.zip",
+              "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument716022.zip",
+              "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument733043.zip",
+              "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument734029.pdf"
+            ]
+          },
+          "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument735406.pdf": {
+            "role": "amendment",
+            "state": "unverified",
+            "text_chars": 3737,
+            "kind": "unknown",
+            "oversize": false,
+            "pdf_failure": false,
+            "root_urls": [
+              "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument715437.zip",
+              "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument716022.zip",
+              "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument733043.zip",
+              "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument734029.pdf",
+              "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument734039.pdf",
+              "https://legislacja.rcl.gov.pl/docs//2/12392400/13099589/13099590/dokument735247.zip"
+            ]
+          }
+        }
+      }
+    },
+    "unsupported_amendment_archive_members": {
+      "699840.zip": {
+        "sha256": "b5f05a39de7d4fec34a853c84d80c5821c118d584b77098b821053ee6076be44",
+        "state": "unsupported",
+        "observed_parts": [
+          {
+            "members": [
+              "Pismo do SSKRM ws tabeli uwag SKRM_UC21 08012025 ezd.pdf"
+            ],
+            "kind": "unknown",
+            "text_chars": 689,
+            "text_sha256": "60d232004ec89c4da7a164a58281a845f0700be3091d65dfcc467a7f69ab4152"
+          },
+          {
+            "members": [
+              "Za\u0142\u0105cznik do pisma do SSKRM - tabela uwag SKRM_UC21 08012025 ezd.pdf"
+            ],
+            "kind": "unknown",
+            "text_chars": 75309,
+            "text_sha256": "77ea82773ffd17b9f80c5d51d7af270a752098599473c1bfa8f58f584f5aff0d"
+          }
+        ]
+      },
+      "727951.zip": {
+        "sha256": "2cfea628c9047b66e6f80e4e649b54d7ea38fa0ad49413fb01466cc29f02b9cd",
+        "state": "unsupported",
+        "observed_parts": [
+          {
+            "members": [
+              "Stanowisko RCB do uwag KOSR UC47 etap SKRM pismo przewodnie.docx"
+            ],
+            "kind": "remarks_table",
+            "text_chars": 1088,
+            "text_sha256": "4378071bd16954b2f5db10a57a831708478fda3d395d2df85e478645ddf3b51f"
+          },
+          {
+            "members": [
+              "Stanowisko RCB do uwag KOSR UC47 etap SKRM tabela.docx"
+            ],
+            "kind": "remarks_table",
+            "text_chars": 7226,
+            "text_sha256": "0e2e676a48cb42ee736966873edf3b5c2a26bf9b95d36fea831461cbc02cc861"
+          }
+        ]
+      },
+      "727952.zip": {
+        "sha256": "1fb4aba0e2eaab8bd90669d87b9a5060fe21b3eea422782b1695f4fa4fea3d75",
+        "state": "unsupported",
+        "observed_parts": [
+          {
+            "members": [
+              "Ustawa UC47 autopoprawka etap SKRM pismo przewodnie.docx"
+            ],
+            "kind": "unknown",
+            "text_chars": 1034,
+            "text_sha256": "0813f13049c8b71405c674c1a77965132f679e0eac1ee46a07ddd778793f4687"
+          },
+          {
+            "members": [
+              "Ustawa UC47 autopoprawka etap SKRM za\u0142\u0105cznik.docx"
+            ],
+            "kind": "unknown",
+            "text_chars": 5960,
+            "text_sha256": "0af4c30b5ba9049dff1d47c0cfeec7044b4c1a45558fd9983f3e01457240928e"
+          }
+        ]
+      },
+      "716022.zip": {
+        "sha256": "8e605ee701789fbb78e2fff2bbb06b97f04fd3b5a08d681775cc4aa2608ac1a4",
+        "state": "unsupported",
+        "observed_parts": [
+          {
+            "members": [
+              "1. Pismo.pdf"
+            ],
+            "kind": "unknown",
+            "text_chars": 12646,
+            "text_sha256": "cb4be13b86077c952dd5973bc7b9f30ad77f5f81831855b09164c84afc85e1fe"
+          },
+          {
+            "members": [
+              "2. Za\u0142\u0105cznik do pisma.pdf"
+            ],
+            "kind": "unknown",
+            "text_chars": 58167,
+            "text_sha256": "b5b3f69aac82bc320f32c862464ea055fc1336cac26dadfafa6288957e3e10ef"
+          }
+        ]
+      }
+    }
+  }
+}
