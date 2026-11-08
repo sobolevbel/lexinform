@@ -16,6 +16,8 @@ from lexinform.models.candidate_trace import (
     MAX_VERSION_DECISION_ROWS,
     ArchiveVersionConflictEvidence,
     ArchiveVersionDecisionEvidence,
+    ArchiveVersionGroupEvidence,
+    archive_version_group_members,
 )
 from lexinform.models.extractions import DocumentExtraction, extraction_metadata_sha256
 from lexinform.models.physical_inventory import (
@@ -276,6 +278,7 @@ class ArchiveDispositionAccumulator:
         self.version_evidence: ArchiveVersionDecisionEvidence | None = None
         self.conflict_evidence: ArchiveVersionConflictEvidence | None = None
         self._conflict_attempts = 0
+        self._version_groups: list[ArchiveVersionGroupEvidence] = []
         self._native_comparison_roots: dict[int, str] = {}
         self._unavailable = False
         self._failed = False
@@ -309,6 +312,7 @@ class ArchiveDispositionAccumulator:
             self.version_evidence = None
             if not root.completed:
                 self._walk = "interrupted"
+            first_row = len(self._rows)
             for row in _rows(root, phase, index):
                 size = len(row.model_dump_json(exclude_defaults=True).encode()) + bool(self._rows)
                 if self._bytes + size > MAX_ARCHIVE_VALIDATION_BYTES:
@@ -331,6 +335,60 @@ class ArchiveDispositionAccumulator:
             if first_root:
                 with suppress(Exception):
                     self.version_evidence = self._version_evidence(root)
+            if len(self._version_groups) < MAX_VERSION_DECISION_ROWS:
+                with suppress(Exception):
+                    self._observe_group(root, phase, index, first_row)
+
+    def _observe_group(
+        self, root: ArchiveRootObservation, phase: Phase, index: int, first_row: int
+    ) -> None:
+        if not root.completed or not root.policy:
+            return
+        groups = tuple(row.version_group for row in root.policy if row.version_group is not None)
+        if len(groups) != 1:
+            return
+        packet = _packet(root)
+        if packet is None or packet.capture.extraction_id is None:
+            return
+        (group,) = groups
+        members = {
+            row.physical_part_index: row
+            for row in self._rows[first_row:]
+            if row.stage == "policy" and row.physical_part_index in group.candidate_slots
+        }
+        if members.keys() != set(group.candidate_slots):
+            return
+        self._version_groups.append(
+            ArchiveVersionGroupEvidence(
+                capture_id=packet.capture.capture_id,
+                phase=phase,
+                index=index,
+                candidate_slots=group.candidate_slots,
+                members=tuple(members[slot] for slot in group.candidate_slots),
+                retained_slots=group.retained_slots,
+                matching_slots=group.matching_slots,
+                date_filter=tuple(date.isoformat() for date in group.date_filter)
+                if group.date_filter is not None
+                else None,
+                selected_slot=group.selected_slot,
+                outcome=group.outcome,
+            )
+        )
+
+    def group_evidence(
+        self, trace: CandidateDispositionTrace
+    ) -> ArchiveVersionGroupEvidence | None:
+        eligible = []
+        for group in self._version_groups:
+            # Annex conflicts require the reader that validates the retained conflicting bundle.
+            if group.outcome == "annex_conflict":
+                continue
+            try:
+                archive_version_group_members(trace, group)
+            except ValueError:
+                continue
+            eligible.append(group)
+        return eligible[0] if len(eligible) == 1 else None
 
     def has_native_comparison_root(self, index: int, sha256: str | None) -> bool:
         return sha256 is not None and self._native_comparison_roots.get(index) == sha256

@@ -92,7 +92,8 @@ from lexinform.models.candidate_trace import (
     AdmittedSupportPart,
     AmendmentPartGap,
     ArchiveVersionConflictEvidence,
-    ArchiveVersionDecisionEvidence,
+    ArchiveVersionEvidence,
+    ArchiveVersionGroupEvidence,
     CandidateTraceReason,
     CandidateTraceResult,
     ComposedSupport,
@@ -154,11 +155,13 @@ MIN_TEXT_CHARS = 200
 
 def _trace_with_archive_evidence(
     trace: CandidateDispositionTrace,
-    evidence: ArchiveVersionConflictEvidence | ArchiveVersionDecisionEvidence,
+    evidence: ArchiveVersionEvidence,
 ) -> CandidateDispositionTrace:
     field = (
         "archive_version_conflict"
         if isinstance(evidence, ArchiveVersionConflictEvidence)
+        else "archive_version_group"
+        if isinstance(evidence, ArchiveVersionGroupEvidence)
         else "archive_version_decision"
     )
     return CandidateDispositionTrace.model_validate({**trace.model_dump(), field: evidence})
@@ -326,7 +329,7 @@ def _with_duplicate_support(
     selected: TextDocument,
     loaded: LoadedFile,
     capture: _CompositionCapture,
-    archive_evidence: ArchiveVersionDecisionEvidence | ArchiveVersionConflictEvidence | None,
+    archive_evidence: ArchiveVersionEvidence | None,
 ) -> CandidateDispositionTrace:
     parent = next((row for row in trace.dispositions if row.outcome == "selected"), None)
     if parent is None:
@@ -1435,13 +1438,14 @@ class TextLoader:
             and trace.archive_members is None
         ):
             routine_trace, trace = trace, None
-        archive_version_evidence: (
-            ArchiveVersionConflictEvidence | ArchiveVersionDecisionEvidence | None
-        ) = None
+        archive_version_evidence: ArchiveVersionEvidence | None = None
         if trace is not None and attempts is not None:
             archive_version_evidence = attempts.conflict_evidence
             if archive_version_evidence is None and trace.candidate_count == 1:
                 archive_version_evidence = attempts.version_evidence
+            if archive_version_evidence is None:
+                with suppress(Exception):
+                    archive_version_evidence = attempts.group_evidence(trace)
         if (
             trace is not None
             and composition is not None

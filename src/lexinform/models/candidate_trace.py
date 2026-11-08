@@ -1102,6 +1102,11 @@ class ArchiveVersionGroupEvidence(BaseModel):
         return self
 
 
+type ArchiveVersionEvidence = (
+    ArchiveVersionDecisionEvidence | ArchiveVersionConflictEvidence | ArchiveVersionGroupEvidence
+)
+
+
 class CandidateDispositionTrace(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -1941,6 +1946,7 @@ def archive_version_group_members(
     parent = _parent_disposition(trace, evidence.phase, evidence.index)
     members = trace.archive_members
     selected = evidence.outcome == "selected"
+    annex_conflict = evidence.outcome == "annex_conflict"
     if (
         trace.coverage != "complete"
         or parent is None
@@ -1950,7 +1956,15 @@ def archive_version_group_members(
         or trace.archive_version_conflict is not None
         or (selected and (trace.result != "selected" or parent.outcome != "selected"))
         or (
-            not selected
+            annex_conflict
+            and (
+                (trace.result, trace.reason, trace.selection_state)
+                != ("ambiguous", "version_conflict", "ambiguous")
+                or (parent.outcome, parent.reason) != ("policy_excluded", "version_conflict")
+            )
+        )
+        or (
+            evidence.outcome == "text_conflict"
             and (parent.outcome, parent.reason) != ("unclassified", "ambiguous_extraction")
         )
     ):

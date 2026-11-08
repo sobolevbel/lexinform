@@ -634,12 +634,27 @@ def _validate_archive_group_link(
                     or extraction.omitted_selected_parts
                     or not slots.issubset(compared)
                     or (compared.keys() == slots) != (evidence.outcome == "text_conflict")
-                    or any(
-                        part.source_sha256 == capture.artifact_sha256 or part.url == candidate.url
-                        for part in selection.selection.parts
-                    )
                 ):
                     raise ValueError("archive group conflict differs from the saved extraction")
+                root_parts = [
+                    part
+                    for part in selection.selection.parts
+                    if part.source_sha256 == capture.artifact_sha256 or part.url == candidate.url
+                ]
+                if evidence.outcome == "text_conflict" and root_parts:
+                    raise ValueError("archive text conflict cannot certify a selected member")
+                if evidence.outcome == "annex_conflict" and (
+                    not any(part.role == "normative_annex" for part in root_parts)
+                    or sorted((part.sha256, part.text_sha256) for part in root_parts)
+                    != sorted((part.sha256, part.text_sha256) for part in compared.values())
+                    or sorted(
+                        (part.sha256, part.text_sha256)
+                        for part in root_parts
+                        if part.role == "bill"
+                    )
+                    != sorted((compared[slot].sha256, compared[slot].text_sha256) for slot in slots)
+                ):
+                    raise ValueError("archive annex conflict differs from its retained bundle")
                 for member in members:
                     slot = member.physical_part_index
                     assert slot is not None, "archive group validation requires a physical position"

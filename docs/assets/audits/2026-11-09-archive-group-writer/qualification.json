@@ -1,0 +1,119 @@
+{
+  "after": {
+    "current_policy": {
+      "group_count": 0,
+      "groups": [],
+      "gzip_bytes": 32525,
+      "selection_sha256": "f6e7040cd45ee13ef07b89405e9e6f5282b46732617b71047f9c81aad757691c",
+      "sql_bytes": 181069,
+      "sql_sha256": "d05c5fc9f1ec5771028abc368eb6d520e27c11880feb868d02ec7274f57bb39e",
+      "state": "unverified",
+      "text_sha256": "59b9cd271fdd33c2a557c1f3f46b0a5d8346447149afc69070100bd14cb06cdc"
+    },
+    "historical_classification_control": {
+      "group_count": 1,
+      "groups": [
+        {
+          "candidate_slots": [
+            38,
+            4,
+            27
+          ],
+          "capture_id": "d95115455c7f5837e735a6794717b447d8c12fd66cb39518685d191d7557890c",
+          "index": 0,
+          "matching_slots": [],
+          "members": [
+            {
+              "index": 0,
+              "leaf_sha256": "c77cd564be28e8c93cd08e36f6629320cbd71a0a270a75096c84e5a3526911f4",
+              "ordinals": [
+                16
+              ],
+              "outcome": "policy_excluded",
+              "phase": "version_comparison",
+              "physical_part_index": 38,
+              "reason": "version_conflict",
+              "root_sha256": "e3c337a860741e488c4487feb205d9067eb8856621f595c29918004a181ac67b",
+              "stage": "policy",
+              "text_sha256": "e445338b42812a920b7d1051d23df756211d239420ed6c1022c3e72ca51a3e7b"
+            },
+            {
+              "index": 0,
+              "leaf_sha256": "1e264001fbbb17b11939af310d3bcdbe3bc26d0eddd96ad278a8051d8a25db8b",
+              "ordinals": [
+                4,
+                2
+              ],
+              "outcome": "policy_excluded",
+              "phase": "version_comparison",
+              "physical_part_index": 4,
+              "reason": "version_conflict",
+              "root_sha256": "e3c337a860741e488c4487feb205d9067eb8856621f595c29918004a181ac67b",
+              "stage": "policy",
+              "text_sha256": "d721fd2eb03efba7a893f1e29f8ef6ea2ce3ae4dab05b101be752be57390ee66"
+            },
+            {
+              "index": 0,
+              "leaf_sha256": "759afe5fc7e3790ff757192db4791c189a1f4f87a053cf3f97d767e8de7f08ce",
+              "ordinals": [
+                4,
+                22
+              ],
+              "outcome": "policy_excluded",
+              "phase": "version_comparison",
+              "physical_part_index": 27,
+              "reason": "version_conflict",
+              "root_sha256": "e3c337a860741e488c4487feb205d9067eb8856621f595c29918004a181ac67b",
+              "stage": "policy",
+              "text_sha256": "e4fbf82076a2520773a41e1d0956bc3c28232cc18a7f0287c38ee2b11e690f7b"
+            }
+          ],
+          "outcome": "text_conflict",
+          "phase": "version_comparison",
+          "retained_slots": [
+            38,
+            4,
+            27
+          ]
+        }
+      ],
+      "gzip_bytes": 29241,
+      "selection_sha256": "f457a2fd50e3a5fabc0477b7951c80ac967f091e12ac7c1e63a0aa6e7b0b6429",
+      "sql_bytes": 147656,
+      "sql_sha256": "96b2f2757a151b56ea807838057bee8253b8d3badc92bdad5f5ce985aa6c63df",
+      "state": "ambiguous",
+      "text_sha256": null
+    }
+  },
+  "archive_sha256": "e3c337a860741e488c4487feb205d9067eb8856621f595c29918004a181ac67b",
+  "baseline_reader": "2be01765",
+  "before": {
+    "current_policy": {
+      "group_count": 0,
+      "groups": [],
+      "gzip_bytes": 32525,
+      "selection_sha256": "f6e7040cd45ee13ef07b89405e9e6f5282b46732617b71047f9c81aad757691c",
+      "sql_bytes": 181069,
+      "sql_sha256": "d05c5fc9f1ec5771028abc368eb6d520e27c11880feb868d02ec7274f57bb39e",
+      "state": "unverified",
+      "text_sha256": "59b9cd271fdd33c2a557c1f3f46b0a5d8346447149afc69070100bd14cb06cdc"
+    },
+    "historical_classification_control": {
+      "group_count": 0,
+      "groups": [],
+      "gzip_bytes": 28671,
+      "selection_sha256": "f457a2fd50e3a5fabc0477b7951c80ac967f091e12ac7c1e63a0aa6e7b0b6429",
+      "sql_bytes": 144090,
+      "sql_sha256": "71f772a926bc7ce2aa3ce595fd628a109edc5846764c776114affa39cc7464c6",
+      "state": "ambiguous",
+      "text_sha256": null
+    }
+  },
+  "current_policy_byte_identical": true,
+  "reader_restores_both_candidate_dumps_byte_identically": true,
+  "stage_replay": {
+    "report_sha256": "0d5d3f55471086ec6bec0a1eb75da17b1998f9933fbb4f1edb4463a1f0d9cc27",
+    "reports_byte_identical": true,
+    "stages": 148
+  }
+}
