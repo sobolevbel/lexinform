@@ -1,7 +1,14 @@
+import datetime as dt
+
 import pytest
 
-from lexinform.models.documents import DocumentPart
-from lexinform.rcl_amendments import rcl_self_amendment_part, rcl_self_amendment_print_number
+from lexinform.models.documents import DocumentPart, DocumentSelection
+from lexinform.models.sejm import ProcessSummary
+from lexinform.rcl_amendments import (
+    rcl_amendment_base_index,
+    rcl_self_amendment_part,
+    rcl_self_amendment_print_number,
+)
 
 TITLE = "Projekt ustawy o ochronie cudzoziemców"
 TARGET = "o ochronie cudzoziemców"
@@ -73,3 +80,46 @@ def test_declines_non_archive_incomplete_or_duplicate_member() -> None:
 def test_reads_only_one_explicit_print_reference(reference: str, number: str | None) -> None:
     text = member(f"{TARGET} {reference}", f"{BODY}\nDruk nr 1000.").text
     assert rcl_self_amendment_print_number(text) == number
+
+
+@pytest.mark.parametrize(
+    ("rm_number", "texts", "expected"),
+    [
+        ("rm-0610-20-24", ("Art. 1. Termin wynosi 30 dni.\n",), 0),
+        ("RM-0610-21-24", ("Art. 1. Termin wynosi 30 dni.",), None),
+        ("RM-0610-20-24", ("Art. 1. Termin wynosi 31 dni.",), None),
+        ("RM-0610-20-24", (None, "Art. 1. Termin wynosi 30 dni."), None),
+        ("RM-0610-20-24", ("Art. 1. Termin wynosi 30 dni.",) * 2, None),
+        ("RM-0610-20-24", ("Art. 1. Termin wynosi 31 dni.", "Art. 1. Termin wynosi 30 dni."), 1),
+    ],
+)
+def test_resolves_only_one_complete_base_for_the_explicit_print(
+    rm_number: str, texts: tuple[str | None, ...], expected: int | None
+) -> None:
+    process = ProcessSummary(
+        term=10,
+        number="764",
+        title=TITLE,
+        document_type="Projekt ustawy",
+        rcl_num="RM-0610-20-24",
+        change_date=dt.datetime(2024, 1, 1, tzinfo=dt.UTC),
+    )
+    original = DocumentSelection(
+        parts=(DocumentPart(role="bill", text="Art. 1. Termin wynosi 30 dni."),)
+    )
+    candidates = tuple(
+        DocumentSelection(parts=(DocumentPart(role="bill", text=text),))
+        if text is not None
+        else DocumentSelection(state="waiting")
+        for text in texts
+    )
+    assert (
+        rcl_amendment_base_index(
+            member(f"{TARGET} (druk 764)"),
+            project_rm_number=rm_number,
+            print_process=process,
+            original=original,
+            candidates=candidates,
+        )
+        == expected
+    )

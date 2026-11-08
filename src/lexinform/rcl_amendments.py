@@ -2,8 +2,9 @@
 
 import re
 
-from lexinform.models.documents import DocumentPart
-from lexinform.models.rcl import normalize_wykaz_number
+from lexinform.models.documents import DocumentPart, DocumentSelection
+from lexinform.models.rcl import normalize_wykaz_number, rcl_num_key
+from lexinform.models.sejm import ProcessSummary
 
 _HEADING = re.compile(
     r"\A\s*(?:\d+[ \t]*\n\s*)?(?:projekt(?:[ \t]+z[ \t]+dnia[ \t]+[^\n]{1,48})?[ \t]*\n\s*)?"
@@ -90,4 +91,45 @@ def rcl_self_amendment_part(
         for part in parts
         if part.members and not part.losses and _addresses_project(part, title, number)
     ]
+    return matches[0] if len(matches) == 1 else None
+
+
+def _edition_body(selection: DocumentSelection) -> str | None:
+    if selection.state not in ("selected", "unverified"):
+        return None
+    normative = tuple(
+        part
+        for part in selection.parts
+        if part.role in ("bill", "normative_annex", "normative_continuation")
+    )
+    if len(normative) != 1 or normative[0].role != "bill" or normative[0].losses:
+        return None
+    return normative[0].text.strip() or None
+
+
+def rcl_amendment_base_index(
+    proposal: DocumentPart,
+    *,
+    project_rm_number: str | None,
+    print_process: ProcessSummary,
+    original: DocumentSelection,
+    candidates: tuple[DocumentSelection, ...],
+) -> int | None:
+    """Resolve one base only from an explicit same-project print and exact complete bill text."""
+    rm_number = rcl_num_key(project_rm_number or "")
+    if (
+        not proposal.members
+        or proposal.losses
+        or rcl_self_amendment_print_number(proposal.text) != print_process.number
+        or not rm_number
+        or rm_number != rcl_num_key(print_process.rcl_num or "")
+    ):
+        return None
+    if len(original.parts) != 1 or original.parts[0].members:
+        return None
+    expected = _edition_body(original)
+    bodies = tuple(_edition_body(candidate) for candidate in candidates)
+    if expected is None or None in bodies:
+        return None
+    matches = tuple(index for index, body in enumerate(bodies) if body == expected)
     return matches[0] if len(matches) == 1 else None

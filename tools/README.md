@@ -483,6 +483,16 @@ mechanical text signals. It does not store extracted bodies or assign legal role
 Pass `--project-targets` to report which physical member, if any, has a unique explicit
 project target and proposed article text. This option leaves the ordinary selection unchanged.
 
+Replay the explicit print targets from the pinned J642 edition report and J641 member report:
+
+```sh
+uv run --offline --frozen python -m tools.replay_rcl_amendment_editions \
+  CORPUS EDITION_REPORT.json MEMBER_REPORT.json NEW_REPORT.json
+```
+
+The replay checks the official print and RM identities, reads the pinned original attachment
+and RCL candidates, and returns a candidate edition only for a unique exact bill-body match.
+
 ```bash
 mkdir -p out/corpus
 uv run --offline --frozen python -m tools.corpus_health \

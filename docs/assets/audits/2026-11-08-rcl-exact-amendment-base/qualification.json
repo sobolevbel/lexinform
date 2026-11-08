@@ -1,0 +1,122 @@
+{
+  "edition_report_sha256": "3f5c567f1f4ecdeb733786bd68ea9672e9333ee2e05b9b56e14f49225bd2fa03",
+  "full_report_sha256": "a139ea2e19ddd92f02df6e016fd64ba7a178eaddaa28b8a392f6b53f0f0f45b8",
+  "input_sha256": {
+    "corpus/12330353.json": "44284e3cd3e5c4820507c2c973a01a0fb2f436b98a8e1f04ae40709ddbf460c6",
+    "corpus/12359600.json": "a91fee048f31d2e3fd48d4746993cf144b1c32ff3d6c4708f1e3899f34d520a1",
+    "corpus/12365060.json": "170ef4c517d827d78cf3bb77c4ea97b6bfc2a272d2bf2a107edd129fdfaa31ed",
+    "corpus/12376009.json": "1d4d5580df120a8eea2417d87a1026e7abef005c414f7decd7377a4c0e4b9f32",
+    "corpus/12381402.json": "5c7509bf7823e782fb2168d540ca4d809231bd55ff585ab0119bb58b553a85d5",
+    "corpus/12387102.json": "48ea05411752517fcf844e65bbde6529c7830612264c25d0aa6c802b6eaf3964",
+    "corpus/12389752.json": "796824f7d7072e35618c613b43fba8a2b0c580f57e507d20948bbc002853939d",
+    "corpus/12390302.json": "586171c365b43281f493a3b02e828a79c5d4403d22c5dbf31b920660655fa7df",
+    "corpus/12392802.json": "2b5ce8f8122065a593c0596cadd295eccd60e79246e242dd3baf2f7a90cfa29a",
+    "corpus/12396201.json": "75f94db34f633816e2902aa777d6c7e4c69a634ae3242d4975568628ef993ff9",
+    "corpus/12399000.json": "3f9b943f9e0fa4bd2e5508c9fc1da5ea7a9d19746b70b61e5e0441fc4aeb571d",
+    "corpus/12405803.json": "f8cf3d46cec7761116cd89d5cad94905874869d26f56f6f113060b9e4b217587",
+    "documents/files/438407.zip": "bd6f91bda54885653fda2d506d6dbb1d63bca6c79d81608ad8e1c39bc69baa66",
+    "documents/files/581610.zip": "8ff54ea2261bc6c8926276c26d0d120518b49225dbf1f27ee5289867ed0746be",
+    "documents/files/642032.zip": "7113f3b86425ff36460606ff499571540f6b2a2b79a4f2efb8a76430c3f49dc3",
+    "documents/files/651743.zip": "4ae72259304dec97f26a7586b61e3b67d10a8fe11ad9803a631fb652755c231b",
+    "documents/files/662379.zip": "eb0c09584449a49d0cc5b2d5fbbb4510d20201744a9cd976c051fd7bf56a1b93",
+    "documents/files/684251.zip": "4d2c1be3c8c1a48811e50f58c516b517f115965ab95bf6014756bef42dbb0843",
+    "documents/files/684485.zip": "8f1dd7f69eaf8741cc2646fea2a6b4f20d642ed205b2eab605bd3edce79375ab",
+    "documents/files/689698.zip": "f5922df680622d2f1ece22c7b32d0f734060ed6831e1ed0e1b496926e0eb0435",
+    "documents/files/692249.zip": "de773a45c728e502732ba6c6625bf2ad4ba500f1ba667d787313bffae363ba7c",
+    "documents/files/692630.zip": "f2b7e44c066780bf3e97685c021bd631f0fffe244f0a04682d9ce1bc517c7d94",
+    "documents/files/694393.zip": "2115fe2b9796cf5b0d21e157de1a7f9b11d5932749a9a978c05cbff691a902c9",
+    "documents/files/721360.zip": "83d09f0a5ec86a4e75f12e34f9963f4537bcc96a376770783aedffdae9ee6e8e",
+    "documents/files/724851.zip": "c334e446c21a104f5d62cc8c5dc36ad92e5bf3265a5d32d465c75ce1f55752d6",
+    "documents/files/736009.zip": "0b4cb30ba5db9787d10ad1db9cb374e1810789582a8522f3af5d8638d97d2977",
+    "documents/files/744253.zip": "6736b24a8f55fdbbe62eb51da02b3c0dd588bdd0af119129956a72a62dd1b1f9",
+    "documents/files/791156.zip": "244648bbae0ab5c7d6312cc61d0bd56fc62deebc3241adfb2bd319006b800255",
+    "sejm/term10/files/1437__1437-ustawa.docx": "b7427ea8daba2f33a22b613a5d1f1f31fa785c3ca0d8b5a770374aa3a4b9c761",
+    "sejm/term10/files/672__672-ustawa.docx": "ba4a93c5c4f3a8400f7dedc06783a8044ef3ce453319a816bd908f14e08705e8",
+    "sejm/term10/files/764__764-ustawa.docx": "4e0e1fe1ed4531e9515c95a5991d5b9d2946cfd814d27b7d95287c6fcbffc58c",
+    "sejm/term10/prints/1437.json": "ecd1ad6a530fc47f5dfbb2023fa139be405e1f52306557e43eb7e4cf5f0dfe0f",
+    "sejm/term10/prints/672.json": "76a5be0bf9419d4cc2b9ef45ac757f28303b4b5df68b9edc4164931ccdb77f57",
+    "sejm/term10/prints/764.json": "9e96eabc66c903ee55574aa2bd91ac8697e097c0fb76c4b3d524807685846b49",
+    "sejm/term10/process_details.json.gz": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f",
+    "sejm/term9/process_details.json.gz": "058e7992271c4b74d10123dd2fd8e07720ad069c1bcaf004b649c825ae0e4f4a"
+  },
+  "member_report_sha256": "68acd157bbc1ee637aa23d365ea38d6310f1d0953812ac4bcc1fdc3600ba1099",
+  "observations": {
+    "438407/12330353": {
+      "status": "no_explicit_print"
+    },
+    "581610/12365060": {
+      "print": {
+        "number": "2697",
+        "rm_number": "RM-0610-142-22",
+        "term": 9
+      },
+      "status": "original_unavailable"
+    },
+    "642032/12359600": {
+      "status": "no_explicit_print"
+    },
+    "651743/12376009": {
+      "status": "no_explicit_print"
+    },
+    "662379/12381402": {
+      "status": "no_explicit_print"
+    },
+    "684485/12389752": {
+      "base_url": "https://legislacja.rcl.gov.pl/docs//2/12389752/13082617/13082618/dokument684251.zip",
+      "edition_id": "edition-v1:cb73b60da423a2f659265181531e4e93f6fdfd6a29e35efe22ce1d176ade4740",
+      "member_sha256": "ad902c7054a417e7af6c85c49742e5f60c16d6edbfd44b5a0dd7cb80ee072c4f",
+      "print": {
+        "number": "672",
+        "rm_number": "RM-0610-73-24",
+        "term": 10
+      },
+      "status": "exact_base"
+    },
+    "692249/12390302": {
+      "candidates": [
+        "https://legislacja.rcl.gov.pl/docs//2/12390302/13086686/13086687/dokument689698.zip"
+      ],
+      "print": {
+        "number": "764",
+        "rm_number": "RM-0610-100-24",
+        "term": 10
+      },
+      "status": "no_unique_exact_base"
+    },
+    "692630/12390302": {
+      "candidates": [
+        "https://legislacja.rcl.gov.pl/docs//2/12390302/13086686/13086687/dokument689698.zip",
+        "https://legislacja.rcl.gov.pl/docs//2/12390302/13086686/13086687/dokument692249.zip"
+      ],
+      "print": {
+        "number": "764",
+        "rm_number": "RM-0610-100-24",
+        "term": 10
+      },
+      "status": "no_unique_exact_base"
+    },
+    "694393/12387102": {
+      "status": "no_explicit_print"
+    },
+    "721360/12392802": {
+      "status": "no_explicit_print"
+    },
+    "736009/12399000": {
+      "candidates": [
+        "https://legislacja.rcl.gov.pl/docs//2/12399000/13136450/13136451/dokument724851.zip"
+      ],
+      "print": {
+        "number": "1437",
+        "rm_number": "RM-0610-116-25",
+        "term": 10
+      },
+      "status": "no_unique_exact_base"
+    },
+    "744253/12396201": {
+      "status": "no_explicit_print"
+    },
+    "791156/12405803": {
+      "status": "no_explicit_print"
+    }
+  }
+}
