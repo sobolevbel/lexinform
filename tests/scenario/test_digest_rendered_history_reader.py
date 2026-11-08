@@ -131,6 +131,21 @@ def test_native_rendered_history_fixture_survives_cleanup(
             report = audit(doctor_path, publication_id=root.id)
             assert report["summary"]["digest_exact_rendered_parts"] == 1
             assert report["summary"][f"digest_upstream_semantics_{plan.upstream_semantics}"] == 1
+            with_parts = audit(doctor_path, publication_id=root.id, include_digest_parts=True)
+            evidence = with_parts["histories"][0]["versions"][0].pop("digest_part_evidence")
+            assert with_parts == report
+            assert evidence == {
+                "upstream_semantics": plan.upstream_semantics,
+                "parts": [
+                    {
+                        "publication_id": root.id,
+                        "html_sha256": hashlib.sha256(native.text.encode()).hexdigest(),
+                        "html_utf8_bytes": len(native.text.encode()),
+                        "event_ids": list(native.event_ids),
+                        "approval_control": False,
+                    }
+                ],
+            }
             for mutation, identity in (
                 ("DELETE FROM content_snapshots WHERE snapshot_id=?", part_snapshot.snapshot_id),
                 ("UPDATE publications SET number='other' WHERE id=?", event.id),

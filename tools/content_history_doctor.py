@@ -1,6 +1,7 @@
 """Inspect editorial versions and database delivery confirmations without replaying any work."""
 
 import argparse
+import hashlib
 import sqlite3
 from collections import Counter
 from dataclasses import dataclass, field
@@ -114,6 +115,7 @@ def _read_history(
     tables: set[str],
     counts: Counter[str],
     findings: _Findings,
+    digest_parts: dict[str, dict[str, object]] | None,
 ) -> tuple[dict[str, ContentSnapshot], dict[str, ContentVersion], set[str]]:
     snapshots: dict[str, ContentSnapshot] = {}
     versions: dict[str, ContentVersion] = {}
@@ -167,6 +169,22 @@ def _read_history(
             findings.add("invalid_grouped_stage_content_history", version.content_id)
         try:
             digest = verify_digest_content(db, version, require_bound=True)
+            if digest is not None and digest_parts is not None:
+                digest_parts[version.content_id] = {
+                    "upstream_semantics": "retained"
+                    if digest.digest is not None
+                    else "not_retained",
+                    "parts": [
+                        {
+                            "publication_id": part.publication_id,
+                            "html_sha256": hashlib.sha256(part.text.encode()).hexdigest(),
+                            "html_utf8_bytes": len(part.text.encode()),
+                            "event_ids": list(part.event_ids),
+                            "approval_control": bool(part.approve_label),
+                        }
+                        for part in digest.parts
+                    ],
+                }
             if isinstance(digest, ResolvedDigestRenderedContent):
                 counts["digest_exact_rendered_parts"] += len(digest.parts)
                 if digest.digest is None:
@@ -413,11 +431,14 @@ def _history_rows(
     return histories
 
 
-def audit(database: Path, *, publication_id: int | None = None) -> dict[str, Any]:
+def audit(
+    database: Path, *, publication_id: int | None = None, include_digest_parts: bool = False
+) -> dict[str, Any]:
     if publication_id is not None and publication_id <= 0:
         raise ValueError("Publication identity must be positive")
     findings = _Findings()
     counts: Counter[str] = Counter()
+    digest_parts: dict[str, dict[str, object]] | None = {} if include_digest_parts else None
     with open_snapshot(database) as snapshot:
         db = snapshot.connection
         schema = db.execute("PRAGMA user_version").fetchone()[0]
@@ -428,7 +449,9 @@ def audit(database: Path, *, publication_id: int | None = None) -> dict[str, Any
         if schema >= 55 or _TABLES.intersection(tables):
             for name in missing:
                 findings.add("content_history_table_unavailable", name)
-        snapshots, versions, validated_primary_refs = _read_history(db, tables, counts, findings)
+        snapshots, versions, validated_primary_refs = _read_history(
+            db, tables, counts, findings, digest_parts
+        )
         try:
             bindings = _publication_bindings(db, tables, counts, findings, snapshots, versions)
         except sqlite3.Error, IndexError, KeyError:
@@ -512,6 +535,8 @@ def audit(database: Path, *, publication_id: int | None = None) -> dict[str, Any
             findings.add("database_changed_during_audit", "database")
             validated_primary_refs.clear()
             review_refs.clear()
+            if digest_parts is not None:
+                digest_parts.clear()
     histories = _history_rows(
         versions, bindings, findings, publication_id, cards, validated_primary_refs
     )
@@ -519,6 +544,8 @@ def audit(database: Path, *, publication_id: int | None = None) -> dict[str, Any
         for entry in history["versions"]:
             if entry["content_id"] in review_refs:
                 entry["review_application_evidence"] = review_refs[entry["content_id"]]
+            if digest_parts is not None and entry["content_id"] in digest_parts:
+                entry["digest_part_evidence"] = digest_parts[entry["content_id"]]
     counts["errors"] = sum(row["level"] == "error" for row in findings.rows)
     counts["warnings"] = sum(row["level"] == "warning" for row in findings.rows)
     if counts["errors"]:
@@ -537,10 +564,18 @@ def audit(database: Path, *, publication_id: int | None = None) -> dict[str, Any
     }
 
 
-def run(database: Path, output: Path, *, publication_id: int | None = None) -> int:
+def run(
+    database: Path,
+    output: Path,
+    *,
+    publication_id: int | None = None,
+    include_digest_parts: bool = False,
+) -> int:
     if output.resolve() in snapshot_files(database):
         raise ValueError("Report must be separate from the input database")
-    report = audit(database, publication_id=publication_id)
+    report = audit(
+        database, publication_id=publication_id, include_digest_parts=include_digest_parts
+    )
     output.parent.mkdir(parents=True, exist_ok=True)
     write_json(output, report)
     return 1 if report["status"] == "failed" else 2 if report["status"] == "not_run" else 0
@@ -551,9 +586,15 @@ def main() -> None:
     parser.add_argument("--database", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--publication", type=int)
+    parser.add_argument("--include-digest-parts", action="store_true")
     args = parser.parse_args()
     try:
-        code = run(args.database, args.output, publication_id=args.publication)
+        code = run(
+            args.database,
+            args.output,
+            publication_id=args.publication,
+            include_digest_parts=args.include_digest_parts,
+        )
     except (OSError, sqlite3.Error, ValueError) as exc:
         parser.error(str(exc))
     raise SystemExit(code)

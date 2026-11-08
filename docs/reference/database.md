@@ -569,6 +569,10 @@ history и warning без обещания current message. Это DB evidence, 
 Для исходных кодов возврата запустите `uv run --offline --frozen python -m tools.content_history_doctor`
 с теми же путями через `--database` и `--output`.
 
+Опция `--include-digest-parts` показывает хеши и размер HTML проверенных частей дайджеста,
+их идентификаторы и связанные события. Отчёт отмечает часть с кнопкой согласования.
+Текст и адреса в отчёт не попадают.
+
 В отчёте нет rendered/source bodies, URLs или prose operator reasons. Unknown opaque refs/labels
 остаются в SQL, а в отчёте указаны counts/warnings без их содержимого. Missing legacy tables
 отличаются от known-empty schema55. Exit0 — recorded, exit1 — ошибки, exit2 — нет history для
