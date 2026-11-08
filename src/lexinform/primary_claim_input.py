@@ -8,9 +8,11 @@ from lexinform.models.analysis import AnalysisRecord
 from lexinform.models.batch import AnalysisQuestion, BatchIntent, BatchItemMeta
 from lexinform.models.document_history import DocumentSelectionRecord
 from lexinform.models.input_receipts import (
+    ArchiveInputPart,
     LooseRclInputReceipt,
     PrimaryInputReceipt,
     RclArchiveInputReceipt,
+    RclArchiveSelfAmendmentInputReceipt,
     SejmSelfAmendmentInputReceipt,
 )
 from lexinform.models.reviews import ReviewDocument
@@ -37,6 +39,26 @@ ClaimInputReason = Literal[
     "retained_source_span",
     "no_continuous_source_mapping",
 ]
+
+
+type MultipartCitationReceipt = (
+    RclArchiveInputReceipt | RclArchiveSelfAmendmentInputReceipt | SejmSelfAmendmentInputReceipt
+)
+
+
+def multipart_claim_part_role(
+    receipt: MultipartCitationReceipt, index: int
+) -> Literal["bill", "self_amendment"] | None:
+    if index == 0:
+        return "bill"
+    if isinstance(receipt, SejmSelfAmendmentInputReceipt) and index == 1:
+        return "self_amendment"
+    if (
+        isinstance(receipt, RclArchiveSelfAmendmentInputReceipt)
+        and index == len(receipt.source_parts) - 1
+    ):
+        return "self_amendment"
+    return None
 
 
 @dataclass(frozen=True)
@@ -137,11 +159,14 @@ def _validate_key_change_input(
     ):
         return ClaimInputCheck(checked, "unknown", "request_binding_mismatch")
     document = next(doc for doc in documents if doc.identity == evidence.citation.document_id)
-    if multipart_part_index != 0 and (
-        multipart_part_index != 1 or not isinstance(receipt, SejmSelfAmendmentInputReceipt)
+    if isinstance(
+        receipt,
+        (
+            RclArchiveInputReceipt,
+            RclArchiveSelfAmendmentInputReceipt,
+            SejmSelfAmendmentInputReceipt,
+        ),
     ):
-        return ClaimInputCheck(checked, "unknown", "source_binding_mismatch")
-    if isinstance(receipt, (RclArchiveInputReceipt, SejmSelfAmendmentInputReceipt)):
         binding = _bound_multipart_part(
             document,
             meta,
@@ -150,14 +175,14 @@ def _validate_key_change_input(
             verified_multipart_selection,
             multipart_part_index,
         )
+    elif multipart_part_index != 0:
+        return ClaimInputCheck(checked, "unknown", "source_binding_mismatch")
     elif isinstance(receipt, LooseRclInputReceipt):
         binding = _loose_rcl_main_binding(
             document, meta, receipt, record.source_url, source_selection
         )
-    elif isinstance(receipt, PrimaryInputReceipt):
-        binding = _source_binding(document, meta, receipt, record.source_url)
     else:
-        return ClaimInputCheck(checked, "unknown", "source_binding_unavailable")
+        binding = _source_binding(document, meta, receipt, record.source_url)
     if binding is not None:
         return ClaimInputCheck(checked, "unknown", binding)
     runs: list[tuple[int, int, int, int]] = []
@@ -281,22 +306,23 @@ def _loose_rcl_main_binding(
 def _bound_multipart_part(
     document: ReviewDocument,
     meta: BatchItemMeta,
-    receipt: RclArchiveInputReceipt | SejmSelfAmendmentInputReceipt,
+    receipt: MultipartCitationReceipt,
     record_url: str | None,
     selection: DocumentSelectionRecord | None,
     part_index: int,
 ) -> ClaimInputReason | None:
     if selection is None or not document.file_sha256 or not document.url or not record_url:
         return "source_binding_unavailable"
+    role = multipart_claim_part_role(receipt, part_index)
     if (
-        selection.selection_id != receipt.source_selection_id
+        role is None
+        or selection.selection_id != receipt.source_selection_id
         or part_index >= len(selection.selection.parts)
         or selection.selection.parts != meta.selection.without_text().parts
     ):
         return "source_binding_mismatch"
     main = selection.selection.parts[0]
     part, saved = selection.selection.parts[part_index], receipt.source_parts[part_index]
-    role = "self_amendment" if part_index == 1 else "bill"
     if (
         part.role != role
         or saved.role != role
@@ -304,7 +330,7 @@ def _bound_multipart_part(
         or part.url != document.url
         or main.url != record_url
         or main.url != meta.source_url
-        or bool(part.members) != isinstance(receipt, RclArchiveInputReceipt)
+        or bool(part.members) != isinstance(saved, ArchiveInputPart)
         or part.text_sha256 != document.sha256
         or saved.text_sha256 != document.sha256
         or part.text_start != 0

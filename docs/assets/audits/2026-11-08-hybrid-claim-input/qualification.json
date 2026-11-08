@@ -1,0 +1,210 @@
+{
+  "scope": "Literal verification for two technical quotes from the offline J355 prepared request, without a model answer or semantic judgment.",
+  "cases": {
+    "0": {
+      "version": "primary-multipart-citation-v1",
+      "custom_id": "74aaa30d56411d84729a473747e0c9fa7f08790aaa5400fa3759910a3e096c2e",
+      "request_sha256": "dab9f701a852887984b37e2567ccaa6d53e411689c8cfca98f691bea698bd7ef",
+      "original": {
+        "path": "documents/files/785848.zip",
+        "sha256": "8cf0d27204698815494901291edd868d5cb13a78375543f22233390e53cc1e4d"
+      },
+      "source_part_index": 0,
+      "claim": "Technical literal check; semantic support is not assessed.",
+      "locator": "Art. 1",
+      "quote_start": 935,
+      "quote_end": 1114,
+      "quote_sha256": "2aed7beb1f7cc7940272171ca1a562d5085a932d54efb70cc3b221f48429a193",
+      "word_paragraph": {
+        "xml_sha256": "09e69364297cb57aa883cf0afe4d7a5feef9ba86eed497e1f13f8aa42a7abe7e",
+        "manifest_sha256": "4a226055a6fecb39e101cac762010e6f015376540b48939b8be99c666b5b984d",
+        "block_sha256": "2aed7beb1f7cc7940272171ca1a562d5085a932d54efb70cc3b221f48429a193",
+        "path": [
+          0,
+          4
+        ],
+        "start": 0,
+        "end": 179
+      },
+      "pdf_page": null
+    },
+    "4": {
+      "version": "primary-multipart-citation-v1",
+      "custom_id": "74aaa30d56411d84729a473747e0c9fa7f08790aaa5400fa3759910a3e096c2e",
+      "request_sha256": "dab9f701a852887984b37e2567ccaa6d53e411689c8cfca98f691bea698bd7ef",
+      "original": {
+        "path": "documents/files/787193.pdf",
+        "sha256": "0c381654988d4754cec27034267b7ba775e8abba66fd1d0716cb0db463f66f5c"
+      },
+      "source_part_index": 4,
+      "claim": "Technical literal check; semantic support is not assessed.",
+      "locator": "48) 22",
+      "quote_start": 0,
+      "quote_end": 63,
+      "quote_sha256": "26f6da0bf2e46723d120630a488379f5c39f856c37d47355648c14b2d7c35808",
+      "word_paragraph": null,
+      "pdf_page": {
+        "extraction_sha256": "0d1f1f77fa5bec7229a4080311d3efaad793a2f00f521114fc86a6f3efff4ff4",
+        "page": 1,
+        "raw_page_span": {
+          "start": 0,
+          "end": 63,
+          "sha256": "26f6da0bf2e46723d120630a488379f5c39f856c37d47355648c14b2d7c35808"
+        }
+      }
+    }
+  },
+  "proofs": {
+    "0": {
+      "version": "primary-multipart-citation-v1",
+      "status": "recorded",
+      "scope": "Literal text in a durable offline prepared context.",
+      "database_sha256": "8e0872886572c77f598dd5496fa725f8df275462341bd838969d16e88f53d16c",
+      "proof": {
+        "profile": "primary-rcl-archive-self-amendment-text-v1",
+        "request_sha256": "dab9f701a852887984b37e2567ccaa6d53e411689c8cfca98f691bea698bd7ef",
+        "source_selection_id": "selection-v1:d9c427b8dd7e168bb3e909354f6ad7dc34b9d8a48249888a0e9d41e512d308a6",
+        "source_observation_id": "source-observation-v1:dc3199a51ef325aad7be27d6536814caef70912aa3c9e153ee19cb8455451062",
+        "artifact_sha256": "8cf0d27204698815494901291edd868d5cb13a78375543f22233390e53cc1e4d",
+        "member_sha256": "051119c0997bd49b55d0d955baa7e2a5a4fa065bddae5da720065e21aebf57dd",
+        "source_text_sha256": "cb2163c4e0e6479e2b18e54900d241b5ea207b3093189682313a7c00966fb216",
+        "quote_sha256": "2aed7beb1f7cc7940272171ca1a562d5085a932d54efb70cc3b221f48429a193",
+        "claim_text_sha256": "c464dc6285a341a8f652d63f6b55b75029a8703361b75178da3858da0bd1988b",
+        "check": {
+          "evidence": {
+            "status": "quote_present",
+            "source_complete": false,
+            "quote_occurrences": 1,
+            "observed_text_span": [
+              935,
+              1114
+            ],
+            "semantic": "semantic_not_assessed",
+            "block_origins": "unmapped",
+            "paid_origins": "unmapped"
+          },
+          "status": "retained",
+          "reason": "retained_source_span",
+          "input_span": [
+            935,
+            1114
+          ],
+          "semantic": "semantic_not_assessed",
+          "block_origins": "unmapped",
+          "physical_origins": "unmapped"
+        },
+        "word_paragraph": {
+          "xml_part": "word/document.xml",
+          "xml_sha256": "09e69364297cb57aa883cf0afe4d7a5feef9ba86eed497e1f13f8aa42a7abe7e",
+          "manifest_sha256": "4a226055a6fecb39e101cac762010e6f015376540b48939b8be99c666b5b984d",
+          "block_id": "word-xml:word/document.xml:0/4",
+          "block_sha256": "2aed7beb1f7cc7940272171ca1a562d5085a932d54efb70cc3b221f48429a193",
+          "coordinates": "word-xml-plain-run-prefix-python-string",
+          "block_span": [
+            0,
+            179
+          ],
+          "selected_text_span": [
+            935,
+            1114
+          ],
+          "raw_run_prefix_sha256": "2aed7beb1f7cc7940272171ca1a562d5085a932d54efb70cc3b221f48429a193"
+        }
+      },
+      "read_inputs": {
+        "documents/files/785848.zip": "8cf0d27204698815494901291edd868d5cb13a78375543f22233390e53cc1e4d"
+      },
+      "code_version": "395c3354f08b091890ac5abf72751ded11b2efe9",
+      "source_pins_sha256": "850fc6ac2129cd97141ef70b0e07d91dc292838994d150f11905a3644d9245ba"
+    },
+    "4": {
+      "version": "primary-multipart-citation-v1",
+      "status": "recorded",
+      "scope": "Literal text in a durable offline prepared context.",
+      "database_sha256": "8e0872886572c77f598dd5496fa725f8df275462341bd838969d16e88f53d16c",
+      "proof": {
+        "profile": "primary-rcl-archive-self-amendment-text-v1",
+        "source_part_index": 4,
+        "request_sha256": "dab9f701a852887984b37e2567ccaa6d53e411689c8cfca98f691bea698bd7ef",
+        "source_selection_id": "selection-v1:d9c427b8dd7e168bb3e909354f6ad7dc34b9d8a48249888a0e9d41e512d308a6",
+        "source_observation_id": "source-observation-v1:dc3199a51ef325aad7be27d6536814caef70912aa3c9e153ee19cb8455451062",
+        "artifact_sha256": "0c381654988d4754cec27034267b7ba775e8abba66fd1d0716cb0db463f66f5c",
+        "member_sha256": "0c381654988d4754cec27034267b7ba775e8abba66fd1d0716cb0db463f66f5c",
+        "source_text_sha256": "38ed93a16b6f3c769c5ebd47923207d5daeb18ab2b1cb7d747ec096bb6da6086",
+        "quote_sha256": "26f6da0bf2e46723d120630a488379f5c39f856c37d47355648c14b2d7c35808",
+        "claim_text_sha256": "c464dc6285a341a8f652d63f6b55b75029a8703361b75178da3858da0bd1988b",
+        "check": {
+          "evidence": {
+            "status": "quote_present",
+            "source_complete": false,
+            "quote_occurrences": 1,
+            "observed_text_span": [
+              0,
+              63
+            ],
+            "semantic": "semantic_not_assessed",
+            "block_origins": "unmapped",
+            "paid_origins": "unmapped"
+          },
+          "status": "retained",
+          "reason": "retained_source_span",
+          "input_span": [
+            84634,
+            84697
+          ],
+          "semantic": "semantic_not_assessed",
+          "block_origins": "unmapped",
+          "physical_origins": "unmapped"
+        },
+        "pdf_page": {
+          "page": 1,
+          "block_id": "pdf-page:1:0",
+          "raw_page_text_sha256": "8af2697aeb43e9d03ef4262b4b8d00f874ef2786b36962950de6670eef4c82b9",
+          "normalized_page_text_sha256": "873be3d49fdd3651a3558155d16604e7b1d7c26d48055c423e9e1e290b7e1abc",
+          "normalized_page_span": [
+            0,
+            63
+          ],
+          "raw_page_span": {
+            "coordinates": "pdf-extractor-page-python-string",
+            "span": [
+              0,
+              63
+            ],
+            "text_sha256": "26f6da0bf2e46723d120630a488379f5c39f856c37d47355648c14b2d7c35808"
+          },
+          "coordinates": "legacy-pdf-single-page-python-string",
+          "artifact_sha256": "0c381654988d4754cec27034267b7ba775e8abba66fd1d0716cb0db463f66f5c",
+          "extraction_sha256": "0d1f1f77fa5bec7229a4080311d3efaad793a2f00f521114fc86a6f3efff4ff4",
+          "source_text_sha256": "38ed93a16b6f3c769c5ebd47923207d5daeb18ab2b1cb7d747ec096bb6da6086",
+          "quote_sha256": "26f6da0bf2e46723d120630a488379f5c39f856c37d47355648c14b2d7c35808",
+          "claim_text_sha256": "c464dc6285a341a8f652d63f6b55b75029a8703361b75178da3858da0bd1988b",
+          "evidence": {
+            "status": "quote_present",
+            "source_complete": false,
+            "quote_occurrences": 1,
+            "observed_text_span": [
+              0,
+              63
+            ],
+            "semantic": "semantic_not_assessed",
+            "block_origins": "unmapped",
+            "paid_origins": "unmapped"
+          }
+        }
+      },
+      "read_inputs": {
+        "documents/files/787193.pdf": "0c381654988d4754cec27034267b7ba775e8abba66fd1d0716cb0db463f66f5c"
+      },
+      "code_version": "395c3354f08b091890ac5abf72751ded11b2efe9",
+      "source_pins_sha256": "850fc6ac2129cd97141ef70b0e07d91dc292838994d150f11905a3644d9245ba"
+    }
+  },
+  "controls": {
+    "ordinary_archive_and_sejm_reports_equal": true,
+    "control_proofs_sha256": "ab942d1433c1b0edab2f57b27406c0848f0809e381180bc8d5d8a2fb0c3dd14e",
+    "wrong_page_rejected": true,
+    "missing_attachment_parent_rejected": true,
+    "normative_annex_as_amendment_rejected": true
+  }
+}

@@ -25,12 +25,17 @@ from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.adapters.word_field_projection import project_word_paragraph_span
 from lexinform.models import BatchIntent, EvidenceCitation, ReviewDocument
 from lexinform.models.batch import AnalysisQuestion, BatchItemMeta
-from lexinform.models.input_receipts import RclArchiveInputReceipt, SejmSelfAmendmentInputReceipt
+from lexinform.models.input_receipts import (
+    RclArchiveInputReceipt,
+    RclArchiveSelfAmendmentInputReceipt,
+    SejmSelfAmendmentInputReceipt,
+)
 from lexinform.models.physical_inventory import Sha256
-from lexinform.primary_claim_input import _validate_key_change_input
+from lexinform.primary_claim_input import _validate_key_change_input, multipart_claim_part_role
 from lexinform.primary_claims import KeyChangeEvidence
 from tools.corpus_artifacts import digest, read_artifact, write_json
 from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
+from tools.replay_pdf_page_citation import RawPageSpanPin, verify_pdf_page
 from tools.replay_primary_claims import technical_answer
 from tools.replay_proposal_edition import PinnedInput
 from tools.sqlite_snapshot import open_snapshot, snapshot_files
@@ -52,6 +57,14 @@ class WordParagraphCitationPin(BaseModel):
     end: int = Field(gt=0, strict=True)
 
 
+class PdfPageCitationPin(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    extraction_sha256: Sha256
+    page: int = Field(gt=0, strict=True)
+    raw_page_span: RawPageSpanPin
+
+
 class MultipartCitationCase(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -59,13 +72,14 @@ class MultipartCitationCase(BaseModel):
     custom_id: str = Field(min_length=1, max_length=256)
     request_sha256: Sha256
     original: PinnedInput
-    source_part_index: int = Field(default=0, ge=0, le=1, strict=True)
+    source_part_index: int = Field(default=0, ge=0, le=5, strict=True)
     claim: str = Field(min_length=1, max_length=256)
     locator: str = Field(min_length=1, max_length=128)
     quote_start: int = Field(ge=0, strict=True)
     quote_end: int = Field(gt=0, strict=True)
     quote_sha256: Sha256
     word_paragraph: WordParagraphCitationPin | None = None
+    pdf_page: PdfPageCitationPin | None = None
 
 
 _W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
@@ -172,7 +186,14 @@ def _verify(
     if (
         not isinstance(question, AnalysisQuestion)
         or not isinstance(meta, BatchItemMeta)
-        or not isinstance(receipt, (RclArchiveInputReceipt, SejmSelfAmendmentInputReceipt))
+        or not isinstance(
+            receipt,
+            (
+                RclArchiveInputReceipt,
+                RclArchiveSelfAmendmentInputReceipt,
+                SejmSelfAmendmentInputReceipt,
+            ),
+        )
     ):
         raise ValueError("The exact original multipart profile is unavailable")
     validate_multipart_intent(db, intent)
@@ -180,10 +201,10 @@ def _verify(
     if selected is None:
         raise ValueError("The verified original selection is unavailable")
     part_index = case.source_part_index
-    if part_index == 1 and not isinstance(receipt, SejmSelfAmendmentInputReceipt):
-        raise ValueError("Only the verified Sejm self-amendment has a non-main citation profile")
+    role = multipart_claim_part_role(receipt, part_index)
+    if role is None:
+        raise ValueError("Citation part must be the verified bill or separate self-amendment")
     part = selected.selection.parts[part_index]
-    role = "self_amendment" if part_index == 1 else "bill"
     if (
         part.role != role
         or part.source_sha256 != case.original.sha256
@@ -262,17 +283,39 @@ def _verify(
         "claim_text_sha256": evidence.claim_text_sha256,
         "check": asdict(checked),
     }
-    if case.word_paragraph is not None:
+    if case.word_paragraph is not None and case.pdf_page is not None:
+        raise ValueError("Citation must specify a single physical format")
+    if case.word_paragraph is not None or case.pdf_page is not None:
+        proof_format = "Word" if case.word_paragraph is not None else "PDF"
         if checked.status != "retained" or len(part.members) > 1:
             raise ValueError(
-                "Word citation requires an exactly retained direct file or one archive member"
+                f"{proof_format} citation requires an exactly retained direct file"
+                " or one archive member"
             )
         member = _bounded_zip_member(data, part.members[0]) if part.members else data
         if digest(member) != part.sha256:
-            raise ValueError("Word citation member bytes differ from the verified selection")
-        proof["word_paragraph"] = verify_word_paragraph_citation(
-            member, case.word_paragraph, text=text, quote_span=(case.quote_start, case.quote_end)
-        )
+            raise ValueError(
+                f"{proof_format} citation member bytes differ from the verified selection"
+            )
+        if case.word_paragraph is not None:
+            proof["word_paragraph"] = verify_word_paragraph_citation(
+                member,
+                case.word_paragraph,
+                text=text,
+                quote_span=(case.quote_start, case.quote_end),
+            )
+        else:
+            assert case.pdf_page is not None, "the physical citation names a PDF or Word range"
+            proof["pdf_page"] = verify_pdf_page(
+                record,
+                evidence,
+                document,
+                PypdfTextExtractor().extract_pages(member),
+                artifact_sha256=part.sha256,
+                extraction_sha256=case.pdf_page.extraction_sha256,
+                expected_page=case.pdf_page.page,
+                raw_page_span=case.pdf_page.raw_page_span,
+            )
     return proof, checked.status == "retained"
 
 

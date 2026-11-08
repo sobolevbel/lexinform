@@ -14,6 +14,7 @@ from lexinform.models.input_receipts import (
     input_map_sha256,
 )
 from lexinform.models.prepared_input import PreparedTextSegment
+from lexinform.primary_claim_input import multipart_claim_part_role
 from lexinform.services.document_history import DocumentSourceRead
 from lexinform.services.documents import TextLoader
 from lexinform.services.input_receipts import capture_rcl_archive_input_receipt
@@ -63,6 +64,13 @@ def test_hybrid_receipt_keeps_one_distinct_final_amendment_span() -> None:
         RclArchiveSelfAmendmentInputReceipt.model_validate_json(receipt.model_dump_json())
         == receipt
     )
+    assert [multipart_claim_part_role(receipt, index) for index in (-1, 0, 1, 2, 3)] == [
+        None,
+        "bill",
+        None,
+        "self_amendment",
+        None,
+    ]
     wrong_final = segments[-1].model_copy(update={"part_index": 1})
     wrong_map = (*segments[:-1], wrong_final)
     with pytest.raises(ValueError, match="complete final amendment"):
