@@ -13,6 +13,9 @@ from lexinform.models.sitting_content import SittingContentPart
 MAX_ORIGINAL_DELIVERY_BYTES = 128 * 1024
 MAX_ORIGINAL_DELIVERY_PARTS = 32
 
+ReviewNoticeKind = Literal[PublicationKind.CONSULTATION_REVIEW, PublicationKind.COMMISSION_REVIEW]
+REVIEW_NOTICE_KINDS: frozenset[PublicationKind] = frozenset(get_args(ReviewNoticeKind))
+
 OriginalNoticeKind = Literal[
     PublicationKind.ACT_PUBLISHED,
     PublicationKind.CONSULTATION_RESULTS,
@@ -24,10 +27,12 @@ OriginalNoticeKind = Literal[
 ORIGINAL_NOTICE_KINDS: frozenset[PublicationKind] = frozenset(get_args(OriginalNoticeKind))
 OriginalPublicationKind = Literal[
     OriginalNoticeKind,
+    ReviewNoticeKind,
     PublicationKind.NEW_BILL,
     PublicationKind.JOINT_BILL,
 ]
 ORIGINAL_CARD_KINDS = frozenset((PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL))
+# Review notices are reader-only until the compatible reader is deployed.
 ORIGINAL_DELIVERY_KINDS = ORIGINAL_NOTICE_KINDS | ORIGINAL_CARD_KINDS
 DATED_NOTICES = frozenset(
     (
@@ -141,9 +146,12 @@ class OriginalDeliveryPlan(BaseModel):
             if self.root.primary_json or not original_notice_context_matches(self.root):
                 raise ValueError("joint reply requires its original card target")
             return
-        if kind not in ORIGINAL_NOTICE_KINDS or not original_notice_context_matches(self.root):
+        if (
+            kind not in ORIGINAL_NOTICE_KINDS | REVIEW_NOTICE_KINDS
+            or not original_notice_context_matches(self.root)
+        ):
             raise ValueError("unsupported original notice")
-        if kind in DATED_NOTICES and self.root.today is None:
+        if kind in DATED_NOTICES | REVIEW_NOTICE_KINDS and self.root.today is None:
             raise ValueError("dated notice requires its frozen date")
         if kind is PublicationKind.DECISION_DEADLINE:
             Phase.model_validate_json(self.root.phase_json or "")

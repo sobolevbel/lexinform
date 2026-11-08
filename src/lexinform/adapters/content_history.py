@@ -75,6 +75,7 @@ from lexinform.models.input_receipts import (
 from lexinform.models.multipart_card_history import MAX_MULTIPART_CARD_BYTES, MultipartCardPlan
 from lexinform.models.original_delivery_content import (
     MAX_ORIGINAL_DELIVERY_BYTES,
+    REVIEW_NOTICE_KINDS,
     OriginalDeliveryPart,
     OriginalDeliveryPlan,
     original_delivery_context,
@@ -1670,9 +1671,27 @@ def verify_original_delivery_content(
         ).fetchall()
         if {binding[0] for binding in bindings} != set(plan.bindings):
             raise ValueError("original_delivery_binding_scope")
-    if original_delivery_bill_snapshot(bill_snapshot.payload_json) != bill_snapshot:
+    review_notice = evidence.kind in REVIEW_NOTICE_KINDS
+    if (
+        original_delivery_bill_snapshot(bill_snapshot.payload_json, review_notice=review_notice)
+        != bill_snapshot
+    ):
         raise ValueError("original_delivery_bill_profile")
     bill = Bill.model_validate(read_json(bill_snapshot.payload_json))
+    if review_notice:
+        record = (
+            bill.consultation_review
+            if evidence.kind is PublicationKind.CONSULTATION_REVIEW
+            else bill.commission_review
+        )
+        if (
+            record is None
+            or record.review.purpose != evidence.kind.value
+            or record.context.purpose != evidence.kind.value
+            or record.context.number != bill.number
+            or record.context.memo_key(bill.term) != evidence.ref
+        ):
+            raise ValueError("original_delivery_review_scope")
     if evidence.kind is PublicationKind.ACT_PUBLISHED and bill.act is None:
         raise ValueError("original_delivery_act_missing")
     primary_snapshot = None
@@ -1760,7 +1779,10 @@ def verify_original_delivery_content(
                 or (
                     retained is not None
                     and (
-                        original_delivery_bill_snapshot(retained.bill_json) != bill_snapshot
+                        original_delivery_bill_snapshot(
+                            retained.bill_json, review_notice=review_notice
+                        )
+                        != bill_snapshot
                         or retained.rendered_text != part.html
                         or original_delivery_context(retained, joint=joint is not None) != plan.root
                         or (
@@ -1776,7 +1798,9 @@ def verify_original_delivery_content(
             ):
                 raise ValueError("original_delivery_frozen_root")
         else:
-            _verify_original_delivery_child(version, part, index, publication, parent, bill)
+            _verify_original_delivery_child(
+                version, part, index, publication, parent, bill, review_notice=review_notice
+            )
         parent = publication
     return plan
 
@@ -1788,6 +1812,8 @@ def _verify_original_delivery_child(
     publication: Publication,
     parent: Publication,
     bill: Bill,
+    *,
+    review_notice: bool = False,
 ) -> None:
     retained = publication.delivery
     attempted = publication.status in (
@@ -1806,7 +1832,12 @@ def _verify_original_delivery_child(
         raise ValueError("original_delivery_child_scope")
     if retained is None:
         return
-    saved_bill = Bill.model_validate(read_json(retained.bill_json))
+    child_bill = (
+        original_delivery_bill_snapshot(retained.bill_json, review_notice=True).payload_json
+        if review_notice
+        else retained.bill_json
+    )
+    saved_bill = Bill.model_validate(read_json(child_bill))
     expected_bill = Bill.model_validate_json(continuation_snapshot(bill))
     if (
         ((attempted or retained.reply_to is not None) and retained.reply_to != parent.message_id)

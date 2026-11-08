@@ -49,11 +49,14 @@ def editorial_bill_snapshot(raw: str) -> ContentSnapshot:
     return ContentSnapshot(kind="bill", payload_json=raw)
 
 
-def original_delivery_bill_snapshot(raw: str) -> ContentSnapshot:
+def original_delivery_bill_snapshot(raw: str, *, review_notice: bool = False) -> ContentSnapshot:
     snapshot = editorial_bill_snapshot(raw)
     payload = json.loads(snapshot.payload_json)
     changed = False
-    for field in ("consultation_review", "act_application_review"):
+    fields: tuple[str, ...] = ("consultation_review", "act_application_review")
+    if review_notice:
+        fields += ("commission_review",)
+    for field in fields:
         review = payload.get(field)
         if review is None:
             continue
@@ -65,7 +68,7 @@ def original_delivery_bill_snapshot(raw: str) -> ContentSnapshot:
         for document in documents:
             if not isinstance(document, dict):
                 raise ValueError("invalid notice review document")
-            for body in ("text", "body"):
+            for body in ("text",) if field == "commission_review" else ("text", "body"):
                 if document.get(body):
                     document[body] = ""
                     changed = True
