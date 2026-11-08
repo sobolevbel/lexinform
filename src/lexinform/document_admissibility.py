@@ -75,6 +75,7 @@ def review_admission(
         and not oversize
         and carries_the_document(text, min_chars=min_chars, pages=pages)
         and not selection.rejected
+        and not selection.has_pdf_page_failure
         and selection.state not in ("ambiguous", "unsupported")
     ):
         return "complete"

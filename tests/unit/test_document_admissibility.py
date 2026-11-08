@@ -6,7 +6,7 @@ from lexinform.document_admissibility import (
     review_admission,
 )
 from lexinform.document_fingerprints import text_digest
-from lexinform.models import DocumentSelection
+from lexinform.models import DocumentPart, DocumentSelection
 
 BILL = (
     "USTAWA\nz dnia 1 stycznia 2026 r.\no cudzoziemcach\nArt. 1. Cudzoziemiec otrzymuje 200 zł.\n"
@@ -147,6 +147,19 @@ def test_review_incomplete_inputs_are_kept_as_partial(oversize: bool) -> None:
     assert (
         review_admission(
             selection, BILL, pages=1, min_chars=200, oversize=oversize, role="project_text"
+        )
+        == "partial"
+    )
+
+
+def test_review_keeps_readable_text_with_a_failed_pdf_page_as_partial() -> None:
+    selection = DocumentSelection(
+        parts=(DocumentPart(losses=("PDF text extraction failed on 1 page(s)",)),)
+    )
+
+    assert (
+        review_admission(
+            selection, BILL, pages=3, min_chars=200, oversize=False, role="project_text"
         )
         == "partial"
     )
