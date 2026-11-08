@@ -1,0 +1,65 @@
+[
+  {
+    "snapshot": "j534-metadata-only-review/17dc57ee.db",
+    "sha256": "8c21e5781d5d89b911bfb0376ca5fc1a90893755f8e51c908287c26bd3d65c57",
+    "schema": 73,
+    "baseline_report_sha256": "4c65666dec8997f3cf2a9b6901d804343ad1438ada024c787b4668be9fca7aa5",
+    "coverage": {
+      "available": true,
+      "counts": {
+        "valid_extraction_rows": 0,
+        "invalid_extraction_rows": 0,
+        "omitted_selected_parts_unknown_format": 0,
+        "selected_pdf_parts": 0,
+        "pdf_parts_with_reported_errors": 0,
+        "pdf_parts_without_reported_errors": 0,
+        "reported_pdf_extraction_errors": 0,
+        "pdf_parts_with_page_map": 0
+      },
+      "scope": "Retained selected parts. Errors may include root failure.",
+      "limitation": "Counts do not certify complete reads or input coverage."
+    }
+  },
+  {
+    "snapshot": "j533-frozen-intent-review/eccdc263.db",
+    "sha256": "e78613cba60318f88374caaab31514a49aa77e2bf7cdf726e6ee565ed3b99a12",
+    "schema": 73,
+    "baseline_report_sha256": "d955a32f1be41df48844f780b098d31673d1f960e29ea594fa7d8c88096d30a1",
+    "coverage": {
+      "available": true,
+      "counts": {
+        "valid_extraction_rows": 65,
+        "invalid_extraction_rows": 0,
+        "omitted_selected_parts_unknown_format": 0,
+        "selected_pdf_parts": 35,
+        "pdf_parts_with_reported_errors": 0,
+        "pdf_parts_without_reported_errors": 35,
+        "reported_pdf_extraction_errors": 0,
+        "pdf_parts_with_page_map": 0
+      },
+      "scope": "Retained selected parts. Errors may include root failure.",
+      "limitation": "Counts do not certify complete reads or input coverage."
+    }
+  },
+  {
+    "snapshot": "j535-reanalysis-baseline/legacy-replay.db",
+    "sha256": "474a357639fcacbe7a4ca31d8ce44061771b411cfb14c67af0c3693ad4a3f4d8",
+    "schema": 73,
+    "baseline_report_sha256": "a47c18e974aedc40422f507d734ed35dc4839d3a38b82808a16a5877767d1a42",
+    "coverage": {
+      "available": true,
+      "counts": {
+        "valid_extraction_rows": 116,
+        "invalid_extraction_rows": 0,
+        "omitted_selected_parts_unknown_format": 0,
+        "selected_pdf_parts": 81,
+        "pdf_parts_with_reported_errors": 0,
+        "pdf_parts_without_reported_errors": 81,
+        "reported_pdf_extraction_errors": 0,
+        "pdf_parts_with_page_map": 0
+      },
+      "scope": "Retained selected parts. Errors may include root failure.",
+      "limitation": "Counts do not certify complete reads or input coverage."
+    }
+  }
+]

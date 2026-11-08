@@ -1,9 +1,11 @@
 import hashlib
 import sqlite3
+from contextlib import closing
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
+from tools.source_history_doctor import audit
 
 from lexinform import extraction_records
 from lexinform.adapters.doc_text import DocTextExtractor
@@ -327,3 +329,56 @@ def test_pdf_page_projection_uses_receipt_part_order_instead_of_physical_indices
             "normalized_page_sha256": "a" * 64,
         }
     ]
+
+
+def test_pdf_extraction_coverage_separates_errors_omissions_and_corrupt_rows(
+    tmp_path: Path,
+) -> None:
+    data = (FIXTURES / "print_3039.pdf").read_bytes()
+    reader = DocumentTextExtractor(PypdfTextExtractor(), DocxTextExtractor(), DocTextExtractor())
+    native = reader.extract_document_with_provenance(data).result
+    (part,) = native.selected_parts
+    page = PdfPageRange(page=1, start=0, end=1, normalized_sha256="a" * 64)
+    mapped = native.model_copy(
+        update={
+            "selected_parts": (part.model_copy(update={"pdf_page_map": PdfPageMap(pages=(page,))}),)
+        }
+    )
+    failed = native.model_copy(
+        update={
+            "selected_parts": (part.model_copy(update={"error_count": 2, "pdf_page_map": None}),)
+        }
+    )
+    omitted = native.model_copy(update={"selected_parts": (), "omitted_selected_parts": 1})
+    corrupt = native.model_copy(update={"rejected_count": native.rejected_count + 1})
+    repo = repository(tmp_path)
+    repo.save_artifact_metadata(
+        ArtifactMetadata(sha256=native.artifact_sha256, byte_size=len(data), recorded_at=NOW)
+    )
+    for result in (mapped, failed, omitted, corrupt):
+        repo.save_extraction_result(result, recorded_at=NOW)
+    repo.close()
+    path = tmp_path / "state.db"
+    with closing(sqlite3.connect(path)) as connection, connection:
+        connection.execute(
+            "UPDATE extraction_results SET result_json='invalid' WHERE extraction_id=?",
+            (corrupt.result_id,),
+        )
+    before = path.read_bytes()
+
+    report = audit(path, include_pdf_extraction_coverage=True)
+
+    coverage = report.pop("pdf_extraction_coverage")
+    assert report == audit(path)
+    assert coverage["available"] is True
+    assert coverage["counts"] == {
+        "valid_extraction_rows": 3,
+        "invalid_extraction_rows": 1,
+        "omitted_selected_parts_unknown_format": 1,
+        "selected_pdf_parts": 2,
+        "pdf_parts_with_reported_errors": 1,
+        "pdf_parts_without_reported_errors": 1,
+        "reported_pdf_extraction_errors": 2,
+        "pdf_parts_with_page_map": 1,
+    }
+    assert path.read_bytes() == before

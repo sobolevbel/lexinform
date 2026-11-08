@@ -56,6 +56,7 @@ def _audit_extraction_results(
     connection: sqlite3.Connection,
     counts: Counter[str],
     issue: Callable[[str, str], None],
+    pdf_counts: Counter[str] | None,
 ) -> None:
     for row in connection.execute(
         "SELECT rowid AS audit_id, * FROM extraction_results ORDER BY rowid"
@@ -68,9 +69,24 @@ def _audit_extraction_results(
             else f"extraction_results/row-{row['audit_id']}"
         )
         try:
-            read_extraction_result(row)
+            result = read_extraction_result(row)
         except ExtractionResultRowError as exc:
             issue(exc.code, ref)
+            if pdf_counts is not None:
+                pdf_counts["invalid_extraction_rows"] += 1
+            continue
+        if pdf_counts is None:
+            continue
+        pdf_counts["valid_extraction_rows"] += 1
+        pdf_counts["omitted_selected_parts_unknown_format"] += result.omitted_selected_parts
+        for part in result.selected_parts:
+            if part.format != "pdf":
+                continue
+            pdf_counts["selected_pdf_parts"] += 1
+            pdf_counts["pdf_parts_with_reported_errors"] += bool(part.error_count)
+            pdf_counts["pdf_parts_without_reported_errors"] += not part.error_count
+            pdf_counts["reported_pdf_extraction_errors"] += part.error_count
+            pdf_counts["pdf_parts_with_page_map"] += part.pdf_page_map is not None
 
 
 def _audit_rcl_letters(
@@ -517,8 +533,23 @@ def audit(
     include_candidate_traces: bool = False,
     include_candidate_gaps: bool = False,
     include_selection_limitations: bool = False,
+    include_pdf_extraction_coverage: bool = False,
 ) -> dict[str, Any]:
     counts: Counter[str] = Counter()
+    pdf_counts: Counter[str] | None = (
+        Counter(
+            valid_extraction_rows=0,
+            invalid_extraction_rows=0,
+            omitted_selected_parts_unknown_format=0,
+            selected_pdf_parts=0,
+            pdf_parts_with_reported_errors=0,
+            pdf_parts_without_reported_errors=0,
+            reported_pdf_extraction_errors=0,
+            pdf_parts_with_page_map=0,
+        )
+        if include_pdf_extraction_coverage
+        else None
+    )
     findings: list[dict[str, str]] = []
     selections: dict[str, DocumentSelectionRecord] = {}
     referenced: set[str] = set()
@@ -559,7 +590,7 @@ def audit(
         if schema >= EXTRACTION_SCHEMA_VERSION and "extraction_results" not in tables:
             issue("extraction_result_table_unavailable", "extraction_results")
         if "extraction_results" in tables:
-            _audit_extraction_results(connection, counts, issue)
+            _audit_extraction_results(connection, counts, issue, pdf_counts)
         if schema >= 57 or _EDITION_TABLES.intersection(tables):
             for name in sorted(_EDITION_TABLES - tables):
                 issue("edition_metadata_table_unavailable", name)
@@ -830,6 +861,13 @@ def audit(
         report["candidate_gap_coverage"] = candidate_report.pop("gap_coverage")
     if include_candidate_traces:
         report["candidate_traces"] = candidate_report
+    if pdf_counts is not None:
+        report["pdf_extraction_coverage"] = {
+            "available": "extraction_results" in tables,
+            "counts": dict(pdf_counts),
+            "scope": "Retained selected parts. Errors may include root failure.",
+            "limitation": "Counts do not certify complete reads or input coverage.",
+        }
     return report
 
 
@@ -841,6 +879,7 @@ def run(
     include_candidate_traces: bool = False,
     include_candidate_gaps: bool = False,
     include_selection_limitations: bool = False,
+    include_pdf_extraction_coverage: bool = False,
 ) -> int:
     if output.resolve() in snapshot_files(database):
         raise ValueError("Report must be separate from the input database")
@@ -850,6 +889,7 @@ def run(
         include_candidate_traces=include_candidate_traces,
         include_candidate_gaps=include_candidate_gaps,
         include_selection_limitations=include_selection_limitations,
+        include_pdf_extraction_coverage=include_pdf_extraction_coverage,
     )
     output.parent.mkdir(parents=True, exist_ok=True)
     write_json(output, report)
@@ -864,6 +904,7 @@ def main() -> None:
     parser.add_argument("--candidate-traces", action="store_true")
     parser.add_argument("--candidate-gaps", action="store_true")
     parser.add_argument("--selection-limitations", action="store_true")
+    parser.add_argument("--pdf-extraction-coverage", action="store_true")
     args = parser.parse_args()
     try:
         code = run(
@@ -873,6 +914,7 @@ def main() -> None:
             include_candidate_traces=args.candidate_traces,
             include_candidate_gaps=args.candidate_gaps,
             include_selection_limitations=args.selection_limitations,
+            include_pdf_extraction_coverage=args.pdf_extraction_coverage,
         )
     except (OSError, sqlite3.Error, ValueError) as exc:
         parser.error(str(exc))
