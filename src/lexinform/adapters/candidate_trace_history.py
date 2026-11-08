@@ -22,7 +22,9 @@ from lexinform.models.candidate_trace import (
 )
 from lexinform.models.document_editions import DocumentEdition
 from lexinform.models.documents import DocumentPart
+from lexinform.models.extractions import extraction_metadata_sha256
 from lexinform.models.physical_inventory import PhysicalRootOrder
+from lexinform.models.rcl import rcl_number
 from lexinform.models.sejm import TextDocument
 
 CANDIDATE_TRACE_SCHEMA_VERSION = 59
@@ -35,6 +37,7 @@ class CandidateTraceRowError(ValueError):
             "invalid_candidate_trace",
             "candidate_trace_identity_mismatch",
             "candidate_trace_proposal_parent_mismatch",
+            "candidate_trace_rcl_proposal_parent_mismatch",
             "candidate_trace_representation_parent_mismatch",
             "candidate_trace_adoption_parent_mismatch",
             "candidate_trace_recommendation_parent_mismatch",
@@ -128,6 +131,106 @@ def validate_sejm_proposal_link(
                 )
     except ValueError, TypeError, RecursionError, IndexError, KeyError, sqlite3.Error:
         raise CandidateTraceRowError("candidate_trace_proposal_parent_mismatch") from None
+
+
+def validate_rcl_proposal_link(
+    connection: sqlite3.Connection, trace: CandidateDispositionTrace, observation_id: str
+) -> None:
+    proof = trace.rcl_original_proposal
+    request = trace.requested_document
+    if proof is None:
+        return
+    code: Literal["candidate_trace_rcl_proposal_parent_mismatch"] = (
+        "candidate_trace_rcl_proposal_parent_mismatch"
+    )
+    if request is None:
+        raise CandidateTraceRowError(code)
+    candidate = (request, *request.alternatives)[proof.index]
+    amendment_url = candidate.amendment_urls[proof.amendment_index]
+    reader = DocumentSourceRows(connection)
+    try:
+        source = reader.get_source_observation(observation_id)
+        if source is None or (source.number, source.document) != (
+            rcl_number(proof.project_id),
+            candidate,
+        ):
+            raise ValueError("RCL proposal source differs from the selected project")
+        record = reader.get_document_selection(source.selection_id)
+        if (
+            record is None
+            or record.selection.state != trace.selection_state
+            or record.selection.version != candidate.version_basis
+        ):
+            raise ValueError("RCL proposal selection differs from the selected candidate")
+        edition = candidate_edition(record, recorded_at=source.recorded_at)
+        if edition is None or edition.edition_id != proof.edition_id or edition.member_count != 1:
+            raise ValueError("RCL proposal edition differs from the selected bill")
+        expected = (
+            ("bill", candidate.url, proof.base_sha256, proof.base_member_sha256),
+            ("self_amendment", amendment_url, proof.proposal_sha256, proof.proposal_member_sha256),
+        )
+        with closing(connection.cursor()) as cursor:
+            cursor.row_factory = sqlite3.Row
+            if (
+                cursor.execute(
+                    "SELECT 1 FROM selection_editions WHERE selection_id=? AND edition_id=?",
+                    (record.selection_id, proof.edition_id),
+                ).fetchone()
+                is None
+            ):
+                raise ValueError("RCL proposal has no retained edition link")
+            for role, url, sha, member_sha in expected:
+                positions = [
+                    index
+                    for index, part in enumerate(record.selection.parts)
+                    if part.members
+                    and (part.role, part.url, part.source_sha256, part.sha256)
+                    == (role, url, sha, member_sha)
+                ]
+                if (
+                    len(positions) != 1
+                    or cursor.execute(
+                        "SELECT 1 FROM selection_artifacts WHERE selection_id=?"
+                        " AND part_scope='parts' AND part_index=? AND artifact_sha256=?",
+                        (record.selection_id, positions[0] if positions else -1, sha),
+                    ).fetchone()
+                    is None
+                ):
+                    raise ValueError("RCL proposal requires its exact selected archive members")
+            row = cursor.execute(
+                "SELECT * FROM extraction_results WHERE extraction_id=?",
+                (proof.original_extraction_id,),
+            ).fetchone()
+            if row is None:
+                raise ValueError("RCL proposal requires the original Word extraction")
+            extraction = read_extraction_result(row)
+            if (
+                extraction.physical_part_count != 1
+                or extraction.rejected_count
+                or len(extraction.selected_parts) != 1
+                or extraction.omitted_selected_parts
+            ):
+                raise ValueError("RCL proposal original must be a complete standalone extraction")
+            (part,) = extraction.selected_parts
+            if (
+                part.format != "word"
+                or part.coordinates != "word-blocks-v1"
+                or part.physical_index != 0
+                or part.member_path_sha256 != extraction_metadata_sha256(())
+                or part.sha256 != extraction.artifact_sha256
+                or part.error_count
+                or part.loss_count
+                or part.text_sha256 != extraction.output_text_sha256
+                or part.text_chars != extraction.output_chars
+                or cursor.execute(
+                    "SELECT 1 FROM artifact_reads WHERE requested_url=? AND artifact_sha256=?",
+                    (proof.original_url, extraction.artifact_sha256),
+                ).fetchone()
+                is None
+            ):
+                raise ValueError("RCL proposal requires the exact original Word body read")
+    except ValueError, TypeError, RecursionError, IndexError, KeyError, sqlite3.Error:
+        raise CandidateTraceRowError(code) from None
 
 
 def validate_committee_recommendation_link(
@@ -600,6 +703,7 @@ def validate_candidate_trace_link(
     _validate_archive_version_link(connection, trace, observation_id)
     _validate_archive_conflict_link(connection, trace, observation_id)
     validate_sejm_proposal_link(connection, trace, observation_id)
+    validate_rcl_proposal_link(connection, trace, observation_id)
     validate_committee_recommendation_link(connection, trace, observation_id)
     proof = trace.sejm_print_representation or trace.sejm_adopted_text
     if proof is None:
@@ -697,6 +801,7 @@ def validate_candidate_trace_links(
         "candidate_trace_recommendation_parent_mismatch",
         "candidate_trace_representation_parent_mismatch",
         "candidate_trace_proposal_parent_mismatch",
+        "candidate_trace_rcl_proposal_parent_mismatch",
         "candidate_trace_archive_version_parent_mismatch",
         "candidate_trace_archive_conflict_parent_mismatch",
         "candidate_trace_admitted_support_parent_mismatch",
@@ -726,6 +831,8 @@ def validate_candidate_trace_links(
         code = "candidate_trace_representation_parent_mismatch"
     elif trace.sejm_original_proposal is not None:
         code = "candidate_trace_proposal_parent_mismatch"
+    elif trace.rcl_original_proposal is not None:
+        code = "candidate_trace_rcl_proposal_parent_mismatch"
     else:
         return
     try:

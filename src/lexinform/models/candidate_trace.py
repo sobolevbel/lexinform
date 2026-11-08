@@ -771,6 +771,38 @@ class SejmOriginalProposal(BaseModel):
         return self
 
 
+class RclOriginalProposal(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    profile: Literal["rcl-original-proposal-v1"] = "rcl-original-proposal-v1"
+    index: Position
+    amendment_index: Position
+    project_id: int = Field(gt=0, strict=True)
+    rm_number: str = Field(pattern=r"^RM-[0-9]{1,8}(?:-[0-9]{1,8}){1,4}$")
+    term: int = Field(gt=0, le=99, strict=True)
+    original_print: str = Field(pattern=r"^[1-9][0-9]{0,8}$")
+    original_extraction_id: str = Field(pattern=r"^extraction-v1:[0-9a-f]{64}$")
+    base_sha256: Sha256
+    base_member_sha256: Sha256
+    proposal_sha256: Sha256
+    proposal_member_sha256: Sha256
+    comparison_text_sha256: Sha256
+    edition_id: str = Field(pattern=r"^edition-v1:[0-9a-f]{64}$")
+
+    @property
+    def original_url(self) -> str:
+        number = self.original_print
+        return f"https://api.sejm.gov.pl/sejm/term{self.term}/prints/{number}/{number}-ustawa.docx"
+
+    @model_validator(mode="after")
+    def distinct_sources(self) -> Self:
+        if self.base_sha256 == self.proposal_sha256 or (
+            self.base_member_sha256 == self.proposal_member_sha256
+        ):
+            raise ValueError("RCL proposal requires distinct archive and member identities")
+        return self
+
+
 class SejmPrintRepresentation(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
 
@@ -1049,6 +1081,9 @@ class CandidateDispositionTrace(BaseModel):
     sejm_original_proposal: SejmOriginalProposal | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+    rcl_original_proposal: RclOriginalProposal | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     sejm_print_representation: SejmPrintRepresentation | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
@@ -1252,6 +1287,8 @@ class CandidateDispositionTrace(BaseModel):
             validate_version_part_gaps(self)
         if self.sejm_original_proposal is not None:
             validate_sejm_original_proposal(self, self.sejm_original_proposal)
+        if self.rcl_original_proposal is not None:
+            validate_rcl_original_proposal(self, self.rcl_original_proposal)
         if self.sejm_print_representation is not None:
             validate_sejm_print_representation(self, self.sejm_print_representation)
         if self.sejm_adopted_text is not None:
@@ -1296,6 +1333,7 @@ class CandidateDispositionTrace(BaseModel):
             and all(item.outcome == "selected" for item in self.dispositions)
             and self.required_exclusions is None
             and self.sejm_original_proposal is None
+            and self.rcl_original_proposal is None
             and self.sejm_print_representation is None
             and self.sejm_adopted_text is None
             and self.sejm_committee_recommendation is None
@@ -1503,6 +1541,37 @@ def validate_sejm_original_proposal(
         or disposition.observed_sha256 != proposal.base_sha256
     ):
         raise ValueError("Sejm proposal requires the observed original PDF identity")
+
+
+def validate_rcl_original_proposal(
+    trace: CandidateDispositionTrace, proof: RclOriginalProposal
+) -> None:
+    request = trace.requested_document
+    if (
+        request is None
+        or request.kind != "rcl"
+        or not request.compare_versions
+        or trace.result != "selected"
+        or trace.reason != "version_choice"
+        or trace.selection_state not in ("selected", "unverified")
+        or proof.index >= trace.candidate_count
+    ):
+        raise ValueError("RCL proposal requires a selected version candidate")
+    candidate = (request, *request.alternatives)[proof.index]
+    disposition = _parent_disposition(trace, "version_comparison", proof.index)
+    if (
+        candidate.kind != "rcl"
+        or candidate.official_link_conflict
+        or len(candidate.version_basis) != 2
+        or not re.fullmatch(rf"rcl/{proof.project_id}/stage/[0-9]+", candidate.version_basis[0])
+        or proof.amendment_index >= len(candidate.amendment_urls)
+        or not metadata_url_decision(candidate.amendment_urls[proof.amendment_index]).admitted
+        or disposition is None
+        or disposition.outcome != "selected"
+        or disposition.reason != "version_choice"
+        or disposition.observed_sha256 != proof.base_sha256
+    ):
+        raise ValueError("RCL proposal differs from its selected candidate or declared amendment")
 
 
 def validate_sejm_print_representation(
