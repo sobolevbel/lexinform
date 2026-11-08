@@ -52,6 +52,7 @@ def audit(
     database: Path,
     *,
     review_checkpoints: tuple[ReviewInputCheckpoint, ...] | None = None,
+    block_copy_coverage: bool = False,
 ) -> dict[str, object]:
     rows: Counter[str] = Counter(validated_primary=0, failed_primary=0, other_purposes=0, invalid=0)
     claims: Counter[str] = Counter(
@@ -61,6 +62,7 @@ def audit(
     answers: list[ClaimAnswer] = []
     blank_slots = 0
     empty_answers = 0
+    block_counts: Counter[str] = Counter()
     with open_snapshot(database) as snapshot:
         db = snapshot.connection
         schema = db.execute("PRAGMA user_version").fetchone()[0]
@@ -89,6 +91,8 @@ def audit(
                     "the computation reader enforces the primary record type"
                 )
                 rows["validated_primary"] += 1
+                if block_copy_coverage:
+                    block_counts[_block_copy_status(db, result, record)] += 1
                 slots: list[dict[str, object]] = []
                 for field, index, value in _claim_slots(record):
                     if not value.strip():
@@ -106,6 +110,8 @@ def audit(
                 answers.append(
                     {"result_id": result.result_id, "purpose": result.purpose, "claims": slots}
                 )
+        if block_counts["metadata_only"] or block_counts["exact_text_available"]:
+            validate_input_snapshots(db)
         if not snapshot.unchanged():
             raise ValueError("Input database changed during the audit")
     return {
@@ -129,6 +135,16 @@ def audit(
         "answers": answers,
         **(
             {
+                "block_copy_coverage": {
+                    "denominator": "validated_primary_results",
+                    "counts": dict(sorted(block_counts.items())),
+                }
+            }
+            if block_copy_coverage and available and not invalid
+            else {}
+        ),
+        **(
+            {
                 "review_text_coverage": _review_text_coverage(
                     database, snapshot.sha256, answers, review_checkpoints
                 )
@@ -144,13 +160,16 @@ def run(
     output: Path,
     *,
     review_checkpoints: tuple[ReviewInputCheckpoint, ...] | None = None,
+    block_copy_coverage: bool = False,
 ) -> int:
     protected = snapshot_files(database)
     for checkpoint in review_checkpoints or ():
         protected.update(snapshot_files(checkpoint.database))
     if output.resolve() in protected:
         raise ValueError("Report must be separate from the input database")
-    report = audit(database, review_checkpoints=review_checkpoints)
+    report = audit(
+        database, review_checkpoints=review_checkpoints, block_copy_coverage=block_copy_coverage
+    )
     output.parent.mkdir(parents=True, exist_ok=True)
     write_json(output, report)
     return 1 if report["status"] == "failed" else 2 if report["status"] == "not_run" else 0
@@ -199,6 +218,42 @@ def _primary_batch_meta(db: sqlite3.Connection, paid: ComputationResult) -> Batc
     if not isinstance(meta, BatchItemMeta):
         raise ReviewTextUnavailableError("Review requires primary batch metadata")
     return meta
+
+
+def _has_exact_request_binding(
+    paid: ComputationResult, meta: BatchItemMeta, record: AnalysisRecord
+) -> bool:
+    return (
+        paid.input_binding is not None
+        and paid.request_sha256 is not None
+        and paid.input_binding == meta.input_binding
+        and paid.generation == meta.generation
+        and paid.request_sha256 == meta.request_sha256
+        and meta.input_chars == record.input_chars
+    )
+
+
+def _block_copy_status(
+    db: sqlite3.Connection, paid: ComputationResult, record: AnalysisRecord
+) -> str:
+    try:
+        meta = _primary_batch_meta(db, paid)
+    except ReviewTextUnavailableError:
+        return "batch_item_unavailable"
+    if not _has_exact_request_binding(paid, meta, record):
+        return "request_binding_unavailable"
+    receipt = meta.prepared_input_receipt
+    if receipt is None:
+        return "receipt_unavailable"
+    if receipt.request_sha256 != paid.request_sha256 or receipt.text_chars != meta.input_chars:
+        raise ValueError("Block copy inventory found a mismatched request receipt")
+    if receipt.block_companion is None:
+        return "block_copy_unavailable"
+    if not meta.text:
+        return "metadata_only"
+    if len(meta.text) != receipt.text_chars or digest(meta.text.encode()) != receipt.text_sha256:
+        raise ValueError("Block copy inventory found a mismatched retained input")
+    return "exact_text_available"
 
 
 def _checkpoint_text(
@@ -319,14 +374,7 @@ def _saved_review_input(
             raise ValueError("Review requires a validated primary result")
         meta = _primary_batch_meta(db, paid)
         receipt = meta.prepared_input_receipt
-        if (
-            paid.input_binding is None
-            or paid.request_sha256 is None
-            or paid.input_binding != meta.input_binding
-            or paid.generation != meta.generation
-            or paid.request_sha256 != meta.request_sha256
-            or meta.input_chars != record.input_chars
-        ):
+        if not _has_exact_request_binding(paid, meta, record):
             raise ReviewTextUnavailableError("Review requires the exact retained submitted text")
         if receipt is None:
             if input_checkpoint is None:
@@ -359,6 +407,7 @@ def _saved_review_input(
             and not input_checkpoint.unchanged()
         ):
             raise ValueError("Input database changed during review preparation")
+    assert paid.request_sha256 is not None, "an exact request binding requires a request hash"
     return SavedClaimReview(
         record,
         paid.number,
@@ -503,6 +552,7 @@ def main() -> None:
     parser.add_argument("--review-result", help="write a local HTML review sheet for one result")
     parser.add_argument("--database-sha256", help="required snapshot pin for --review-result")
     parser.add_argument("--review-coverage", action="store_true")
+    parser.add_argument("--block-copy-coverage", action="store_true")
     parser.add_argument("--include-practical-impact", action="store_true")
     parser.add_argument("--input-checkpoint", nargs=2, action="append", metavar=("PATH", "SHA256"))
     args = parser.parse_args()
@@ -519,9 +569,10 @@ def main() -> None:
                 args.database,
                 args.output,
                 review_checkpoints=checkpoints if args.review_coverage else None,
+                block_copy_coverage=args.block_copy_coverage,
             )
         else:
-            if args.review_coverage or len(checkpoints) > 1:
+            if args.review_coverage or args.block_copy_coverage or len(checkpoints) > 1:
                 raise ValueError("A review sheet accepts at most one input checkpoint")
             input_checkpoint = next(iter(checkpoints), None)
             if not args.database_sha256 or args.output.suffix != ".html":

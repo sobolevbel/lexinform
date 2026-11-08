@@ -1,0 +1,29 @@
+{
+  "scope": "Read-only coverage on a pinned copy of state and a synthetic local batch before/after retention.",
+  "state_commit": "949ed30602cf88b95d547c73732c811af2be3be6",
+  "state_sql_sha256": "eed21c4100382c9346311d448788a54cab455237d16b8065874504063d20bffa",
+  "state_database_sha256": "33b2f30f063f89f92adf847f0f8496da11fc9dbd1cd6b4935642ab43acad88b3",
+  "historical_validated_primary_results": 14,
+  "historical_block_copy_coverage": {
+    "counts": {
+      "block_copy_unavailable": 3,
+      "receipt_unavailable": 11
+    },
+    "denominator": "validated_primary_results"
+  },
+  "default_report_unchanged": true,
+  "controls": {
+    "full": {
+      "denominator": "validated_primary_results",
+      "counts": {
+        "exact_text_available": 1
+      }
+    },
+    "cleaned": {
+      "denominator": "validated_primary_results",
+      "counts": {
+        "metadata_only": 1
+      }
+    }
+  }
+}

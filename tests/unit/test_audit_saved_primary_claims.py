@@ -104,6 +104,13 @@ def test_census_uses_canonical_primary_rows_and_exports_only_claim_addresses(
             "ready": [],
         },
     }
+    assert audit(database, block_copy_coverage=True) == {
+        **report,
+        "block_copy_coverage": {
+            "denominator": "validated_primary_results",
+            "counts": {"batch_item_unavailable": 2},
+        },
+    }
     wrong_pin = ReviewInputCheckpoint(database, "0" * 64)
     with pytest.raises(ValueError, match="differs from its pin"):
         audit(database, review_checkpoints=(wrong_pin,))
