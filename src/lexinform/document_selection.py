@@ -19,7 +19,7 @@ from lexinform.models.documents import (
 from lexinform.sections import PAGE_BREAK, document_kind, trim_print
 from lexinform.text_projection import SourcePiece, TextProjection, project_pieces
 
-DOCUMENT_SELECTION_POLICY_VERSION = "document-selection-v2"
+DOCUMENT_SELECTION_POLICY_VERSION = "document-selection-v3"
 
 
 def bill_selection(
@@ -104,7 +104,11 @@ def bill_selection(
             for index, version in core_dates
         )
     state = "selected" if confirmed else "unverified"
-    if "missing_own_annex" in limitations:
+    incomplete_archive_annex = any(
+        part.members and part.role == "normative_annex" and part.has_pdf_page_failure
+        for part in parts
+    )
+    if "missing_own_annex" in limitations or incomplete_archive_annex:
         state = "waiting"
     if "draft_version_conflict" in limitations or any(
         link.status == "conflicting" for link in bundle.links
@@ -137,6 +141,11 @@ def bill_selection(
             "normative_sha256": digest,
             "rejected": (
                 *selection.rejected,
+                *(
+                    ("PDF page extraction failed in an archive annex",)
+                    if incomplete_archive_annex
+                    else ()
+                ),
                 *(
                     reason
                     for reason in limitations

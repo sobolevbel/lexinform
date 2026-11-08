@@ -249,3 +249,21 @@ def test_justification_inside_the_same_file_does_not_declare_a_required_own_anne
     result = choose(part(text))
 
     assert "missing_own_annex" not in result.limitations
+
+
+@pytest.mark.parametrize("failed", [False, True])
+def test_failed_archive_annex_stays_pending_even_with_a_confirmed_heading(failed: bool) -> None:
+    body = law().replace("Art. 2.", "Art. 2. Wzór określa załącznik nr 2 do niniejszej ustawy.")
+    annex = part("Załącznik nr 2 do projektu ustawy\nWYKAZ\n200 zł", "normative_annex")
+    annex = annex.model_copy(
+        update={
+            "members": ("załącznik nr 2 do ustawy.pdf",),
+            "losses": ("PDF text extraction failed on 1 page(s)",) if failed else (),
+        }
+    )
+
+    result = choose(part(body), annex)
+
+    assert result.links[0].status == "confirmed"
+    assert result.state == ("waiting" if failed else "selected")
+    assert ("PDF page extraction failed in an archive annex" in result.rejected) == failed

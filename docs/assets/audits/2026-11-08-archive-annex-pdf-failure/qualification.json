@@ -1,0 +1,202 @@
+{
+  "before": {
+    "controlled_source_sha256": {
+      "300513.pdf": "3a3aba7b2ae342e7fd858c1555f635bb47f1e36646a73492660399a3a87b4998",
+      "300517.pdf": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+    },
+    "cases": [
+      {
+        "archive": "controlled_rcl_bundle",
+        "mode": "original",
+        "rollback_reader_verified": false,
+        "state": "unverified",
+        "text_sha256": "cff2a18ea7c5131213452092b64b965b412db8794ec464ee785192333b397d88",
+        "parts": [
+          [
+            "bill",
+            "3a3aba7b2ae342e7fd858c1555f635bb47f1e36646a73492660399a3a87b4998"
+          ],
+          [
+            "normative_annex",
+            "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+          ]
+        ],
+        "reported_archive_annex_failure": false
+      },
+      {
+        "archive": "controlled_rcl_bundle",
+        "mode": "blank",
+        "rollback_reader_verified": false,
+        "state": "unverified",
+        "text_sha256": "8593986d21656720a01c219da6cdab9ac7103b714b0463e2995e0aeefbbbe637",
+        "parts": [
+          [
+            "bill",
+            "3a3aba7b2ae342e7fd858c1555f635bb47f1e36646a73492660399a3a87b4998"
+          ],
+          [
+            "normative_annex",
+            "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+          ]
+        ],
+        "reported_archive_annex_failure": false
+      },
+      {
+        "archive": "controlled_rcl_bundle",
+        "mode": "failure",
+        "rollback_reader_verified": false,
+        "state": "unverified",
+        "text_sha256": "8593986d21656720a01c219da6cdab9ac7103b714b0463e2995e0aeefbbbe637",
+        "parts": [
+          [
+            "bill",
+            "3a3aba7b2ae342e7fd858c1555f635bb47f1e36646a73492660399a3a87b4998"
+          ],
+          [
+            "normative_annex",
+            "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+          ]
+        ],
+        "reported_archive_annex_failure": false
+      },
+      {
+        "archive": "735247.zip",
+        "mode": "original",
+        "rollback_reader_verified": false,
+        "state": "unverified",
+        "text_sha256": "e4dcb2ce8e726274e5074204b659e854f4eaa0e6de5a20b8a8a013cdc90f27ff",
+        "parts": [
+          [
+            "bill",
+            "5ba68bcabceac7c7d4e3af8d10ccdb36163ec7c4b948245dcf1d05591b240ac9"
+          ],
+          [
+            "justification",
+            "175f8fcf1712cd84f280addac784e15fdcf93ac5025696c180e4b7ac340e5e73"
+          ],
+          [
+            "osr",
+            "7ca1c87415978c1a2a5bbcc925329a3eb687f40804ebc0c053fc103eef4ded6f"
+          ]
+        ],
+        "reported_archive_annex_failure": false,
+        "sha256": "f6de7e216cdaec994ed1cc19eb38e64b7a99e5bbd17abf69f419c7c850960128"
+      },
+      {
+        "archive": "738682.zip",
+        "mode": "original",
+        "rollback_reader_verified": false,
+        "state": "unsupported",
+        "text_sha256": "ae9e54a61735683c55989d496f8e876db68e7cdaab6077c5f590291089548236",
+        "parts": [
+          [
+            "osr",
+            "2119ae52140192ad5c99715e2d133e5034732145c430799527d85301d7cb8e90"
+          ]
+        ],
+        "reported_archive_annex_failure": false,
+        "sha256": "2aadd75698fd556fe54616468b81d08fd4927dfce9b9dbacdd93d35d2279a9ef"
+      }
+    ]
+  },
+  "after": {
+    "controlled_source_sha256": {
+      "300513.pdf": "3a3aba7b2ae342e7fd858c1555f635bb47f1e36646a73492660399a3a87b4998",
+      "300517.pdf": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+    },
+    "cases": [
+      {
+        "archive": "controlled_rcl_bundle",
+        "mode": "original",
+        "rollback_reader_verified": false,
+        "state": "unverified",
+        "text_sha256": "cff2a18ea7c5131213452092b64b965b412db8794ec464ee785192333b397d88",
+        "parts": [
+          [
+            "bill",
+            "3a3aba7b2ae342e7fd858c1555f635bb47f1e36646a73492660399a3a87b4998"
+          ],
+          [
+            "normative_annex",
+            "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+          ]
+        ],
+        "reported_archive_annex_failure": false
+      },
+      {
+        "archive": "controlled_rcl_bundle",
+        "mode": "blank",
+        "rollback_reader_verified": false,
+        "state": "unverified",
+        "text_sha256": "8593986d21656720a01c219da6cdab9ac7103b714b0463e2995e0aeefbbbe637",
+        "parts": [
+          [
+            "bill",
+            "3a3aba7b2ae342e7fd858c1555f635bb47f1e36646a73492660399a3a87b4998"
+          ],
+          [
+            "normative_annex",
+            "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+          ]
+        ],
+        "reported_archive_annex_failure": false
+      },
+      {
+        "archive": "controlled_rcl_bundle",
+        "mode": "failure",
+        "rollback_reader_verified": true,
+        "state": "waiting",
+        "text_sha256": "8593986d21656720a01c219da6cdab9ac7103b714b0463e2995e0aeefbbbe637",
+        "parts": [
+          [
+            "bill",
+            "3a3aba7b2ae342e7fd858c1555f635bb47f1e36646a73492660399a3a87b4998"
+          ],
+          [
+            "normative_annex",
+            "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+          ]
+        ],
+        "reported_archive_annex_failure": true
+      },
+      {
+        "archive": "735247.zip",
+        "mode": "original",
+        "rollback_reader_verified": false,
+        "state": "unverified",
+        "text_sha256": "e4dcb2ce8e726274e5074204b659e854f4eaa0e6de5a20b8a8a013cdc90f27ff",
+        "parts": [
+          [
+            "bill",
+            "5ba68bcabceac7c7d4e3af8d10ccdb36163ec7c4b948245dcf1d05591b240ac9"
+          ],
+          [
+            "justification",
+            "175f8fcf1712cd84f280addac784e15fdcf93ac5025696c180e4b7ac340e5e73"
+          ],
+          [
+            "osr",
+            "7ca1c87415978c1a2a5bbcc925329a3eb687f40804ebc0c053fc103eef4ded6f"
+          ]
+        ],
+        "reported_archive_annex_failure": false,
+        "sha256": "f6de7e216cdaec994ed1cc19eb38e64b7a99e5bbd17abf69f419c7c850960128"
+      },
+      {
+        "archive": "738682.zip",
+        "mode": "original",
+        "rollback_reader_verified": false,
+        "state": "unsupported",
+        "text_sha256": "ae9e54a61735683c55989d496f8e876db68e7cdaab6077c5f590291089548236",
+        "parts": [
+          [
+            "osr",
+            "2119ae52140192ad5c99715e2d133e5034732145c430799527d85301d7cb8e90"
+          ]
+        ],
+        "reported_archive_annex_failure": false,
+        "sha256": "2aadd75698fd556fe54616468b81d08fd4927dfce9b9dbacdd93d35d2279a9ef"
+      }
+    ]
+  }
+}
