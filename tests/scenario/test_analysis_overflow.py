@@ -3,7 +3,7 @@ from dataclasses import replace
 import pytest
 
 from lexinform.errors import LlmContextExceededError
-from lexinform.models import BillContext, BillStatus, TextDocument
+from lexinform.models import BatchItemMeta, BillContext, BillStatus, TextDocument
 from lexinform.pricing import INPUT_TOKEN_LIMITS
 from lexinform.services.analysis import Waiting
 from tests.fakes import FakeBatchBackend, FakeTextExtractor
@@ -187,16 +187,27 @@ def test_reanalysis_context_rejection_uses_opus_batch() -> None:
     w.run()
     w.batch.resolve()
     w.run()
+    previous = w.bill("3039").analysis
+    assert previous is not None and previous.computation_id is not None, (
+        "the collected first analysis is the reanalysis baseline"
+    )
     w.batch.script["3039"] = LlmContextExceededError("context_length_exceeded")
     url = "https://api.test/new.pdf"
     w.gateway.files[url] = b"new"
     document = TextDocument(url=url, kind="print")
     assert w.analysis.reanalyze_bill(w.bill("3039"), document) is None
+    (intent,) = w.repo.list_queued_batch_intents()
+    assert isinstance(intent.meta, BatchItemMeta), "reanalysis is a primary request"
+    baseline = intent.meta.reanalysis_baseline
+    assert baseline is not None and baseline.result_id == previous.computation_id
     w.analysis.submit_queued_batches()
     w.batch.resolve()
     w.analysis.collect_batches()
 
     assert w.analysis.reanalyze_bill(w.bill("3039"), document) is None
+    (overflow_intent,) = w.repo.list_queued_batch_intents()
+    assert isinstance(overflow_intent.meta, BatchItemMeta), "overflow keeps primary metadata"
+    assert overflow_intent.meta.reanalysis_baseline == baseline
     w.analysis.submit_queued_batches()
     overflow.resolve()
     w.analysis.collect_batches()

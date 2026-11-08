@@ -140,6 +140,7 @@ from lexinform.models.batch import (
     DocumentReviewQuestion,
     JointQuestion,
     NameQuestion,
+    ReanalysisBaselineReference,
     SupplementQuestion,
 )
 from lexinform.models.candidate_trace import CandidateDispositionTrace
@@ -176,6 +177,7 @@ from lexinform.pricing import (
     input_cost,
     tiered,
 )
+from lexinform.primary_projections import primary_record_matches
 from lexinform.print_representation import (
     MAX_REPRESENTATION_CORE_CHARS,
     MAX_REPRESENTATION_DOCX_BYTES,
@@ -3859,15 +3861,49 @@ class AnalysisService:
             )
         return True
 
+    def _reanalysis_baseline(
+        self, request: BatchRequest, previous: AnalysisRecord | None, created_at: datetime
+    ) -> ReanalysisBaselineReference | None:
+        question = request.question
+        if (
+            not isinstance(question, AnalysisQuestion)
+            or question.kind != "reanalysis"
+            or request.payload_sha256 is None
+            or previous is None
+            or previous.computation_id is None
+            or (previous.analysis.summary, previous.analysis.key_changes)
+            != (question.ctx.previous_summary, question.ctx.previous_key_changes)
+        ):
+            return None
+        try:
+            result = self._repo.get_computation_result(previous.computation_id)
+        except ValueError:
+            log.warning("Reanalysis baseline omitted (invalid_previous_result)")
+            return None
+        if (
+            result is None
+            or (result.term, result.number) != (request.term, request.number)
+            or result.custom_id == request.custom_id
+            or result.collected_at > created_at
+            or not primary_record_matches(previous, result)
+        ):
+            return None
+        return ReanalysisBaselineReference.from_context(
+            result.result_id, question.ctx.previous_summary, question.ctx.previous_key_changes
+        )
+
     def _save_analysis_intent(self, bill: Bill, prepared: _Prepared) -> None:
         request, meta = prepared.batch_request, prepared.batch_meta
         assert request is not None and meta is not None, "Enqueue requires a prepared batch request"
         with self._repo.atomic():
+            created_at = self._clock.now()
+            baseline = self._reanalysis_baseline(request, prepared.bill.analysis, created_at)
             intent = BatchIntent.from_request(
                 request=request,
                 meta=meta.model_copy(
                     update={
                         "prompt_version": request.prompt_version,
+                        "reanalysis_baseline": baseline,
                         **(
                             {"prepared_input_receipt": prepared.input_receipt}
                             if prepared.word_formula_fallback is not None
@@ -3876,7 +3912,7 @@ class AnalysisService:
                     }
                 ),
                 provider=prepared.batch_provider or self._options.batch_provider or "anthropic",
-                created_at=self._clock.now(),
+                created_at=created_at,
             )
             if prepared.input_receipt is not None and prepared.word_formula_fallback is None:
                 try:

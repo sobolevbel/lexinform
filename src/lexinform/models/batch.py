@@ -374,9 +374,13 @@ class ReanalysisBaselineReference(BaseModel):
     result_id: str = Field(pattern=r"^result-v1:[0-9a-f]{64}$")
     context_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
 
+    @classmethod
+    def from_context(cls, result_id: str, summary: str | None, changes: list[str]) -> Self:
+        checksum = hashlib.sha256(canonical_json([summary, [*changes]]).encode()).hexdigest()
+        return cls(result_id=result_id, context_sha256=checksum)
+
     def require_context(self, summary: str | None, changes: list[str]) -> None:
-        actual = hashlib.sha256(canonical_json([summary, [*changes]]).encode()).hexdigest()
-        if actual != self.context_sha256:
+        if self != self.from_context(self.result_id, summary, changes):
             raise ValueError("Reanalysis baseline differs from the previous answer context")
 
 

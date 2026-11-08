@@ -1,0 +1,81 @@
+{
+  "baseline": {
+    "source": [
+      {
+        "raw_sha256": "01bbb593c74d4df10d7dceb6373de4500e7d769fd5bf29d619fbd097d1a9fd05",
+        "text_sha256": "cbf8adf67de31b398f074e10a57d1c2f1f2a6fb54151f13dcf36e0c3bfb035c2"
+      },
+      {
+        "raw_sha256": "44798aaf4e946134dcd04b73ffe7bee6685f03f5cfe346ca8821f18d7c99c754",
+        "text_sha256": "88e51a263f58e45c063fc781a301267ea5e2dc2acd6fa3021f6e4240bc2b5244"
+      }
+    ],
+    "previous_result_id": "result-v1:1c1b24482b4eb4f8abb54efdca150146ce004fa3fd1534a3738c77257f5c7332",
+    "request_sha256": "4c16c81da4c01a5969949105343d79598685a76075e57ca45762473be63bf620",
+    "context_sha256": "b04ae6729da524d9e7bd49f42231a97f0c255d45327bb997d1a40a6741575180",
+    "baseline_reference": null,
+    "queued": {
+      "sql_bytes": 121441,
+      "gzip_bytes": 22126
+    },
+    "collected": {
+      "sql_bytes": 111874,
+      "gzip_bytes": 21548
+    },
+    "cleaned": {
+      "sql_bytes": 101440,
+      "gzip_bytes": 18996
+    },
+    "queued_collected_cleaned_restore": true
+  },
+  "writer": {
+    "source": [
+      {
+        "raw_sha256": "01bbb593c74d4df10d7dceb6373de4500e7d769fd5bf29d619fbd097d1a9fd05",
+        "text_sha256": "cbf8adf67de31b398f074e10a57d1c2f1f2a6fb54151f13dcf36e0c3bfb035c2"
+      },
+      {
+        "raw_sha256": "44798aaf4e946134dcd04b73ffe7bee6685f03f5cfe346ca8821f18d7c99c754",
+        "text_sha256": "88e51a263f58e45c063fc781a301267ea5e2dc2acd6fa3021f6e4240bc2b5244"
+      }
+    ],
+    "previous_result_id": "result-v1:1c1b24482b4eb4f8abb54efdca150146ce004fa3fd1534a3738c77257f5c7332",
+    "request_sha256": "4c16c81da4c01a5969949105343d79598685a76075e57ca45762473be63bf620",
+    "context_sha256": "b04ae6729da524d9e7bd49f42231a97f0c255d45327bb997d1a40a6741575180",
+    "baseline_reference": {
+      "result_id": "result-v1:1c1b24482b4eb4f8abb54efdca150146ce004fa3fd1534a3738c77257f5c7332",
+      "context_sha256": "1afccc32cdd97d049f4433912fe6244a7608d1e63953253e77c3b57ccb36ec6a"
+    },
+    "queued": {
+      "sql_bytes": 121638,
+      "gzip_bytes": 22195
+    },
+    "collected": {
+      "sql_bytes": 112071,
+      "gzip_bytes": 21618
+    },
+    "cleaned": {
+      "sql_bytes": 101637,
+      "gzip_bytes": 19063
+    },
+    "queued_collected_cleaned_restore": true
+  },
+  "identical_request": true,
+  "delta": [
+    {
+      "phase": "queued",
+      "sql_bytes": 197,
+      "gzip_bytes": 69
+    },
+    {
+      "phase": "collected",
+      "sql_bytes": 197,
+      "gzip_bytes": 70
+    },
+    {
+      "phase": "cleaned",
+      "sql_bytes": 197,
+      "gzip_bytes": 67
+    }
+  ]
+}
