@@ -48,6 +48,7 @@ class JointPrimaryEvidence(BaseModel):
 
     publication_id: PositiveInt
     bill_snapshot_id: str = Field(pattern=r"^content-snapshot-v1:[0-9a-f]{64}$")
+    packed_bill: Literal[True] | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class OriginalDeliveryEvidence(BaseModel):
@@ -57,6 +58,7 @@ class OriginalDeliveryEvidence(BaseModel):
     bill_context: Literal["editorial-notice-v1", "editorial-card-original-v1"]
     channel_id: str = Field(min_length=1, max_length=256)
     ref: str | None = Field(default=None, max_length=512)
+    packed_bill: Literal[True] | None = Field(default=None, exclude_if=lambda value: value is None)
     joint_primary: JointPrimaryEvidence | None = Field(
         default=None, exclude_if=lambda value: value is None
     )

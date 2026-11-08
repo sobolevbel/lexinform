@@ -1,10 +1,7 @@
 """Bounded immutable digest input and exact ordered physical parts."""
 
-import base64
-import binascii
 import datetime as dt
 import hashlib
-import zlib
 from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
@@ -12,12 +9,10 @@ from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 from lexinform.json_storage import canonical_json
 from lexinform.models.digest import Digest, week_bounds
 from lexinform.models.physical_inventory import Sha256
+from lexinform.packed_content import MAX_PACKED_BASE64_CHARS, unpack_content
 from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
 
 MAX_DIGEST_CONTENT_BYTES = 65_536
-MAX_PACKED_DIGEST_BYTES = 16_384
-MAX_UNPACKED_DIGEST_BYTES = 524_288
-MAX_DIGEST_BASE64_CHARS = ((MAX_PACKED_DIGEST_BYTES + 2) // 3) * 4
 
 type DigestRenderedProfile = Literal["digest-rendered-v1", "digest-rendered-semantic-v1"]
 type DigestHistoryProfile = Literal[
@@ -115,7 +110,7 @@ class DigestRenderedPlan(BaseModel):
     upstream_digest_zlib: str | None = Field(
         default=None,
         min_length=1,
-        max_length=MAX_DIGEST_BASE64_CHARS,
+        max_length=MAX_PACKED_BASE64_CHARS,
         exclude_if=lambda value: value is None,
     )
     parts: tuple[DigestRenderedPartRef, ...] = Field(min_length=1, max_length=16)
@@ -150,23 +145,9 @@ class DigestRenderedPlan(BaseModel):
         if packed is None:
             return None
         try:
-            compressed = base64.b64decode(packed, validate=True)
-            if len(compressed) > MAX_PACKED_DIGEST_BYTES or (
-                base64.b64encode(compressed).decode("ascii") != packed
-            ):
-                raise ValueError("digest compressed semantics exceeds its canonical bound")
-            stream = zlib.decompressobj()
-            raw = stream.decompress(compressed, MAX_UNPACKED_DIGEST_BYTES + 1)
-            if (
-                len(raw) > MAX_UNPACKED_DIGEST_BYTES
-                or not stream.eof
-                or stream.unconsumed_tail
-                or stream.unused_data
-                or hashlib.sha256(raw).hexdigest() != self.upstream_digest_sha256
-            ):
-                raise ValueError("digest compressed semantics differs from its recorded input")
+            raw = unpack_content(packed, self.upstream_digest_sha256)
             digest = Digest.model_validate_json(raw)
-        except (binascii.Error, zlib.error) as exc:
+        except ValueError as exc:
             raise ValueError("invalid digest compressed semantics") from exc
         if digest.model_dump_json().encode() != raw or (digest.ref, digest.since, digest.until) != (
             self.week_ref,

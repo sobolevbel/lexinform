@@ -6,10 +6,10 @@ import pytest
 
 from lexinform.models.digest import Digest, week_bounds
 from lexinform.models.digest_content import (
-    MAX_UNPACKED_DIGEST_BYTES,
     DigestRenderedPartRef,
     DigestRenderedPlan,
 )
+from lexinform.packed_content import MAX_UNPACKED_CONTENT_BYTES
 
 
 @pytest.mark.parametrize("damage", ["expanded", "trailing", "checksum", "week", "encoding"])
@@ -20,7 +20,7 @@ def test_retained_digest_rejects_unbounded_or_foreign_payload(damage: str) -> No
     start, end = week_bounds(upstream_week)
     raw = Digest(ref=upstream_week, since=start, until=end).model_dump_json().encode()
     if damage == "expanded":
-        raw = b"x" * (MAX_UNPACKED_DIGEST_BYTES + 1)
+        raw = b"x" * (MAX_UNPACKED_CONTENT_BYTES + 1)
     compressed = zlib.compress(raw)
     if damage == "trailing":
         compressed += zlib.compress(b"second stream")

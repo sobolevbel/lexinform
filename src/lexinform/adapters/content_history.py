@@ -63,6 +63,7 @@ from lexinform.models.content import (
     CardPrimaryEvidence,
     card_bill_snapshot,
     grouped_stage_content_budget,
+    original_bill_context,
     original_delivery_bill_snapshot,
     validate_review_notice,
 )
@@ -1673,17 +1674,15 @@ def verify_original_delivery_content(
         if {binding[0] for binding in bindings} != set(plan.bindings):
             raise ValueError("original_delivery_binding_scope")
     review_notice = evidence.kind in REVIEW_NOTICE_KINDS
-    if (
-        original_delivery_bill_snapshot(bill_snapshot.payload_json, review_notice=review_notice)
-        != bill_snapshot
-    ):
-        raise ValueError("original_delivery_bill_profile")
-    bill = Bill.model_validate(read_json(bill_snapshot.payload_json))
+    context = original_bill_context(
+        bill_snapshot, packed=bool(evidence.packed_bill), review_notice=review_notice
+    )
+    bill = Bill.model_validate(read_json(context.payload_json))
     if review_notice:
         validate_review_notice(bill, evidence.kind, evidence.ref)
     if evidence.kind is PublicationKind.ACT_PUBLISHED and bill.act is None:
         raise ValueError("original_delivery_act_missing")
-    primary_snapshot = None
+    primary_context = None
     joint = evidence.joint_primary
     if joint is not None:
         primary_snapshot = reader.get_content_snapshot(joint.bill_snapshot_id)
@@ -1703,7 +1702,6 @@ def verify_original_delivery_content(
         if (
             primary_snapshot is None
             or primary_snapshot.kind != "bill"
-            or original_delivery_bill_snapshot(primary_snapshot.payload_json) != primary_snapshot
             or primary is None
             or len(primary_snapshot.payload_json.encode())
             + len(bill_snapshot.payload_json.encode())
@@ -1711,7 +1709,8 @@ def verify_original_delivery_content(
             > MAX_ORIGINAL_DELIVERY_BYTES
         ):
             raise ValueError("joint_history_primary_snapshot")
-        primary_bill = Bill.model_validate(read_json(primary_snapshot.payload_json))
+        primary_context = original_bill_context(primary_snapshot, packed=bool(joint.packed_bill))
+        primary_bill = Bill.model_validate(read_json(primary_context.payload_json))
         if (
             primary.message_id != plan.root.reply_to
             or primary.channel_id != evidence.channel_id
@@ -1771,15 +1770,15 @@ def verify_original_delivery_content(
                         original_delivery_bill_snapshot(
                             retained.bill_json, review_notice=review_notice
                         )
-                        != bill_snapshot
+                        != context
                         or retained.rendered_text != part.html
                         or original_delivery_context(retained, joint=joint is not None) != plan.root
                         or (
-                            primary_snapshot is not None
+                            primary_context is not None
                             and (
                                 not retained.primary_json
                                 or original_delivery_bill_snapshot(retained.primary_json)
-                                != primary_snapshot
+                                != primary_context
                             )
                         )
                     )

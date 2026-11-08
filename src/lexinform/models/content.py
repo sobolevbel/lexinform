@@ -15,6 +15,7 @@ from lexinform.models.enums import PublicationKind, PublicationStatus
 from lexinform.models.grouped_update_witness import GroupedRenderWitness
 from lexinform.models.original_delivery_content import OriginalDeliveryEvidence
 from lexinform.models.reviews import DocumentReviewRecord
+from lexinform.packed_content import MAX_PACKED_BASE64_CHARS, unpack_content
 
 
 class ContentSnapshot(BaseModel):
@@ -78,6 +79,34 @@ def original_delivery_bill_snapshot(raw: str, *, review_notice: bool = False) ->
         return ContentSnapshot(
             kind="bill", payload_json=json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
         )
+    return snapshot
+
+
+class PackedOriginalBill(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    profile: Literal["original-bill-zlib-v1"] = "original-bill-zlib-v1"
+    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    packed: str = Field(min_length=1, max_length=MAX_PACKED_BASE64_CHARS)
+
+
+def original_bill_context(
+    snapshot: ContentSnapshot, *, packed: bool, review_notice: bool = False
+) -> ContentSnapshot:
+    if snapshot.kind != "bill":
+        raise ValueError("original_delivery_bill_profile")
+    if packed:
+        envelope = PackedOriginalBill.model_validate_json(snapshot.payload_json)
+        if envelope.model_dump_json() != snapshot.payload_json:
+            raise ValueError("original_delivery_bill_profile")
+        snapshot = ContentSnapshot(
+            kind="bill", payload_json=unpack_content(envelope.packed, envelope.sha256).decode()
+        )
+    if (
+        original_delivery_bill_snapshot(snapshot.payload_json, review_notice=review_notice)
+        != snapshot
+    ):
+        raise ValueError("original_delivery_bill_profile")
     return snapshot
 
 

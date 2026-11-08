@@ -7,7 +7,7 @@ from lexinform.adapters.content_source_refs import ContentSourceRows
 from lexinform.adapters.document_source_rows import DocumentSourceRows
 from lexinform.models import Bill, ContentSnapshot, ContentVersion, PublicationKind
 from lexinform.models.computations import ReviewInputReference, ReviewResultRecord
-from lexinform.models.content import validate_review_notice
+from lexinform.models.content import original_bill_context, validate_review_notice
 from lexinform.models.original_delivery_content import REVIEW_NOTICE_KINDS
 
 
@@ -19,7 +19,8 @@ def review_application_evidence(
         raise ValueError("Review evidence requires a direct review version")
     if snapshot.kind != "bill" or snapshot.snapshot_id != version.bill_context_id:
         raise ValueError("Review evidence requires its exact semantic snapshot")
-    bill = Bill.model_validate_json(snapshot.payload_json)
+    context = original_bill_context(snapshot, packed=bool(evidence.packed_bill), review_notice=True)
+    bill = Bill.model_validate_json(context.payload_json)
     frozen = validate_review_notice(bill, evidence.kind, evidence.ref)
     if frozen.computation_id is None:
         return {"status": "unavailable", "reason": "paid_identity_unrecorded"}

@@ -1,4 +1,7 @@
+import base64
+import hashlib
 import json
+import zlib
 from contextlib import closing
 from datetime import timedelta
 
@@ -16,7 +19,11 @@ from lexinform.models import (
     PublicationKind,
     PublicationStatus,
 )
-from lexinform.models.content import original_delivery_bill_snapshot
+from lexinform.models.content import (
+    PackedOriginalBill,
+    original_bill_context,
+    original_delivery_bill_snapshot,
+)
 from lexinform.models.original_delivery_content import (
     OriginalDeliveryEvidence,
     OriginalDeliveryPart,
@@ -66,8 +73,11 @@ def test_original_notice_snapshot_omits_operational_document_bodies() -> None:
 @pytest.mark.parametrize(
     "kind", [PublicationKind.CONSULTATION_REVIEW, PublicationKind.COMMISSION_REVIEW]
 )
-def test_direct_review_history_reads_exact_render_after_cleanup(kind: ReviewNoticeKind) -> None:
-    process = summary("RCL/123", "Projekt ustawy")
+@pytest.mark.parametrize("packed", [False, True])
+def test_direct_review_history_reads_exact_render_after_cleanup(
+    kind: ReviewNoticeKind, packed: bool
+) -> None:
+    process = summary("RCL/123", "Projekt ustawy" + ("x" * 150_000 if packed else ""))
     context = ReviewContext(
         number=process.number,
         title=process.title,
@@ -122,6 +132,14 @@ def test_direct_review_history_reads_exact_render_after_cleanup(kind: ReviewNoti
             )
         )
         projected = original_delivery_bill_snapshot(raw, review_notice=True)
+        archived = projected
+        if packed:
+            body = projected.payload_json.encode()
+            envelope = PackedOriginalBill(
+                sha256=hashlib.sha256(body).hexdigest(),
+                packed=base64.b64encode(zlib.compress(body)).decode("ascii"),
+            )
+            archived = ContentSnapshot(kind="bill", payload_json=envelope.model_dump_json())
         document = json.loads(projected.payload_json)[field]["context"]["documents"][0]
         assert document["text"] == ""
         assert document["body"] == (
@@ -163,7 +181,11 @@ def test_direct_review_history_reads_exact_render_after_cleanup(kind: ReviewNoti
         plan = OriginalDeliveryPlan(root=original_delivery_context(frozen), parts=tuple(parts))
         snapshot = ContentSnapshot(kind="plan", payload_json=plan.model_dump_json())
         evidence = OriginalDeliveryEvidence(
-            kind=kind, channel_id="fixture", ref=ref, bill_context="editorial-notice-v1"
+            kind=kind,
+            channel_id="fixture",
+            ref=ref,
+            bill_context="editorial-notice-v1",
+            packed_bill=True if packed else None,
         )
         version = ContentVersion(
             root_publication_id=root,
@@ -171,7 +193,7 @@ def test_direct_review_history_reads_exact_render_after_cleanup(kind: ReviewNoti
             language="ru",
             formatter_version="fixture-v1",
             recorded_at=NOW,
-            bill_snapshot_id=projected.snapshot_id,
+            bill_snapshot_id=archived.snapshot_id,
             plan_snapshot_id=snapshot.snapshot_id,
             original_delivery_evidence=evidence,
         )
@@ -179,7 +201,7 @@ def test_direct_review_history_reads_exact_render_after_cleanup(kind: ReviewNoti
             update={"original_delivery_evidence": evidence.model_copy(update={"ref": "other"})}
         )
         with pytest.raises(ValueError, match="original_delivery_review_scope"), repo.atomic():
-            repo.save_original_delivery_content(projected, snapshot, wrong)
+            repo.save_original_delivery_content(archived, snapshot, wrong)
         stored = repo.publication_by_id(root)
         assert stored is not None, "the freeze retains its queued publication"
         origin = stored.model_copy(
@@ -194,9 +216,12 @@ def test_direct_review_history_reads_exact_render_after_cleanup(kind: ReviewNoti
                 formatter_version="fixture-v1",
             )
             assert repo.get_publication_content(root) is None
-            record_original_delivery_content(
-                repo, origin, stored, language="ru", formatter_version="fixture-v1"
-            )
+            if packed:
+                repo.save_original_delivery_content(archived, snapshot, version)
+            else:
+                record_original_delivery_content(
+                    repo, origin, stored, language="ru", formatter_version="fixture-v1"
+                )
         assert repo.get_publication_content(root) == version
         repo.mark_publication(root, PublicationStatus.SENT, message_id=11, sent_at=NOW)
         if child is not None:
@@ -217,6 +242,9 @@ def test_direct_review_history_reads_exact_render_after_cleanup(kind: ReviewNoti
         repo.restore(dump)
         assert repo.get_publication_content(root) == version
         assert repo.get_content_snapshot(version.plan_snapshot_id) == snapshot
+        preserved = repo.get_content_snapshot(version.bill_context_id)
+        assert preserved is not None, "the original bill context survives cleanup"
+        assert original_bill_context(preserved, packed=packed, review_notice=True) == projected
         confirmed = repo.publication_by_id(root)
         assert confirmed is not None, "retention preserves the root identity"
         history = inspect_content(repo, confirmed)

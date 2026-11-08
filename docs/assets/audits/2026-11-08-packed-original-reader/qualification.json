@@ -1,0 +1,37 @@
+{
+  "baseline_commit": "2a667e39",
+  "controls": [
+    {
+      "packed": false,
+      "raw_bytes": 155504,
+      "raw_sha256": "7c5567d4c6ace9f9b90c09082f220f90332ceac5fe1700fac405c37d0dd6f221",
+      "compressed_bytes": 0,
+      "html_sha256": [
+        "a0f93418cfec8bf159a48e239548d336c01404bbc5e9f7b7e32db1a63bd15217"
+      ],
+      "sql_sha256": "14859af1db961a45ad0687c2e567ef81815d5bd8346dd36b99ee68182123044c",
+      "gzip_after_cleanup": 12603,
+      "physical_parts": 1
+    },
+    {
+      "packed": true,
+      "raw_bytes": 155504,
+      "raw_sha256": "7c5567d4c6ace9f9b90c09082f220f90332ceac5fe1700fac405c37d0dd6f221",
+      "compressed_bytes": 2754,
+      "html_sha256": [
+        "a0f93418cfec8bf159a48e239548d336c01404bbc5e9f7b7e32db1a63bd15217"
+      ],
+      "sql_sha256": "919bdc77bf02e23905376425ce498b4b9a23b6e3859cfd067c5f25fbccf16e53",
+      "gzip_after_cleanup": 16477,
+      "physical_parts": 1
+    }
+  ],
+  "additional_gzip_bytes": 3874,
+  "existing_digest_and_state_reports_unchanged": true,
+  "writer_active": false,
+  "joint_card_control": {
+    "both_bill_contexts_packed": true,
+    "exact_restore": true,
+    "pruned_sql_sha256": "8a27f2b253da7b15dc18d497c17d095f43779abe29e8996a19103e987f513a90"
+  }
+}

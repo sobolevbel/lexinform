@@ -9,8 +9,6 @@ from pydantic import ValidationError
 
 from lexinform.models import ContentSnapshot, ContentVersion, Digest
 from lexinform.models.digest_content import (
-    MAX_PACKED_DIGEST_BYTES,
-    MAX_UNPACKED_DIGEST_BYTES,
     DigestContentBudgetError,
     DigestContentPart,
     DigestContentPlan,
@@ -20,6 +18,7 @@ from lexinform.models.digest_content import (
     DigestRenderedPlan,
     digest_event_owner_sha256,
 )
+from lexinform.packed_content import MAX_PACKED_CONTENT_BYTES, MAX_UNPACKED_CONTENT_BYTES
 from lexinform.ports import BillRepository
 from lexinform.services.content_history import FORMATTER_VERSION
 
@@ -133,10 +132,10 @@ def _rendered_history(
             )
         )
     raw = week.model_dump_json().encode()
-    compressed = zlib.compress(raw) if len(raw) <= MAX_UNPACKED_DIGEST_BYTES else None
+    compressed = zlib.compress(raw) if len(raw) <= MAX_UNPACKED_CONTENT_BYTES else None
     packed = (
         base64.b64encode(compressed).decode("ascii")
-        if compressed is not None and len(compressed) <= MAX_PACKED_DIGEST_BYTES
+        if compressed is not None and len(compressed) <= MAX_PACKED_CONTENT_BYTES
         else None
     )
     return DigestRenderedPlan(
