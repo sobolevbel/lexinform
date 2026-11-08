@@ -13,9 +13,11 @@ from lexinform.adapters.content_history import (
     card_current_content,
     read_content_version,
     read_grouped_stage_telegram_target,
+    verify_act_published_content,
     verify_card_content,
     verify_direct_stage_content,
     verify_grouped_stage_content,
+    verify_original_delivery_content,
     verify_sitting_content,
 )
 from lexinform.adapters.content_source_refs import verify_content_source
@@ -34,10 +36,22 @@ from lexinform.models import (
     PublicationStatus,
 )
 from lexinform.models.commands import read_delivery_resolution
+from lexinform.models.original_delivery_content import ORIGINAL_CARD_KINDS
 from tools.corpus_artifacts import write_json
 from tools.sqlite_snapshot import open_snapshot, snapshot_files
 
 _TABLES = {"content_snapshots", "content_versions", "publication_content"}
+
+
+def _independent_profile(version: ContentVersion) -> bool:
+    return (
+        version.sitting_profile is not None
+        or version.act_published_evidence is not None
+        or (
+            version.original_delivery_evidence is not None
+            and version.original_delivery_evidence.kind not in ORIGINAL_CARD_KINDS
+        )
+    )
 
 
 def _frozen_content_issue(
@@ -140,16 +154,22 @@ def _read_history(
                 counts["digest_upstream_semantics_not_retained"] += 1
         except ValueError:
             findings.add("invalid_digest_content_history", version.content_id)
-        try:
-            verify_sitting_content(db, version, require_bound=True)
-        except ValueError:
-            findings.add("invalid_sitting_content_history", version.content_id)
+        if _independent_profile(version):
+            for code, verify in (
+                ("invalid_sitting_content_history", verify_sitting_content),
+                ("invalid_act_content_history", verify_act_published_content),
+                ("invalid_original_delivery_history", verify_original_delivery_content),
+            ):
+                try:
+                    verify(db, version, require_bound=True)
+                except ValueError:
+                    findings.add(code, version.content_id)
         try:
             physical_id = verify_card_content(db, version, retained=True)
             if (
                 version.change_snapshot_id is None
                 and version.digest_profile is None
-                and version.sitting_profile is None
+                and not _independent_profile(version)
                 and physical_id is None
             ):
                 findings.add("card_content_physical_unavailable", version.content_id, warning=True)
@@ -205,7 +225,7 @@ def _publication_bindings(
                 )
             if publication is None:
                 findings.add("content_publication_unavailable", str(identity), warning=True)
-            elif bound.sitting_profile is None:
+            elif not _independent_profile(bound):
                 if publication["delivery_json"] is not None and bound.digest_profile is None:
                     code = _frozen_content_issue(publication["delivery_json"], bound, snapshots)
                     if code is not None:
@@ -244,7 +264,7 @@ def _publication_bindings(
             if (
                 bound.change_snapshot_id is None
                 and bound.digest_profile is None
-                and bound.sitting_profile is None
+                and not _independent_profile(bound)
             ):
                 try:
                     physical_id = verify_card_content(db, bound, retained=True)
@@ -320,7 +340,7 @@ def _history_rows(
                     physical.get("status") == "sent" and physical.get("message_id") is not None
                     for physical in bindings[version.content_id]
                 )
-                if version.digest_profile is not None or version.sitting_profile is not None
+                if version.digest_profile is not None or _independent_profile(version)
                 else any(
                     physical.get("status") == "sent" and physical.get("message_id") is not None
                     for physical in bindings[version.content_id]
@@ -397,7 +417,7 @@ def audit(database: Path, *, publication_id: int | None = None) -> dict[str, Any
             if (
                 value.change_snapshot_id is None
                 and value.digest_profile is None
-                and value.sitting_profile is None
+                and not _independent_profile(value)
             ):
                 try:
                     cards[value.root_publication_id] = card_current_content(

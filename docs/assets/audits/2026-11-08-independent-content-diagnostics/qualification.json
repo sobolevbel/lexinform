@@ -1,0 +1,82 @@
+[
+  {
+    "profile": "single_notices",
+    "database_sha256": "0064eabee7a42e8e3395f11a396c97c50335b72b90c945166348fa2200776359",
+    "before_findings": [
+      {
+        "code": "card_content_physical_unavailable",
+        "ref": "content-v1:78e291da44e398f3afe15145f5b5845996d71f95888f69302a5bc3a0a1457886",
+        "level": "warning"
+      },
+      {
+        "code": "card_content_physical_unavailable",
+        "ref": "content-v1:9076d6b50825dbaa031907de37b5430b7b6875898ba7ca6ad9b9f2236747451a",
+        "level": "warning"
+      },
+      {
+        "code": "content_frozen_text_mismatch",
+        "ref": "6",
+        "level": "error"
+      }
+    ],
+    "confirmed_version": "content-v1:9076d6b50825dbaa031907de37b5430b7b6875898ba7ca6ad9b9f2236747451a",
+    "runtime_current_ids": {
+      "1": "content-v1:0dd6f2cce2db07c75b3e9051f262ada25c584a374a3434d363c727dff9ce5e67",
+      "3": "content-v1:78e291da44e398f3afe15145f5b5845996d71f95888f69302a5bc3a0a1457886",
+      "6": "content-v1:9076d6b50825dbaa031907de37b5430b7b6875898ba7ca6ad9b9f2236747451a"
+    },
+    "part_count": 1
+  },
+  {
+    "profile": "multipart_act_notice",
+    "database_sha256": "d5e9832e22428126a834307b64c386675046eb8c066f0fae82b2c6bdac17ebf8",
+    "before_findings": [
+      {
+        "code": "card_content_physical_unavailable",
+        "ref": "content-v1:68182af6eac3ad1e7e6dc2e9cb35cb57ff6411d1ab01aaef10e9502fdfcc23ba",
+        "level": "warning"
+      },
+      {
+        "code": "content_frozen_text_mismatch",
+        "ref": "3",
+        "level": "error"
+      },
+      {
+        "code": "content_frozen_text_mismatch",
+        "ref": "4",
+        "level": "error"
+      },
+      {
+        "code": "content_binding_role_mismatch",
+        "ref": "4",
+        "level": "error"
+      },
+      {
+        "code": "content_message_target_mismatch",
+        "ref": "4",
+        "level": "error"
+      },
+      {
+        "code": "content_frozen_text_mismatch",
+        "ref": "5",
+        "level": "error"
+      },
+      {
+        "code": "content_binding_role_mismatch",
+        "ref": "5",
+        "level": "error"
+      },
+      {
+        "code": "content_message_target_mismatch",
+        "ref": "5",
+        "level": "error"
+      }
+    ],
+    "confirmed_version": "content-v1:68182af6eac3ad1e7e6dc2e9cb35cb57ff6411d1ab01aaef10e9502fdfcc23ba",
+    "runtime_current_ids": {
+      "1": "content-v1:84c95ea14e9f5e224b2eb68403def203dc9b53930f3fa4432a8752ba3bfed702",
+      "3": "content-v1:68182af6eac3ad1e7e6dc2e9cb35cb57ff6411d1ab01aaef10e9502fdfcc23ba"
+    },
+    "part_count": 3
+  }
+]

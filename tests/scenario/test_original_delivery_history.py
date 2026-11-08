@@ -1,7 +1,12 @@
+import sqlite3
+from contextlib import closing
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import pytest
+from tools.content_history_doctor import audit
 
+from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models import Bill, Publication, PublicationKind
 from lexinform.models.original_delivery_content import OriginalDeliveryPlan
 from lexinform.models.reviews import (
@@ -52,7 +57,7 @@ def watcher(monkeypatch: pytest.MonkeyPatch, *, multipart: bool) -> tuple[World,
 
 @pytest.mark.parametrize("multipart", [False, True])
 def test_original_history_survives_cleanup(
-    monkeypatch: pytest.MonkeyPatch, multipart: bool
+    monkeypatch: pytest.MonkeyPatch, multipart: bool, tmp_path: Path
 ) -> None:
     world, publication = watcher(monkeypatch, multipart=multipart)
     assert publication.id is not None and publication.delivery is not None
@@ -66,6 +71,25 @@ def test_original_history_survives_cleanup(
         if message.kind is publication.kind or message.kind is PublicationKind.MESSAGE_PART
     ]
     before = world.repo.dump()
+    database = tmp_path / "notices.db"
+    with closing(SqliteBillRepository(database)) as repo:
+        repo.migrate()
+        repo.restore(before)
+    report = audit(database)
+    assert report["status"] == "recorded" and not report["findings"]
+    histories = {row["root_publication_id"]: row for row in report["histories"]}
+    assert histories[publication.id]["current_content_id"] is not None
+    if multipart:
+        with closing(sqlite3.connect(database)) as db, db:
+            db.execute("DELETE FROM publication_content WHERE publication_id=?", (ids[-1],))
+        corrupted = audit(database, publication_id=publication.id)
+        assert corrupted["status"] == "failed"
+        assert "invalid_original_delivery_history" in {row["code"] for row in corrupted["findings"]}
+        assert corrupted["histories"][0]["current_content_id"] is None
+    else:
+        announcement = world.publication("3039", PublicationKind.ACT_PUBLISHED)
+        assert announcement is not None and announcement.id is not None
+        assert histories[announcement.id]["current_content_id"] is not None
     if multipart:
         child_id = ids[1]
         assert publication.message_id is not None
@@ -83,6 +107,16 @@ def test_original_history_survives_cleanup(
     cutoff = world.clock.now() + timedelta(days=999)
     world.repo.prune_history(before=cutoff, memo_before=cutoff)
     sql = world.repo.dump()
+    cleaned = tmp_path / "retained-notices.db"
+    with closing(SqliteBillRepository(cleaned)) as repo:
+        repo.migrate()
+        repo.restore(sql)
+    retained = audit(cleaned, publication_id=publication.id)
+    assert retained["status"] == "recorded" and not retained["findings"]
+    assert (
+        retained["histories"][0]["current_content_id"]
+        == histories[publication.id]["current_content_id"]
+    )
     for _ in range(2):
         with saved_state(sql) as durable:
             assert durable.repo.dump() == sql
