@@ -922,6 +922,17 @@ MAX_VERSION_DECISION_ROWS = 8
 VersionDate = Annotated[str, Field(strict=True, pattern=r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")]
 
 
+class VersionPackageInput(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    source_sha256: Sha256
+    body_sha256: Sha256
+    annex_text_sha256s: tuple[Sha256, ...] = Field(default=(), max_length=MAX_VERSION_DECISION_ROWS)
+    amendment_text_sha256s: tuple[Sha256, ...] = Field(
+        default=(), max_length=MAX_VERSION_DECISION_ROWS
+    )
+
+
 class VersionDecisionEvidence(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
 
@@ -935,12 +946,17 @@ class VersionDecisionEvidence(BaseModel):
     date_filter: tuple[VersionDate, ...] | None = Field(
         default=None, max_length=MAX_VERSION_DECISION_ROWS, exclude_if=lambda value: value is None
     )
+    package_inputs: tuple[VersionPackageInput, ...] | None = Field(
+        default=None, max_length=MAX_VERSION_DECISION_ROWS, exclude_if=lambda value: value is None
+    )
 
     @model_validator(mode="after")
     def comparison_steps(self) -> Self:
         compared = self.compared_indices
         if tuple(sorted(set(compared))) != compared:
             raise ValueError("version comparison requires unique ordered candidate positions")
+        if self.package_inputs is not None and len(self.package_inputs) != len(compared):
+            raise ValueError("package comparison requires one input per compared candidate")
         expected = compared
         if self.date_filter is not None:
             if len(self.date_filter) != len(compared) or len(set(self.date_filter)) < 2:
@@ -1307,6 +1323,10 @@ def validate_version_decision(
     )
     if tuple(row.index for row in compared) != evidence.compared_indices:
         raise ValueError("version evidence differs from compared candidate dispositions")
+    if evidence.package_inputs is not None and tuple(
+        item.source_sha256 for item in evidence.package_inputs
+    ) != tuple(row.observed_sha256 for row in compared):
+        raise ValueError("package comparison inputs differ from the observed candidate sources")
     chosen = None if conflict else evidence.retained_indices[0]
     for row in compared:
         if row.index == chosen:

@@ -9,7 +9,7 @@ from lexinform.models import (
     TextDocument,
     candidate_trace,
 )
-from lexinform.models.candidate_trace import VersionDecisionEvidence
+from lexinform.models.candidate_trace import VersionDecisionEvidence, VersionPackageInput
 
 
 def comparison(*, conflict: bool = False, chosen: int = 1) -> CandidateDispositionTrace:
@@ -91,6 +91,41 @@ def test_version_decision_retains_real_outer_positions_and_legacy_id() -> None:
     assert restored.model_copy(update={"version_decision": None}).trace_id == old.trace_id
     assert old.model_dump_json(exclude_defaults=True) == encoded
     assert "version_decision" not in encoded
+
+
+def test_package_evidence_requires_exact_ordered_source_hashes() -> None:
+    trace = comparison()
+    trace = trace.model_copy(
+        update={
+            "dispositions": (
+                trace.dispositions[0],
+                trace.dispositions[1].model_copy(update={"observed_sha256": "a" * 64}),
+                trace.dispositions[2].model_copy(update={"observed_sha256": "b" * 64}),
+            )
+        }
+    )
+    first = VersionPackageInput(
+        source_sha256="a" * 64, body_sha256="c" * 64, annex_text_sha256s=("d" * 64,)
+    )
+    second = first.model_copy(update={"source_sha256": "b" * 64})
+    evidence = {
+        "compared_indices": (1, 2),
+        "retained_indices": (1, 2),
+        "outcome": "matching_policy_identity",
+    }
+
+    restored = attach(
+        trace, {**evidence, "package_inputs": [item.model_dump() for item in (first, second)]}
+    )
+
+    assert restored.version_decision is not None
+    assert restored.version_decision.package_inputs == (first, second)
+    with pytest.raises(ValueError, match="observed candidate sources"):
+        attach(
+            trace, {**evidence, "package_inputs": [item.model_dump() for item in (second, first)]}
+        )
+    with pytest.raises(ValueError, match="one input per compared candidate"):
+        attach(trace, {**evidence, "package_inputs": [first.model_dump()]})
 
 
 @pytest.mark.parametrize("conflict", [False, True])
