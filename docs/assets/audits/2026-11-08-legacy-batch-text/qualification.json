@@ -1,0 +1,49 @@
+{
+  "case_origins": {
+    "historical": "ca2353d112dedb6a47962976a4bd29e6f19836a9",
+    "current": "8e7a715b56871e6843742760b6e8cc8923a5b42d"
+  },
+  "default_report_unchanged": true,
+  "database_bytes_unchanged": true,
+  "cases": {
+    "historical": {
+      "database_sha256": "5ee32f1eae088dd16d34c070d74051a866f4044606829fcf03c7e56c9aae3687",
+      "status": "available",
+      "scope": "Exact saved primary text values and recorded hash metadata.",
+      "stored_bytes": 199167,
+      "rows": [
+        {
+          "ref": "llm_batch_items/124",
+          "call_kind": "analysis",
+          "stored_text_sha256": "dcd8198dc98d25a31e5d107d1d4a1cabc7db4fd6feb6fa8894b7d99083974c57",
+          "stored_chars": 15279,
+          "stored_bytes": 16076,
+          "recorded_text_identity_kind": "text-v2",
+          "matches_recorded_raw_text_sha256": null,
+          "recorded_request_sha256_present": true,
+          "matches_recorded_prepared_text_sha256": true,
+          "prepared_receipt_present": true
+        },
+        {
+          "ref": "llm_batch_items/125",
+          "call_kind": "reanalysis",
+          "stored_text_sha256": "42ba1f9d959483b59b4213589788cd33c6b984cf0136c657127234cf64bac7c9",
+          "stored_chars": 174958,
+          "stored_bytes": 183091,
+          "recorded_text_identity_kind": "text-v2",
+          "matches_recorded_raw_text_sha256": null,
+          "recorded_request_sha256_present": true,
+          "matches_recorded_prepared_text_sha256": null,
+          "prepared_receipt_present": false
+        }
+      ]
+    },
+    "current": {
+      "database_sha256": "2fa282b623328efa9bec50d3d6da771fd6a8b098565ea619d1a1a4ed38f351b7",
+      "status": "available",
+      "scope": "Exact saved primary text values and recorded hash metadata.",
+      "stored_bytes": 0,
+      "rows": []
+    }
+  }
+}

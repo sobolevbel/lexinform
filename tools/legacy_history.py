@@ -4,6 +4,7 @@ import argparse
 import gzip
 import hashlib
 import json
+import re
 import sqlite3
 from collections import Counter
 from pathlib import Path
@@ -55,7 +56,74 @@ def batch_receipts(
                 ] += 1
 
 
-def audit(database: Path) -> dict[str, Any]:
+def _sha256(value: object) -> bool:
+    return isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value) is not None
+
+
+def _batch_text_inventory(
+    connection: sqlite3.Connection, findings: list[dict[str, str]]
+) -> dict[str, object]:
+    columns = {row["name"] for row in connection.execute("PRAGMA table_info(llm_batch_items)")}
+    missing = {"call_kind", "meta_json"} - columns
+    if missing:
+        return {"status": "unavailable", "missing_columns": sorted(missing)}
+    rows = []
+    byte_count = 0
+    for row in connection.execute(
+        "SELECT rowid, call_kind, meta_json FROM llm_batch_items"
+        " WHERE call_kind IN ('analysis','reanalysis') ORDER BY rowid"
+    ):
+        ref = f"llm_batch_items/{row['rowid']}"
+        try:
+            meta = json.loads(row["meta_json"])
+            if not isinstance(meta, dict):
+                raise ValueError("batch metadata must be an object")
+            text = meta.get("text")
+            if not isinstance(text, str) or not text:
+                continue
+            encoded = text.encode()
+        except TypeError, ValueError, RecursionError:
+            findings.append({"code": "invalid_batch_text_metadata", "ref": ref})
+            continue
+        digest = hashlib.sha256(encoded).hexdigest()
+        declared = meta.get("text_sha256")
+        declared_kind = (
+            "sha256"
+            if _sha256(declared)
+            else "text-v2"
+            if isinstance(declared, str) and re.fullmatch(r"text-v2:[0-9a-f]{64}", declared)
+            else None
+        )
+        receipt = meta.get("prepared_input_receipt")
+        prepared = receipt.get("text_sha256") if isinstance(receipt, dict) else None
+        rows.append(
+            {
+                "ref": ref,
+                "call_kind": row["call_kind"],
+                "stored_text_sha256": digest,
+                "stored_chars": len(text),
+                "stored_bytes": len(encoded),
+                "recorded_text_identity_kind": declared_kind,
+                "matches_recorded_raw_text_sha256": digest == declared
+                if declared_kind == "sha256"
+                else None,
+                "recorded_request_sha256_present": _sha256(meta.get("request_sha256")),
+                "matches_recorded_prepared_text_sha256": digest == prepared
+                if _sha256(prepared)
+                else None,
+                "prepared_receipt_present": isinstance(receipt, dict),
+            }
+        )
+        byte_count += len(encoded)
+    return {
+        "status": "available",
+        "scope": "Exact saved primary text values and recorded hash metadata.",
+        "stored_bytes": byte_count,
+        "rows": rows,
+    }
+
+
+def audit(database: Path, *, include_batch_text: bool = False) -> dict[str, Any]:
     counts: Counter[str] = Counter(
         record_occurrences=0,
         canonical_occurrence_bytes=0,
@@ -119,6 +187,7 @@ def audit(database: Path) -> dict[str, Any]:
                     else "unbound_occurrences"
                 ] += 1
         batch_receipts(connection, tables, counts, findings)
+        batch_text = _batch_text_inventory(connection, findings) if include_batch_text else None
         if not snapshot.unchanged():
             findings.append({"code": "database_changed_during_audit", "ref": "database"})
     ordered = sorted(payloads)
@@ -132,11 +201,12 @@ def audit(database: Path) -> dict[str, Any]:
         "status": "failed"
         if findings
         else "recorded"
-        if records or counts["batch_item_rows"]
+        if records or counts["batch_item_rows"] or (batch_text and batch_text.get("rows"))
         else "not_run",
         "database_sha256": snapshot.sha256,
         "missing_source_tables": sorted(set(CONTEXT_RESULT_TABLES) - tables),
         "summary": dict(sorted(counts.items())),
+        **({"batch_text": batch_text} if batch_text is not None else {}),
         "unique_json_array_bytes": len(framed),
         "unique_json_array_gzip_bytes": len(gzip.compress(framed, mtime=0)),
         "records": [records[key] for key in ordered],
@@ -153,10 +223,10 @@ def audit(database: Path) -> dict[str, Any]:
     }
 
 
-def run(database: Path, output: Path) -> int:
+def run(database: Path, output: Path, *, include_batch_text: bool = False) -> int:
     if output.resolve() in snapshot_files(database):
         raise ValueError("Report must be separate from the input database")
-    report = audit(database)
+    report = audit(database, include_batch_text=include_batch_text)
     output.parent.mkdir(parents=True, exist_ok=True)
     write_json(output, report)
     return 1 if report["status"] == "failed" else 2 if report["status"] == "not_run" else 0
@@ -166,9 +236,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--database", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--batch-text", action="store_true")
     args = parser.parse_args()
     try:
-        code = run(args.database, args.output)
+        code = run(args.database, args.output, include_batch_text=args.batch_text)
     except (OSError, sqlite3.Error, ValueError) as exc:
         parser.error(str(exc))
     raise SystemExit(code)

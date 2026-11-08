@@ -139,6 +139,54 @@ def test_batch_receipts_are_not_promoted_to_answer_bodies(tmp_path: Path) -> Non
     assert MARKER not in json.dumps(report)
 
 
+def test_batch_text_inventory_keeps_value_hash_separate_from_recorded_hashes(
+    tmp_path: Path,
+) -> None:
+    path = database(tmp_path, [])
+    text = MARKER + " Zażółć"
+    stored = hashlib.sha256(text.encode()).hexdigest()
+    with closing(sqlite3.connect(path)) as connection, connection:
+        connection.execute("CREATE TABLE llm_batch_items (call_kind TEXT, meta_json TEXT)")
+        connection.executemany(
+            "INSERT INTO llm_batch_items VALUES (?, ?)",
+            [
+                ("analysis", json.dumps({"text": text, "text_sha256": "f" * 64})),
+                (
+                    "reanalysis",
+                    json.dumps({"text": text, "text_sha256": stored, "request_sha256": "e" * 64}),
+                ),
+                (
+                    "reanalysis",
+                    json.dumps(
+                        {
+                            "text": text,
+                            "text_sha256": "text-v2:" + stored,
+                            "prepared_input_receipt": {"text_sha256": stored},
+                        }
+                    ),
+                ),
+                ("analysis", json.dumps({"text": {"retained_ref": stored}})),
+                ("supplement", json.dumps({"text": text})),
+            ],
+        )
+    before = path.read_bytes()
+
+    default = audit(path)
+    report = audit(path, include_batch_text=True)
+
+    assert "batch_text" not in default
+    first, second, third = report["batch_text"]["rows"]
+    assert first["stored_text_sha256"] == second["stored_text_sha256"] == stored
+    assert first["matches_recorded_raw_text_sha256"] is False
+    assert second["matches_recorded_raw_text_sha256"] is True
+    assert second["recorded_request_sha256_present"] is True
+    assert third["recorded_text_identity_kind"] == "text-v2"
+    assert third["matches_recorded_raw_text_sha256"] is None
+    assert third["matches_recorded_prepared_text_sha256"] is True
+    assert report["batch_text"]["stored_bytes"] == 3 * len(text.encode())
+    assert MARKER not in json.dumps(report) and path.read_bytes() == before
+
+
 def test_report_cannot_overwrite_the_input_database(tmp_path: Path) -> None:
     path = database(tmp_path, [json.dumps(legacy_record())])
     before = path.read_bytes()
