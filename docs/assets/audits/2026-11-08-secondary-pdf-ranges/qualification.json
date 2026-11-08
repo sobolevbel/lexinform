@@ -1,0 +1,48 @@
+{
+  "scope": "Offline supplement source, fake batch and recorded fake send",
+  "source_sha256": "6a2705ea005751e87a2bbe15588d738c3141f2411e6fb716a046e4174f2d873f",
+  "lanes": {
+    "12000": {
+      "request_sha256": "38c1ac9a9253ebc5bb3fb8be6ff30778e7757b559a0ed3f523ee8a36e77944ed",
+      "ranges": 5,
+      "pages": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "snapshot_unchanged": true
+    },
+    "1500000": {
+      "request_sha256": "8aa2e603671050051c897fd04e4ee4667af82cd6590d00f19f63432c76e1b403",
+      "ranges": 23,
+      "pages": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ],
+      "snapshot_unchanged": true
+    }
+  }
+}

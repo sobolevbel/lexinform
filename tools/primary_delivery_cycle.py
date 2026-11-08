@@ -17,7 +17,6 @@ from lexinform.adapters.document_source_rows import DocumentSourceRows
 from lexinform.adapters.input_receipts import (
     retained_pdf_page_ranges,
     validate_input_snapshots,
-    validate_secondary_receipt_parents,
 )
 from lexinform.models import (
     AmendmentsRecord,
@@ -402,7 +401,7 @@ def _secondary_request_prefix(
         "SELECT 1 FROM result_applications WHERE result_id=? AND phase='collection'",
         (paid.result_id,),
     ).fetchone()
-    receipt, source = _secondary_prepared_source(db, paid, meta, submitted)
+    receipt, source, ranges = _secondary_prepared_source(db, paid, meta, submitted)
     manifest = meta.frozen_request_manifest
     if manifest is not None and manifest.provider != paid.provider:
         raise ValueError("Frozen request manifest differs from the paid provider")
@@ -421,6 +420,7 @@ def _secondary_request_prefix(
         "prepared_input_receipt": receipt,
         "original_request_payload": "not_verified",
         "source_selection_binding": source,
+        **({"normalized_pdf_page_ranges": ranges} if ranges else {}),
         "original_amendment_question": _retained_amendment_question(paid, meta),
         "retained_provider_request_manifest": (
             "verified_retained_manifest" if manifest is not None else "not_retained"
@@ -484,22 +484,22 @@ def _retained_amendment_question(paid: ComputationResult, meta: DigestItemMeta) 
 
 def _secondary_prepared_source(
     db: sqlite3.Connection, paid: ComputationResult, meta: DigestItemMeta, submitted: datetime
-) -> tuple[str, str]:
+) -> tuple[str, str, list[dict[str, object]]]:
     receipt = meta.prepared_input_receipt
     if receipt is None:
-        return "not_retained", "not_verified"
-    validate_secondary_receipt_parents(db, receipt)
+        return "not_retained", "not_verified", []
+    ranges = retained_pdf_page_ranges(db, receipt)
     if (
         receipt.source_selection_id is None
         or receipt.artifact_sha256 is None
         or receipt.extraction_id is None
     ):
-        return "validated_retained_receipt", "not_verified"
+        return "validated_retained_receipt", "not_verified", []
     observations = DocumentSourceRows(db).source_observations_for_selection(
         paid.term, paid.number, receipt.source_selection_id
     )
     if len(observations) != 1:
-        return "validated_retained_receipt", "not_verified"
+        return "validated_retained_receipt", "not_verified", []
     observation = observations[0]
     if (
         not isinstance(paid.record, (AmendmentsRecord, SupplementRecord))
@@ -509,7 +509,7 @@ def _secondary_prepared_source(
         or observation.recorded_at > submitted
     ):
         raise ValueError("Prepared secondary source differs from its retained observation")
-    return "validated_retained_receipt", "exact_retained_source_selection"
+    return "validated_retained_receipt", "exact_retained_source_selection", ranges
 
 
 def _secondary_records(

@@ -1027,7 +1027,8 @@ def _parents(
 
 
 def retained_pdf_page_ranges(
-    connection: sqlite3.Connection, receipt: PrimaryInputReceipt
+    connection: sqlite3.Connection,
+    receipt: PrimaryInputReceipt | SupplementInputReceipt | AmendmentInputReceipt,
 ) -> list[dict[str, object]]:
     """Project retained request spans onto the validated normalized PDF page map."""
     part = _parents(connection, receipt)
