@@ -10,10 +10,10 @@ from pathlib import Path
 
 from lexinform.adapters.computation_history import ComputationRowError, read_computation_result
 from lexinform.adapters.input_receipts import validate_input_snapshots
-from lexinform.models import AnalysisRecord, BatchItemMeta
+from lexinform.models import AnalysisRecord, BatchItemMeta, ComputationResult
 from lexinform.models.batch import batch_item_meta
-from tools.corpus_artifacts import digest, write_json
-from tools.sqlite_snapshot import open_snapshot, snapshot_files
+from tools.corpus_artifacts import digest, read_artifact, write_json
+from tools.sqlite_snapshot import live_journal, open_snapshot, snapshot_files
 
 
 def _claim_slots(record: AnalysisRecord) -> Iterator[tuple[str, int | None, str]]:
@@ -118,15 +118,78 @@ def run(database: Path, output: Path) -> int:
 
 
 @dataclass(frozen=True)
+class ReviewInputCheckpoint:
+    database: Path
+    sha256: str
+
+    def unchanged(self) -> bool:
+        return digest(read_artifact(self.database)) == self.sha256 and not live_journal(
+            self.database.resolve()
+        )
+
+
+@dataclass(frozen=True)
 class SavedClaimReview:
     record: AnalysisRecord
     number: str
     request_sha256: str
     text_sha256: str
     text: str
+    input_checkpoint_sha256: str | None = None
 
 
-def saved_claim_review(database: Path, *, database_sha256: str, result_id: str) -> SavedClaimReview:
+def _primary_batch_meta(db: sqlite3.Connection, paid: ComputationResult) -> BatchItemMeta:
+    item = db.execute(
+        "SELECT i.*, b.provider FROM llm_batch_items AS i"
+        " JOIN llm_batches AS b USING (batch_id)"
+        " WHERE i.batch_id=? AND i.custom_id=?",
+        (paid.batch_id, paid.custom_id),
+    ).fetchone()
+    if item is None or (item["provider"], item["term"], item["number"], item["call_kind"]) != (
+        paid.provider,
+        paid.term,
+        paid.number,
+        paid.purpose,
+    ):
+        raise ValueError("Review requires the exact saved batch item")
+    meta = batch_item_meta(item["call_kind"], item["meta_json"])
+    if not isinstance(meta, BatchItemMeta):
+        raise ValueError("Review requires primary batch metadata")
+    return meta
+
+
+def _checkpoint_text(
+    checkpoint: ReviewInputCheckpoint, paid: ComputationResult, current: BatchItemMeta
+) -> str:
+    with open_snapshot(checkpoint.database) as snapshot:
+        if snapshot.sha256 != checkpoint.sha256:
+            raise ValueError("Input checkpoint SHA-256 differs from its pin")
+        saved = _primary_batch_meta(snapshot.connection, paid)
+        if (
+            saved.input_binding != current.input_binding
+            or saved.generation != current.generation
+            or saved.request_sha256 != current.request_sha256
+            or saved.input_chars != current.input_chars
+            or saved.prepared_input_receipt != current.prepared_input_receipt
+            or saved.frozen_request_manifest is None
+            or saved.frozen_request_manifest != current.frozen_request_manifest
+            or current.text
+            and current.text != saved.text
+        ):
+            raise ValueError("Input checkpoint differs from the exact current request receipt")
+        validate_input_snapshots(snapshot.connection)
+        if not snapshot.unchanged():
+            raise ValueError("Input checkpoint changed during review preparation")
+        return saved.text
+
+
+def saved_claim_review(
+    database: Path,
+    *,
+    database_sha256: str,
+    result_id: str,
+    input_checkpoint: ReviewInputCheckpoint | None = None,
+) -> SavedClaimReview:
     with open_snapshot(database) as snapshot:
         if snapshot.sha256 != database_sha256:
             raise ValueError("Review snapshot SHA-256 differs from its pin")
@@ -140,22 +203,7 @@ def saved_claim_review(database: Path, *, database_sha256: str, result_id: str) 
         record = paid.record
         if paid.purpose not in ("analysis", "reanalysis") or not isinstance(record, AnalysisRecord):
             raise ValueError("Review requires a validated primary result")
-        item = db.execute(
-            "SELECT i.*, b.provider FROM llm_batch_items AS i"
-            " JOIN llm_batches AS b USING (batch_id)"
-            " WHERE i.batch_id=? AND i.custom_id=?",
-            (paid.batch_id, paid.custom_id),
-        ).fetchone()
-        if item is None or (item["provider"], item["term"], item["number"], item["call_kind"]) != (
-            paid.provider,
-            paid.term,
-            paid.number,
-            paid.purpose,
-        ):
-            raise ValueError("Review requires the exact saved batch item")
-        meta = batch_item_meta(item["call_kind"], item["meta_json"])
-        if not isinstance(meta, BatchItemMeta):
-            raise ValueError("Review requires primary batch metadata")
+        meta = _primary_batch_meta(db, paid)
         receipt = meta.prepared_input_receipt
         if (
             paid.input_binding is None
@@ -165,23 +213,56 @@ def saved_claim_review(database: Path, *, database_sha256: str, result_id: str) 
             or paid.request_sha256 != meta.request_sha256
             or receipt is None
             or receipt.request_sha256 != paid.request_sha256
-            or not meta.text.strip()
             or receipt.text_chars != meta.input_chars
             or receipt.text_chars != record.input_chars
-            or receipt.text_chars != len(meta.text)
-            or receipt.text_sha256 != digest(meta.text.encode())
+        ):
+            raise ValueError("Review requires the exact retained submitted text")
+        text = (
+            meta.text
+            if input_checkpoint is None
+            else _checkpoint_text(input_checkpoint, paid, meta)
+        )
+        if (
+            not text.strip()
+            or receipt.text_chars != len(text)
+            or receipt.text_sha256 != digest(text.encode())
         ):
             raise ValueError("Review requires the exact retained submitted text")
         validate_input_snapshots(db)
-        if not snapshot.unchanged():
+        if (
+            not snapshot.unchanged()
+            or input_checkpoint is not None
+            and not input_checkpoint.unchanged()
+        ):
             raise ValueError("Input database changed during review preparation")
     return SavedClaimReview(
-        record, paid.number, paid.request_sha256, receipt.text_sha256, meta.text
+        record,
+        paid.number,
+        paid.request_sha256,
+        receipt.text_sha256,
+        text,
+        input_checkpoint.sha256 if input_checkpoint is not None else None,
     )
 
 
-def review_page(database: Path, *, database_sha256: str, result_id: str) -> str:
-    review = saved_claim_review(database, database_sha256=database_sha256, result_id=result_id)
+def review_page(
+    database: Path,
+    *,
+    database_sha256: str,
+    result_id: str,
+    input_checkpoint: ReviewInputCheckpoint | None = None,
+) -> str:
+    review = saved_claim_review(
+        database,
+        database_sha256=database_sha256,
+        result_id=result_id,
+        input_checkpoint=input_checkpoint,
+    )
+    checkpoint_line = (
+        f"<br>Снимок исходного текста <code>{review.input_checkpoint_sha256}</code>"
+        if review.input_checkpoint_sha256 is not None
+        else ""
+    )
     claims = []
     for field, index, text in _claim_slots(review.record):
         if not text.strip():
@@ -206,7 +287,7 @@ def review_page(database: Path, *, database_sha256: str, result_id: str) -> str:
         f"<p>Снимок <code>{database_sha256}</code><br>"
         f"Результат <code>{escape(result_id)}</code><br>"
         f"Запрос <code>{review.request_sha256}</code><br>"
-        f"Текст <code>{review.text_sha256}</code></p>"
+        f"Текст <code>{review.text_sha256}</code>{checkpoint_line}</p>"
         "<h2>Утверждения</h2>"
         + "".join(claims)
         + "<h2>Текст запроса</h2><pre>"
@@ -221,19 +302,31 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--review-result", help="write a local HTML review sheet for one result")
     parser.add_argument("--database-sha256", help="required snapshot pin for --review-result")
+    parser.add_argument("--input-checkpoint", nargs=2, metavar=("PATH", "SHA256"))
     args = parser.parse_args()
+    input_checkpoint = (
+        ReviewInputCheckpoint(Path(args.input_checkpoint[0]), args.input_checkpoint[1])
+        if args.input_checkpoint
+        else None
+    )
     try:
         if args.review_result is None:
-            if args.database_sha256 is not None:
-                raise ValueError("The database pin is only used for review sheets")
+            if args.database_sha256 is not None or input_checkpoint is not None:
+                raise ValueError("Snapshot pins are only used for review sheets")
             code = run(args.database, args.output)
         else:
             if not args.database_sha256 or args.output.suffix != ".html":
                 raise ValueError("Review needs a database SHA-256 pin and a new .html output")
-            if args.output.resolve() in snapshot_files(args.database):
+            protected = snapshot_files(args.database)
+            if input_checkpoint is not None:
+                protected.update(snapshot_files(input_checkpoint.database))
+            if args.output.resolve() in protected:
                 raise ValueError("Report must be separate from the input database")
             page = review_page(
-                args.database, database_sha256=args.database_sha256, result_id=args.review_result
+                args.database,
+                database_sha256=args.database_sha256,
+                result_id=args.review_result,
+                input_checkpoint=input_checkpoint,
             )
             with args.output.open("x", encoding="utf-8") as stream:
                 stream.write(page)

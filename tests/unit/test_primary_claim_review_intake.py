@@ -3,7 +3,7 @@ from typing import Any
 
 import pytest
 from tools import record_primary_claim_review
-from tools.audit_saved_primary_claims import SavedClaimReview
+from tools.audit_saved_primary_claims import ReviewInputCheckpoint, SavedClaimReview
 from tools.corpus_artifacts import digest, write_json
 from tools.replay_primary_claims import technical_answer
 
@@ -169,3 +169,55 @@ def test_template_is_create_only_and_not_an_answer(database: Path) -> None:
         )
     assert path.read_bytes() == frozen
     assert not (database.parent / "rejected.json").exists()
+
+
+def test_intake_requires_the_same_pinned_input_checkpoint(
+    database: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    historical = database.parent / "input.db"
+    historical.write_bytes(b"unit-only retained input checkpoint")
+    checkpoint = ReviewInputCheckpoint(historical, digest(historical.read_bytes()))
+    monkeypatch.setattr(
+        record_primary_claim_review,
+        "saved_claim_review",
+        lambda *_args, **_kwargs: SavedClaimReview(
+            technical_answer(TEXT), "3231", REQUEST, digest(TEXT.encode()), TEXT, checkpoint.sha256
+        ),
+    )
+    output = database.parent / "result.json"
+    pin = digest(database.read_bytes())
+    wrong = answers(
+        database,
+        "Wrong",
+        judgment="unknown",
+        reviewer_kind="synthetic_control",
+        independent=False,
+        input_checkpoint_sha256="0" * 64,
+    )
+    matching = answers(
+        database,
+        "Matching",
+        judgment="unknown",
+        reviewer_kind="synthetic_control",
+        independent=False,
+        input_checkpoint_sha256=checkpoint.sha256,
+    )
+
+    with pytest.raises(ValueError, match="different saved answer or request"):
+        record_primary_claim_review.record(
+            database, pin, RESULT, [wrong], output, input_checkpoint=checkpoint
+        )
+
+    assert not output.exists()
+    recorded = record_primary_claim_review.record(
+        database, pin, RESULT, [matching], output, input_checkpoint=checkpoint
+    )
+    assert recorded["input_checkpoint_sha256"] == checkpoint.sha256
+    assert recorded["claims"] == [
+        {
+            "field": "key_changes",
+            "index": 0,
+            "claim_sha256": digest(CLAIM.encode()),
+            "judgment": "unreviewed",
+        }
+    ]

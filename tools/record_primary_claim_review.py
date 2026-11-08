@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from lexinform.models import EvidenceCitation, ReviewDocument
 from lexinform.models.physical_inventory import Sha256
 from lexinform.models.reviews import citation_document_in
-from tools.audit_saved_primary_claims import _claim_slots, saved_claim_review
+from tools.audit_saved_primary_claims import ReviewInputCheckpoint, _claim_slots, saved_claim_review
 from tools.corpus_artifacts import digest, read_artifact, write_json
 from tools.sqlite_snapshot import live_journal, snapshot_files
 
@@ -46,6 +46,7 @@ class ReviewAnswers(BaseModel):
     result_id: str = Field(pattern=r"^result-v1:[0-9a-f]{64}$")
     request_sha256: Sha256
     text_sha256: Sha256
+    input_checkpoint_sha256: Sha256 | None = None
     reviewer: str = Field(min_length=1, max_length=128)
     reviewed_on: date = Field(strict=True)
     reviewer_kind: Literal["human", "synthetic_control"]
@@ -73,18 +74,30 @@ def validate_judgment(item: ClaimJudgment, claim: str, source: ReviewDocument) -
         raise ValueError("Citation differs from its exact submitted-context text span or locator")
 
 
-def _review_output(database: Path, output: Path) -> Path:
+def _review_output(
+    database: Path, output: Path, input_checkpoint: ReviewInputCheckpoint | None
+) -> Path:
     db = database.resolve(strict=True)
-    if output.resolve() in snapshot_files(db) or output.is_symlink() or output.exists():
+    protected = snapshot_files(db)
+    if input_checkpoint is not None:
+        protected.update(snapshot_files(input_checkpoint.database))
+    if output.resolve() in protected or output.is_symlink() or output.exists():
         raise ValueError("Review output must be new and separate from the input snapshot")
     return db
 
 
 def template(
-    database: Path, database_sha256: str, result_id: str, output: Path
+    database: Path,
+    database_sha256: str,
+    result_id: str,
+    output: Path,
+    *,
+    input_checkpoint: ReviewInputCheckpoint | None = None,
 ) -> dict[str, object]:
-    db = _review_output(database, output)
-    saved = saved_claim_review(db, database_sha256=database_sha256, result_id=result_id)
+    db = _review_output(database, output, input_checkpoint)
+    saved = saved_claim_review(
+        db, database_sha256=database_sha256, result_id=result_id, input_checkpoint=input_checkpoint
+    )
     claims = [
         {
             "field": field,
@@ -105,6 +118,11 @@ def template(
         "result_id": result_id,
         "request_sha256": saved.request_sha256,
         "text_sha256": saved.text_sha256,
+        **(
+            {"input_checkpoint_sha256": saved.input_checkpoint_sha256}
+            if saved.input_checkpoint_sha256 is not None
+            else {}
+        ),
         "reviewer": None,
         "reviewed_on": None,
         "reviewer_kind": None,
@@ -121,11 +139,15 @@ def record(
     result_id: str,
     answers: list[tuple[Path, str]],
     output: Path,
+    *,
+    input_checkpoint: ReviewInputCheckpoint | None = None,
 ) -> dict[str, object]:
-    db = _review_output(database, output)
+    db = _review_output(database, output, input_checkpoint)
     if not 1 <= len(answers) <= 16:
         raise ValueError("Supply one to sixteen pinned answer files")
-    saved = saved_claim_review(db, database_sha256=database_sha256, result_id=result_id)
+    saved = saved_claim_review(
+        db, database_sha256=database_sha256, result_id=result_id, input_checkpoint=input_checkpoint
+    )
     source = ReviewDocument(
         identity=_CLAIM_DOCUMENT_ID,
         url="",
@@ -154,11 +176,13 @@ def record(
             review.result_id,
             review.request_sha256,
             review.text_sha256,
+            review.input_checkpoint_sha256,
         ) != (
             database_sha256,
             result_id,
             saved.request_sha256,
             saved.text_sha256,
+            saved.input_checkpoint_sha256,
         ):
             raise ValueError("Review answers refer to a different saved answer or request")
         voter = review.reviewer.strip().casefold()
@@ -190,6 +214,8 @@ def record(
     if (
         digest(read_artifact(db)) != database_sha256
         or live_journal(db)
+        or input_checkpoint is not None
+        and not input_checkpoint.unchanged()
         or any(digest(read_artifact(path)) != pin for path, pin in answers)
     ):
         raise ValueError("Review snapshot or pinned answers changed during recording")
@@ -222,6 +248,11 @@ def record(
         "result_id": result_id,
         "request_sha256": saved.request_sha256,
         "text_sha256": saved.text_sha256,
+        **(
+            {"input_checkpoint_sha256": saved.input_checkpoint_sha256}
+            if saved.input_checkpoint_sha256 is not None
+            else {}
+        ),
         "reviews": sorted(reviews, key=lambda row: str(row["answers_sha256"])),
         "claims": labels,
         "judgment_source": "reviewer_declared",
@@ -239,10 +270,22 @@ def main() -> None:
     mode.add_argument("--template", action="store_true", help="write a blank pinned answer form")
     mode.add_argument("--answers", nargs=2, action="append", metavar=("PATH", "SHA256"))
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--input-checkpoint", nargs=2, metavar=("PATH", "SHA256"))
     args = parser.parse_args()
+    input_checkpoint = (
+        ReviewInputCheckpoint(Path(args.input_checkpoint[0]), args.input_checkpoint[1])
+        if args.input_checkpoint
+        else None
+    )
     try:
         if args.template:
-            template(args.database, args.database_sha256, args.result_id, args.output)
+            template(
+                args.database,
+                args.database_sha256,
+                args.result_id,
+                args.output,
+                input_checkpoint=input_checkpoint,
+            )
         else:
             record(
                 args.database,
@@ -250,6 +293,7 @@ def main() -> None:
                 args.result_id,
                 [(Path(path), pin) for path, pin in args.answers],
                 args.output,
+                input_checkpoint=input_checkpoint,
             )
     except (OSError, ValueError, sqlite3.Error) as exc:
         parser.error(str(exc))

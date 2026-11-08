@@ -1,0 +1,26 @@
+{
+  "scope": "Read-only review of an actual saved result using a separately pinned earlier checkpoint.",
+  "result_id": "result-v1:ef9d048e4a113196bb189a106eb5452ec8642fa5046f16244b83ebedefd3b290",
+  "request_sha256": "5f229284bf6f5a533ac93e7d11a5bb2d8e063d6ed451fc1366bd027aa13b574a",
+  "text_sha256": "dcd8198dc98d25a31e5d107d1d4a1cabc7db4fd6feb6fa8894b7d99083974c57",
+  "stored_chars": 15279,
+  "stored_utf8_bytes": 16076,
+  "claim_slots": 4,
+  "current_state": "8e7a715b56871e6843742760b6e8cc8923a5b42d",
+  "current_snapshot_sha256": "2fa282b623328efa9bec50d3d6da771fd6a8b098565ea619d1a1a4ed38f351b7",
+  "historical_state": "ca2353d112dedb6a47962976a4bd29e6f19836a9",
+  "historical_snapshot_sha256": "5ee32f1eae088dd16d34c070d74051a866f4044606829fcf03c7e56c9aae3687",
+  "controls": {
+    "without_earlier_snapshot_rejected": true,
+    "wrong_snapshot_pin_rejected": true,
+    "legacy_reanalysis_without_receipt_rejected": true,
+    "edited_text_rejected": true,
+    "wrong_answer_pin_rejected": true,
+    "synthetic_control_did_not_create_human_judgments": true
+  },
+  "both_database_files_unchanged": true,
+  "cli_controls": {
+    "review_sheet_sha256": "e4df4b3b9b83ccf849709c41008267e14be30e3525483f36a57a5e5da38137d3",
+    "template_and_intake_equal_to_api": true
+  }
+}
