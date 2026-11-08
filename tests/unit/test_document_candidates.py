@@ -111,13 +111,16 @@ def test_equal_file_versions_preserve_official_input_priority() -> None:
     assert choice.index == 0 and choice.observed_parts == (first, second)
 
 
-def test_conflicting_file_versions_keep_only_bill_members_and_source_reasons() -> None:
+@pytest.mark.parametrize("physical_parts", [False, True])
+def test_conflicting_file_versions_keep_compared_and_observed_parts(physical_parts: bool) -> None:
     first = DocumentPart(text=BILL, members=("one.pdf",))
     second = DocumentPart(text=BILL.replace("200 zł", "300 zł"), members=("two.pdf",))
+    extra = DocumentPart(text="Physical appendix", members=("other.pdf",))
+    observed = (first, extra) if physical_parts else (first,)
     candidates = CandidateSet(
         (
             DocumentCandidate("opinion", "UZASADNIENIE"),
-            DocumentCandidate("one", first.text, (first,)),
+            DocumentCandidate("one", first.text, (first,), observed),
             DocumentCandidate("two", second.text, (second,)),
         )
     )
@@ -130,7 +133,7 @@ def test_conflicting_file_versions_keep_only_bill_members_and_source_reasons() -
         "one: conflicting bill version",
         "two: conflicting bill version",
     )
-    assert not choice.selection.observed_parts
+    assert choice.selection.observed_parts == ((first, extra, second) if physical_parts else ())
 
 
 def test_no_bill_body_leaves_the_loader_fallback_available() -> None:

@@ -92,13 +92,18 @@ def select_candidate_versions(
     comparison = compare_version_decision(
         [candidates.entries[index].text or "" for index in bill_indices]
     )
+    observed = tuple(
+        part
+        for index in bill_indices
+        for part in (candidates.entries[index].observed_parts or candidates.entries[index].parts)
+    )
     if not comparison.matching_indices:
+        parts = tuple(part for index in bill_indices for part in candidates.entries[index].parts)
         return AmbiguousCandidates(
             DocumentSelection(
                 state="ambiguous",
-                parts=tuple(
-                    part for index in bill_indices for part in candidates.entries[index].parts
-                ),
+                parts=parts,
+                observed_parts=observed if observed != parts else (),
                 rejected=tuple(
                     f"{candidates.entries[index].source}: conflicting bill version"
                     for index in bill_indices
@@ -106,11 +111,6 @@ def select_candidate_versions(
             ),
             comparison,
         )
-    observed = tuple(
-        part
-        for index in bill_indices
-        for part in (candidates.entries[index].observed_parts or candidates.entries[index].parts)
-    )
     return SelectedCandidate(bill_indices[comparison.matching_indices[0]], observed, comparison)
 
 
