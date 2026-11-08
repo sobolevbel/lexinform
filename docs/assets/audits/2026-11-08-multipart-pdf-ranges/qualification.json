@@ -1,0 +1,91 @@
+{
+  "baseline": "1d2864df387f13f72f5cbf1b830f6592d7d6f197",
+  "cases": {
+    "12294859/11/raw/normal": {
+      "checkpoint_gzip_bytes": 31708,
+      "normalized_checkpoint_dump_sha256": "f3666c80ed01241a0902796b3a030f76c0efaf3a94ddb8c776ab31177fac4838",
+      "ranges": 49,
+      "ranges_sha256": "6f297aba564047b1f7a18236632433756585b88b26df78a8a70902ba8ed3519a",
+      "request_sha256": "95b78c077153ad9767e6d54353e633f5cc342c0013a542720e8bcaf0e3c53ad3",
+      "source_part_indices": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    "12294859/9/raw/normal": {
+      "checkpoint_gzip_bytes": 31665,
+      "normalized_checkpoint_dump_sha256": "bd7fdf1a7e8e6f97816476940e06e66d23394802078efe27338375d969e2ac1e",
+      "ranges": 49,
+      "ranges_sha256": "6f297aba564047b1f7a18236632433756585b88b26df78a8a70902ba8ed3519a",
+      "request_sha256": "95b78c077153ad9767e6d54353e633f5cc342c0013a542720e8bcaf0e3c53ad3",
+      "source_part_indices": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    "12294859/9/raw/tight": {
+      "checkpoint_gzip_bytes": 31733,
+      "normalized_checkpoint_dump_sha256": "f692443abc550307a55cc147938f0da5a30d362d3313a19d6afacca4c2f7cb10",
+      "ranges": 5,
+      "ranges_sha256": "f37be3e49ca4de5fdb0c7e0c359cc34e3de54d60d1c7fbcb7ce8a18edb87f769",
+      "request_sha256": "beebc64a6d83255bba17d96b6d7155760d173266da1ccdb021d33fc22dbe0e63",
+      "source_part_indices": [
+        4
+      ]
+    },
+    "12365005/9/raw/normal": {
+      "checkpoint_gzip_bytes": null,
+      "normalized_checkpoint_dump_sha256": null,
+      "ranges": 0,
+      "ranges_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "request_sha256": null,
+      "source_part_indices": []
+    },
+    "12403302/12/raw/normal": {
+      "checkpoint_gzip_bytes": 24087,
+      "normalized_checkpoint_dump_sha256": "aedec77c8d78a8ff308d6d1a9965c97485340e16c2ba4fd8df1ea6309ecba124",
+      "ranges": 0,
+      "ranges_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "request_sha256": "8059b6d8e02c4b092f5eb015d12eda81da57019f57b8f6e2ceb93bf4bca281ee",
+      "source_part_indices": []
+    }
+  },
+  "checks": [
+    "Removed only the new report field before comparing the complete captured rows.",
+    "Every reported normalized page hash and request slice was checked against a fresh extraction from the pinned source bytes.",
+    "Dump equality after cleanup and double restore held independently for each run.",
+    "No live provider or publisher calls."
+  ],
+  "controls": {
+    "12365005/9/raw/normal": "Archive without usable text; no card or request.",
+    "12403302/12/raw/normal": "Archive with selected Word files; compact card report unchanged."
+  },
+  "input_sha256": {
+    "INDEX.json": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+    "corpus/12294859.json": "a443652aa264e06c76fc124cd19811e8926e7796692775bf4357d2fa87f4c2ab",
+    "corpus/12365005.json": "1881c48174337cee030abfc22276f46e423f50f3b39c998778e80ebe08376e88",
+    "corpus/12403302.json": "5bcaecc716474d208d764771e6bd8f7def6162ef32972e9415579ae4a893135c",
+    "documents/files/300513.pdf": "3a3aba7b2ae342e7fd858c1555f635bb47f1e36646a73492660399a3a87b4998",
+    "documents/files/300514.pdf": "621059c9a5b64f77f4c08d6a0621ade9bdf056e8fbc907febc1b914f5517f00a",
+    "documents/files/300515.pdf": "c05a0aeb508c0f8cbbe83ef2c9e7df4cbbc5b50e1a2fd272de2f7fb1c53d780e",
+    "documents/files/300517.pdf": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514",
+    "documents/files/300519.pdf": "407850fe8da5e64cd468e0cf9553882f022658fa8a251aa91b3aaa52e2524a95",
+    "documents/files/300528.pdf": "a7ae7c89f365ea04fbe15bc5a36a1d189e8e61d53f1acd80f47ff673e3d4a190",
+    "documents/files/300531.pdf": "db8aa7ad5d3bd105041e2495517ab2cb469a36bcc13ae76ded124c8476e6326d",
+    "documents/files/300535.pdf": "2370b59270ac3beb7a6edf39773e3b9b14d4f6224e6313c4d342d0d655b6bc98",
+    "documents/files/300536.pdf": "68d31cbcc20561108dfb95de3dc6718fa2d4af4f71a34145debbbc7cd4a73971",
+    "documents/files/300677.pdf": "7c1c752693e01be2fe23f6c98f06f9ec7c646c4803a951243231e6cd512cd9cc",
+    "documents/files/301219.pdf": "12e78a7b1ecb87054f769bdf088ee38b57587587cb02048bbb94d6365fdb020b",
+    "documents/files/618466.zip": "c895aac5acdf06e9ddaacc2958b6b968189190afc0e162c9cded7cd63e79904d",
+    "documents/files/618478.zip": "244d945f9b633bae474011fb2921cd2615fc534b12e6d4af5cd37db8ab1f9c2a",
+    "documents/files/618479.docx": "5c7d60a612dd183abd4a8ab99f03f696f6e150104ee4f350454447db62ed1a77",
+    "documents/files/778150.zip": "659ac5e0b08f211d09ba3d6fc9054c972299f9450a2b1ec55db4ca91fce44a03"
+  },
+  "scope": "Offline native extraction with pinned RCL metadata and documents, fake provider and sender, cleanup and double restore."
+}

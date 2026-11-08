@@ -10,6 +10,7 @@ from lexinform.adapters.content_applications import verify_content_applications
 from lexinform.adapters.content_source_refs import ContentSourceRows
 from lexinform.adapters.digest_content import verify_digest_content
 from lexinform.adapters.input_receipts import (
+    project_pdf_page_ranges,
     retained_pdf_page_ranges,
     validate_multipart_item,
 )
@@ -312,7 +313,7 @@ def _verify_card_primary_evidence(
     else:
         if receipt.source_observation_id != reference.source_observation_id:
             raise CardPrimaryEvidenceError("card_primary_source_scope")
-        validate_multipart_item(connection, item)
+        parts = validate_multipart_item(connection, item)
         if isinstance(receipt, RclArchiveInputReceipt):
             physical = {
                 "artifact_sha256": selection.selection.parts[0].source_sha256,
@@ -337,6 +338,9 @@ def _verify_card_primary_evidence(
             }
             if isinstance(receipt, SejmSelfAmendmentInputReceipt):
                 physical["proposal_trace_id"] = receipt.proposal_trace_id
+        ranges = project_pdf_page_ranges(receipt.segments, parts)
+        if ranges:
+            physical["normalized_pdf_page_ranges"] = ranges
     collections = _query(
         connection,
         "SELECT * FROM result_applications WHERE result_id=? AND term=? AND number=?"

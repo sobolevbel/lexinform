@@ -56,6 +56,7 @@ from lexinform.models.input_receipts import (
     RclArchiveSelfAmendmentInputReceipt,
     SejmSelfAmendmentInputReceipt,
 )
+from lexinform.models.prepared_input import PreparedTextSegment
 from lexinform.models.scan_input import MAX_SCAN_BYTES, MAX_SCAN_PAGES
 from lexinform.models.sejm import TextDocument
 from lexinform.models.supplement_inputs import (
@@ -619,7 +620,7 @@ def _archive_parents(
     meta: BatchItemMeta,
     owner: tuple[int, str] | None,
     selection: DocumentSelectionRecord,
-) -> None:
+) -> tuple[ExtractedPartSummary, ...]:
     observation = DocumentSourceRows(connection).get_source_observation(
         receipt.source_observation_id
     )
@@ -641,7 +642,7 @@ def _archive_parents(
             document
         ):
             raise ValueError("input_receipt_archive_scope_mismatch")
-        root = _archive_parts_parent(
+        root, summaries = _archive_parts_parent(
             connection,
             selection.selection_id,
             receipt.extraction_id,
@@ -651,11 +652,11 @@ def _archive_parents(
         )
         if receipt.selected_version_trace_id is not None:
             _selected_archive_version(connection, receipt, document, selection, root)
-        return
+        return summaries
     amendment = rcl_archive_self_amendment_url(document)
     if amendment is None or parts[-1].url != amendment:
         raise ValueError("input_receipt_archive_amendment_scope_mismatch")
-    root = _archive_parts_parent(
+    root, summaries = _archive_parts_parent(
         connection,
         selection.selection_id,
         receipt.extraction_id,
@@ -670,7 +671,7 @@ def _archive_parents(
             " WHERE selection_id=? AND part_scope='parts' AND part_index=? AND artifact_sha256=?",
             (selection.selection_id, index, root),
         )
-    _loose_part_parent(
+    amendment_summary = _loose_part_parent(
         connection, selection.selection_id, len(parts) - 1, parts[-1], receipt.amendment_part
     )
     if parts[-1].sha256 == root:
@@ -680,6 +681,7 @@ def _archive_parents(
         "SELECT 1 FROM artifact_reads WHERE requested_url=? AND artifact_sha256=?",
         (amendment, parts[-1].sha256),
     )
+    return (*summaries, amendment_summary)
 
 
 def _selected_archive_version(
@@ -717,7 +719,7 @@ def _archive_parts_parent(
     url: str,
     parts: tuple[DocumentPart, ...],
     source_parts: tuple[ArchiveInputPart, ...],
-) -> str:
+) -> tuple[str, tuple[ExtractedPartSummary, ...]]:
     row = _one(
         connection,
         "SELECT e.* FROM selection_extractions l JOIN extraction_results e USING(extraction_id)"
@@ -748,7 +750,7 @@ def _archive_parts_parent(
             or not archive_member_matches(part, summary, chars=recorded.chars)
         ):
             raise ValueError("input_receipt_archive_part_mismatch")
-    return root
+    return root, tuple(summaries[part.physical_index] for part in source_parts)
 
 
 def _block_parents(
@@ -826,7 +828,7 @@ def _multipart_parents(
     receipt: MultipartTextInputReceipt,
     meta: BatchItemMeta,
     owner: tuple[int, str] | None,
-) -> None:
+) -> tuple[ExtractedPartSummary, ...]:
     _block_parents(connection, receipt)
     source = _source_selection(connection, receipt.source_selection_id)
     selection = source.selection
@@ -842,8 +844,7 @@ def _multipart_parents(
     ):
         raise ValueError("input_receipt_selection_mismatch")
     if isinstance(receipt, (RclArchiveInputReceipt, RclArchiveSelfAmendmentInputReceipt)):
-        _archive_parents(connection, receipt, meta, owner, source)
-        return
+        return _archive_parents(connection, receipt, meta, owner, source)
     if not isinstance(receipt, LooseMultipartInputReceipt) or len(
         {part.url for part in parts}
     ) != len(parts):
@@ -883,8 +884,10 @@ def _multipart_parents(
         ):
             raise ValueError("input_receipt_proposal_mismatch")
         validate_sejm_proposal_link(connection, trace, receipt.source_observation_id)
-    for index, (part, recorded) in enumerate(zip(parts, receipt.source_parts, strict=True)):
+    return tuple(
         _loose_part_parent(connection, receipt.source_selection_id, index, part, recorded)
+        for index, (part, recorded) in enumerate(zip(parts, receipt.source_parts, strict=True))
+    )
 
 
 def _loose_part_parent(
@@ -893,7 +896,7 @@ def _loose_part_parent(
     index: int,
     part: DocumentPart,
     recorded: LooseRclInputPart,
-) -> None:
+) -> ExtractedPartSummary:
     if (
         part.members
         or not part.url
@@ -937,6 +940,7 @@ def _loose_part_parent(
         or summary.text_chars != recorded.chars
     ):
         raise ValueError("input_receipt_extraction_mismatch")
+    return summary
 
 
 def _parents(
@@ -1032,19 +1036,34 @@ def retained_pdf_page_ranges(
 ) -> list[dict[str, object]]:
     """Project retained request spans onto the validated normalized PDF page map."""
     part = _parents(connection, receipt)
-    if part is None or part.pdf_page_map is None or receipt.source_selection_id is None:
+    if part is None or receipt.source_selection_id is None:
         return []
+    return project_pdf_page_ranges(receipt.segments, (part,))
+
+
+def project_pdf_page_ranges(
+    segments: tuple[PreparedTextSegment, ...], parts: tuple[ExtractedPartSummary, ...]
+) -> list[dict[str, object]]:
+    """Project request spans onto already validated extraction summaries in receipt order."""
     ranges: list[dict[str, object]] = []
-    for segment in receipt.segments:
+    for segment in segments:
         if segment.origin != "source" or segment.source_start is None or segment.source_end is None:
             continue
-        for page in part.pdf_page_map.pages:
+        assert segment.part_index is not None, "Source segments identify their receipt part"
+        page_map = parts[segment.part_index].pdf_page_map
+        if page_map is None:
+            continue
+        for page in page_map.pages:
             start = max(page.start, segment.source_start)
             end = min(page.end, segment.source_end)
             if start < end:
                 request_start = segment.start + start - segment.source_start
+                location: dict[str, object] = (
+                    {"part_index": segment.part_index} if len(parts) > 1 else {}
+                )
                 ranges.append(
                     {
+                        **location,
                         "page": page.page,
                         "request_span": [request_start, request_start + end - start],
                         "normalized_page_span": [start - page.start, end - page.start],
@@ -1225,15 +1244,19 @@ def validate_multipart_intent(connection: sqlite3.Connection, intent: BatchInten
         raise PreparedInputParentError(str(exc)) from None
 
 
-def validate_multipart_item(connection: sqlite3.Connection, item: LlmBatchItem) -> None:
+def validate_multipart_item(
+    connection: sqlite3.Connection, item: LlmBatchItem
+) -> tuple[ExtractedPartSummary, ...]:
     if not isinstance(item.meta.prepared_input_receipt, MultipartTextInputReceipt):
-        return
+        return ()
     meta = batch_item_meta(item.call_kind, item.meta.model_dump_json())
     if not isinstance(meta, BatchItemMeta) or not isinstance(
         meta.prepared_input_receipt, MultipartTextInputReceipt
     ):
         raise ValueError("Multipart receipt requires primary metadata")
-    _multipart_parents(connection, meta.prepared_input_receipt, meta, (item.term, item.number))
+    return _multipart_parents(
+        connection, meta.prepared_input_receipt, meta, (item.term, item.number)
+    )
 
 
 def _input_snapshot_checks(

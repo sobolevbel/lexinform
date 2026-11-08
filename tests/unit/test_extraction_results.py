@@ -8,6 +8,7 @@ import pytest
 from lexinform import extraction_records
 from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
+from lexinform.adapters.input_receipts import project_pdf_page_ranges
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models import (
@@ -20,6 +21,7 @@ from lexinform.models import (
 )
 from lexinform.models.block_input import MAX_BLOCK_INPUT_BYTES, MAX_BLOCK_INPUT_ROWS
 from lexinform.models.extractions import MAX_EXTRACTION_METADATA_BYTES, PdfPageMap, PdfPageRange
+from lexinform.models.prepared_input import PreparedTextSegment
 from lexinform.services.document_history import DocumentSourceRead, record_source_read
 from lexinform.services.documents import TextLoader
 from tests.conftest import FIXTURES
@@ -295,3 +297,33 @@ def test_pdf_page_map_round_trips_and_rejects_out_of_bounds_pages(tmp_path: Path
     assert repo.dump() == dump
     assert repo.get_extraction_result(result.result_id) == result
     assert repo.get_extraction_result(mapped.result_id) == mapped
+
+
+def test_pdf_page_projection_uses_receipt_part_order_instead_of_physical_indices() -> None:
+    data = (FIXTURES / "print_3039.pdf").read_bytes()
+    reader = DocumentTextExtractor(PypdfTextExtractor(), DocxTextExtractor(), DocTextExtractor())
+    (part,) = reader.extract_document_with_provenance(data).result.selected_parts
+    page = PdfPageRange(page=1, start=2, end=7, normalized_sha256="a" * 64)
+    mapped = part.model_copy(
+        update={"pdf_page_map": PdfPageMap(pages=(page,)), "physical_index": 4}
+    )
+    unmapped = part.model_copy(update={"pdf_page_map": None, "physical_index": 7})
+    segments = (
+        PreparedTextSegment(
+            start=0, end=4, origin="source", part_index=0, source_start=1, source_end=5
+        ),
+        PreparedTextSegment(start=4, end=5, origin="generated", system_origin="part_separator"),
+        PreparedTextSegment(
+            start=5, end=9, origin="source", part_index=1, source_start=5, source_end=9
+        ),
+    )
+
+    assert project_pdf_page_ranges(segments, (unmapped, mapped)) == [
+        {
+            "part_index": 1,
+            "page": 1,
+            "request_span": [5, 7],
+            "normalized_page_span": [3, 5],
+            "normalized_page_sha256": "a" * 64,
+        }
+    ]
