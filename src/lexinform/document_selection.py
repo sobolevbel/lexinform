@@ -19,8 +19,8 @@ from lexinform.models.documents import (
 from lexinform.sections import PAGE_BREAK, document_kind, trim_print
 from lexinform.text_projection import SourcePiece, TextProjection, project_pieces
 
-DOCUMENT_SELECTION_POLICY_VERSION = "document-selection-v20"
-RCL_AMENDMENT_ARCHIVE_POLICY_VERSION = "document-selection-v23"
+DOCUMENT_SELECTION_POLICY_VERSION = "document-selection-v24"
+RCL_AMENDMENT_ARCHIVE_POLICY_VERSION = "document-selection-v25"
 
 
 def bill_selection(

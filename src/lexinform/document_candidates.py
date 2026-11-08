@@ -44,6 +44,28 @@ _ROLE_OF_KIND: dict[Kind, TextRole] = {
 
 _NOT_THE_BILL = APPENDIX_KINDS | {"letter"}
 
+_ARCHIVE_RESPONSE_HEADING = re.compile(
+    r"\A\s*Odniesienie\s+się\s+przez\s+Ministerstwo\s+[^\f]{1,180}?"
+    r"\s+do\s+uwag\s+do\s+projektu\b",
+    re.I,
+)
+_ARCHIVE_RESPONSE_COLUMNS = re.compile(
+    r"Nazwa\s+podmiotu\s+zgłaszającego\s+uwagi.{0,320}?"
+    r"Proponowana\s+treść\s*/\s*Uzasadnienie\s+dla\s+zmiany\s+Stanowisko\s+Ministerstwa",
+    re.I | re.S,
+)
+
+
+def _physical_kind(part: DocumentPart) -> Kind:
+    if not part.text.strip():
+        return "unknown"
+    if part.members:
+        opening = part.text[:1200].split(PAGE_BREAK, 1)[0]
+        heading = _ARCHIVE_RESPONSE_HEADING.match(opening)
+        if heading is not None and _ARCHIVE_RESPONSE_COLUMNS.search(opening, heading.end()):
+            return "remarks_table"
+    return document_kind(part.text)
+
 
 @dataclass(frozen=True)
 class DocumentCandidate:
@@ -156,7 +178,7 @@ def select_document_parts(
     pdf_extractions = {item.part_index: item.extraction for item in extracted.pdf_pages}
     parts: list[DocumentPart] = []
     for index, part in enumerate(extracted.parts):
-        kind = document_kind(part.text) if part.text.strip() else "unknown"
+        kind = _physical_kind(part)
         losses = _legacy_losses(part)
         if (pdf := pdf_extractions.get(index)) is not None:
             if failures := sum(page.error_type is not None for page in pdf.pages):
@@ -248,7 +270,7 @@ def _select_parts(
     for index, part in enumerate(parts):
         name = part.members[-1]
         base = name.rsplit("/", 1)[-1]
-        kind = document_kind(part.text) if part.text.strip() else "unknown"
+        kind = _physical_kind(part)
         if kind != "bill" and _normative_annex(base, part.text):
             annexes.append((index, part.model_copy(update={"role": "normative_annex"})))
             continue

@@ -434,3 +434,30 @@ def test_incomplete_rcl_amendment_package_blocks_unclassified_fallback() -> None
     trace = file.candidate_trace
     assert trace is not None and trace.result == "waiting"
     assert trace.dispositions[1].reason == "normative_part_read_incomplete"
+
+
+def test_archive_remarks_table_does_not_prevent_selecting_a_dated_draft() -> None:
+    response = (
+        "Odniesienie się przez Ministerstwo do spraw rodziny do uwag do projektu ustawy\n"
+        "Nazwa podmiotu zgłaszającego uwagi: Ministerstwo Cyfryzacji\n"
+        "Lp. Dokument Artykuł\nProponowana treść / Uzasadnienie dla zmiany Stanowisko Ministerstwa\n"
+        "1.\nUstawa\n"
+    )
+    latest = "Projekt z dnia 31 marca 2025 r.\n" + BILL
+    earlier = "Projekt z dnia 27 lutego 2025 r.\n" + BILL.replace("200 zł", "400 zł")
+    physical = ExtractedParts(
+        input_sha256="a" * 64,
+        parts=(
+            DocumentPart(text=response, members=("Odpowiedź.pdf",)),
+            DocumentPart(text=latest, members=("Projekt nowszy.pdf",)),
+            DocumentPart(text=earlier, members=("Projekt starszy.pdf",)),
+        ),
+    )
+
+    result = select_document_parts(physical, max_part_chars=None)
+
+    assert result.text == latest
+    assert result.selection.rejected == ("('Odpowiedź.pdf',): remarks_table",)
+    assert len(result.selection.observed_parts) == 3
+    loose = ExtractedParts(input_sha256="b" * 64, parts=(DocumentPart(text=response),))
+    assert select_document_parts(loose, max_part_chars=None).text == response

@@ -1,0 +1,421 @@
+{
+  "archive_change": {
+    "after": {
+      "archive_sha256": "e3c337a860741e488c4487feb205d9067eb8856621f595c29918004a181ac67b",
+      "policy_sha256": "f5d1fd7b77c11d9a01274b1ca302b30da761801266c6149ba3616a894d61e516",
+      "selection_sha256": "82f815bf7db85cfc5d10033951443bf608293a3d696cccb6c39e91b4d0402949",
+      "state": "unverified",
+      "text_sha256": "59b9cd271fdd33c2a557c1f3f46b0a5d8346447149afc69070100bd14cb06cdc"
+    },
+    "before": {
+      "archive_sha256": "e3c337a860741e488c4487feb205d9067eb8856621f595c29918004a181ac67b",
+      "policy_sha256": "0b5d69075ae3f466f88a0ac2f23a8d76e8f6f08695ebc5b0a32a3e55f0d9ca0f",
+      "selection_sha256": "398a0de758e4bdedd4a99f65ebd45fe1d31b7428cabd71e168934e40f5231984",
+      "state": "ambiguous",
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "parts": {
+      "archive_sha256": "e3c337a860741e488c4487feb205d9067eb8856621f595c29918004a181ac67b",
+      "compared_slots": [
+        38,
+        27
+      ],
+      "comparison_dates": [
+        "2025-03-31",
+        "2025-02-27"
+      ],
+      "excluded_reason": "non_bill_body",
+      "excluded_slot": 4,
+      "selected_parts": [
+        {
+          "member": [
+            "Ustawa o AOON - tresc projektu - 31.03.2025 - AKTUALNA - final.pdf"
+          ],
+          "role": "bill",
+          "sha256": "c77cd564be28e8c93cd08e36f6629320cbd71a0a270a75096c84e5a3526911f4",
+          "text_sha256": "e445338b42812a920b7d1051d23df756211d239420ed6c1022c3e72ca51a3e7b"
+        },
+        {
+          "member": [
+            "Uzasadnienie - Ustawa o AOON - 31.03.2025 - final.pdf"
+          ],
+          "role": "justification",
+          "sha256": "52a0d9ab3e9220e4fe8e07c2c5120e6ffb344d2ce674d70620c931b2d602bd91",
+          "text_sha256": "b7add9e1b23a433e062b935a530bdf7d5d77915ce72281568bef57a26727c121"
+        },
+        {
+          "member": [
+            "Ustawa o AOON - OSR - 31.03.2025 - AKTUALNA - final.pdf"
+          ],
+          "role": "osr",
+          "sha256": "e79f0640f6ea684f87df3c5fb30433b3ff1f725dcad455d99a9ceb569dcf1bd0",
+          "text_sha256": "aa6a931634fb3774f480f486213adb1fab37c2b7c55269c35c5aa911e5ebcd15"
+        }
+      ],
+      "state": "unverified"
+    }
+  },
+  "archive_count": 125,
+  "archive_inputs_sha256": "77ff60cf2af26426e0c278b4c13047532a4b6438f64476318f699d8920dd18b0",
+  "changed_stages": {
+    "12389752/12": {
+      "after": {
+        "new_state": "unverified",
+        "new_text_sha256": "2ff50b85c6a402ad8403ad5e24c09d9087244a283b4f90af22034e073140683b",
+        "old_state": "waiting",
+        "old_text_sha256": null,
+        "proof": {
+          "amendment_index": 0,
+          "base_member_sha256": "fba401578906b2d8d8acfb02b385f0c321dba69c24d362d5eca464c013056b49",
+          "base_sha256": "4d2c1be3c8c1a48811e50f58c516b517f115965ab95bf6014756bef42dbb0843",
+          "comparison_text_sha256": "01b13b9995e38d7ee985b8fc083ace73af221faff855287ef8c1cd3556f0d8dd",
+          "edition_id": "edition-v1:cb73b60da423a2f659265181531e4e93f6fdfd6a29e35efe22ce1d176ade4740",
+          "index": 0,
+          "original_extraction_id": "extraction-v1:a4821ed04b383de1ecec791def34bb37ffaf942b7abbedc4c299d72cd17c6bc0",
+          "original_print": "672",
+          "profile": "rcl-original-proposal-v1",
+          "project_id": 12389752,
+          "proposal_member_sha256": "ad902c7054a417e7af6c85c49742e5f60c16d6edbfd44b5a0dd7cb80ee072c4f",
+          "proposal_sha256": "8f1dd7f69eaf8741cc2646fea2a6b4f20d642ed205b2eab605bd3edce79375ab",
+          "rm_number": "RM-0610-73-24",
+          "term": 10
+        },
+        "rejected": [],
+        "requests": [
+          "/sejm/term10/processes/672",
+          "/sejm/term10/prints/672",
+          "/sejm/term10/prints/672/672-ustawa.docx"
+        ],
+        "roles": [
+          {
+            "member": [
+              "projekt ustawy powodziowej 24.09.docx"
+            ],
+            "role": "bill",
+            "sha256": "fba401578906b2d8d8acfb02b385f0c321dba69c24d362d5eca464c013056b49",
+            "text_sha256": "c21bb374ae5f266f5aff4e018f46b82eeb06e5a3493afdda1d7e62c70ba73aa9",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12389752/13082617/13082618/dokument684251.zip"
+          },
+          {
+            "member": [
+              "Uzasadnienie - 24.09.docx"
+            ],
+            "role": "justification",
+            "sha256": "b873f81fe394a98331bd15d665f1327e625fefbcd2229814e3be01375966b1a0",
+            "text_sha256": "f5dfafebe02acef9237d38876ef1f685e402a3f4162e87f5142d6160f0e45d31",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12389752/13082617/13082618/dokument684251.zip"
+          },
+          {
+            "member": [
+              "OSR .docx"
+            ],
+            "role": "osr",
+            "sha256": "0a2aafc362ef3f3503ac536e6859f27d00fc7d1497d9910b9eaaceb5f9cb0c64",
+            "text_sha256": "6d325382ab2f19470d0bf3ef0e3d9c3ee6488788254e0c59beeb7b7eec043ba6",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12389752/13082617/13082618/dokument684251.zip"
+          },
+          {
+            "member": [
+              "AUTOPOPRAWKA DO PROJEKTU USTAWY POWODZIOWEJ (6208584).DOCX"
+            ],
+            "role": "self_amendment",
+            "sha256": "ad902c7054a417e7af6c85c49742e5f60c16d6edbfd44b5a0dd7cb80ee072c4f",
+            "text_sha256": "0f929ceecf488e871ee83326cd4fcf5bff7e388504b37114d7db65696882fdb4",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12389752/13082617/13082618/dokument684485.zip"
+          }
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12389752/13082617/13082618/dokument684251.zip"
+      },
+      "before": {
+        "new_state": "unverified",
+        "new_text_sha256": "2ff50b85c6a402ad8403ad5e24c09d9087244a283b4f90af22034e073140683b",
+        "old_state": "waiting",
+        "old_text_sha256": null,
+        "proof": {
+          "amendment_index": 0,
+          "base_member_sha256": "fba401578906b2d8d8acfb02b385f0c321dba69c24d362d5eca464c013056b49",
+          "base_sha256": "4d2c1be3c8c1a48811e50f58c516b517f115965ab95bf6014756bef42dbb0843",
+          "comparison_text_sha256": "01b13b9995e38d7ee985b8fc083ace73af221faff855287ef8c1cd3556f0d8dd",
+          "edition_id": "edition-v1:cb73b60da423a2f659265181531e4e93f6fdfd6a29e35efe22ce1d176ade4740",
+          "index": 0,
+          "original_extraction_id": "extraction-v1:cae2a48d78f3db16fa76065acd8db44d7e39408919cca03f57e6940c0728e668",
+          "original_print": "672",
+          "profile": "rcl-original-proposal-v1",
+          "project_id": 12389752,
+          "proposal_member_sha256": "ad902c7054a417e7af6c85c49742e5f60c16d6edbfd44b5a0dd7cb80ee072c4f",
+          "proposal_sha256": "8f1dd7f69eaf8741cc2646fea2a6b4f20d642ed205b2eab605bd3edce79375ab",
+          "rm_number": "RM-0610-73-24",
+          "term": 10
+        },
+        "rejected": [],
+        "requests": [
+          "/sejm/term10/processes/672",
+          "/sejm/term10/prints/672",
+          "/sejm/term10/prints/672/672-ustawa.docx"
+        ],
+        "roles": [
+          {
+            "member": [
+              "projekt ustawy powodziowej 24.09.docx"
+            ],
+            "role": "bill",
+            "sha256": "fba401578906b2d8d8acfb02b385f0c321dba69c24d362d5eca464c013056b49",
+            "text_sha256": "c21bb374ae5f266f5aff4e018f46b82eeb06e5a3493afdda1d7e62c70ba73aa9",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12389752/13082617/13082618/dokument684251.zip"
+          },
+          {
+            "member": [
+              "Uzasadnienie - 24.09.docx"
+            ],
+            "role": "justification",
+            "sha256": "b873f81fe394a98331bd15d665f1327e625fefbcd2229814e3be01375966b1a0",
+            "text_sha256": "f5dfafebe02acef9237d38876ef1f685e402a3f4162e87f5142d6160f0e45d31",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12389752/13082617/13082618/dokument684251.zip"
+          },
+          {
+            "member": [
+              "OSR .docx"
+            ],
+            "role": "osr",
+            "sha256": "0a2aafc362ef3f3503ac536e6859f27d00fc7d1497d9910b9eaaceb5f9cb0c64",
+            "text_sha256": "6d325382ab2f19470d0bf3ef0e3d9c3ee6488788254e0c59beeb7b7eec043ba6",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12389752/13082617/13082618/dokument684251.zip"
+          },
+          {
+            "member": [
+              "AUTOPOPRAWKA DO PROJEKTU USTAWY POWODZIOWEJ (6208584).DOCX"
+            ],
+            "role": "self_amendment",
+            "sha256": "ad902c7054a417e7af6c85c49742e5f60c16d6edbfd44b5a0dd7cb80ee072c4f",
+            "text_sha256": "0f929ceecf488e871ee83326cd4fcf5bff7e388504b37114d7db65696882fdb4",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12389752/13082617/13082618/dokument684485.zip"
+          }
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12389752/13082617/13082618/dokument684251.zip"
+      }
+    },
+    "12389752/14": {
+      "after": {
+        "new_state": "unverified",
+        "new_text_sha256": "2ff50b85c6a402ad8403ad5e24c09d9087244a283b4f90af22034e073140683b",
+        "old_state": "waiting",
+        "old_text_sha256": null,
+        "proof": {
+          "amendment_index": 0,
+          "base_member_sha256": "fba401578906b2d8d8acfb02b385f0c321dba69c24d362d5eca464c013056b49",
+          "base_sha256": "4d2c1be3c8c1a48811e50f58c516b517f115965ab95bf6014756bef42dbb0843",
+          "comparison_text_sha256": "01b13b9995e38d7ee985b8fc083ace73af221faff855287ef8c1cd3556f0d8dd",
+          "edition_id": "edition-v1:cb73b60da423a2f659265181531e4e93f6fdfd6a29e35efe22ce1d176ade4740",
+          "index": 0,
+          "original_extraction_id": "extraction-v1:a4821ed04b383de1ecec791def34bb37ffaf942b7abbedc4c299d72cd17c6bc0",
+          "original_print": "672",
+          "profile": "rcl-original-proposal-v1",
+          "project_id": 12389752,
+          "proposal_member_sha256": "ad902c7054a417e7af6c85c49742e5f60c16d6edbfd44b5a0dd7cb80ee072c4f",
+          "proposal_sha256": "8f1dd7f69eaf8741cc2646fea2a6b4f20d642ed205b2eab605bd3edce79375ab",
+          "rm_number": "RM-0610-73-24",
+          "term": 10
+        },
+        "rejected": [],
+        "requests": [
+          "/sejm/term10/processes/672",
+          "/sejm/term10/prints/672"
+        ],
+        "roles": [
+          {
+            "member": [
+              "projekt ustawy powodziowej 24.09.docx"
+            ],
+            "role": "bill",
+            "sha256": "fba401578906b2d8d8acfb02b385f0c321dba69c24d362d5eca464c013056b49",
+            "text_sha256": "c21bb374ae5f266f5aff4e018f46b82eeb06e5a3493afdda1d7e62c70ba73aa9",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12389752/13082617/13082618/dokument684251.zip"
+          },
+          {
+            "member": [
+              "Uzasadnienie - 24.09.docx"
+            ],
+            "role": "justification",
+            "sha256": "b873f81fe394a98331bd15d665f1327e625fefbcd2229814e3be01375966b1a0",
+            "text_sha256": "f5dfafebe02acef9237d38876ef1f685e402a3f4162e87f5142d6160f0e45d31",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12389752/13082617/13082618/dokument684251.zip"
+          },
+          {
+            "member": [
+              "OSR .docx"
+            ],
+            "role": "osr",
+            "sha256": "0a2aafc362ef3f3503ac536e6859f27d00fc7d1497d9910b9eaaceb5f9cb0c64",
+            "text_sha256": "6d325382ab2f19470d0bf3ef0e3d9c3ee6488788254e0c59beeb7b7eec043ba6",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12389752/13082617/13082618/dokument684251.zip"
+          },
+          {
+            "member": [
+              "AUTOPOPRAWKA DO PROJEKTU USTAWY POWODZIOWEJ (6208584).DOCX"
+            ],
+            "role": "self_amendment",
+            "sha256": "ad902c7054a417e7af6c85c49742e5f60c16d6edbfd44b5a0dd7cb80ee072c4f",
+            "text_sha256": "0f929ceecf488e871ee83326cd4fcf5bff7e388504b37114d7db65696882fdb4",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12389752/13082617/13082618/dokument684485.zip"
+          }
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12389752/13082617/13082618/dokument684251.zip"
+      },
+      "before": {
+        "new_state": "unverified",
+        "new_text_sha256": "2ff50b85c6a402ad8403ad5e24c09d9087244a283b4f90af22034e073140683b",
+        "old_state": "waiting",
+        "old_text_sha256": null,
+        "proof": {
+          "amendment_index": 0,
+          "base_member_sha256": "fba401578906b2d8d8acfb02b385f0c321dba69c24d362d5eca464c013056b49",
+          "base_sha256": "4d2c1be3c8c1a48811e50f58c516b517f115965ab95bf6014756bef42dbb0843",
+          "comparison_text_sha256": "01b13b9995e38d7ee985b8fc083ace73af221faff855287ef8c1cd3556f0d8dd",
+          "edition_id": "edition-v1:cb73b60da423a2f659265181531e4e93f6fdfd6a29e35efe22ce1d176ade4740",
+          "index": 0,
+          "original_extraction_id": "extraction-v1:cae2a48d78f3db16fa76065acd8db44d7e39408919cca03f57e6940c0728e668",
+          "original_print": "672",
+          "profile": "rcl-original-proposal-v1",
+          "project_id": 12389752,
+          "proposal_member_sha256": "ad902c7054a417e7af6c85c49742e5f60c16d6edbfd44b5a0dd7cb80ee072c4f",
+          "proposal_sha256": "8f1dd7f69eaf8741cc2646fea2a6b4f20d642ed205b2eab605bd3edce79375ab",
+          "rm_number": "RM-0610-73-24",
+          "term": 10
+        },
+        "rejected": [],
+        "requests": [
+          "/sejm/term10/processes/672",
+          "/sejm/term10/prints/672"
+        ],
+        "roles": [
+          {
+            "member": [
+              "projekt ustawy powodziowej 24.09.docx"
+            ],
+            "role": "bill",
+            "sha256": "fba401578906b2d8d8acfb02b385f0c321dba69c24d362d5eca464c013056b49",
+            "text_sha256": "c21bb374ae5f266f5aff4e018f46b82eeb06e5a3493afdda1d7e62c70ba73aa9",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12389752/13082617/13082618/dokument684251.zip"
+          },
+          {
+            "member": [
+              "Uzasadnienie - 24.09.docx"
+            ],
+            "role": "justification",
+            "sha256": "b873f81fe394a98331bd15d665f1327e625fefbcd2229814e3be01375966b1a0",
+            "text_sha256": "f5dfafebe02acef9237d38876ef1f685e402a3f4162e87f5142d6160f0e45d31",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12389752/13082617/13082618/dokument684251.zip"
+          },
+          {
+            "member": [
+              "OSR .docx"
+            ],
+            "role": "osr",
+            "sha256": "0a2aafc362ef3f3503ac536e6859f27d00fc7d1497d9910b9eaaceb5f9cb0c64",
+            "text_sha256": "6d325382ab2f19470d0bf3ef0e3d9c3ee6488788254e0c59beeb7b7eec043ba6",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12389752/13082617/13082618/dokument684251.zip"
+          },
+          {
+            "member": [
+              "AUTOPOPRAWKA DO PROJEKTU USTAWY POWODZIOWEJ (6208584).DOCX"
+            ],
+            "role": "self_amendment",
+            "sha256": "ad902c7054a417e7af6c85c49742e5f60c16d6edbfd44b5a0dd7cb80ee072c4f",
+            "text_sha256": "0f929ceecf488e871ee83326cd4fcf5bff7e388504b37114d7db65696882fdb4",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12389752/13082617/13082618/dokument684485.zip"
+          }
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12389752/13082617/13082618/dokument684251.zip"
+      }
+    },
+    "12392400/5": {
+      "after": {
+        "new_state": "unverified",
+        "new_text_sha256": "59b9cd271fdd33c2a557c1f3f46b0a5d8346447149afc69070100bd14cb06cdc",
+        "old_state": "unverified",
+        "old_text_sha256": "59b9cd271fdd33c2a557c1f3f46b0a5d8346447149afc69070100bd14cb06cdc",
+        "proof": null,
+        "rejected": [
+          "('2025-03-31 LISTA kontrolna.pdf',): checklist",
+          "('2025-03-31 Pismo_do_Komitetu_ds._Cyfryzacji.pdf',): letter",
+          "('2025-03-31 TABELA egislacyjna.pdf',): legislative_table",
+          "('Odniesienie do I tury uwag resortów (6211660).zip', 'Odniesienie do Uwag MC do Ustawy o AOON - 26.02.2025.pdf'): remarks_table",
+          "('Odniesienie do I tury uwag resortów (6211660).zip', 'Odniesienie do Uwag MRiT do Ustawy o AOON - 26.02.2025.pdf'): remarks_table",
+          "('Odniesienie do I tury uwag resortów (6211660).zip', 'Odniesienie do Uwag MS do Ustawy o AOON - 26.02.2025.pdf'): remarks_table",
+          "('Odniesienie do I tury uwag resortów (6211660).zip', 'Odniesienie do Uwag MSWiA do Ustawy o AOON - 26.02.2025.pdf'): remarks_table",
+          "('Odniesienie do uwag z konsultacji publicznych - Ustawa o AOON - 31.03.2025 - AKTUALNE.pdf',): remarks_table",
+          "('Protokól rozbieznosci - Ustawa o AOON - 31.03.2025 - final.pdf',): discrepancies",
+          "('Raport z konsultacji - Ustawa o AOON - 31.03.2025.pdf',): consultation_report"
+        ],
+        "requests": [],
+        "roles": [
+          {
+            "member": [
+              "Ustawa o AOON - tresc projektu - 31.03.2025 - AKTUALNA - final.pdf"
+            ],
+            "role": "bill",
+            "sha256": "c77cd564be28e8c93cd08e36f6629320cbd71a0a270a75096c84e5a3526911f4",
+            "text_sha256": "e445338b42812a920b7d1051d23df756211d239420ed6c1022c3e72ca51a3e7b",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099569/13099570/dokument711446.zip"
+          },
+          {
+            "member": [
+              "Uzasadnienie - Ustawa o AOON - 31.03.2025 - final.pdf"
+            ],
+            "role": "justification",
+            "sha256": "52a0d9ab3e9220e4fe8e07c2c5120e6ffb344d2ce674d70620c931b2d602bd91",
+            "text_sha256": "b7add9e1b23a433e062b935a530bdf7d5d77915ce72281568bef57a26727c121",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099569/13099570/dokument711446.zip"
+          },
+          {
+            "member": [
+              "Ustawa o AOON - OSR - 31.03.2025 - AKTUALNA - final.pdf"
+            ],
+            "role": "osr",
+            "sha256": "e79f0640f6ea684f87df3c5fb30433b3ff1f725dcad455d99a9ceb569dcf1bd0",
+            "text_sha256": "aa6a931634fb3774f480f486213adb1fab37c2b7c55269c35c5aa911e5ebcd15",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099569/13099570/dokument711446.zip"
+          }
+        ],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099569/13099570/dokument711446.zip"
+      },
+      "before": {
+        "new_state": "ambiguous",
+        "new_text_sha256": null,
+        "old_state": "ambiguous",
+        "old_text_sha256": null,
+        "proof": null,
+        "rejected": [
+          "('2025-03-31 LISTA kontrolna.pdf',): checklist",
+          "('2025-03-31 Pismo_do_Komitetu_ds._Cyfryzacji.pdf',): letter",
+          "('2025-03-31 TABELA egislacyjna.pdf',): legislative_table",
+          "('Odniesienie do uwag z konsultacji publicznych - Ustawa o AOON - 31.03.2025 - AKTUALNE.pdf',): remarks_table",
+          "('Protokól rozbieznosci - Ustawa o AOON - 31.03.2025 - final.pdf',): discrepancies",
+          "('Raport z konsultacji - Ustawa o AOON - 31.03.2025.pdf',): consultation_report",
+          "https://legislacja.rcl.gov.pl/docs//2/12392400/13099569/13099570/dokument711446.zip: no readable body"
+        ],
+        "requests": [],
+        "roles": [],
+        "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12392400/13099569/13099570/dokument711446.zip"
+      }
+    }
+  },
+  "senate_counts": {
+    "10/no_unique_stage_date": 1,
+    "10/scan_pending_verification": 4,
+    "10/selected": 165,
+    "8/no_unique_stage_date": 1,
+    "8/scan_pending_verification": 5,
+    "8/selected": 203,
+    "9/not_amendments": 90,
+    "9/scan_pending_verification": 14,
+    "9/selected": 333,
+    "mutation_probes": 4903
+  },
+  "senate_equal_except_code_sha256": true,
+  "stage_count": 148,
+  "stage_inputs_sha256": "44219421a67e4e97ecbe7d683ecc7987b101a80ce3fb9d94b91bda1a7420cebc",
+  "stages_with_changed_text": [
+    "12392400/5"
+  ]
+}
