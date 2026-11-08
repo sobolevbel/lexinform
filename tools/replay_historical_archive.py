@@ -13,6 +13,7 @@ from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtr
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.models import DocumentPart
 from lexinform.sections import PAGE_BREAK, trim_print
+from lexinform.text_projection import TextProjection
 from tools.audit_saved_primary_claims import (
     ReviewInputCheckpoint,
     _primary_batch_meta,
@@ -39,6 +40,13 @@ class PinnedSource:
     sha256: str
 
 
+@dataclass(frozen=True)
+class QuotePin:
+    start: int
+    end: int
+    sha256: str
+
+
 def _identity(part: DocumentPart) -> tuple[object, ...]:
     return part.role, part.members, part.sha256, part.text_sha256, part.text_start, part.text_end
 
@@ -57,20 +65,66 @@ def _read_source(archive: Path, archive_sha256: str) -> bytes:
 
 def _extract_source_text(
     selected: tuple[DocumentPart, ...], bodies: list[bytes], *, archive: bool
-) -> str:
+) -> tuple[str, tuple[str, ...]]:
     reader = DocumentTextExtractor(PypdfTextExtractor(), DocxTextExtractor(), DocTextExtractor())
     if archive:
         extracted = reader.extract_document(bodies[0])
         if tuple(map(_identity, extracted.selection.parts)) != tuple(map(_identity, selected)):
             raise ValueError("Archive replay differs from the recorded source parts")
-        return extracted.text
+        return extracted.text, tuple(part.text for part in extracted.selection.parts)
     texts = []
     for expected, raw in zip(selected, bodies, strict=True):
         extracted = reader.extract_document(raw)
         if tuple(map(_identity, extracted.selection.parts)) != (_identity(expected),):
             raise ValueError("File replay differs from its recorded source part")
         texts.append(extracted.text)
-    return PAGE_BREAK.join(texts)
+    return PAGE_BREAK.join(texts), tuple(texts)
+
+
+def _quote_source(
+    pin: QuotePin,
+    projection: TextProjection,
+    assembled: str,
+    parts: tuple[DocumentPart, ...],
+    part_texts: tuple[str, ...],
+) -> dict[str, object]:
+    quote = projection.text[pin.start : pin.end]
+    if (
+        not 0 <= pin.start < pin.end <= len(projection.text)
+        or len(quote) > 1200
+        or digest(quote.encode()) != pin.sha256
+    ):
+        raise ValueError("Submitted quote differs from its bounded span or SHA-256 pin")
+    if assembled != PAGE_BREAK.join(part_texts):
+        raise ValueError("Assembled text has no exact ordered part map")
+    for segment in projection.segments:
+        if segment.source_start is not None and segment.start <= pin.start < pin.end <= segment.end:
+            start = segment.source_start + pin.start - segment.start
+            end = start + len(quote)
+            break
+    else:
+        raise ValueError("Quote crosses a generated or non-contiguous text boundary")
+    if assembled[start:end] != quote:
+        raise ValueError("Projected quote differs from its source text")
+    offset = 0
+    for index, (part, text) in enumerate(zip(parts, part_texts, strict=True)):
+        if offset <= start < end <= offset + len(text):
+            local = start - offset
+            if text[local : local + len(quote)] != quote:
+                raise ValueError("Quoted part differs from its assembled text")
+            return {
+                "quote_sha256": pin.sha256,
+                "submitted_span": [pin.start, pin.end],
+                "assembled_span": [start, end],
+                "part_index": index,
+                "part_role": part.role,
+                "part_sha256": part.sha256,
+                "part_members": part.members,
+                "part_span": [local, local + len(quote)],
+                "part_coordinates": "selected_extracted_text",
+            }
+        offset += len(text) + len(PAGE_BREAK)
+    raise ValueError("Quote crosses an extracted part boundary")
 
 
 def _replay_source(
@@ -81,6 +135,7 @@ def _replay_source(
     text: SubmittedText,
     *,
     archive: bool,
+    quote: QuotePin | None = None,
 ) -> dict[str, object]:
     if not sources or len(sources) > 6 or (archive and len(sources) != 1):
         raise ValueError("Replay requires one archive or one to six individual parts")
@@ -147,7 +202,7 @@ def _replay_source(
                 if archive
                 else "Selected parts differ from the ordered file pins"
             )
-        extracted = _extract_source_text(selected, bodies, archive=archive)
+        extracted, part_texts = _extract_source_text(selected, bodies, archive=archive)
         trimmed = trim_print(extracted)
         if len(trimmed.text) != text.chars or digest(trimmed.text.encode()) != text.text_sha256:
             raise ValueError("Trimmed archive does not reproduce the submitted text")
@@ -163,6 +218,11 @@ def _replay_source(
             )
         ):
             raise ValueError("A pinned source changed during archive replay")
+    literal_quote = (
+        _quote_source(quote, projection, extracted, selected, part_texts)
+        if quote is not None
+        else None
+    )
     return {
         "observation_id": observation_id,
         "selection_id": selection.selection_id,
@@ -183,6 +243,7 @@ def _replay_source(
         "extracted_text_sha256": digest(extracted.encode()),
         "dropped_sections": [asdict(section) for section in trimmed.dropped],
         "trimmed_text_segments": [asdict(segment) for segment in projection.segments],
+        **({"literal_quote": literal_quote} if literal_quote is not None else {}),
     }
 
 
@@ -248,6 +309,7 @@ def replay_result_sources(
     sources: tuple[PinnedSource, ...],
     *,
     archive: bool = False,
+    quote: QuotePin | None = None,
 ) -> dict[str, object]:
     saved = saved_claim_review(
         database, database_sha256=database_sha256, result_id=result_id, input_checkpoint=checkpoint
@@ -263,7 +325,7 @@ def replay_result_sources(
             "input_checkpoint_sha256": checkpoint.sha256,
         },
         "physical_source_replay": _replay_source(
-            database, checkpoint, observation_id, sources, submitted, archive=archive
+            database, checkpoint, observation_id, sources, submitted, archive=archive, quote=quote
         ),
     }
 
@@ -281,11 +343,17 @@ def main() -> None:
     physical.add_argument("--archive", type=Path)
     physical.add_argument("--part", nargs=2, action="append", metavar=("PATH", "SHA256"))
     parser.add_argument("--archive-sha256")
+    parser.add_argument("--quote", nargs=3, metavar=("START", "END", "SHA256"))
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     checkpoint = ReviewInputCheckpoint(Path(args.checkpoint[0]), args.checkpoint[1])
     protected = snapshot_files(args.database) | snapshot_files(checkpoint.database)
     try:
+        quote = (
+            QuotePin(int(args.quote[0]), int(args.quote[1]), args.quote[2]) if args.quote else None
+        )
+        if quote is not None and args.result_id is None:
+            raise ValueError("Quote replay requires a result ID")
         sources: tuple[PinnedSource, ...]
         if args.archive is not None:
             if args.archive_sha256 is None:
@@ -308,6 +376,7 @@ def main() -> None:
                 args.observation_id,
                 sources,
                 archive=args.archive is not None,
+                quote=quote,
             )
         else:
             if args.database_sha256 is not None:

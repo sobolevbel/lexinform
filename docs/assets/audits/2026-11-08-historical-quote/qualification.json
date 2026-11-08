@@ -1,0 +1,60 @@
+{
+  "database_sha256": "2fa282b623328efa9bec50d3d6da771fd6a8b098565ea619d1a1a4ed38f351b7",
+  "cases": [
+    {
+      "result_id": "result-v1:ab5f898b57bb42e3e638c43c6d5d2db2cad47f4707167f40cdc7f8e7cab555b1",
+      "quote": {
+        "quote_sha256": "fb938ebe9e6666e0fb523f1864acf1a9d16e6f1080ba54ae914cf50c89439bb4",
+        "submitted_span": [
+          400,
+          435
+        ],
+        "assembled_span": [
+          400,
+          435
+        ],
+        "part_index": 0,
+        "part_role": "bill",
+        "part_sha256": "8b548dc341a9cdd82397c5aed9c032545e96f089d85a9ed77f6a09e46ed28504",
+        "part_members": [
+          "Projekt ustawy_uzasadnienie_OSR_KdsC_UDER87docx.zip",
+          "Projekt ustawy_uzasadnienie_OSR_KdsC_UDER87docx.docx"
+        ],
+        "part_span": [
+          400,
+          435
+        ],
+        "part_coordinates": "selected_extracted_text"
+      },
+      "generated_span_rejected": true,
+      "cross_part_rejected": false
+    },
+    {
+      "result_id": "result-v1:bf80920f0fc77b10afca4b5b97dc480fb3f161b0f9ac23f7d33983da0503b694",
+      "quote": {
+        "quote_sha256": "fbf075dce8fd719ea8372aba72b763c6eb8c2506429955f1f0404cdfb731e897",
+        "submitted_span": [
+          141000,
+          141035
+        ],
+        "assembled_span": [
+          141000,
+          141035
+        ],
+        "part_index": 2,
+        "part_role": "osr",
+        "part_sha256": "bc06e73ef209eb2819da13cd79c4c588e45d23fb5ded7c141fe7e690ccf52308",
+        "part_members": [],
+        "part_span": [
+          518,
+          553
+        ],
+        "part_coordinates": "selected_extracted_text"
+      },
+      "generated_span_rejected": true,
+      "cross_part_rejected": true
+    }
+  ],
+  "semantic": "not_assessed",
+  "prior_reports_unchanged": true
+}
