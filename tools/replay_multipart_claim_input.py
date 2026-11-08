@@ -20,6 +20,7 @@ from lexinform.adapters.document_text import (
     DocxTextExtractor,
     OdtTextExtractor,
 )
+from lexinform.adapters.extraction_history import read_extraction_result
 from lexinform.adapters.input_receipts import (
     intent_metadata,
     parse_batch_request,
@@ -31,6 +32,7 @@ from lexinform.models import BatchIntent, EvidenceCitation, ReviewDocument
 from lexinform.models.batch import AnalysisQuestion, BatchItemMeta
 from lexinform.models.input_receipts import (
     LooseRclInputReceipt,
+    MultipartTextInputReceipt,
     RclArchiveInputReceipt,
     RclArchiveSelfAmendmentInputReceipt,
     SejmSelfAmendmentInputReceipt,
@@ -106,6 +108,7 @@ class MultipartCitationCase(BaseModel):
     pdf_page: PdfPageCitationPin | None = None
     word_table_row: WordTableRowCitationPin | None = None
     odt_table_row: OdtTableRowCitationPin | None = None
+    require_block_copy: bool = Field(default=False, strict=True)
 
 
 _W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
@@ -343,6 +346,82 @@ def _intent(db: sqlite3.Connection, case: MultipartCitationCase) -> BatchIntent:
     )
 
 
+def verify_prepared_block_copy(
+    db: sqlite3.Connection,
+    receipt: MultipartTextInputReceipt,
+    *,
+    part_index: int,
+    source_text: str,
+    input_text: str,
+    source_span: tuple[int, int],
+    input_span: tuple[int, int],
+) -> dict[str, object]:
+    companion = receipt.block_companion
+    rows = companion.rows if companion is not None else ()
+    start, end = input_span
+    copies = [
+        row for row in rows if row.part_index == part_index and row.start <= start < end <= row.end
+    ]
+    if len(copies) != 1:
+        raise ValueError("Citation has no single retained block copy")
+    (copy,) = copies
+    saved = db.execute(
+        "SELECT * FROM extraction_results WHERE extraction_id=?", (copy.extraction_id,)
+    ).fetchone()
+    if saved is None:
+        raise ValueError("Citation block extraction is unavailable")
+    extraction = read_extraction_result(saved)
+    summary = next(
+        (part for part in extraction.selected_parts if part.physical_index == copy.physical_index),
+        None,
+    )
+    witness = summary.block_copy_witness if summary is not None else None
+    if (
+        witness is None
+        or witness.witness_id != copy.witness_id
+        or copy.run_index >= len(witness.runs)
+    ):
+        raise ValueError("Citation block witness is unavailable")
+    run = witness.runs[copy.run_index]
+    segment = next(
+        (
+            item
+            for item in receipt.segments
+            if item.part_index == part_index and item.start <= copy.start < copy.end <= item.end
+        ),
+        None,
+    )
+    if segment is None or segment.source_start is None:
+        raise ValueError("Citation block copy lacks its source segment")
+    source_start = segment.source_start + copy.start - segment.start
+    source_end = source_start + copy.end - copy.start
+    copied = source_text[source_start:source_end]
+    left, right = source_span
+    if (
+        not run.source_start <= source_start <= left < right <= source_end <= run.source_end
+        or (left, right) != (source_start + start - copy.start, source_start + end - copy.start)
+        or copied != input_text[copy.start : copy.end]
+        or digest(copied.encode()) != copy.text_sha256
+        or digest(source_text[run.source_start : run.source_end].encode()) != run.text_sha256
+    ):
+        raise ValueError("Citation block copy differs from the exact retained text")
+    return {
+        "extraction_id": copy.extraction_id,
+        "physical_index": copy.physical_index,
+        "witness_id": copy.witness_id,
+        "run_index": copy.run_index,
+        "block_id": run.block_id,
+        "block_text_sha256": run.block_text_sha256,
+        "block_span": [
+            run.block_start + left - run.source_start,
+            run.block_start + right - run.source_start,
+        ],
+        "input_span": list(input_span),
+        "source_span": list(source_span),
+        "intersection": copy.intersection,
+    }
+
+
 def _verify(
     db: sqlite3.Connection, case: MultipartCitationCase, data: bytes
 ) -> tuple[dict[str, object], bool]:
@@ -510,6 +589,23 @@ def _verify(
                 raw_page_span=case.pdf_page.raw_page_span,
                 allow_annex_locator=role == "normative_annex",
             )
+    if case.require_block_copy:
+        if checked.input_span is None:
+            raise ValueError("Citation block copy requires a retained input span")
+        block_copy = verify_prepared_block_copy(
+            db,
+            receipt,
+            part_index=part_index,
+            source_text=text,
+            input_text=question.ctx.text,
+            source_span=(case.quote_start, case.quote_end),
+            input_span=checked.input_span,
+        )
+        for key in ("word_paragraph", "word_table_row", "pdf_page", "odt_table_row"):
+            physical = proof.get(key)
+            if isinstance(physical, dict) and physical["block_id"] != block_copy["block_id"]:
+                raise ValueError("Physical citation and retained copy identify different blocks")
+        proof["block_copy"] = block_copy
     return proof, checked.status == "retained"
 
 

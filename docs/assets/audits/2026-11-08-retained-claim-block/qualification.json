@@ -1,0 +1,96 @@
+{
+  "scope": "Technical literal proof on a pinned official ODT and an end-to-end synthetic loose RCL request with a fake provider. No independent legal claim.",
+  "pinned_odt": "rcl-file:684340",
+  "pinned_odt_sha256": "743d88976846877fcc7d9c4a81ed0e1128822b1c2f5e70c71b1b518a1027143f",
+  "physical_row": {
+    "xml_part": "content.xml",
+    "xml_sha256": "7c70ee46b818ce5fe1f9a4aaa79906ac61927f444cfe19fec1530c06892f8e91",
+    "manifest_sha256": "49a2860fcfe336a27327219873ddb0109cf267bf9a795c045134723c7476d090",
+    "block_id": "odt-xml:content.xml:body:1/1",
+    "block_sha256": "ae3df599e78f05ed90594cc5abf4e3656a028aeca224411afc91d003bad7a886",
+    "coordinates": "odt-xml-plain-row-python-string",
+    "selected_text_span": [
+      155,
+      434
+    ],
+    "cell_text_spans": [
+      [
+        155,
+        156
+      ],
+      [
+        157,
+        250
+      ],
+      [
+        251,
+        265
+      ],
+      [
+        266,
+        336
+      ],
+      [
+        337,
+        418
+      ],
+      [
+        419,
+        434
+      ]
+    ]
+  },
+  "synthetic_request": {
+    "request_sha256": "ff20123520241ee4f6ca1324f956179c469b402a9b88fd768e18c30b57c34d9c",
+    "retained": true,
+    "physical_row": {
+      "xml_part": "content.xml",
+      "xml_sha256": "069af1a56b8ff27ddf5b3a809a66e753c359c9e93dedef2a3c89db953b626233",
+      "manifest_sha256": "e79df4b2b333b9cb96c0035dadbeb35589e7020133db666ec97eaa3e408cfd4f",
+      "block_id": "odt-xml:content.xml:body:2/0",
+      "block_sha256": "bb03df9cd0400aab8fd31f703a31923c67fecd0e353796b0a5b2a9281da11c9d",
+      "coordinates": "odt-xml-plain-row-python-string",
+      "selected_text_span": [
+        44,
+        65
+      ],
+      "cell_text_spans": [
+        [
+          44,
+          50
+        ],
+        [
+          51,
+          65
+        ]
+      ]
+    },
+    "block_copy": {
+      "extraction_id": "extraction-v1:509331d6241f82993c4f8046b5cab975fd4941052177dc76dab49680525a62d0",
+      "physical_index": 0,
+      "witness_id": "block-copy-v1:c15c22deec7d659b7d832273d5555a23dce4a11b1314f840549d852904692596",
+      "run_index": 2,
+      "block_id": "odt-xml:content.xml:body:2/0",
+      "block_text_sha256": "bb03df9cd0400aab8fd31f703a31923c67fecd0e353796b0a5b2a9281da11c9d",
+      "block_span": [
+        0,
+        21
+      ],
+      "input_span": [
+        44,
+        65
+      ],
+      "source_span": [
+        44,
+        65
+      ],
+      "intersection": null
+    }
+  },
+  "previous_word_and_pdf_proofs_unchanged_without_opt_in": true,
+  "clipped_request": {
+    "request_sha256": "7fb7456c5642a96b9940ecf3883a7819130b03dbc5f240d7be2b8947c2ea00fa",
+    "retained": false,
+    "reason": "no_continuous_source_mapping"
+  }
+}
