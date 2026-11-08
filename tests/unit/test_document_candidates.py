@@ -1,3 +1,4 @@
+import hashlib
 from typing import Literal
 
 import pytest
@@ -18,7 +19,7 @@ from lexinform.models import (
     ExtractedParts,
     TextDocument,
 )
-from lexinform.models.candidate_trace import VersionDecisionEvidence
+from lexinform.models.candidate_trace import AmendmentPartGap, VersionDecisionEvidence
 from lexinform.sections import PAGE_BREAK
 from lexinform.services.documents import TextLoader
 from tests.fakes import FakeSejmGateway
@@ -355,7 +356,12 @@ def test_outer_comparison_reads_declared_annex_before_choosing(
 
 @pytest.mark.parametrize(
     ("mode", "expected"),
-    [("same", "selected"), ("missing", "ambiguous"), ("unavailable", "waiting")],
+    [
+        ("same", "selected"),
+        ("missing", "ambiguous"),
+        ("unavailable", "waiting"),
+        ("unreadable", "waiting"),
+    ],
 )
 def test_outer_comparison_keeps_self_amendments_separate(mode: str, expected: str) -> None:
     first, second, proposal = (
@@ -366,7 +372,9 @@ def test_outer_comparison_keeps_self_amendments_separate(mode: str, expected: st
     body = docx(BILL + "Art. 2. Przepis stosuje się w postępowaniu. " * 12)
     proposal_text = "AUTOPOPRAWKA " + "Kwota zmienia się na 300 zł. " * 20
     files = {first: body, second: body}
-    if mode != "unavailable":
+    if mode == "unreadable":
+        files[proposal] = archive({"pismo.docx": docx("Pismo przewodnie")})
+    elif mode != "unavailable":
         files[proposal] = docx(proposal_text)
     gateway = FakeSejmGateway(files=files)
     loader = TextLoader({"api.test": gateway.download}, extractor(), max_bytes=100_000)
@@ -385,5 +393,17 @@ def test_outer_comparison_keeps_self_amendments_separate(mode: str, expected: st
     if mode == "same":
         assert file.text is not None and proposal_text not in file.text
         assert [part.role for part in file.selection.parts] == ["bill", "self_amendment"]
-    elif mode == "unavailable":
+    elif mode in ("unavailable", "unreadable"):
         assert trace.dispositions[1].reason == "normative_part_read_incomplete"
+        if mode == "unavailable":
+            assert not trace.version_part_gaps
+        else:
+            assert trace.version_part_gaps == (
+                AmendmentPartGap(
+                    phase="version_comparison",
+                    index=1,
+                    amendment_index=0,
+                    reason="returned_no_text",
+                    file_sha256=hashlib.sha256(files[proposal]).hexdigest(),
+                ),
+            )

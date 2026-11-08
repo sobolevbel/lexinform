@@ -181,6 +181,9 @@ class _CompositionCapture:
     )
     required_gap: RequiredPartGap | None = None
     amendment_gap: AmendmentPartGap | None = None
+    version_part_gaps: list[RequiredPartGap | AmendmentPartGap | NormativeAnnexGap] = field(
+        default_factory=list
+    )
     supporting: list[SupportingPartExclusion] = field(default_factory=list)
     supporting_omitted: int = 0
     admitted_support: dict[tuple[Phase, int, int], tuple[str, str]] = field(default_factory=dict)
@@ -1344,6 +1347,17 @@ class TextLoader:
                 )
                 if enriched is not base_trace:
                     trace = enriched
+        if trace is not None and trace.result == "waiting" and composition is not None:
+            gaps = tuple(composition.version_part_gaps)
+            while gaps:
+                try:
+                    trace = CandidateDispositionTrace.model_validate(
+                        {**trace.model_dump(), "version_part_gaps": gaps}
+                    )
+                except ValueError:
+                    gaps = gaps[:-1]
+                else:
+                    break
         return selected, replace(
             loaded,
             archive_version_evidence=archive_version_evidence,
@@ -1540,12 +1554,17 @@ class TextLoader:
             if compare_packages and is_bill and index not in incomplete:
                 if candidate.required_urls or candidate.normative_urls or candidate.amendment_urls:
                     normative = candidate.model_copy(update={"extra_urls": ()})
-                    try:
-                        composed = self.read_document(normative)
-                    except ServiceUnavailableError:
-                        raise
-                    except Exception:
-                        composed = LoadedFile(None, selection=DocumentSelection(state="waiting"))
+                    with self._composition_capture_scope() as probe:
+                        try:
+                            composed = self._read_composed_candidate(
+                                normative, "version_comparison", index
+                            )
+                        except ServiceUnavailableError:
+                            raise
+                        except Exception:
+                            composed = LoadedFile(
+                                None, selection=DocumentSelection(state="waiting")
+                            )
                     if composed.text is None or composed.selection.state in (
                         "waiting",
                         "ambiguous",
@@ -1553,6 +1572,14 @@ class TextLoader:
                         if file.sha256 is not None:
                             incomplete[index] = composed.selection
                             normative_blocked.add(index)
+                            if composition is not None and probe is not None:
+                                gap = (
+                                    probe.required_gap or probe.normative_gap or probe.amendment_gap
+                                )
+                                if gap is not None and len(composition.version_part_gaps) < (
+                                    MAX_VERSION_DECISION_ROWS
+                                ):
+                                    composition.version_part_gaps.append(gap)
                         is_bill = False
                     else:
                         item = DocumentCandidate(

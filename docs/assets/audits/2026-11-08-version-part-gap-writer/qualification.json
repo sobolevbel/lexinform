@@ -1,0 +1,92 @@
+{
+  "rows": {
+    "12383101/10": [
+      {
+        "phase": "version_comparison",
+        "index": 1,
+        "amendment_index": 0,
+        "reason": "returned_no_text",
+        "file_sha256": "b5f05a39de7d4fec34a853c84d80c5821c118d584b77098b821053ee6076be44"
+      }
+    ],
+    "12383101/9": [
+      {
+        "phase": "version_comparison",
+        "index": 1,
+        "amendment_index": 0,
+        "reason": "returned_no_text",
+        "file_sha256": "b5f05a39de7d4fec34a853c84d80c5821c118d584b77098b821053ee6076be44"
+      }
+    ],
+    "12386961/10": [],
+    "12386961/9": [],
+    "12388700/9": [
+      {
+        "phase": "version_comparison",
+        "index": 1,
+        "amendment_index": 1,
+        "reason": "returned_no_text",
+        "file_sha256": "8b69d17d10c3d31d2993803a73214dcfe641ead3170fcdff7105380e299207e6"
+      },
+      {
+        "phase": "version_comparison",
+        "index": 3,
+        "amendment_index": 0,
+        "reason": "returned_no_text",
+        "file_sha256": "8b69d17d10c3d31d2993803a73214dcfe641ead3170fcdff7105380e299207e6"
+      }
+    ],
+    "12390651/9": [
+      {
+        "phase": "version_comparison",
+        "index": 1,
+        "amendment_index": 2,
+        "reason": "returned_no_text",
+        "file_sha256": "3212474a7f350b012d5e5474066cc8eb03f29cb8b4545a53bcd368ab7adef273"
+      }
+    ],
+    "12390652/9": [
+      {
+        "phase": "version_comparison",
+        "index": 1,
+        "amendment_index": 2,
+        "reason": "returned_no_text",
+        "file_sha256": "cee7a372f2f0d7a016f6c8c82c59139985cbcf6237b9d9b1a532bb8f85ba6964"
+      }
+    ],
+    "12392400/10": [],
+    "12392400/9": [],
+    "12393550/12": [
+      {
+        "phase": "version_comparison",
+        "index": 1,
+        "amendment_index": 0,
+        "reason": "returned_no_text",
+        "file_sha256": "4725af91aba4607fd0bef43e82209bd083a59aebe56c54eee67f9648691a7f44"
+      }
+    ],
+    "12393550/14": [
+      {
+        "phase": "version_comparison",
+        "index": 1,
+        "amendment_index": 0,
+        "reason": "returned_no_text",
+        "file_sha256": "4725af91aba4607fd0bef43e82209bd083a59aebe56c54eee67f9648691a7f44"
+      }
+    ]
+  },
+  "sizes": {
+    "legacy": {
+      "sql_bytes": 196844,
+      "gzip_bytes": 34778
+    },
+    "enriched": {
+      "sql_bytes": 197974,
+      "gzip_bytes": 34866
+    }
+  },
+  "reader_commit": "dc3226d909bb64d0c4a86fc8500857f6a6f9ad98",
+  "source_report": "2026-11-08-da4-acceptance-replay/qualification.json",
+  "unchanged_projection": true,
+  "dump_restore_exact": true
+}
