@@ -153,10 +153,14 @@ def validate_key_change_evidence(
     record: AnalysisRecord,
     evidence: KeyChangeEvidence | None,
     documents: tuple[ReviewDocument, ...],
+    *,
+    allow_annex_locator: bool = False,
 ) -> ClaimEvidenceCheck:
     if evidence is not None and not isinstance(evidence, KeyChangeEvidence):
         raise TypeError("Expected key-change evidence")
-    return _validate_indexed_claim(record.analysis.key_changes, evidence, documents)
+    return _validate_indexed_claim(
+        record.analysis.key_changes, evidence, documents, allow_annex_locator=allow_annex_locator
+    )
 
 
 def validate_affected_group_evidence(
@@ -238,23 +242,33 @@ def _validate_indexed_claim(
     claims: Sequence[str],
     evidence: _IndexedClaimEvidence | None,
     documents: tuple[ReviewDocument, ...],
+    *,
+    allow_annex_locator: bool = False,
 ) -> ClaimEvidenceCheck:
     if evidence is None:
         return ClaimEvidenceCheck("legacy_missing")
     if evidence.index >= len(claims):
         return ClaimEvidenceCheck("claim_index_invalid")
-    return _validate_claim_text(claims[evidence.index], evidence, documents)
+    return _validate_claim_text(
+        claims[evidence.index], evidence, documents, allow_annex_locator=allow_annex_locator
+    )
 
 
 def _validate_claim_text(
     claim: str,
     evidence: _IndexedClaimEvidence | ProposedCommencementEvidence,
     documents: tuple[ReviewDocument, ...],
+    *,
+    allow_annex_locator: bool = False,
 ) -> ClaimEvidenceCheck:
     if hashlib.sha256(claim.encode()).hexdigest() != evidence.claim_text_sha256:
         return ClaimEvidenceCheck("claim_hash_mismatch")
     return _validate_citation(
-        evidence.citation, evidence.source_text_sha256, documents, "project_text"
+        evidence.citation,
+        evidence.source_text_sha256,
+        documents,
+        "project_text",
+        allow_annex_locator=allow_annex_locator,
     )
 
 
@@ -265,6 +279,7 @@ def _validate_citation(
     role: DocumentRole,
     *,
     artifact_sha256: str | None = None,
+    allow_annex_locator: bool = False,
 ) -> ClaimEvidenceCheck:
     matches = tuple(doc for doc in documents if doc.identity == citation.document_id)
     if not matches:
@@ -285,7 +300,10 @@ def _validate_citation(
         and source.file_sha256 != artifact_sha256
     ):
         return ClaimEvidenceCheck("source_hash_mismatch", source.complete)
-    if citation_document_in(citation, (source,), {role}) is None:
+    if (
+        citation_document_in(citation, (source,), {role}, allow_annex_locator=allow_annex_locator)
+        is None
+    ):
         return ClaimEvidenceCheck("citation_mismatch", source.complete)
     pattern = r"\s+".join(re.escape(word) for word in citation.quote.split())
     count = 0

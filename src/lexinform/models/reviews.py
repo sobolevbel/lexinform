@@ -220,13 +220,19 @@ def citation_document_in(
     citation: EvidenceCitation | None,
     documents: tuple[ReviewDocument, ...],
     roles: set[DocumentRole],
+    *,
+    allow_annex_locator: bool = False,
 ) -> ReviewDocument | None:
     if citation is None or not citation.quote.strip() or not citation.locator.strip():
         return None
+    locator = citation.locator.strip()
     if not re.match(
         r"(?:art\.?\s*\d+|§\s*\d+|pkt\.?\s*\d+|lp\.?\s*\d+|\d+[.)]?\s+\S)",
-        citation.locator.strip(),
+        locator,
         re.IGNORECASE,
+    ) and not (
+        allow_annex_locator
+        and re.fullmatch(r"załącznik\s+nr\s+[1-9]\d{0,2}[a-z]?", locator, re.IGNORECASE)
     ):
         return None
     return next(

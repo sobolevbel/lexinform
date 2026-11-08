@@ -100,6 +100,28 @@ def test_exact_quote_is_only_observed_text_and_preserves_current_record_json() -
     assert "cited_claims" not in parsed.analysis.model_dump()
 
 
+def test_annex_locator_requires_opt_in_and_the_literal_heading() -> None:
+    quote = "Załącznik nr 2\nFormularz informacji dla podróżnych"
+    document = source(quote)
+    citation = EvidenceCitation(
+        document_id=document.identity, locator="Załącznik nr 2", quote=quote
+    )
+    supplied = replace(evidence(document), citation=citation)
+    wrong = replace(supplied, citation=citation.model_copy(update={"locator": "Załącznik nr 3"}))
+
+    assert (
+        validate_key_change_evidence(record(), supplied, (document,)).status == "citation_mismatch"
+    )
+    checked = validate_key_change_evidence(
+        record(), supplied, (document,), allow_annex_locator=True
+    )
+    assert checked.observed_text_span == (0, len(quote))
+    assert (
+        validate_key_change_evidence(record(), wrong, (document,), allow_annex_locator=True).status
+        == "citation_mismatch"
+    )
+
+
 def test_missing_legacy_citations_are_visible_without_hiding_or_mutating_answer() -> None:
     answer = record()
     before = answer.model_dump_json()

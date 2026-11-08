@@ -26,6 +26,7 @@ from lexinform.adapters.word_field_projection import project_word_paragraph_span
 from lexinform.models import BatchIntent, EvidenceCitation, ReviewDocument
 from lexinform.models.batch import AnalysisQuestion, BatchItemMeta
 from lexinform.models.input_receipts import (
+    LooseRclInputReceipt,
     RclArchiveInputReceipt,
     RclArchiveSelfAmendmentInputReceipt,
     SejmSelfAmendmentInputReceipt,
@@ -189,6 +190,7 @@ def _verify(
         or not isinstance(
             receipt,
             (
+                LooseRclInputReceipt,
                 RclArchiveInputReceipt,
                 RclArchiveSelfAmendmentInputReceipt,
                 SejmSelfAmendmentInputReceipt,
@@ -196,6 +198,8 @@ def _verify(
         )
     ):
         raise ValueError("The exact original multipart profile is unavailable")
+    if isinstance(receipt, LooseRclInputReceipt) and receipt.source_observation_id is None:
+        raise ValueError("The original loose RCL input has no exact source observation")
     validate_multipart_intent(db, intent)
     selected = ContentSourceRows(db).get_document_selection(receipt.source_selection_id)
     if selected is None:
@@ -203,7 +207,9 @@ def _verify(
     part_index = case.source_part_index
     role = multipart_claim_part_role(receipt, part_index)
     if role is None:
-        raise ValueError("Citation part must be the verified bill or separate self-amendment")
+        raise ValueError(
+            "Citation part must be the verified bill, normative annex or separate self-amendment"
+        )
     part = selected.selection.parts[part_index]
     if (
         part.role != role
@@ -269,6 +275,7 @@ def _verify(
         intent=intent,
         verified_multipart_selection=selected,
         multipart_part_index=part_index,
+        allow_annex_locator=role == "normative_annex",
     )
     proof: dict[str, object] = {
         "profile": receipt.profile,
@@ -315,6 +322,7 @@ def _verify(
                 extraction_sha256=case.pdf_page.extraction_sha256,
                 expected_page=case.pdf_page.page,
                 raw_page_span=case.pdf_page.raw_page_span,
+                allow_annex_locator=role == "normative_annex",
             )
     return proof, checked.status == "retained"
 

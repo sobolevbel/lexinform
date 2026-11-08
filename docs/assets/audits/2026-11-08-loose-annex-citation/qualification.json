@@ -1,0 +1,177 @@
+{
+  "normal": {
+    "case": {
+      "version": "primary-multipart-citation-v1",
+      "custom_id": "e8946aaac78e513927af8ec7b5130fa48e61ac1c13fcaf1370d20d4c8ac2c3ce",
+      "request_sha256": "95b78c077153ad9767e6d54353e633f5cc342c0013a542720e8bcaf0e3c53ad3",
+      "original": {
+        "path": "documents/files/300517.pdf",
+        "sha256": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+      },
+      "source_part_index": 1,
+      "claim": "Technical literal check; semantic support is not assessed.",
+      "locator": "Załącznik nr 2",
+      "quote_start": 4644,
+      "quote_end": 4710,
+      "quote_sha256": "23ca5eeb24468e4ce5b91f57ce38f9fbff328423d2b03e3061a04e2b36370747",
+      "pdf_page": {
+        "extraction_sha256": "cbd1ed621dfdcef8eabbe868c7d4c7d9d39dbe492080863f9c65eff45e465129",
+        "page": 3,
+        "raw_page_span": {
+          "start": 0,
+          "end": 67,
+          "sha256": "956beb5f24143e2a88609454ed26231bd6cc2cf7b23ff4cc46759af08051c743"
+        }
+      }
+    },
+    "report": {
+      "version": "primary-multipart-citation-v1",
+      "status": "recorded",
+      "scope": "Literal text in a durable offline prepared context.",
+      "database_sha256": "345ac3fedc46ecddf16ebc3752380235c2a68e07dcc09aa7e21c2c49a542f4f1",
+      "proof": {
+        "profile": "primary-loose-rcl-mixed-text-v1",
+        "source_part_index": 1,
+        "request_sha256": "95b78c077153ad9767e6d54353e633f5cc342c0013a542720e8bcaf0e3c53ad3",
+        "source_selection_id": "selection-v1:8e7409e30d645dd270a160508b873aad9852e0a0eb4a41b177a02b2e83d706e9",
+        "source_observation_id": "source-observation-v1:4a7969799d50b599cb800b34ebe92aeffcc1e81017c89853ca6e6b9e0187c498",
+        "artifact_sha256": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514",
+        "member_sha256": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514",
+        "source_text_sha256": "108cf110346d6d103852c9dc855d6c26980a59028c8953ecb3863685c45107c9",
+        "quote_sha256": "23ca5eeb24468e4ce5b91f57ce38f9fbff328423d2b03e3061a04e2b36370747",
+        "claim_text_sha256": "c464dc6285a341a8f652d63f6b55b75029a8703361b75178da3858da0bd1988b",
+        "check": {
+          "evidence": {
+            "status": "quote_present",
+            "source_complete": false,
+            "quote_occurrences": 1,
+            "observed_text_span": [
+              4644,
+              4710
+            ],
+            "semantic": "semantic_not_assessed",
+            "block_origins": "unmapped",
+            "paid_origins": "unmapped"
+          },
+          "status": "retained",
+          "reason": "retained_source_span",
+          "input_span": [
+            125132,
+            125198
+          ],
+          "semantic": "semantic_not_assessed",
+          "block_origins": "unmapped",
+          "physical_origins": "unmapped"
+        },
+        "pdf_page": {
+          "page": 3,
+          "block_id": "pdf-page:3:0",
+          "raw_page_text_sha256": "5759d9e90f2ff9bdfd75304443c7153c2164fd1fc25fe5629a345593853a8e06",
+          "normalized_page_text_sha256": "193ec6692bf84fe36d05ee750440a9f596a385971b2ea5f45ae49b6f690df86a",
+          "normalized_page_span": [
+            0,
+            66
+          ],
+          "raw_page_span": {
+            "coordinates": "pdf-extractor-page-python-string",
+            "span": [
+              0,
+              67
+            ],
+            "text_sha256": "956beb5f24143e2a88609454ed26231bd6cc2cf7b23ff4cc46759af08051c743"
+          },
+          "coordinates": "legacy-pdf-single-page-python-string",
+          "artifact_sha256": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514",
+          "extraction_sha256": "cbd1ed621dfdcef8eabbe868c7d4c7d9d39dbe492080863f9c65eff45e465129",
+          "source_text_sha256": "108cf110346d6d103852c9dc855d6c26980a59028c8953ecb3863685c45107c9",
+          "quote_sha256": "23ca5eeb24468e4ce5b91f57ce38f9fbff328423d2b03e3061a04e2b36370747",
+          "claim_text_sha256": "c464dc6285a341a8f652d63f6b55b75029a8703361b75178da3858da0bd1988b",
+          "evidence": {
+            "status": "quote_present",
+            "source_complete": false,
+            "quote_occurrences": 1,
+            "observed_text_span": [
+              4644,
+              4710
+            ],
+            "semantic": "semantic_not_assessed",
+            "block_origins": "unmapped",
+            "paid_origins": "unmapped"
+          }
+        }
+      },
+      "read_inputs": {
+        "documents/files/300517.pdf": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+      },
+      "code_version": "45631c2cf0bd69747a1708455719f4517e792da0",
+      "source_pins_sha256": "535da37b45350ce13b7ec84329814030a6a5a9802a49437baa5158245aafbd94"
+    }
+  },
+  "tight": {
+    "case": {
+      "version": "primary-multipart-citation-v1",
+      "custom_id": "e4149132395702eb65f3036add444c8f6b7a786ff6561255f498b9c952a5092b",
+      "request_sha256": "beebc64a6d83255bba17d96b6d7155760d173266da1ccdb021d33fc22dbe0e63",
+      "original": {
+        "path": "documents/files/300517.pdf",
+        "sha256": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+      },
+      "source_part_index": 1,
+      "claim": "Technical literal check; semantic support is not assessed.",
+      "locator": "Załącznik nr 2",
+      "quote_start": 4644,
+      "quote_end": 4710,
+      "quote_sha256": "23ca5eeb24468e4ce5b91f57ce38f9fbff328423d2b03e3061a04e2b36370747"
+    },
+    "report": {
+      "version": "primary-multipart-citation-v1",
+      "status": "not_observed",
+      "scope": "Literal text in a durable offline prepared context.",
+      "database_sha256": "c4fda1f291e1ff1297ace8d51570813c39fc12fded522712075969d4eb97919a",
+      "proof": {
+        "profile": "primary-loose-rcl-mixed-text-v1",
+        "source_part_index": 1,
+        "request_sha256": "beebc64a6d83255bba17d96b6d7155760d173266da1ccdb021d33fc22dbe0e63",
+        "source_selection_id": "selection-v1:8e7409e30d645dd270a160508b873aad9852e0a0eb4a41b177a02b2e83d706e9",
+        "source_observation_id": "source-observation-v1:4a7969799d50b599cb800b34ebe92aeffcc1e81017c89853ca6e6b9e0187c498",
+        "artifact_sha256": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514",
+        "member_sha256": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514",
+        "source_text_sha256": "108cf110346d6d103852c9dc855d6c26980a59028c8953ecb3863685c45107c9",
+        "quote_sha256": "23ca5eeb24468e4ce5b91f57ce38f9fbff328423d2b03e3061a04e2b36370747",
+        "claim_text_sha256": "c464dc6285a341a8f652d63f6b55b75029a8703361b75178da3858da0bd1988b",
+        "check": {
+          "evidence": {
+            "status": "quote_present",
+            "source_complete": false,
+            "quote_occurrences": 1,
+            "observed_text_span": [
+              4644,
+              4710
+            ],
+            "semantic": "semantic_not_assessed",
+            "block_origins": "unmapped",
+            "paid_origins": "unmapped"
+          },
+          "status": "omitted",
+          "reason": "no_continuous_source_mapping",
+          "input_span": null,
+          "semantic": "semantic_not_assessed",
+          "block_origins": "unmapped",
+          "physical_origins": "unmapped"
+        }
+      },
+      "read_inputs": {
+        "documents/files/300517.pdf": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+      },
+      "code_version": "45631c2cf0bd69747a1708455719f4517e792da0",
+      "source_pins_sha256": "535da37b45350ce13b7ec84329814030a6a5a9802a49437baa5158245aafbd94"
+    }
+  },
+  "non_normative_indices_rejected": [
+    2,
+    4,
+    5
+  ],
+  "previous_hybrid_proofs_unchanged": true,
+  "scope": "Technical literal and physical positions from pinned native RCL data, with offline request preparation."
+}

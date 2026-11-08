@@ -42,15 +42,24 @@ ClaimInputReason = Literal[
 
 
 type MultipartCitationReceipt = (
-    RclArchiveInputReceipt | RclArchiveSelfAmendmentInputReceipt | SejmSelfAmendmentInputReceipt
+    LooseRclInputReceipt
+    | RclArchiveInputReceipt
+    | RclArchiveSelfAmendmentInputReceipt
+    | SejmSelfAmendmentInputReceipt
 )
 
 
 def multipart_claim_part_role(
     receipt: MultipartCitationReceipt, index: int
-) -> Literal["bill", "self_amendment"] | None:
+) -> Literal["bill", "normative_annex", "self_amendment"] | None:
     if index == 0:
         return "bill"
+    if (
+        isinstance(receipt, LooseRclInputReceipt)
+        and 0 < index < len(receipt.source_parts)
+        and receipt.source_parts[index].role == "normative_annex"
+    ):
+        return "normative_annex"
     if isinstance(receipt, SejmSelfAmendmentInputReceipt) and index == 1:
         return "self_amendment"
     if (
@@ -120,8 +129,11 @@ def _validate_key_change_input(
     source_selection: DocumentSelectionRecord | None = None,
     verified_multipart_selection: DocumentSelectionRecord | None = None,
     multipart_part_index: int = 0,
+    allow_annex_locator: bool = False,
 ) -> ClaimInputCheck:
-    checked = validate_key_change_evidence(record, evidence, documents)
+    checked = validate_key_change_evidence(
+        record, evidence, documents, allow_annex_locator=allow_annex_locator
+    )
     if evidence is None or checked.observed_text_span is None:
         return ClaimInputCheck(checked, "unknown", "evidence_unresolved")
     if intent is None:
@@ -159,9 +171,16 @@ def _validate_key_change_input(
     ):
         return ClaimInputCheck(checked, "unknown", "request_binding_mismatch")
     document = next(doc for doc in documents if doc.identity == evidence.citation.document_id)
-    if isinstance(
+    if isinstance(receipt, LooseRclInputReceipt) and verified_multipart_selection is None:
+        if multipart_part_index != 0:
+            return ClaimInputCheck(checked, "unknown", "source_binding_mismatch")
+        binding = _loose_rcl_main_binding(
+            document, meta, receipt, record.source_url, source_selection
+        )
+    elif isinstance(
         receipt,
         (
+            LooseRclInputReceipt,
             RclArchiveInputReceipt,
             RclArchiveSelfAmendmentInputReceipt,
             SejmSelfAmendmentInputReceipt,
@@ -177,10 +196,6 @@ def _validate_key_change_input(
         )
     elif multipart_part_index != 0:
         return ClaimInputCheck(checked, "unknown", "source_binding_mismatch")
-    elif isinstance(receipt, LooseRclInputReceipt):
-        binding = _loose_rcl_main_binding(
-            document, meta, receipt, record.source_url, source_selection
-        )
     else:
         binding = _source_binding(document, meta, receipt, record.source_url)
     if binding is not None:

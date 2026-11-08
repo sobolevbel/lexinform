@@ -61,8 +61,11 @@ def verify_pdf_page(
     extraction_sha256: str,
     expected_page: int,
     raw_page_span: RawPageSpanPin | None = None,
+    allow_annex_locator: bool = False,
 ) -> dict[str, object]:
-    checked = validate_key_change_evidence(record, evidence, (document,))
+    checked = validate_key_change_evidence(
+        record, evidence, (document,), allow_annex_locator=allow_annex_locator
+    )
     if checked.observed_text_span is None:
         raise ValueError(f"PDF page requires a unique literal citation: {checked.status}")
     if (
