@@ -6,7 +6,7 @@ from pathlib import Path
 from tools.memo_retention_census import census
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
-from lexinform.models import BillStatus
+from lexinform.models import BillStatus, DigestItemMeta, LlmBatch, LlmBatchItem
 from tests.harness import summary
 from tests.unit.test_state_retention import NOW, OLD
 
@@ -20,11 +20,34 @@ def test_census_matches_cleanup_eligibility_and_reports_ownerless_refs(tmp_path:
     repo.upsert_summary(summary("3040", "Projekt ustawy"), now=OLD)
     repo.set_status(10, "3040", BillStatus.ANALYZED)
     repo.set_awaiting_batch(10, "3040", OLD)
+    repo.save_analysis_memo("cross-owner", "{}", term=10, number="3039", used_at=OLD)
     repo.save_analysis_memo("expire", "{}", term=10, number="3039", used_at=OLD)
     repo.save_analysis_memo("active", "{}", term=10, number="3040", used_at=OLD)
     repo.save_analysis_memo("missing-bill", "{}", term=10, number="9999", used_at=OLD)
     orphan_record = '{"text":"ż"}'
     repo.save_analysis_memo("ownerless", orphan_record)
+    repo.save_analysis_memo("pending-item", "{}", term=10, number="3039", used_at=OLD)
+    repo.save_llm_batch(
+        LlmBatch(
+            batch_id="pending-batch",
+            provider="openai",
+            call_kind="name",
+            submitted_at=OLD,
+            status="submitted",
+            request_count=1,
+            estimated_cost_usd=0,
+        ),
+        [
+            LlmBatchItem(
+                batch_id="pending-batch",
+                custom_id="pending-name",
+                call_kind="name",
+                term=10,
+                number="3040",
+                meta=DigestItemMeta(memo_key="pending-item", queued_at=OLD),
+            )
+        ],
+    )
     repo.close()
     with closing(sqlite3.connect(path)) as db, db:
         db.execute(
@@ -33,7 +56,7 @@ def test_census_matches_cleanup_eligibility_and_reports_ownerless_refs(tmp_path:
                 "separate-owner-intent",
                 "openai",
                 '{"term":10,"number":"3040"}',
-                '{"memo_key":"ownerless"}',
+                '{"memo_key":"ownerless","delivery_key":"cross-owner"}',
                 "queued",
                 OLD.isoformat(),
             ),
@@ -50,6 +73,7 @@ def test_census_matches_cleanup_eligibility_and_reports_ownerless_refs(tmp_path:
         "owner_unrecorded": 1,
         "last_used_at_missing": 1,
         "bill_missing": 1,
+        "intent_key_ref": 1,
     }
     assert report["ownerless_recorded_refs"] == {
         "intent_key_ref": 1,
@@ -62,8 +86,23 @@ def test_census_matches_cleanup_eligibility_and_reports_ownerless_refs(tmp_path:
         "bill_missing": 1,
         "bill_work": 1,
         "intent": 1,
+        "intent_key_ref": 2,
+        "batch_item": 1,
+        "batch_item_key_ref": 1,
     }
     repo = SqliteBillRepository(path)
     removed = repo.prune_history(before=cutoff, memo_before=cutoff)["analysis_memos"]
     assert removed == report["eligible_rows"] == 1
+    assert {"cross-owner", "pending-item"} <= repo.load_analysis_memo().keys()
+    repo.close()
+
+    with closing(sqlite3.connect(path)) as db, db:
+        db.execute("DELETE FROM llm_batch_intents")
+        db.execute(
+            "UPDATE llm_batch_items SET consumed_at=?, accounted_at=?",
+            (NOW.isoformat(), NOW.isoformat()),
+        )
+    repo = SqliteBillRepository(path)
+    assert repo.prune_history(before=cutoff, memo_before=cutoff)["analysis_memos"] == 2
+    assert {"cross-owner", "pending-item"}.isdisjoint(repo.load_analysis_memo())
     repo.close()

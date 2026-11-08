@@ -11,13 +11,6 @@ from tools.sqlite_snapshot import open_snapshot, snapshot_files
 
 _MEMOS = """
 SELECT m.*, length(CAST(m.record_json AS BLOB)) AS bytes,
-  EXISTS (SELECT 1 FROM llm_batch_intents i
-    WHERE m.key IN (json_extract(i.meta_json,'$.memo_key'),
-                    json_extract(i.meta_json,'$.delivery_key'))) AS intent_key_ref,
-  EXISTS (SELECT 1 FROM llm_batch_items i
-    WHERE (i.consumed_at IS NULL OR i.accounted_at IS NULL)
-    AND m.key IN (json_extract(i.meta_json,'$.memo_key'),
-                  json_extract(i.meta_json,'$.delivery_key'))) AS batch_item_key_ref,
   EXISTS (SELECT 1 FROM computation_results r
     WHERE r.result_id=json_extract(m.record_json,'$.computation_id')) AS paid_id_ref
 FROM memo_retention m
@@ -63,7 +56,15 @@ def census(database: Path, memo_before: datetime) -> dict[str, object]:
                 blockers.append("bill_unsettled")
             blockers.extend(
                 key
-                for key in ("bill_work", "document_work", "publication", "intent", "batch_item")
+                for key in (
+                    "bill_work",
+                    "document_work",
+                    "publication",
+                    "intent",
+                    "batch_item",
+                    "intent_key_ref",
+                    "batch_item_key_ref",
+                )
                 if row[key]
             )
             exclusions.update(blockers)

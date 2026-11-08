@@ -1,0 +1,23 @@
+{
+  "state_sha": "7598f545010b8a9a33dd13c35d0487c7396fcd8a",
+  "input_sql_sha256": "a9b23fd06114bd44b8e2d228457f91763b9d485f05361a80e15a527544e9c17d",
+  "delivery_cutoff": "2027-08-10T00:00:00+00:00",
+  "memo_cutoff": "2027-05-12T00:00:00+00:00",
+  "pruned": {
+    "delivery_payloads": 181,
+    "analysis_memos": 130,
+    "batch_payloads": 0
+  },
+  "exclusions": {
+    "last_used_at_missing": 13,
+    "owner_unrecorded": 13,
+    "bill_work": 19,
+    "publication": 10
+  },
+  "output_sql_sha256": "990df92390b02ca2c852528f6c934d2bbbbde39e22ebf74025dabddd9b067867",
+  "output_gzip_bytes": 2693647,
+  "baseline_commit": "eabc43e1",
+  "baseline_output_identical": true,
+  "repeat_cleanup_removed_nothing": true,
+  "restored_output_identical": true
+}

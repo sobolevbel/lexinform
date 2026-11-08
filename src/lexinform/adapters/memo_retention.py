@@ -14,6 +14,18 @@ _OWNER_EDGES = """
     JOIN government_owner_moves g ON g.number=o.number AND g.to_term=o.term
 """
 
+_PENDING_MEMO_KEYS = """
+    SELECT 'intent', json_extract(meta_json,'$.memo_key') FROM llm_batch_intents
+    UNION ALL
+    SELECT 'intent', json_extract(meta_json,'$.delivery_key') FROM llm_batch_intents
+    UNION ALL
+    SELECT 'item', json_extract(meta_json,'$.memo_key') FROM llm_batch_items
+    WHERE consumed_at IS NULL OR accounted_at IS NULL
+    UNION ALL
+    SELECT 'item', json_extract(meta_json,'$.delivery_key') FROM llm_batch_items
+    WHERE consumed_at IS NULL OR accounted_at IS NULL
+"""
+
 _MEMO_ROWS = """
 SELECT m.*,
   b.term IS NOT NULL AS has_bill,
@@ -32,7 +44,10 @@ SELECT m.*,
     WHERE (o.origin,o.number)=(m.term,m.number)) AS intent,
   EXISTS (SELECT 1 FROM owners o JOIN llm_batch_items i ON (i.term,i.number)=(o.term,o.number)
     WHERE (o.origin,o.number)=(m.term,m.number)
-    AND (i.consumed_at IS NULL OR i.accounted_at IS NULL)) AS batch_item
+    AND (i.consumed_at IS NULL OR i.accounted_at IS NULL)) AS batch_item,
+  COALESCE(m.key IN (SELECT key FROM pending_memo_keys WHERE source='intent'), 0) AS intent_key_ref,
+  COALESCE(m.key IN (SELECT key FROM pending_memo_keys WHERE source='item'), 0)
+    AS batch_item_key_ref
 FROM analysis_memo m
 LEFT JOIN terminal t ON (t.origin,t.number)=(m.term,m.number)
 LEFT JOIN bills b ON (b.term,b.number)=(t.term,t.number)
@@ -61,6 +76,7 @@ def _owner_chain_cte(seed: str, *, owner_moves: bool) -> str:
 
 def memo_retention_cte(*, owner_moves: bool) -> str:
     return _owner_chain_cte(_OWNER_SEED, owner_moves=owner_moves) + (
+        f", pending_memo_keys(source, key) AS ({_PENDING_MEMO_KEYS})"
         f", memo_retention AS ({_MEMO_ROWS})"
     )
 
