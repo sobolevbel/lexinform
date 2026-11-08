@@ -1,0 +1,217 @@
+{
+  "rollback_floor": "0e6bdcc94f675c4de328c9e434c69a4bad15f3d6",
+  "before": {
+    "input_sha256": {
+      "300513.pdf": "3a3aba7b2ae342e7fd858c1555f635bb47f1e36646a73492660399a3a87b4998",
+      "300517.pdf": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+    },
+    "cases": [
+      {
+        "relation": "required_urls",
+        "mode": "original",
+        "state": "unverified",
+        "text_sha256": "cff2a18ea7c5131213452092b64b965b412db8794ec464ee785192333b397d88",
+        "gap": null,
+        "rollback_reader_verified": false,
+        "sql_bytes": 52930,
+        "gzip_bytes": 10933
+      },
+      {
+        "relation": "required_urls",
+        "mode": "blank",
+        "state": "unverified",
+        "text_sha256": "8593986d21656720a01c219da6cdab9ac7103b714b0463e2995e0aeefbbbe637",
+        "gap": null,
+        "rollback_reader_verified": false,
+        "sql_bytes": 52909,
+        "gzip_bytes": 10949
+      },
+      {
+        "relation": "required_urls",
+        "mode": "failure",
+        "state": "unverified",
+        "text_sha256": "8593986d21656720a01c219da6cdab9ac7103b714b0463e2995e0aeefbbbe637",
+        "gap": null,
+        "rollback_reader_verified": false,
+        "sql_bytes": 51695,
+        "gzip_bytes": 10347
+      },
+      {
+        "relation": "normative_urls",
+        "mode": "original",
+        "state": "unverified",
+        "text_sha256": "22f5588ed9b1a67a0826db41230af77575c4b5040b853967a334ccd910144dfa",
+        "gap": null,
+        "rollback_reader_verified": false,
+        "sql_bytes": 53203,
+        "gzip_bytes": 10972
+      },
+      {
+        "relation": "normative_urls",
+        "mode": "blank",
+        "state": "unverified",
+        "text_sha256": "ae91bdb00c065bfefbb33ddaabbe915270fa74e570dd11ef8a0e9e60d13c06f9",
+        "gap": null,
+        "rollback_reader_verified": false,
+        "sql_bytes": 52903,
+        "gzip_bytes": 10948
+      },
+      {
+        "relation": "normative_urls",
+        "mode": "failure",
+        "state": "unverified",
+        "text_sha256": "ae91bdb00c065bfefbb33ddaabbe915270fa74e570dd11ef8a0e9e60d13c06f9",
+        "gap": null,
+        "rollback_reader_verified": false,
+        "sql_bytes": 51689,
+        "gzip_bytes": 10349
+      },
+      {
+        "relation": "amendment_urls",
+        "mode": "original",
+        "state": "unverified",
+        "text_sha256": "221a72c054e454f1fa0fa48f0ad8528413db41dceb41e5486cd6bec2917226bf",
+        "gap": null,
+        "rollback_reader_verified": false,
+        "sql_bytes": 52923,
+        "gzip_bytes": 10888
+      },
+      {
+        "relation": "amendment_urls",
+        "mode": "blank",
+        "state": "unverified",
+        "text_sha256": "221a72c054e454f1fa0fa48f0ad8528413db41dceb41e5486cd6bec2917226bf",
+        "gap": null,
+        "rollback_reader_verified": false,
+        "sql_bytes": 52902,
+        "gzip_bytes": 10906
+      },
+      {
+        "relation": "amendment_urls",
+        "mode": "failure",
+        "state": "unverified",
+        "text_sha256": "221a72c054e454f1fa0fa48f0ad8528413db41dceb41e5486cd6bec2917226bf",
+        "gap": null,
+        "rollback_reader_verified": false,
+        "sql_bytes": 51688,
+        "gzip_bytes": 10300
+      }
+    ]
+  },
+  "after": {
+    "input_sha256": {
+      "300513.pdf": "3a3aba7b2ae342e7fd858c1555f635bb47f1e36646a73492660399a3a87b4998",
+      "300517.pdf": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+    },
+    "cases": [
+      {
+        "relation": "required_urls",
+        "mode": "original",
+        "state": "unverified",
+        "text_sha256": "cff2a18ea7c5131213452092b64b965b412db8794ec464ee785192333b397d88",
+        "gap": null,
+        "rollback_reader_verified": false,
+        "sql_bytes": 52930,
+        "gzip_bytes": 10936
+      },
+      {
+        "relation": "required_urls",
+        "mode": "blank",
+        "state": "unverified",
+        "text_sha256": "8593986d21656720a01c219da6cdab9ac7103b714b0463e2995e0aeefbbbe637",
+        "gap": null,
+        "rollback_reader_verified": false,
+        "sql_bytes": 52909,
+        "gzip_bytes": 10952
+      },
+      {
+        "relation": "required_urls",
+        "mode": "failure",
+        "state": "waiting",
+        "text_sha256": null,
+        "gap": {
+          "phase": "fallback",
+          "index": 0,
+          "required_index": 0,
+          "reason": "pdf_page_extraction_failed",
+          "file_sha256": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+        },
+        "rollback_reader_verified": true,
+        "sql_bytes": 35166,
+        "gzip_bytes": 6557
+      },
+      {
+        "relation": "normative_urls",
+        "mode": "original",
+        "state": "unverified",
+        "text_sha256": "22f5588ed9b1a67a0826db41230af77575c4b5040b853967a334ccd910144dfa",
+        "gap": null,
+        "rollback_reader_verified": false,
+        "sql_bytes": 53203,
+        "gzip_bytes": 10974
+      },
+      {
+        "relation": "normative_urls",
+        "mode": "blank",
+        "state": "unverified",
+        "text_sha256": "ae91bdb00c065bfefbb33ddaabbe915270fa74e570dd11ef8a0e9e60d13c06f9",
+        "gap": null,
+        "rollback_reader_verified": false,
+        "sql_bytes": 52903,
+        "gzip_bytes": 10952
+      },
+      {
+        "relation": "normative_urls",
+        "mode": "failure",
+        "state": "waiting",
+        "text_sha256": null,
+        "gap": {
+          "phase": "fallback",
+          "index": 0,
+          "normative_index": 0,
+          "reason": "pdf_page_extraction_failed",
+          "file_sha256": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+        },
+        "rollback_reader_verified": true,
+        "sql_bytes": 35171,
+        "gzip_bytes": 6565
+      },
+      {
+        "relation": "amendment_urls",
+        "mode": "original",
+        "state": "unverified",
+        "text_sha256": "221a72c054e454f1fa0fa48f0ad8528413db41dceb41e5486cd6bec2917226bf",
+        "gap": null,
+        "rollback_reader_verified": false,
+        "sql_bytes": 52923,
+        "gzip_bytes": 10890
+      },
+      {
+        "relation": "amendment_urls",
+        "mode": "blank",
+        "state": "unverified",
+        "text_sha256": "221a72c054e454f1fa0fa48f0ad8528413db41dceb41e5486cd6bec2917226bf",
+        "gap": null,
+        "rollback_reader_verified": false,
+        "sql_bytes": 52902,
+        "gzip_bytes": 10908
+      },
+      {
+        "relation": "amendment_urls",
+        "mode": "failure",
+        "state": "waiting",
+        "text_sha256": null,
+        "gap": {
+          "phase": "fallback",
+          "index": 0,
+          "amendment_index": 0,
+          "reason": "pdf_page_extraction_failed",
+          "file_sha256": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514"
+        },
+        "rollback_reader_verified": true,
+        "sql_bytes": 35170,
+        "gzip_bytes": 6562
+      }
+    ]
+  }
+}

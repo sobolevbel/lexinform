@@ -11,7 +11,7 @@ from lexinform.document_versions import (
     normative_annex_key,
     regulation_support,
 )
-from lexinform.models.candidate_trace import NormativeAnnexGapReason
+from lexinform.models.candidate_trace import NormativeAnnexGapReason, ReturnedPartGapReason
 from lexinform.models.document_reads import LoadedFile
 from lexinform.models.documents import DocumentPart, DocumentSelection
 from lexinform.models.sejm import TextDocument
@@ -50,6 +50,17 @@ def start_bundle(main: LoadedFile, *, min_chars: int) -> BundleAssembly | Loaded
 @dataclass(frozen=True)
 class RequiredPartFailure:
     blocked: LoadedFile
+    reason: ReturnedPartGapReason
+
+
+def _returned_part_gap(file: LoadedFile) -> ReturnedPartGapReason | None:
+    if file.oversize:
+        return "download_size_limit"
+    if file.selection.has_pdf_page_failure:
+        return "pdf_page_extraction_failed"
+    if file.text is None:
+        return "returned_no_text"
+    return None
 
 
 def required_part(
@@ -57,8 +68,9 @@ def required_part(
 ) -> BundleAssembly | RequiredPartFailure:
     position = bundle.required_index
     bundle = replace(bundle, required_index=position + 1)
-    if file.text is None:
-        return RequiredPartFailure(_blocked("waiting", f"{url}: required part unavailable"))
+    if (reason := _returned_part_gap(file)) is not None:
+        return RequiredPartFailure(_blocked("waiting", f"{url}: required part unavailable"), reason)
+    assert file.text is not None, "returned part without a gap has text"
     kind = document_kind(file.text)
     if kind in APPENDIX_KINDS - {"annex"}:
         if bundle.required_sink is not None:
@@ -98,11 +110,11 @@ def normative_part(
         return NormativeAnnexFailure(
             _blocked("waiting", f"{url}: normative annex unavailable"), "no_returned_file"
         )
-    if file.text is None:
+    if (reason := _returned_part_gap(file)) is not None:
         return NormativeAnnexFailure(
-            _blocked("waiting", f"{url}: normative annex unreadable"),
-            "download_size_limit" if file.oversize else "returned_no_text",
+            _blocked("waiting", f"{url}: normative annex unreadable"), reason
         )
+    assert file.text is not None, "returned part without a gap has text"
     kind = document_kind(file.text)
     if kind in APPENDIX_KINDS - {"annex"}:
         return NormativeAnnexFailure(
@@ -141,9 +153,11 @@ def finish_normative(bundle: BundleAssembly) -> BundleAssembly:
 
 def amendment_part(
     bundle: BundleAssembly, url: str, file: LoadedFile
-) -> BundleAssembly | LoadedFile:
-    if file.text is None:
-        return _blocked("waiting", f"{url}: self-amendment unavailable")
+) -> BundleAssembly | RequiredPartFailure:
+    if (reason := _returned_part_gap(file)) is not None:
+        return RequiredPartFailure(
+            _blocked("waiting", f"{url}: self-amendment unavailable"), reason
+        )
     return replace(
         bundle,
         evidence=(

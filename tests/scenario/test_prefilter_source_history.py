@@ -2,6 +2,7 @@ import threading
 
 import pytest
 
+from lexinform.document_selection import DOCUMENT_SELECTION_POLICY_VERSION
 from lexinform.keywords import KeywordPrefilter
 from lexinform.models import (
     Bill,
@@ -47,7 +48,7 @@ def test_rejected_source_decision_survives_without_a_paid_analysis(workers: int)
     assert len(observed) == 1 and observed[0].purpose == "prefilter"
     selected = world.repo.get_document_selection(observed[0].selection_id)
     assert selected is not None, "the atomic source observation retains its exact selection"
-    assert selected.selection.policy_version == "document-selection-v1"
+    assert selected.selection.policy_version == DOCUMENT_SELECTION_POLICY_VERSION
     assert selected.selection.parts and all(not part.text for part in selected.selection.parts)
     traces = world.repo.list_candidate_disposition_traces(observed[0].observation_id)
     assert not traces
