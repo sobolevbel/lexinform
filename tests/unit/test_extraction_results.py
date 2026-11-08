@@ -259,6 +259,8 @@ def test_pdf_page_map_round_trips_and_rejects_out_of_bounds_pages(tmp_path: Path
     reader = DocumentTextExtractor(PypdfTextExtractor(), DocxTextExtractor(), DocTextExtractor())
     result = reader.extract_document_with_provenance(data).result
     (part,) = result.selected_parts
+    part = part.model_copy(update={"pdf_page_map": None})
+    result = result.model_copy(update={"selected_parts": (part,)})
     page = PdfPageRange(page=1, start=0, end=1, normalized_sha256="a" * 64)
     page_map = PdfPageMap(pages=(page,))
     mapped = ExtractionResult.model_validate(

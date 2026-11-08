@@ -19,7 +19,12 @@ from lexinform.models.doc_notes import (
     DocNotedParts,
     DocNoteSummary,
 )
-from lexinform.models.documents import ExtractedDocument, ExtractedParts, WordDetailedExtraction
+from lexinform.models.documents import (
+    ExtractedDocument,
+    ExtractedParts,
+    PdfTextExtraction,
+    WordDetailedExtraction,
+)
 from lexinform.models.extractions import (
     MAX_EXTRACTION_METADATA_BYTES,
     MAX_EXTRACTION_PART_SUMMARIES,
@@ -32,6 +37,8 @@ from lexinform.models.extractions import (
     OdtNoteBlockBound,
     OdtNotePrefix,
     OdtNoteStatus,
+    PdfPageMap,
+    PdfPageRange,
     WordInlineMarkers,
     _odt_prefix_bytes,
     extraction_metadata_sha256,
@@ -46,6 +53,7 @@ from lexinform.models.odt_notes import (
 )
 from lexinform.models.word_field_ranges import MAX_WORD_FIELD_BYTES, WordFieldPrefix
 from lexinform.models.word_view_capture import WordPartViewStatus, WordViewExtraction
+from lexinform.pdf_projection import legacy_pdf_text, normalized_pdf_page_offsets
 
 
 @lru_cache(maxsize=32)
@@ -624,6 +632,66 @@ def summarize_word_block_copies(
             )
             if len(candidate.model_dump_json().encode()) <= MAX_EXTRACTION_METADATA_BYTES:
                 result = candidate
+        except ValueError:
+            continue
+    return result
+
+
+def _pdf_page_map(pdf: PdfTextExtraction, part: ExtractedPartSummary) -> PdfPageMap | None:
+    if (
+        pdf.error_type is not None
+        or not 1 <= len(pdf.pages) <= 2048
+        or any(page.error_type is not None for page in pdf.pages)
+        or pdf.input_sha256 != part.sha256
+        or pdf.manifest_sha256 != part.manifest_sha256
+    ):
+        return None
+    text = pdf.legacy_text
+    if (
+        len(text) != part.text_chars
+        or hashlib.sha256(text.encode()).hexdigest() != part.text_sha256
+    ):
+        return None
+    offsets = normalized_pdf_page_offsets(tuple(page.text for page in pdf.pages))
+    if not offsets or not 1 <= sum(offset is not None for offset in offsets) <= 32:
+        return None
+    rows: list[PdfPageRange] = []
+    for page, start in zip(pdf.pages, offsets, strict=True):
+        if start is None:
+            continue
+        normalized = legacy_pdf_text((page.text,))
+        end = start + len(normalized)
+        if text[start:end] != normalized:
+            return None
+        rows.append(
+            PdfPageRange(
+                page=page.number,
+                start=start,
+                end=end,
+                normalized_sha256=hashlib.sha256(normalized.encode()).hexdigest(),
+            )
+        )
+    return PdfPageMap(pages=tuple(rows))
+
+
+def summarize_pdf_page_maps(
+    original: ExtractionResult, physical: ExtractedParts
+) -> ExtractionResult:
+    result = original
+    pdfs = {item.part_index: item.extraction for item in physical.pdf_pages}
+    for index, part in enumerate(original.selected_parts):
+        pdf = pdfs.get(part.physical_index)
+        if pdf is None:
+            continue
+        try:
+            page_map = _pdf_page_map(pdf, part)
+            if page_map is None:
+                continue
+            parts = list(result.selected_parts)
+            parts[index] = part.model_copy(update={"pdf_page_map": page_map})
+            result = ExtractionResult.model_validate(
+                {**result.model_dump(), "selected_parts": parts}
+            )
         except ValueError:
             continue
     return result

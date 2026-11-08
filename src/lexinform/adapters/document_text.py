@@ -52,6 +52,7 @@ from lexinform.extraction_records import (
     summarize_doc_note_projections,
     summarize_doc_notes,
     summarize_extraction,
+    summarize_pdf_page_maps,
     summarize_word_block_copies,
     summarize_word_field_prefixes,
     summarize_word_observations,
@@ -1666,6 +1667,7 @@ class DocumentTextExtractor:
             if witness is not None:
                 native_witnesses[body.part_index] = witness
         result = summarize_word_block_copies(result, native_witnesses)
+        result = summarize_pdf_page_maps(result, physical)
         capture = current_physical_walk_capture()
         if capture is not None:
             _physical_event(capture, lambda: capture.extraction(result))
