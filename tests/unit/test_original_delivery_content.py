@@ -216,12 +216,9 @@ def test_direct_review_history_reads_exact_render_after_cleanup(
                 formatter_version="fixture-v1",
             )
             assert repo.get_publication_content(root) is None
-            if packed:
-                repo.save_original_delivery_content(archived, snapshot, version)
-            else:
-                record_original_delivery_content(
-                    repo, origin, stored, language="ru", formatter_version="fixture-v1"
-                )
+            record_original_delivery_content(
+                repo, origin, stored, language="ru", formatter_version="fixture-v1"
+            )
         assert repo.get_publication_content(root) == version
         repo.mark_publication(root, PublicationStatus.SENT, message_id=11, sent_at=NOW)
         if child is not None:

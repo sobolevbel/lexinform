@@ -10,6 +10,15 @@ MAX_UNPACKED_CONTENT_BYTES = 524_288
 MAX_PACKED_BASE64_CHARS = ((MAX_PACKED_CONTENT_BYTES + 2) // 3) * 4
 
 
+def pack_content(raw: bytes) -> str | None:
+    if len(raw) > MAX_UNPACKED_CONTENT_BYTES:
+        return None
+    compressed = zlib.compress(raw)
+    if len(compressed) > MAX_PACKED_CONTENT_BYTES:
+        return None
+    return base64.b64encode(compressed).decode("ascii")
+
+
 def unpack_content(packed: str, sha256: str) -> bytes:
     if len(packed) > MAX_PACKED_BASE64_CHARS:
         raise ValueError("Packed content exceeds its encoded limit")

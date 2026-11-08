@@ -1,0 +1,82 @@
+{
+  "baseline_commit": "aa1aeec6",
+  "controls": [
+    {
+      "case": "ordinary",
+      "packed": false,
+      "raw_bytes": 5534,
+      "raw_sha256": "7bf2222c1c7c502d0634fa346a238410807b7329f289adaef4ee47cce3fa4b31",
+      "html_sha256": [
+        "a0f93418cfec8bf159a48e239548d336c01404bbc5e9f7b7e32db1a63bd15217"
+      ],
+      "sql_sha256": "604dc15b671eedbc408c1014fbfbb69c730d1740226180427432952a95757558",
+      "gzip_after_cleanup": 13526,
+      "physical_parts": 1,
+      "additional_gzip_bytes": 0
+    },
+    {
+      "case": "compressible",
+      "packed": true,
+      "raw_bytes": 155504,
+      "raw_sha256": "7c5567d4c6ace9f9b90c09082f220f90332ceac5fe1700fac405c37d0dd6f221",
+      "html_sha256": [
+        "a0f93418cfec8bf159a48e239548d336c01404bbc5e9f7b7e32db1a63bd15217"
+      ],
+      "sql_sha256": "919bdc77bf02e23905376425ce498b4b9a23b6e3859cfd067c5f25fbccf16e53",
+      "gzip_after_cleanup": 16477,
+      "physical_parts": 1,
+      "additional_gzip_bytes": 3874
+    },
+    {
+      "case": "over_packed_limit",
+      "packed": false,
+      "raw_bytes": 155504,
+      "raw_sha256": "9a224de776402af989f386b573d113616a1dab93ae84b64827fc39bfceb087ea",
+      "html_sha256": [
+        "a0f93418cfec8bf159a48e239548d336c01404bbc5e9f7b7e32db1a63bd15217"
+      ],
+      "sql_sha256": "14859af1db961a45ad0687c2e567ef81815d5bd8346dd36b99ee68182123044c",
+      "gzip_after_cleanup": 12603,
+      "physical_parts": 1,
+      "additional_gzip_bytes": 0
+    },
+    {
+      "case": "over_decoded_limit",
+      "packed": false,
+      "raw_bytes": 535504,
+      "raw_sha256": "2cb4a809cf3a8a346e7aa5a1733e8aff2927113096e3a033cc45e9147c9dabb7",
+      "html_sha256": [
+        "a0f93418cfec8bf159a48e239548d336c01404bbc5e9f7b7e32db1a63bd15217"
+      ],
+      "sql_sha256": "14859af1db961a45ad0687c2e567ef81815d5bd8346dd36b99ee68182123044c",
+      "gzip_after_cleanup": 12603,
+      "physical_parts": 1,
+      "additional_gzip_bytes": 0
+    }
+  ],
+  "joint_card_control": [
+    {
+      "budget_bytes": 131072,
+      "both_contexts_packed": false,
+      "html_sha256": [
+        "7ccd943dfbb39d5c3c9b9603c74856a2611a5adf463f956f397ee099fbcc5840"
+      ],
+      "sql_sha256": "f559e2e9637783146a60b7b24d0464b1da3224b5182100153ecc3ca1e6025921"
+    },
+    {
+      "budget_bytes": 9500,
+      "both_contexts_packed": true,
+      "html_sha256": [
+        "7ccd943dfbb39d5c3c9b9603c74856a2611a5adf463f956f397ee099fbcc5840"
+      ],
+      "sql_sha256": "8a27f2b253da7b15dc18d497c17d095f43779abe29e8996a19103e987f513a90"
+    }
+  ],
+  "previous_reader_restore": {
+    "compressible": "exact_restore",
+    "ordinary": "exact_restore",
+    "over_decoded_limit": "exact_restore",
+    "over_packed_limit": "exact_restore"
+  },
+  "existing_digest_and_state_reports_unchanged": true
+}

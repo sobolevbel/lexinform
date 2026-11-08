@@ -1,9 +1,7 @@
 """Capture bounded digest content during its original atomic physical freeze."""
 
-import base64
 import hashlib
 import logging
-import zlib
 
 from pydantic import ValidationError
 
@@ -18,7 +16,7 @@ from lexinform.models.digest_content import (
     DigestRenderedPlan,
     digest_event_owner_sha256,
 )
-from lexinform.packed_content import MAX_PACKED_CONTENT_BYTES, MAX_UNPACKED_CONTENT_BYTES
+from lexinform.packed_content import pack_content
 from lexinform.ports import BillRepository
 from lexinform.services.content_history import FORMATTER_VERSION
 
@@ -132,12 +130,7 @@ def _rendered_history(
             )
         )
     raw = week.model_dump_json().encode()
-    compressed = zlib.compress(raw) if len(raw) <= MAX_UNPACKED_CONTENT_BYTES else None
-    packed = (
-        base64.b64encode(compressed).decode("ascii")
-        if compressed is not None and len(compressed) <= MAX_PACKED_CONTENT_BYTES
-        else None
-    )
+    packed = pack_content(raw)
     return DigestRenderedPlan(
         profile="digest-rendered-semantic-v1" if packed is not None else "digest-rendered-v1",
         channel_id=channel_id,

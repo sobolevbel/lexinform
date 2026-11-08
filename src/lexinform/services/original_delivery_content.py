@@ -1,9 +1,14 @@
 """Capture eligible original notices inside their first physical freeze."""
 
+import hashlib
 import logging
 
 from lexinform.models import Bill, ContentSnapshot, ContentVersion, Publication, PublicationKind
-from lexinform.models.content import original_delivery_bill_snapshot, validate_review_notice
+from lexinform.models.content import (
+    PackedOriginalBill,
+    original_delivery_bill_snapshot,
+    validate_review_notice,
+)
 from lexinform.models.enums import PublicationStatus
 from lexinform.models.original_delivery_content import (
     MAX_ORIGINAL_DELIVERY_BYTES,
@@ -17,9 +22,22 @@ from lexinform.models.original_delivery_content import (
     OriginalDeliveryPlan,
     original_delivery_context,
 )
+from lexinform.packed_content import pack_content
 from lexinform.ports import BillRepository
 
 log = logging.getLogger(__name__)
+
+
+def _packed_bill_snapshot(snapshot: ContentSnapshot) -> ContentSnapshot | None:
+    raw = snapshot.payload_json.encode()
+    packed = pack_content(raw)
+    if packed is None:
+        return None
+    envelope = PackedOriginalBill(sha256=hashlib.sha256(raw).hexdigest(), packed=packed)
+    payload = envelope.model_dump_json()
+    if len(payload.encode()) >= len(raw):
+        return None
+    return ContentSnapshot(kind="bill", payload_json=payload)
 
 
 def record_original_delivery_content(
@@ -111,12 +129,23 @@ def record_original_delivery_content(
                 Bill.model_validate_json(bill.payload_json), origin.kind, origin.ref
             )
         snapshot = ContentSnapshot(kind="plan", payload_json=original.model_dump_json())
-        if (
-            len(bill.payload_json.encode())
-            + len(snapshot.payload_json.encode())
-            + (len(primary_snapshot.payload_json.encode()) if primary_snapshot else 0)
-            > MAX_ORIGINAL_DELIVERY_BYTES
-        ):
+        bill_budget = MAX_ORIGINAL_DELIVERY_BYTES - len(snapshot.payload_json.encode())
+        primary_bytes = len(primary_snapshot.payload_json.encode()) if primary_snapshot else 0
+        packed_bill = None
+        if len(bill.payload_json.encode()) + primary_bytes > bill_budget:
+            replacement = _packed_bill_snapshot(bill)
+            if replacement is not None:
+                bill = replacement
+                packed_bill = True
+            if primary_snapshot is not None and joint_primary is not None:
+                replacement = _packed_bill_snapshot(primary_snapshot)
+                if replacement is not None:
+                    primary_snapshot = replacement
+                    primary_bytes = len(replacement.payload_json.encode())
+                    joint_primary = joint_primary.model_copy(
+                        update={"bill_snapshot_id": replacement.snapshot_id, "packed_bill": True}
+                    )
+        if len(bill.payload_json.encode()) + primary_bytes > bill_budget:
             log.warning("original delivery history omitted: publication=%s reason=bytes", identity)
             return
         version = ContentVersion(
@@ -136,6 +165,7 @@ def record_original_delivery_content(
                     if origin.kind in ORIGINAL_CARD_KINDS
                     else "editorial-notice-v1",
                     "joint_primary": joint_primary,
+                    "packed_bill": packed_bill,
                 }
             ),
         )
