@@ -24,6 +24,7 @@ from lexinform.models.odt_notes import (
     Path,
 )
 from lexinform.models.odt_notes import _width as odt_note_metadata_width
+from lexinform.models.physical_inventory import Position, Sha256
 from lexinform.models.word_field_ranges import MAX_WORD_FIELD_BYTES, WordFieldPrefix
 
 MAX_EXTRACTION_METADATA_BYTES = 16_384
@@ -31,6 +32,7 @@ MAX_EXTRACTION_PART_SUMMARIES = 16
 MAX_WORD_VIEW_STATUS_BYTES = 512
 MAX_ODT_NOTE_STATUS_BYTES = 1024
 MAX_ODT_NOTE_PREFIX_BYTES = 4096
+MAX_PDF_PAGE_MAP_BYTES = 4096
 
 
 class ExtractionComponent(BaseModel):
@@ -232,6 +234,39 @@ class OdtNoteStatus(BaseModel):
         return self
 
 
+class PdfPageRange(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    page: int = Field(strict=True, gt=0, le=2048)
+    start: Position
+    end: Position
+    normalized_sha256: Sha256
+
+    @model_validator(mode="after")
+    def nonempty(self) -> Self:
+        if self.end <= self.start:
+            raise ValueError("PDF page ranges must be nonempty")
+        return self
+
+
+class PdfPageMap(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    profile: Literal["pdf-normalized-page-ranges-v1"] = "pdf-normalized-page-ranges-v1"
+    pages: tuple[PdfPageRange, ...] = Field(min_length=1, max_length=32)
+
+    @model_validator(mode="after")
+    def bounded_ranges(self) -> Self:
+        previous_page = previous_end = 0
+        for row in self.pages:
+            if row.page <= previous_page or row.start < previous_end:
+                raise ValueError("PDF page ranges must be ordered and disjoint")
+            previous_page, previous_end = row.page, row.end
+        if len(self.model_dump_json().encode()) > MAX_PDF_PAGE_MAP_BYTES:
+            raise ValueError("PDF page map exceeds its byte limit")
+        return self
+
+
 class ExtractedPartSummary(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -266,6 +301,8 @@ class ExtractedPartSummary(BaseModel):
     block_copy_witness: BlockCopyWitness | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+
+    pdf_page_map: PdfPageMap | None = Field(default=None, exclude_if=lambda value: value is None)
 
     word_view_status: WordViewStatus | None = Field(
         default=None, exclude_if=lambda value: value is None
@@ -332,6 +369,18 @@ class ExtractedPartSummary(BaseModel):
                 int(row.block_id.split(":")[1]) > self.block_count for row in witness.runs
             ):
                 raise ValueError("PDF block copy page is outside the retained native page count")
+        if self.pdf_page_map is not None:
+            page_map = PdfPageMap.model_validate(self.pdf_page_map)
+            last = page_map.pages[-1]
+            if (
+                (self.format, self.coordinates, self.text_view)
+                != ("pdf", "pdf-pages-v1", "pdf-whitespace-v1")
+                or self.manifest_sha256 is None
+                or self.block_count is None
+                or last.page > self.block_count
+                or last.end > self.text_chars
+            ):
+                raise ValueError("PDF page map requires matching retained physical page bounds")
         if self.doc_notes is not None:
             if not isinstance(self.doc_notes, DocNoteSummary):
                 raise ValueError("Constructed DOC summary requires its typed note source")
@@ -504,6 +553,13 @@ class ExtractionResult(BaseModel):
             > 4096
         ):
             raise ValueError("Stored block copy witnesses exceed their aggregate byte limit")
+        page_map_bytes = 0
+        for part in self.selected_parts:
+            if part.pdf_page_map is not None:
+                ExtractedPartSummary.model_validate(part.model_dump())
+                page_map_bytes += len(part.pdf_page_map.model_dump_json().encode())
+        if page_map_bytes > MAX_PDF_PAGE_MAP_BYTES:
+            raise ValueError("Stored PDF page maps exceed the aggregate byte limit")
         word_field_bytes = 0
         for part in self.selected_parts:
             if part.word_field_prefix is not None:

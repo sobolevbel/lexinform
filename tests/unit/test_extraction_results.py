@@ -6,6 +6,9 @@ from pathlib import Path
 import pytest
 
 from lexinform import extraction_records
+from lexinform.adapters.doc_text import DocTextExtractor
+from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
+from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models import (
     ArtifactMetadata,
@@ -16,9 +19,10 @@ from lexinform.models import (
     TextDocument,
 )
 from lexinform.models.block_input import MAX_BLOCK_INPUT_BYTES, MAX_BLOCK_INPUT_ROWS
-from lexinform.models.extractions import MAX_EXTRACTION_METADATA_BYTES
+from lexinform.models.extractions import MAX_EXTRACTION_METADATA_BYTES, PdfPageMap, PdfPageRange
 from lexinform.services.document_history import DocumentSourceRead, record_source_read
 from lexinform.services.documents import TextLoader
+from tests.conftest import FIXTURES
 from tests.fakes import FakeSejmGateway, FakeTextExtractor
 from tests.unit.test_physical_extraction import archive, docx, extractor
 
@@ -248,3 +252,44 @@ def test_corrupt_sql_result_identity_is_not_silently_accepted(tmp_path: Path) ->
 
     with pytest.raises(ValueError, match="columns differ"):
         repo.get_extraction_result(result.result_id)
+
+
+def test_pdf_page_map_round_trips_and_rejects_out_of_bounds_pages(tmp_path: Path) -> None:
+    data = (FIXTURES / "print_3039.pdf").read_bytes()
+    reader = DocumentTextExtractor(PypdfTextExtractor(), DocxTextExtractor(), DocTextExtractor())
+    result = reader.extract_document_with_provenance(data).result
+    (part,) = result.selected_parts
+    page = PdfPageRange(page=1, start=0, end=1, normalized_sha256="a" * 64)
+    page_map = PdfPageMap(pages=(page,))
+    mapped = ExtractionResult.model_validate(
+        {
+            **result.model_dump(),
+            "selected_parts": (part.model_copy(update={"pdf_page_map": page_map}),),
+        }
+    )
+    assert "pdf_page_map" not in result.model_dump_json()
+    assert part.block_count is not None
+    outside = page.model_copy(update={"page": part.block_count + 1})
+    with pytest.raises(ValueError, match="matching retained physical page bounds"):
+        ExtractionResult.model_validate(
+            {
+                **result.model_dump(),
+                "selected_parts": (
+                    part.model_copy(update={"pdf_page_map": PdfPageMap(pages=(outside,))}),
+                ),
+            }
+        )
+    with pytest.raises(ValueError, match="ordered and disjoint"):
+        PdfPageMap(pages=(page, page))
+
+    repo = repository(tmp_path)
+    repo.save_artifact_metadata(
+        ArtifactMetadata(sha256=result.artifact_sha256, byte_size=len(data), recorded_at=NOW)
+    )
+    repo.save_extraction_result(result, recorded_at=NOW)
+    repo.save_extraction_result(mapped, recorded_at=NOW)
+    dump = repo.dump()
+    repo.restore(dump)
+    assert repo.dump() == dump
+    assert repo.get_extraction_result(result.result_id) == result
+    assert repo.get_extraction_result(mapped.result_id) == mapped
