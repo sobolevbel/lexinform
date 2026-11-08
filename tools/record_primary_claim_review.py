@@ -37,7 +37,13 @@ class LiteralReviewCitation(BaseModel):
 class ClaimJudgment(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    field: Literal["key_changes", "affected_groups", "effective_date", "changes_since_previous"]
+    field: Literal[
+        "key_changes",
+        "affected_groups",
+        "effective_date",
+        "changes_since_previous",
+        "practical_impact",
+    ]
     index: int | None = Field(ge=0, strict=True)
     claim_sha256: Sha256
     judgment: Literal["supported", "unsupported", "unknown"]
@@ -188,6 +194,7 @@ def template(
     input_checkpoint: ReviewInputCheckpoint | None = None,
     baseline_checkpoint: ReviewInputCheckpoint | None = None,
     comparison: bool = False,
+    include_practical_impact: bool = False,
 ) -> dict[str, object]:
     db = _review_output(database, output, input_checkpoint, baseline_checkpoint)
     baseline_pin, _, saved = _review_inputs(
@@ -207,7 +214,9 @@ def template(
                 else {}
             ),
         }
-        for field, index, text in _claim_slots(saved.record)
+        for field, index, text in _claim_slots(
+            saved.record, include_practical_impact=include_practical_impact
+        )
         if text.strip()
     ]
     if not 1 <= len(claims) <= 128:
@@ -244,6 +253,7 @@ def record(
     input_checkpoint: ReviewInputCheckpoint | None = None,
     baseline_checkpoint: ReviewInputCheckpoint | None = None,
     comparison: bool = False,
+    include_practical_impact: bool = False,
 ) -> dict[str, object]:
     db = _review_output(database, output, input_checkpoint, baseline_checkpoint)
     if not 1 <= len(answers) <= 16:
@@ -253,7 +263,11 @@ def record(
     )
     source = _review_document(saved, _CLAIM_DOCUMENT_ID)
     slots = {
-        (field, index): text for field, index, text in _claim_slots(saved.record) if text.strip()
+        (field, index): text
+        for field, index, text in _claim_slots(
+            saved.record, include_practical_impact=include_practical_impact
+        )
+        if text.strip()
     }
     reviews: list[dict[str, object]] = []
     voters: set[str] = set()
@@ -376,6 +390,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--input-checkpoint", nargs=2, metavar=("PATH", "SHA256"))
     parser.add_argument("--comparison", action="store_true")
+    parser.add_argument("--include-practical-impact", action="store_true")
     parser.add_argument("--baseline-checkpoint", nargs=2, metavar=("PATH", "SHA256"))
     args = parser.parse_args()
     input_checkpoint = (
@@ -398,6 +413,7 @@ def main() -> None:
                 input_checkpoint=input_checkpoint,
                 baseline_checkpoint=baseline_checkpoint,
                 comparison=args.comparison,
+                include_practical_impact=args.include_practical_impact,
             )
         else:
             record(
@@ -409,6 +425,7 @@ def main() -> None:
                 input_checkpoint=input_checkpoint,
                 baseline_checkpoint=baseline_checkpoint,
                 comparison=args.comparison,
+                include_practical_impact=args.include_practical_impact,
             )
     except (OSError, ValueError, sqlite3.Error) as exc:
         parser.error(str(exc))

@@ -221,3 +221,37 @@ def test_intake_requires_the_same_pinned_input_checkpoint(
             "judgment": "unreviewed",
         }
     ]
+
+
+def test_practical_impact_review_requires_opt_in_and_exact_claim(database: Path) -> None:
+    pin = digest(database.read_bytes())
+    form = record_primary_claim_review.template(
+        database, pin, RESULT, database.parent / "form.json", include_practical_impact=True
+    )
+    claims = form["claims"]
+    assert isinstance(claims, list)
+    (slot,) = [row for row in claims if row["field"] == "practical_impact"]
+    impact = technical_answer(TEXT).analysis.practical_impact
+    assert slot["index"] is None and slot["claim_sha256"] == digest(impact.encode())
+    answer = answers(
+        database,
+        "Fixture impact",
+        reviewer_kind="synthetic_control",
+        independent=False,
+        claims=[{**slot, "judgment": "unknown", "reason": "Technical intake check"}],
+    )
+    with pytest.raises(ValueError, match="claim"):
+        record_primary_claim_review.record(
+            database, pin, RESULT, [answer], database.parent / "default.json"
+        )
+    report = record_primary_claim_review.record(
+        database,
+        pin,
+        RESULT,
+        [answer],
+        database.parent / "opt-in.json",
+        include_practical_impact=True,
+    )
+    assert isinstance(report["claims"], list)
+    (recorded,) = [row for row in report["claims"] if row["field"] == "practical_impact"]
+    assert recorded["judgment"] == "unreviewed"

@@ -24,7 +24,9 @@ from tools.corpus_artifacts import digest, read_artifact, write_json
 from tools.sqlite_snapshot import live_journal, open_snapshot, snapshot_files
 
 
-def _claim_slots(record: AnalysisRecord) -> Iterator[tuple[str, int | None, str]]:
+def _claim_slots(
+    record: AnalysisRecord, *, include_practical_impact: bool = False
+) -> Iterator[tuple[str, int | None, str]]:
     answer = record.analysis
     for name, values in (
         ("key_changes", answer.key_changes),
@@ -36,6 +38,8 @@ def _claim_slots(record: AnalysisRecord) -> Iterator[tuple[str, int | None, str]
         yield "effective_date", None, answer.effective_date
     for index, value in enumerate(answer.changes_since_previous):
         yield "changes_since_previous", index, value
+    if include_practical_impact:
+        yield "practical_impact", None, answer.practical_impact
 
 
 class ClaimAnswer(TypedDict):
@@ -444,6 +448,7 @@ def review_page(
     database_sha256: str,
     result_id: str,
     input_checkpoint: ReviewInputCheckpoint | None = None,
+    include_practical_impact: bool = False,
 ) -> str:
     review = saved_claim_review(
         database,
@@ -457,7 +462,9 @@ def review_page(
         else ""
     )
     claims = []
-    for field, index, text in _claim_slots(review.record):
+    for field, index, text in _claim_slots(
+        review.record, include_practical_impact=include_practical_impact
+    ):
         if not text.strip():
             continue
         identity = field if index is None else f"{field}[{index}]"
@@ -496,6 +503,7 @@ def main() -> None:
     parser.add_argument("--review-result", help="write a local HTML review sheet for one result")
     parser.add_argument("--database-sha256", help="required snapshot pin for --review-result")
     parser.add_argument("--review-coverage", action="store_true")
+    parser.add_argument("--include-practical-impact", action="store_true")
     parser.add_argument("--input-checkpoint", nargs=2, action="append", metavar=("PATH", "SHA256"))
     args = parser.parse_args()
     checkpoints = tuple(
@@ -503,6 +511,8 @@ def main() -> None:
     )
     try:
         if args.review_result is None:
+            if args.include_practical_impact:
+                raise ValueError("Practical impact requires a result review sheet")
             if args.database_sha256 is not None or (checkpoints and not args.review_coverage):
                 raise ValueError("Snapshot pins require a review sheet or review coverage")
             code = run(
@@ -526,6 +536,7 @@ def main() -> None:
                 database_sha256=args.database_sha256,
                 result_id=args.review_result,
                 input_checkpoint=input_checkpoint,
+                include_practical_impact=args.include_practical_impact,
             )
             with args.output.open("x", encoding="utf-8") as stream:
                 stream.write(page)

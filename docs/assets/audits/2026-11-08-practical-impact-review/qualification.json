@@ -1,0 +1,75 @@
+{
+  "database_sha256": "2fa282b623328efa9bec50d3d6da771fd6a8b098565ea619d1a1a4ed38f351b7",
+  "input_checkpoint_sha256": "5ee32f1eae088dd16d34c070d74051a866f4044606829fcf03c7e56c9aae3687",
+  "result_id": "result-v1:ef9d048e4a113196bb189a106eb5452ec8642fa5046f16244b83ebedefd3b290",
+  "request_sha256": "5f229284bf6f5a533ac93e7d11a5bb2d8e063d6ed451fc1366bd027aa13b574a",
+  "impact": {
+    "field": "practical_impact",
+    "index": null,
+    "claim_sha256": "99aa3f4f4291038d66b4fe6920917652e9ffb36bf8e9e6e72b0ba1af436bc860",
+    "judgment": "unreviewed"
+  },
+  "unchanged_default_form": true,
+  "semantic": "not_assessed",
+  "frozen_intent_cases": [
+    {
+      "result_id": "result-v1:ab5f898b57bb42e3e638c43c6d5d2db2cad47f4707167f40cdc7f8e7cab555b1",
+      "request_sha256": "da219a26d72c0b03ca58520023baef5031a814625bc56288133827456147d3a8",
+      "input_checkpoint_sha256": "e78613cba60318f88374caaab31514a49aa77e2bf7cdf726e6ee565ed3b99a12",
+      "practical_impact_sha256": "4b68d1e26c2ed2019f7d26ad48c2bc6376cfc5835d860d7384b0df615a3597f3"
+    },
+    {
+      "result_id": "result-v1:7abf53b9cf9baa9408a529918c05ad0692155a5eed622d8b4820582346da4f4d",
+      "request_sha256": "1fe039ec8ff4e37ff47e5282564600ea8cd4ed4bbdebe0df2f61e311b0364adf",
+      "input_checkpoint_sha256": "47b34b4c69d1e2c6d6595ac28f12b122cf311f0f310dc7f6211bab2cd38b84d4",
+      "practical_impact_sha256": "2a1f2ef439e56f5c3a746aafc22b94a0b65f782702e4341bb14e4f4a34d9773b"
+    },
+    {
+      "result_id": "result-v1:45ce3e693670caf73d3b4cc5a1d3aa30f0c712feaae7355394d0019d2453e90d",
+      "request_sha256": "7197fa9f053f0fd1a3d0e42e51235ea96f5b05a147102543de262b9626b7e6ed",
+      "input_checkpoint_sha256": "47b34b4c69d1e2c6d6595ac28f12b122cf311f0f310dc7f6211bab2cd38b84d4",
+      "practical_impact_sha256": "cd7cde475e71d987ec7bb3eaa0c127c851bd9d32ae451cd6abcc5d31969a7079"
+    },
+    {
+      "result_id": "result-v1:a86f266384e5076b0d5d36ee67af54d5d21a2d09579244b9200dd9d811d3afc9",
+      "request_sha256": "eb7f731acb125e5ae05ececb010b03f43447a2e91edd0b9826c208084e8db2cf",
+      "input_checkpoint_sha256": "8c21e5781d5d89b911bfb0376ca5fc1a90893755f8e51c908287c26bd3d65c57",
+      "practical_impact_sha256": "d5f133083ff197f9c002b37fcc6ea145bb5743b06676535be8fb774a0a4c86fd"
+    },
+    {
+      "result_id": "result-v1:1cc652dfa4d7e78687b70c378641ff4c03ef5a092324c0adb67bd38f6e454600",
+      "request_sha256": "9b039854d3f69de8f6060c5c005880a9fec342118e00b97cd48d3a4787ee563e",
+      "input_checkpoint_sha256": "8c21e5781d5d89b911bfb0376ca5fc1a90893755f8e51c908287c26bd3d65c57",
+      "practical_impact_sha256": "6beb249c7155752fc9195dbf36cd4279e9eb3bc92662a7ea7663e1bb019b30e1"
+    },
+    {
+      "result_id": "result-v1:184f3d2e1a51b254cce761e69ab3ab3aa0a118601f3c0ea9569d23c374e85297",
+      "request_sha256": "c5813beb590fdb03b3a24f26d6f2fe41064c7c93e1b735b45e7b118abf5efe05",
+      "input_checkpoint_sha256": "bfa694eb9874501feb1e515e8264e6a61d732f0ba7534f00e081caaf675847c0",
+      "practical_impact_sha256": "f93867585daae120fdcbef7ebb3e6ef6d314a8a2f8087d751336cf7f1bfaba2c"
+    },
+    {
+      "result_id": "result-v1:bf80920f0fc77b10afca4b5b97dc480fb3f161b0f9ac23f7d33983da0503b694",
+      "request_sha256": "d8853139629fb84f6d567e8e7857ab9b3135d81a824d453a423ef9b0802554a6",
+      "input_checkpoint_sha256": "88a7e44075d810925f6e9226c756db00daf5b6fb3c240693ff2858138f85377a",
+      "practical_impact_sha256": "8227b8907883cc74ddd57b2044af2bd57a4394aebdaf3638b4fd5f031c3c32c9"
+    },
+    {
+      "result_id": "result-v1:4aaeb04af4d0fae10d65a963eb776bad410855db84de5459a225b4bcda823a6f",
+      "request_sha256": "0c85b87138d626cd4011925137047f4a9da6735b854e3b97bf676b0d16e61181",
+      "input_checkpoint_sha256": "9366b9c6ee89a5535c0d9dbf26be37e4cf03f1b54836964ee9579e24fbd1d304",
+      "practical_impact_sha256": "a3af2154f15abef5b9f904f24387a6f94cb8c9c61f741e13d5fa91c3701c42e5"
+    },
+    {
+      "result_id": "result-v1:f0ed8c1c99f5a7df7c7d33c9f228da785d88b9b607c5778d19659a714c0cced4",
+      "request_sha256": "af917502a0a470aa1cb1e1167143699fa96dc6abf732097e1ecd20bff39d8dcd",
+      "input_checkpoint_sha256": "9366b9c6ee89a5535c0d9dbf26be37e4cf03f1b54836964ee9579e24fbd1d304",
+      "practical_impact_sha256": "2f7235fb91ffa4de5df508b6f502fda3828a03c0ff8d4c7d3398d01c3eda90b2"
+    }
+  ],
+  "review_packet": {
+    "count": 10,
+    "manifest_sha256": "0a42381299b91100853c461eef546117b28a5de868a58b5930735e005fce4252",
+    "assessment": "pending"
+  }
+}
