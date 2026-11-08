@@ -22,11 +22,11 @@ from lexinform.models import (
     OdtTextExtraction,
 )
 from lexinform.models.extractions import MAX_EXTRACTION_METADATA_BYTES, ExtractionResult
+from lexinform.odt_table_layout import merged_table_layouts
 from lexinform.sections import PAGE_BREAK
 from tools.corpus_artifacts import digest, observation_changes, read_artifact, write_json
 from tools.corpus_manifests import RawReplayManifest
 from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
-from tools.odt_table_layout import merged_table_layouts
 
 Mode = Literal["library", "adapter"]
 OFFICE = "{urn:oasis:names:tc:opendocument:xmlns:office:1.0}"
@@ -165,9 +165,30 @@ def verify_manifest(data: bytes, extracted: OdtTextExtraction) -> dict[str, Any]
             if xml_node(body, ignored.path).tag != ignored.tag:
                 raise ValueError("Ignored ODT path does not address its declared XML element")
         geometry = table_geometry_counts(body, table_blocks)
-        merged_tables = merged_table_layouts(
+        merged_tables = []
+        for layout in merged_table_layouts(
             body, {block.path for block in extracted.blocks if block.kind == "table_cell"}
-        )
+        ):
+            if layout.reason is not None:
+                merged_tables.append(
+                    {"table_path": layout.path, "status": "unresolved", "reason": layout.reason}
+                )
+            else:
+                merged_tables.append(
+                    {
+                        "table_path": layout.path,
+                        "status": "verified",
+                        "merges": [
+                            {
+                                "anchor": anchor_path,
+                                "covered": [path for _, path in covered],
+                                "logical_anchor": position,
+                                "logical_covered": [position for position, _ in covered],
+                            }
+                            for (position, anchor_path), covered in layout.merges.items()
+                        ],
+                    }
+                )
     return {
         "manifest_sha256": extracted.manifest_sha256,
         "xml_sha256": extracted.xml_sha256,
@@ -416,9 +437,10 @@ def verify_default_status(data: bytes, native: OdtNotedParts) -> dict[str, Any]:
         exclude={"selected_parts"}
     ):
         raise ValueError("Default ODT diagnostics changed required extraction metadata")
-    if [part.model_dump(exclude={"odt_note_status"}) for part in actual.selected_parts] != [
-        part.model_dump() for part in baseline.selected_parts
-    ]:
+    if [
+        part.model_dump(exclude={"odt_note_status", "odt_table_merges"})
+        for part in actual.selected_parts
+    ] != [part.model_dump() for part in baseline.selected_parts]:
         raise ValueError("Default ODT diagnostics changed the retained legacy summary prefix")
     known = {item.part_index: item.extraction for item in native.odt_notes}
     statuses: list[dict[str, Any]] = []

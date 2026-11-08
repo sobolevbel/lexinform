@@ -1,6 +1,7 @@
 """Verify ODT merged-cell coordinates in a bounded logical table."""
 
 from collections.abc import Iterator
+from dataclasses import dataclass
 from xml.etree import ElementTree as ET
 
 TABLE = "{urn:oasis:names:tc:opendocument:xmlns:table:1.0}"
@@ -104,8 +105,14 @@ def _merges(rows: list[tuple[Path, ET.Element]], block_paths: set[Path]) -> dict
     return matches
 
 
-def merged_table_layouts(body: ET.Element, block_paths: set[Path]) -> list[dict[str, object]]:
-    reports: list[dict[str, object]] = []
+@dataclass(frozen=True)
+class TableLayout:
+    path: Path
+    merges: dict[Cell, list[Cell]]
+    reason: str | None = None
+
+
+def merged_table_layouts(body: ET.Element, block_paths: set[Path]) -> Iterator[TableLayout]:
     pending: list[tuple[Path, ET.Element]] = [((), body)]
     while pending:
         path, node = pending.pop()
@@ -123,21 +130,7 @@ def merged_table_layouts(body: ET.Element, block_paths: set[Path]) -> list[dict[
         try:
             matches = _merges(rows, block_paths)
         except ValueError as exc:
-            reports.append({"table_path": path, "status": "unresolved", "reason": str(exc)})
+            yield TableLayout(path, {}, str(exc))
         else:
-            reports.append(
-                {
-                    "table_path": path,
-                    "status": "verified",
-                    "merges": [
-                        {
-                            "anchor": anchor_path,
-                            "covered": [path for _, path in covered],
-                            "logical_anchor": position,
-                            "logical_covered": [position for position, _ in covered],
-                        }
-                        for (position, anchor_path), covered in matches.items()
-                    ],
-                }
-            )
-    return reports
+            if matches:
+                yield TableLayout(path, matches)

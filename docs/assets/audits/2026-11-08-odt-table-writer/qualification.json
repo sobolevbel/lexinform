@@ -1,0 +1,29 @@
+{
+  "scope": "Paired native extraction and SQLite restore on 21 pinned official ODTs with no production processing.",
+  "unchanged_selected_document_and_extraction_metadata_excluding_code_recipe_and_maps": 21,
+  "actual_writer_positive": {
+    "official_id": "rcl-file:684340",
+    "input_sha256": "743d88976846877fcc7d9c4a81ed0e1128822b1c2f5e70c71b1b518a1027143f",
+    "merges": 35,
+    "covered_positions": 70,
+    "metadata_bytes": 3132
+  },
+  "reader_restored_both_sql_dumps_byte_identically": true,
+  "sizes": {
+    "baseline": {
+      "sql_bytes": 187927,
+      "gzip_bytes": 29203,
+      "sql_sha256": "084ac58d8cfeec16a3f4e3ecb883ba3f9ce1a06cfab049cdc2cab3eed53505fb"
+    },
+    "candidate": {
+      "sql_bytes": 191079,
+      "gzip_bytes": 29763,
+      "sql_sha256": "62b850dddfd82b3633af3c677311a0a574f39d522f3e898995f5eb888e51e084"
+    }
+  },
+  "archive_controls": {
+    "roots": 6,
+    "odt_leaves": 8,
+    "report_sha256": "334b98ceb751a01c6029553cf52bc372b05a46e0fc69988b3317813af1e071e3"
+  }
+}

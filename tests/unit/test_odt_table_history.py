@@ -8,7 +8,9 @@ from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models.artifacts import ArtifactMetadata
 from lexinform.models.extractions import ExtractedPartSummary, ExtractionResult
 from lexinform.models.odt_tables import OdtMergedCell, OdtMergedTable, OdtTableMerges
+from tests.unit.test_odt_blocks import odt_document
 from tests.unit.test_odt_note_status import result, summary
+from tests.unit.test_physical_extraction import extractor
 
 
 def table_merges() -> OdtTableMerges:
@@ -108,3 +110,32 @@ def test_retained_tables_share_one_byte_budget_across_selected_parts() -> None:
                 }
             )
         )
+
+
+def test_native_extraction_retains_merge_coordinates_without_changing_selection() -> None:
+    raw = odt_document(
+        "<text:p>" + "USTAWA Art. 1. Cudzoziemiec. " * 20 + "</text:p>"
+        "<table:table><table:table-row><table:table-cell table:number-columns-spanned='3'>"
+        "<text:p>Termin</text:p></table:table-cell>"
+        "<table:covered-table-cell table:number-columns-repeated='2'/>"
+        "</table:table-row></table:table>"
+    )
+    reader = extractor()
+
+    observed = reader.extract_document_with_provenance(raw)
+
+    assert observed.document == reader.extract_document(raw)
+    (part,) = observed.result.selected_parts
+    metadata = part.odt_table_merges
+    assert metadata is not None, "the selected native ODT has one verified merge"
+    assert metadata.verified_tables == 1 and metadata.unresolved_tables == 0
+    (table,) = metadata.tables
+    assert table.path == (1,)
+    assert table.merges == (
+        OdtMergedCell(
+            anchor=(1, 0, 0),
+            position=(0, 0),
+            shape=(1, 3),
+            covered=((1, 0, 1), (1, 0, 1)),
+        ),
+    )

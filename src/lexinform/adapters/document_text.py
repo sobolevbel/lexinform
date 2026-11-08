@@ -41,6 +41,7 @@ from lexinform.adapters.native_block_copies import (
     current_native_block_copies,
     pdf_block_copies,
 )
+from lexinform.adapters.odt_table_capture import capture_odt_tables
 from lexinform.adapters.word_block_copies import PlainWordCopies, current_plain_word_copies
 from lexinform.adapters.word_field_ranges import WordFieldExtraction, WordFieldRanges
 from lexinform.archive_policy_capture import native_archive_policy_sink
@@ -52,6 +53,7 @@ from lexinform.extraction_records import (
     summarize_doc_note_projections,
     summarize_doc_notes,
     summarize_extraction,
+    summarize_odt_tables,
     summarize_pdf_page_maps,
     summarize_word_block_copies,
     summarize_word_field_prefixes,
@@ -90,6 +92,7 @@ from lexinform.models.extractions import (
     root_pdf_first_page,
 )
 from lexinform.models.odt_notes import OdtNotedParts, OdtNoteOrigins, OdtPartNoteOrigins
+from lexinform.models.odt_tables import OdtTableMerges
 from lexinform.models.physical_inventory import (
     DecodedPath,
     HeaderRow,
@@ -1141,7 +1144,7 @@ class OdtTextExtractor:
         return self._read(data, None)[0]
 
     def extract_with_note_origins(
-        self, data: bytes
+        self, data: bytes, *, tables: dict[str, OdtTableMerges] | None = None
     ) -> tuple[OdtTextExtraction, OdtNoteOrigins | None]:
         if not _native_odt_notes(self):
             return self.extract_odt_blocks(data), None
@@ -1149,10 +1152,14 @@ class OdtTextExtractor:
             notes = OdtNoteCollector()
         except Exception:
             notes = None
-        return self._read(data, notes)
+        return self._read(data, notes, tables=tables)
 
     def _read(
-        self, data: bytes, notes: OdtNoteCollector | None
+        self,
+        data: bytes,
+        notes: OdtNoteCollector | None,
+        *,
+        tables: dict[str, OdtTableMerges] | None = None,
     ) -> tuple[OdtTextExtraction, OdtNoteOrigins | None]:
         xml, body, state = self._body(data)
         origins = _OdtOrigins(notes=notes)
@@ -1171,6 +1178,11 @@ class OdtTextExtractor:
         if copies is not None:
             with suppress(Exception):
                 copies.finish_odt(extracted, origins.copyable_paths)
+        if body is not None and tables is not None and extracted.input_sha256 not in tables:
+            with suppress(Exception):
+                captured = capture_odt_tables(body, extracted)
+                if captured is not None:
+                    tables[extracted.input_sha256] = captured
         observed = (
             odt_note_event(notes, partial(_finish_odt_notes, notes, extracted))
             if notes is not None
@@ -1416,6 +1428,7 @@ class _PhysicalOrigins:
     word_field_prefixes: dict[int, WordFieldPrefix] | None = None
     word_block_copies: dict[int, BlockCopyWitness] | None = None
     odt_notes: list[OdtPartNoteOrigins] | None = None
+    odt_tables: dict[str, OdtTableMerges] | None = None
     doc_notes: list[DocPartNoteCapture] | None = None
     capture_doc_note_projection: bool = False
     capture_doc_note_cfspec: bool = False
@@ -1592,6 +1605,7 @@ class DocumentTextExtractor:
         word_copies: dict[int, BlockCopyWitness] = {}
         native_copies = NativeBlockCopies()
         odt_notes: list[OdtPartNoteOrigins] = []
+        odt_tables: dict[str, OdtTableMerges] = {}
         doc_notes: list[DocPartNoteCapture] = []
         if (
             type(self) is DocumentTextExtractor
@@ -1607,6 +1621,7 @@ class DocumentTextExtractor:
                 word_field_prefixes=word_fields,
                 word_block_copies=word_copies,
                 odt_notes=odt_notes,
+                odt_tables=odt_tables,
                 doc_notes=doc_notes,
                 capture_doc_note_projection=True,
                 capture_doc_note_cfspec=True,
@@ -1668,6 +1683,7 @@ class DocumentTextExtractor:
                 native_witnesses[body.part_index] = witness
         result = summarize_word_block_copies(result, native_witnesses)
         result = summarize_pdf_page_maps(result, physical)
+        result = summarize_odt_tables(result, odt_tables)
         capture = current_physical_walk_capture()
         if capture is not None:
             _physical_event(capture, lambda: capture.extraction(result))
@@ -1886,7 +1902,11 @@ class DocumentTextExtractor:
                             and isinstance(self._odt, OdtTextExtractor)
                         ):
                             odt_result, odt_notes = _physical_format(
-                                partial(self._odt.extract_with_note_origins, data)
+                                partial(
+                                    self._odt.extract_with_note_origins,
+                                    data,
+                                    tables=origins.odt_tables,
+                                )
                             )
                             text = odt_result.legacy_text
                         elif origins.odt_blocks is not None and isinstance(
