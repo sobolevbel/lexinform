@@ -10,9 +10,16 @@ from pathlib import Path
 from typing import TypedDict
 
 from lexinform.adapters.computation_history import ComputationRowError, read_computation_result
-from lexinform.adapters.input_receipts import validate_input_snapshots
+from lexinform.adapters.input_receipts import (
+    capture_frozen_request_manifest,
+    intent_metadata,
+    parse_batch_request,
+    validate_input_snapshots,
+)
+from lexinform.adapters.llm_prompts import build_user_prompt
+from lexinform.json_storage import read_json
 from lexinform.models import AnalysisRecord, BatchItemMeta, ComputationResult
-from lexinform.models.batch import batch_item_meta
+from lexinform.models.batch import AnalysisQuestion, batch_item_meta
 from tools.corpus_artifacts import digest, read_artifact, write_json
 from tools.sqlite_snapshot import live_journal, open_snapshot, snapshot_files
 
@@ -216,6 +223,75 @@ def _checkpoint_text(
         return saved.text
 
 
+def _checkpoint_intent_text(
+    checkpoint: ReviewInputCheckpoint, paid: ComputationResult, current: BatchItemMeta
+) -> str:
+    with open_snapshot(checkpoint.database) as snapshot:
+        if snapshot.sha256 != checkpoint.sha256:
+            raise ValueError("Input checkpoint SHA-256 differs from its pin")
+        row = snapshot.connection.execute(
+            "SELECT * FROM llm_batch_intents"
+            " WHERE custom_id=? AND provider=? AND state='submitting'",
+            (paid.custom_id, paid.provider),
+        ).fetchone()
+        if row is None or paid.provider != "openai":
+            raise ReviewTextUnavailableError("Review requires an exact frozen text intent")
+        request = parse_batch_request(row["request_json"])
+        saved = intent_metadata(request, row["meta_json"])
+        question = request.question
+        if (
+            not isinstance(question, AnalysisQuestion)
+            or not isinstance(saved, BatchItemMeta)
+            or (request.custom_id, request.term, request.number, request.call_kind)
+            != (paid.custom_id, paid.term, paid.number, paid.purpose)
+            or request.payload_sha256 != paid.request_sha256
+            or request.payload_json is None
+            or saved.generation != paid.generation
+            or saved.input_binding != paid.input_binding
+            or saved.request_sha256 not in (None, paid.request_sha256)
+            or saved.input_chars != current.input_chars
+            or question.ctx.scan is not None
+            or question.ctx.text_source == "metadata_only"
+        ):
+            raise ReviewTextUnavailableError(
+                "Input checkpoint differs from the exact saved text intent"
+            )
+        text = question.ctx.text
+        manifest = capture_frozen_request_manifest(request, paid.provider)
+        if (
+            not text.strip()
+            or len(text) != current.input_chars
+            or saved.text != text
+            or current.text
+            and current.text != text
+            or manifest is None
+            or current.frozen_request_manifest is not None
+            and current.frozen_request_manifest != manifest
+        ):
+            raise ReviewTextUnavailableError(
+                "Input checkpoint differs from the exact saved text intent"
+            )
+        payload = read_json(request.payload_json)
+        match payload:
+            case {
+                "body": {
+                    "input": [
+                        {"role": "system"},
+                        {"role": "user", "content": [{"type": "input_text", "text": str(prompt)}]},
+                    ]
+                }
+            } if prompt == build_user_prompt(question.ctx):
+                pass
+            case _:
+                raise ReviewTextUnavailableError(
+                    "Frozen intent does not contain the exact rendered user text"
+                )
+        validate_input_snapshots(snapshot.connection)
+        if not snapshot.unchanged():
+            raise ValueError("Input checkpoint changed during review preparation")
+        return text
+
+
 def saved_claim_review(
     database: Path,
     *,
@@ -244,23 +320,33 @@ def saved_claim_review(
             or paid.input_binding != meta.input_binding
             or paid.generation != meta.generation
             or paid.request_sha256 != meta.request_sha256
-            or receipt is None
-            or receipt.request_sha256 != paid.request_sha256
-            or receipt.text_chars != meta.input_chars
-            or receipt.text_chars != record.input_chars
+            or meta.input_chars != record.input_chars
         ):
             raise ReviewTextUnavailableError("Review requires the exact retained submitted text")
-        text = (
-            meta.text
-            if input_checkpoint is None
-            else _checkpoint_text(input_checkpoint, paid, meta)
-        )
-        if (
-            not text.strip()
-            or receipt.text_chars != len(text)
-            or receipt.text_sha256 != digest(text.encode())
-        ):
-            raise ReviewTextUnavailableError("Review requires the exact retained submitted text")
+        if receipt is None:
+            if input_checkpoint is None:
+                raise ReviewTextUnavailableError(
+                    "Review requires the exact retained submitted text"
+                )
+            text = _checkpoint_intent_text(input_checkpoint, paid, meta)
+            text_sha256 = digest(text.encode())
+        else:
+            text = (
+                meta.text
+                if input_checkpoint is None
+                else _checkpoint_text(input_checkpoint, paid, meta)
+            )
+            text_sha256 = digest(text.encode())
+            if (
+                not text.strip()
+                or receipt.request_sha256 != paid.request_sha256
+                or receipt.text_chars != meta.input_chars
+                or receipt.text_chars != len(text)
+                or receipt.text_sha256 != text_sha256
+            ):
+                raise ReviewTextUnavailableError(
+                    "Review requires the exact retained submitted text"
+                )
         validate_input_snapshots(db)
         if (
             not snapshot.unchanged()
@@ -272,7 +358,7 @@ def saved_claim_review(
         record,
         paid.number,
         paid.request_sha256,
-        receipt.text_sha256,
+        text_sha256,
         text,
         input_checkpoint.sha256 if input_checkpoint is not None else None,
     )
@@ -285,8 +371,8 @@ def _review_text_coverage(
     checkpoints: tuple[ReviewInputCheckpoint, ...],
 ) -> dict[str, object]:
     pins = [checkpoint.sha256 for checkpoint in checkpoints]
-    if len(pins) > 8 or len(set(pins)) != len(pins) or database_sha256 in pins:
-        raise ValueError("Use at most eight distinct earlier checkpoint pins")
+    if len(pins) > 12 or len(set(pins)) != len(pins) or database_sha256 in pins:
+        raise ValueError("Use at most twelve distinct earlier checkpoint pins")
     if any(not checkpoint.unchanged() for checkpoint in checkpoints):
         raise ValueError("An input checkpoint differs from its pin")
     ready = []

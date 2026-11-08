@@ -379,10 +379,11 @@ stay `conflict`. A reserved case becomes `holdout` only when humans agree on
 ### Saved primary claim judgments
 
 Use `tools.audit_saved_primary_claims --review-coverage` to find saved answers with
-verified input text. Add up to eight `--input-checkpoint PATH SHA256` pairs to search
+verified input text. Add up to twelve `--input-checkpoint PATH SHA256` pairs to search
 earlier snapshots. A review sheet (`--review-result RESULT_ID`) and its answers accept
 one such pair. A matching prepared-input receipt can verify submitted text from an
-older batch that has no provider request manifest.
+older batch that has no provider request manifest. A pinned OpenAI submission checkpoint can
+also verify the exact text against the saved request when no receipt was recorded.
 
 Create a review sheet and use the intake command below with `--template` in place of
 `--answers` to prepare a blank answer file. Fill the review fields and remove unanswered
