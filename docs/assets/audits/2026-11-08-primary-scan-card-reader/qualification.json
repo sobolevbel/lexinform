@@ -1,0 +1,84 @@
+{
+  "scope": "Reader-only qualification. Pinned Sejm PDFs and titles with fake process, exchange and send; a saved source reference was explicitly injected before the fake send.",
+  "baseline": "2d31ee8d",
+  "ignored_difference": "Run timing telemetry only in normalized SQL.",
+  "writer_unchanged": true,
+  "cases": {
+    "24": {
+      "pins": {
+        "sejm/term10/files/24__24.pdf": "7458a105456c2dd340614b65da47d7aa33b1d6202fed59c5daffd578c00193e2",
+        "sejm/term10/prints.json": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72"
+      },
+      "cycle": {
+        "source_kind": "print",
+        "source_observation_id": "source-observation-v1:7c801001ced646295812daa16f33f851ca32dece2345157a73ecbff2e6d82d41",
+        "source_selection_id": "selection-v1:0c0bf414ee64806c3d011f10b460c417d42feb76f7cb37a1c070988d4812fa6a",
+        "artifact_sha256": "7458a105456c2dd340614b65da47d7aa33b1d6202fed59c5daffd578c00193e2",
+        "recorded_scan_input": {
+          "version": 1,
+          "source_sha256": "7458a105456c2dd340614b65da47d7aa33b1d6202fed59c5daffd578c00193e2",
+          "source_bytes": 1498776,
+          "source_pages": 28,
+          "input_sha256": "7458a105456c2dd340614b65da47d7aa33b1d6202fed59c5daffd578c00193e2",
+          "input_bytes": 1498776,
+          "first_page": 1,
+          "page_count": 28,
+          "transformations": []
+        },
+        "retained_provider_request_manifest_sha256": "477456e772eb63f85550fe27d4d1a43cf60e8a12ac79b0fe07d227290eb63068",
+        "purpose": "analysis",
+        "result_id": "result-v1:daca843d216e7ee376256a6624609a8b8d24a8a7a7fb499520a1ac97b87ac933",
+        "request_sha256": "207b2ba4ca88495d1cca52e6fed11f725b95ca7119a0bc747d48792dab7df48d",
+        "collection_application_id": 1,
+        "projection_application_id": 2,
+        "content_version_id": "content-v1:ab0cfb356071245c9ae261f3970d0c3871814e9954e7ed6c75ad93da7db4fd2e",
+        "recorded_sent_at": "2026-09-07T06:00:00+00:00",
+        "frozen_render_sha256": "ceca71765d9ab758e6a96ecd3e19913b54bb1c9a674a23ce892612f70df99038"
+      },
+      "database_sha256": "099aa90c02c4948f4d499fa87fa0d26f531001adac622cdf69bb2b14e631f7b0",
+      "normalized_sql_delta": 206,
+      "normalized_gzip_delta": 60,
+      "after_cleanup_double_restore": true,
+      "changed_artifact_read_rejected": true
+    },
+    "604": {
+      "pins": {
+        "sejm/term10/files/604__604.pdf": "2a9dc5be4d5ba5133037be5541fc0c0a41ca780520cca66a712fd66d01a428b0",
+        "sejm/term10/prints.json": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72"
+      },
+      "cycle": {
+        "source_kind": "print",
+        "source_observation_id": "source-observation-v1:a7c2ab049c27d5fd68e96cfb0ed964ffd931e7b86edffe475c71c83bb3c17440",
+        "source_selection_id": "selection-v1:17a066187b11dad79459f1cf61654212a3efdb5c1b1d0bd08d920896e2a3690a",
+        "artifact_sha256": "2a9dc5be4d5ba5133037be5541fc0c0a41ca780520cca66a712fd66d01a428b0",
+        "recorded_scan_input": {
+          "version": 1,
+          "source_sha256": "2a9dc5be4d5ba5133037be5541fc0c0a41ca780520cca66a712fd66d01a428b0",
+          "source_bytes": 2243206,
+          "source_pages": 37,
+          "input_sha256": "ddb60d55d4d4da82e0bf7e547f74c2118267b268ad33a4478c50673dde9d5b72",
+          "input_bytes": 2143856,
+          "first_page": 2,
+          "page_count": 36,
+          "transformations": [
+            "cover_letter"
+          ]
+        },
+        "retained_provider_request_manifest_sha256": "aaf858d321bb266f78349479538199e6f812e2dda77795fbe58e3128db42d3a8",
+        "purpose": "analysis",
+        "result_id": "result-v1:22dc4a061d1bd78346746d71538364b102539eb1cf4c5acdfbbcba25858de2e8",
+        "request_sha256": "8c729bbd824305689afe981e01f883e2ad92f370955273491c305c97dfbc9089",
+        "collection_application_id": 1,
+        "projection_application_id": 2,
+        "content_version_id": "content-v1:da799d632ae6c9229e43fd1a234911780cef650b3fdf2aa3361df9980b507748",
+        "recorded_sent_at": "2026-09-07T06:00:00+00:00",
+        "frozen_render_sha256": "eed3119910a7d4d628e25fe2d0fa6459dabab08760f79cb9e23e5d32d1a7b828"
+      },
+      "database_sha256": "0e246d358ea55460380ef12acca755438939fd8c9633bf1539d4aa9eb7724024",
+      "normalized_sql_delta": 206,
+      "normalized_gzip_delta": 84,
+      "after_cleanup_double_restore": true,
+      "changed_artifact_read_rejected": true
+    }
+  }
+}

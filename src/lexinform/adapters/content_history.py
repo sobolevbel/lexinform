@@ -14,6 +14,7 @@ from lexinform.adapters.input_receipts import (
     retained_pdf_page_ranges,
     validate_multipart_item,
 )
+from lexinform.adapters.primary_scan_history import read_primary_scan_source
 from lexinform.adapters.status_changes import read_status_change
 from lexinform.bill_context import continuation_snapshot
 from lexinform.content_versions import (
@@ -37,13 +38,16 @@ from lexinform.models import (
     AnalysisRecord,
     BatchItemMeta,
     Bill,
+    ComputationResult,
     ContentSnapshot,
     ContentVersion,
     DeliveryPlan,
+    LlmBatchItem,
     PrimaryInputReceipt,
     Publication,
     PublicationKind,
     PublicationStatus,
+    SourceObservation,
     StatusChange,
 )
 from lexinform.models.commands import (
@@ -208,68 +212,18 @@ def card_primary_evidence_candidate(
         return None
 
 
-def _verify_card_primary_evidence(
+def _card_primary_text_source(
     connection: sqlite3.Connection,
     reference: CardPrimaryEvidence,
-    version: ContentVersion,
-    bill: Bill,
-    root: Publication | None,
-) -> dict[str, object]:
-    projection_row = _query(
-        connection,
-        "SELECT * FROM result_applications WHERE id=?",
-        (reference.projection_application_id,),
-    ).fetchone()
-    if projection_row is None:
-        raise CardPrimaryEvidenceError("card_primary_projection_missing")
-    projection = read_result_application(projection_row)
-    if (
-        (projection.term, projection.number) != (bill.term, bill.number)
-        or projection.phase != "projection"
-        or projection.target is not None
-        or projection.reason != "batch_result"
-        or projection.projected_generation != bill.analysis_generation
-        or root is not None
-        and (root.term, root.number) != (bill.term, bill.number)
-    ):
-        raise CardPrimaryEvidenceError("card_primary_projection_scope")
-    reader = ContentSourceRows(connection)
-    paid = reader.get_computation_result(projection.result_id)
-    if (
-        paid is None
-        or not isinstance(paid.record, AnalysisRecord)
-        or paid.validation != "validated"
-        or paid.purpose not in ("analysis", "reanalysis")
-        or (paid.term, paid.number, paid.generation)
-        != (projection.term, projection.number, projection.generation)
-        or paid.request_sha256 is None
-        or paid.input_binding is None
-        or (paid.input_binding.term, paid.input_binding.number) != (paid.term, paid.number)
-    ):
-        raise CardPrimaryEvidenceError("card_primary_paid_scope")
-    if root is not None and root.delivery is not None:
-        rendered_bill = Bill.model_validate(read_json(root.delivery.bill_json))
-        record = rendered_bill.analysis
-        if (
-            record is None
-            or not primary_record_matches(record, paid)
-            or record.model_dump(exclude=set(PRIMARY_USAGE_FIELDS))
-            != paid.record.model_dump(exclude=set(PRIMARY_USAGE_FIELDS))
-        ):
-            raise CardPrimaryEvidenceError("card_primary_render_result_mismatch")
-    item = reader.get_consumed_primary_input(
-        paid.provider, paid.batch_id, paid.custom_id, bill.analysis_generation
-    )
-    if item is None or item.consumed_at is None or not isinstance(item.meta, BatchItemMeta):
-        raise CardPrimaryEvidenceError("card_primary_item_missing")
-    meta = item.meta
+    paid: ComputationResult,
+    item: LlmBatchItem,
+    meta: BatchItemMeta,
+) -> tuple[SourceObservation, dict[str, object]]:
+    record = paid.record
+    assert isinstance(record, AnalysisRecord), "Card evidence requires a validated primary result"
     receipt = meta.prepared_input_receipt
     if (
-        (item.term, item.number, item.call_kind) != (paid.term, paid.number, paid.purpose)
-        or meta.input_binding != paid.input_binding
-        or meta.generation != paid.generation
-        or meta.queued_at is None
-        or not isinstance(
+        not isinstance(
             receipt,
             (
                 PrimaryInputReceipt,
@@ -282,11 +236,11 @@ def _verify_card_primary_evidence(
         or receipt.source_selection_id is None
         or not meta.source_url
         or receipt.request_sha256 != paid.request_sha256
-        or meta.request_sha256 != paid.request_sha256
         or meta.input_chars != receipt.text_chars
-        or paid.record.input_chars != receipt.text_chars
+        or record.input_chars != receipt.text_chars
     ):
         raise CardPrimaryEvidenceError("card_primary_item_scope")
+    reader = ContentSourceRows(connection)
     source = reader.get_source_observation(reference.source_observation_id)
     selection = reader.get_document_selection(receipt.source_selection_id)
     if (
@@ -358,6 +312,82 @@ def _verify_card_primary_evidence(
         ranges = project_pdf_page_ranges(receipt.segments, parts)
         if ranges:
             physical["normalized_pdf_page_ranges"] = ranges
+    return source, physical
+
+
+def _verify_card_primary_evidence(
+    connection: sqlite3.Connection,
+    reference: CardPrimaryEvidence,
+    version: ContentVersion,
+    bill: Bill,
+    root: Publication | None,
+) -> dict[str, object]:
+    projection_row = _query(
+        connection,
+        "SELECT * FROM result_applications WHERE id=?",
+        (reference.projection_application_id,),
+    ).fetchone()
+    if projection_row is None:
+        raise CardPrimaryEvidenceError("card_primary_projection_missing")
+    projection = read_result_application(projection_row)
+    if (
+        (projection.term, projection.number) != (bill.term, bill.number)
+        or projection.phase != "projection"
+        or projection.target is not None
+        or projection.reason != "batch_result"
+        or projection.projected_generation != bill.analysis_generation
+        or root is not None
+        and (root.term, root.number) != (bill.term, bill.number)
+    ):
+        raise CardPrimaryEvidenceError("card_primary_projection_scope")
+    reader = ContentSourceRows(connection)
+    paid = reader.get_computation_result(projection.result_id)
+    if (
+        paid is None
+        or not isinstance(paid.record, AnalysisRecord)
+        or paid.validation != "validated"
+        or paid.purpose not in ("analysis", "reanalysis")
+        or (paid.term, paid.number, paid.generation)
+        != (projection.term, projection.number, projection.generation)
+        or paid.request_sha256 is None
+        or paid.input_binding is None
+        or (paid.input_binding.term, paid.input_binding.number) != (paid.term, paid.number)
+    ):
+        raise CardPrimaryEvidenceError("card_primary_paid_scope")
+    if root is not None and root.delivery is not None:
+        rendered_bill = Bill.model_validate(read_json(root.delivery.bill_json))
+        record = rendered_bill.analysis
+        if (
+            record is None
+            or not primary_record_matches(record, paid)
+            or record.model_dump(exclude=set(PRIMARY_USAGE_FIELDS))
+            != paid.record.model_dump(exclude=set(PRIMARY_USAGE_FIELDS))
+        ):
+            raise CardPrimaryEvidenceError("card_primary_render_result_mismatch")
+    item = reader.get_consumed_primary_input(
+        paid.provider, paid.batch_id, paid.custom_id, bill.analysis_generation
+    )
+    if item is None or item.consumed_at is None or not isinstance(item.meta, BatchItemMeta):
+        raise CardPrimaryEvidenceError("card_primary_item_missing")
+    meta = item.meta
+    if (
+        (item.term, item.number, item.call_kind) != (paid.term, paid.number, paid.purpose)
+        or meta.input_binding != paid.input_binding
+        or meta.generation != paid.generation
+        or meta.queued_at is None
+        or meta.request_sha256 != paid.request_sha256
+    ):
+        raise CardPrimaryEvidenceError("card_primary_item_scope")
+    if (
+        meta.prepared_input_receipt is None
+        and meta.text_source == "scan"
+        and meta.selection.scan_input is not None
+    ):
+        source, physical = read_primary_scan_source(connection, paid, meta)
+        if source.observation_id != reference.source_observation_id:
+            raise CardPrimaryEvidenceError("card_primary_source_scope")
+    else:
+        source, physical = _card_primary_text_source(connection, reference, paid, item, meta)
     collections = _query(
         connection,
         "SELECT * FROM result_applications WHERE result_id=? AND term=? AND number=?"
@@ -399,7 +429,7 @@ def _verify_card_primary_evidence(
     return {
         "source_kind": source.document.kind,
         "source_observation_id": source.observation_id,
-        "source_selection_id": receipt.source_selection_id,
+        "source_selection_id": source.selection_id,
         **physical,
         "purpose": paid.purpose,
         "result_id": paid.result_id,

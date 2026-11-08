@@ -3,6 +3,7 @@ import sqlite3
 from collections.abc import Callable
 from contextlib import closing
 from dataclasses import replace
+from datetime import timedelta
 from pathlib import Path
 
 import pytest
@@ -13,7 +14,8 @@ from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.errors import LlmContextExceededError
-from lexinform.models import OutcomeStatus, TextDocument
+from lexinform.models import Bill, OutcomeStatus, TextDocument
+from lexinform.models.content import CardPrimaryEvidence
 from lexinform.models.report import CallKind
 from lexinform.services.analysis import AnalysisService, Waiting
 from tests.conftest import FIXTURES
@@ -70,6 +72,26 @@ def test_retained_primary_scan_cycle_reports_the_submitted_page_window(
     monkeypatch.setattr(world.batch, "prepare_request", offline_openai_backend().prepare_request)
     world.run()
     world.batch.resolve()
+    find = world.repo.find_card_primary_evidence
+
+    def scan_reference(bill: Bill) -> CardPrimaryEvidence:
+        assert find(bill) is None, "the reader-only stage does not write scan references"
+        with closing(sqlite3.connect(":memory:")) as connection:
+            connection.executescript(world.repo.dump())
+            (projection_id,) = connection.execute(
+                "SELECT id FROM result_applications WHERE phase='projection' AND term=? AND number=?",
+                (bill.term, bill.number),
+            ).fetchone()
+        (source,) = (
+            observation
+            for observation in world.repo.list_source_observations(bill.term, bill.number)
+            if observation.purpose == "analysis"
+        )
+        return CardPrimaryEvidence(
+            projection_application_id=projection_id, source_observation_id=source.observation_id
+        )
+
+    monkeypatch.setattr(world.repo, "find_card_primary_evidence", scan_reference)
     world.run()
     database = tmp_path / "checkpoint.db"
     with closing(sqlite3.connect(database)) as connection:
@@ -87,6 +109,22 @@ def test_retained_primary_scan_cycle_reports_the_submitted_page_window(
     assert isinstance(scan, dict), "the physical input carries the submitted page window"
     assert (scan["first_page"], scan["page_count"]) == (2, 7)
     assert scan["source_sha256"] != scan["input_sha256"]
+
+    cutoff = world.clock.now() + timedelta(days=91)
+    counts = world.repo.prune_history(before=cutoff, memo_before=cutoff)
+    assert counts["delivery_payloads"] == 1
+    retained = tmp_path / "retained.db"
+    with closing(sqlite3.connect(retained)) as connection:
+        connection.executescript(world.repo.dump())
+
+    compact = audit(retained, publication_id, include_compact=True)
+
+    assert compact["reason"] == "exact_retained_compact_cycle"
+    retained_cycle = compact["cycle"]
+    assert isinstance(retained_cycle, dict), "the retained card still identifies the scan"
+    assert {
+        key: value for key, value in retained_cycle.items() if key != "content_version_id"
+    } == cycle
 
 
 SECONDARY_KINDS: list[CallKind] = ["joint", "supplement", "amendments"]
