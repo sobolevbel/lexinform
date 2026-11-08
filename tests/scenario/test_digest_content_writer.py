@@ -1,4 +1,6 @@
+import random
 import sqlite3
+import string
 from contextlib import closing
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -148,17 +150,31 @@ def test_digest_writer_unknown_part_restores_full_history_without_resend(
     assert calls == 2
 
 
-@pytest.mark.parametrize("failure", ["none", "snapshot", "transport"])
+@pytest.mark.parametrize(
+    ("failure", "size_case"),
+    [
+        ("none", "compressible"),
+        ("snapshot", "compressible"),
+        ("transport", "compressible"),
+        ("none", "over_packed_limit"),
+        ("none", "over_decoded_limit"),
+    ],
+)
 def test_digest_history_budget_retains_native_parts_through_cleanup(
-    monkeypatch: pytest.MonkeyPatch, failure: str
+    monkeypatch: pytest.MonkeyPatch, failure: str, size_case: str
 ) -> None:
     world, event = pending_event()
     service = service_for(world)
     week = service.build(REF)
     assert week.cards, "the fixture includes the original published card"
-    large = week.model_copy(
-        update={"cards": (week.cards[0].model_copy(update={"title": "x" * 70_000}),)}
-    )
+    title = "x" * 70_000
+    if size_case == "over_packed_limit":
+        title = "".join(random.Random(0).choices(string.ascii_letters, k=70_000))
+    elif size_case == "over_decoded_limit":
+        title = "x" * 530_000
+    full_context = size_case == "compressible"
+    profile = "digest-rendered-semantic-v1" if full_context else "digest-rendered-v1"
+    large = week.model_copy(update={"cards": (week.cards[0].model_copy(update={"title": title}),)})
     monkeypatch.setattr(service, "build", lambda *args, **kwargs: large)
     (native,) = world.publisher.render_digest_parts(large)
     assert utf16_length(native.text) <= MESSAGE_LIMIT and native.event_ids == (event.id,)
@@ -174,7 +190,7 @@ def test_digest_history_budget_retains_native_parts_through_cleanup(
         assert publication.id is not None, "the digest effect has its physical ID"
         with saved_state(world.repo.dump()) as checkpoint:
             version = checkpoint.repo.get_publication_content(publication.id)
-            assert version is not None and version.digest_profile == "digest-rendered-v1"
+            assert version is not None and version.digest_profile == profile
             pending = checkpoint.repo.publication_by_id(publication.id)
             assert pending is not None and pending.status is PublicationStatus.PENDING
         return original_send(publication)
@@ -204,13 +220,14 @@ def test_digest_history_budget_retains_native_parts_through_cleanup(
     assert root.id is not None and root.delivery is not None
     assert root.delivery.rendered_text == native.text
     version = world.repo.get_publication_content(root.id)
-    assert version is not None and version.digest_profile == "digest-rendered-v1"
+    assert version is not None and version.digest_profile == profile
     if failed_version is not None:
         assert version == failed_version
     snapshot = world.repo.get_content_snapshot(version.plan_snapshot_id)
     assert snapshot is not None
     rendered = DigestRenderedPlan.model_validate_json(snapshot.payload_json)
-    assert rendered.upstream_semantics == "not_retained"
+    assert rendered.upstream_semantics == ("retained" if full_context else "not_retained")
+    assert rendered.retained_digest() == (large if full_context else None)
     (ref,) = rendered.parts
     part_snapshot = world.repo.get_content_snapshot(ref.snapshot_id)
     assert part_snapshot is not None
