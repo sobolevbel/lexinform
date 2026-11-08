@@ -3,8 +3,8 @@
 import sqlite3
 from datetime import datetime
 
-from lexinform.models import DocumentSelectionRecord, SourceObservation
-from lexinform.models.computations import ReviewInputReference
+from lexinform.adapters.computation_history import read_computation_result
+from lexinform.models import ComputationResult, DocumentSelectionRecord, SourceObservation
 
 
 class DocumentSourceRows:
@@ -54,9 +54,19 @@ class DocumentSourceRows:
             )
         ]
 
-    def review_source_observations(
-        self, reference: ReviewInputReference, *, before: datetime
-    ) -> tuple[tuple[int, str], ...]:
+    def review_source_observations(self, result: ComputationResult) -> tuple[tuple[int, str], ...]:
+        reference = result.review_input
+        if reference is None or not any(doc.source_observation_id for doc in reference.documents):
+            return ()
+        batch = self._query(
+            "SELECT submitted_at FROM llm_batches WHERE batch_id=? AND provider=?",
+            (result.batch_id, result.provider),
+        ).fetchone()
+        if batch is None:
+            raise ValueError("review_source_observation_conflict")
+        before = datetime.fromisoformat(batch["submitted_at"])
+        if before.utcoffset() is None:
+            raise ValueError("review_source_observation_conflict")
         confirmed = []
         for index, document in enumerate(reference.documents):
             identity = document.source_observation_id
@@ -103,3 +113,22 @@ class DocumentSourceRows:
         if expected != tuple(row[key] for key in columns):
             raise ValueError("source observation columns differ from the recorded identity")
         return observation
+
+
+def validate_review_source_observations(connection: sqlite3.Connection) -> None:
+    cursor = connection.cursor()
+    cursor.row_factory = sqlite3.Row
+    reader = DocumentSourceRows(connection)
+    try:
+        for row in cursor.execute(
+            "SELECT * FROM computation_results r WHERE EXISTS ("
+            " SELECT 1 FROM json_each("
+            " CASE WHEN json_valid(r.result_json) THEN r.result_json ELSE '{}' END,"
+            " '$.review_input.documents') d"
+            " WHERE CASE WHEN d.type='object'"
+            " THEN json_type(d.value, '$.source_observation_id') IS NOT NULL END"
+            ")"
+        ):
+            reader.review_source_observations(read_computation_result(row))
+    finally:
+        cursor.close()

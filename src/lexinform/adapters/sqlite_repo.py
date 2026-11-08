@@ -67,6 +67,10 @@ from lexinform.adapters.content_source_refs import (
     verify_content_source,
 )
 from lexinform.adapters.digest_content import ResolvedDigestRenderedContent, verify_digest_content
+from lexinform.adapters.document_source_rows import (
+    DocumentSourceRows,
+    validate_review_source_observations,
+)
 from lexinform.adapters.document_work import (
     read_document_work,
     validate_document_work,
@@ -1432,6 +1436,7 @@ class SqliteBillRepository:
             validate_input_snapshots(scratch)
             validate_projected_applications(scratch)
             validate_content_sources(scratch)
+            validate_review_source_observations(scratch)
             validate_content_history(scratch)
             validate_amendment_inputs(scratch)
         finally:
@@ -1947,6 +1952,7 @@ class SqliteBillRepository:
 
     def save_computation_result(self, result: ComputationResult) -> None:
         validate_result_input(self._conn, result)
+        DocumentSourceRows(self._conn).review_source_observations(result)
         self._conn.execute(
             "INSERT INTO computation_results"
             " (result_id, provider, batch_id, custom_id, term, number, result_json)"

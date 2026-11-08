@@ -1,0 +1,115 @@
+{
+  "baseline_commit": "cdbb848e",
+  "baseline": {
+    "source_sql_sha256": "25cc6f042e43e495858e7fac87f1755b9aab1053482de510a21a3b7e022e74a2",
+    "omitted_observation": "source-observation-v1:ed9ac2075e43253c484a17ae290c0f902a97a81832ff2dc8eb3e37158397c52a",
+    "valid_restore_exact": true,
+    "broken_link_rejected": false,
+    "current_state_preserved_after_rejection": false
+  },
+  "candidate": {
+    "source_sql_sha256": "25cc6f042e43e495858e7fac87f1755b9aab1053482de510a21a3b7e022e74a2",
+    "omitted_observation": "source-observation-v1:ed9ac2075e43253c484a17ae290c0f902a97a81832ff2dc8eb3e37158397c52a",
+    "valid_restore_exact": true,
+    "broken_link_rejected": true,
+    "current_state_preserved_after_rejection": true
+  },
+  "three_historical_reports_unchanged": true,
+  "current_state_coverage": {
+    "state_sha": "7598f545010b8a9a33dd13c35d0487c7396fcd8a",
+    "sql_sha256": "a9b23fd06114bd44b8e2d228457f91763b9d485f05361a80e15a527544e9c17d",
+    "scope": "Stored physical rows only; absence does not establish producer support or delivery.",
+    "publication_kinds": {
+      "new_bill": {
+        "rows": 51,
+        "sent": 51,
+        "bound": 0
+      },
+      "status_update": {
+        "rows": 74,
+        "sent": 70,
+        "bound": 4
+      },
+      "amendments_revision": {
+        "rows": 3,
+        "sent": 3,
+        "bound": 0
+      },
+      "act_published": {
+        "rows": 4,
+        "sent": 4,
+        "bound": 0
+      },
+      "in_force": {
+        "rows": 3,
+        "sent": 1,
+        "bound": 0
+      },
+      "consultation_deadline": {
+        "rows": 1,
+        "sent": 1,
+        "bound": 0
+      },
+      "consultation_results": {
+        "rows": 3,
+        "sent": 3,
+        "bound": 0
+      },
+      "consultation_review": {
+        "rows": 2,
+        "sent": 0,
+        "bound": 0
+      },
+      "commission_review": {
+        "rows": 0,
+        "sent": 0,
+        "bound": 0
+      },
+      "act_application": {
+        "rows": 1,
+        "sent": 1,
+        "bound": 0
+      },
+      "effective_rules": {
+        "rows": 0,
+        "sent": 0,
+        "bound": 0
+      },
+      "message_part": {
+        "rows": 55,
+        "sent": 55,
+        "bound": 0
+      },
+      "agenda": {
+        "rows": 30,
+        "sent": 29,
+        "bound": 1
+      },
+      "agenda_cancelled": {
+        "rows": 3,
+        "sent": 3,
+        "bound": 0
+      },
+      "hearing_deadline": {
+        "rows": 0,
+        "sent": 0,
+        "bound": 0
+      },
+      "decision_deadline": {
+        "rows": 3,
+        "sent": 3,
+        "bound": 0
+      },
+      "joint_bill": {
+        "rows": 2,
+        "sent": 2,
+        "bound": 0
+      },
+      "digest": {
+        "rows": 15,
+        "sent": 15,
+        "bound": 0
+      }
+    }
+  }
+}

@@ -533,8 +533,33 @@ def test_frozen_review_evidence_resolves_only_its_exact_application(
                 {"document_index": 0, "observation_id": observation.observation_id}
             ],
         }
+        schema = db.execute("PRAGMA user_version").fetchone()[0]
+        suffix = f"\nPRAGMA user_version = {schema};\n"
+        valid = "\n".join(db.iterdump()) + suffix
         db.execute("DELETE FROM source_observations")
         assert review_application_evidence(db, version, projected) == {
             "status": "invalid",
             "reason": "review_source_observation_conflict",
         }
+        corrupt = "\n".join(db.iterdump()) + suffix
+
+    with closing(SqliteBillRepository(":memory:")) as restored:
+        restored.restore(valid)
+        before = restored.dump()
+        assert restored.get_computation_result(bound_result.result_id) == bound_result
+        with pytest.raises(ValueError, match="review_source_observation_conflict"):
+            restored.restore(corrupt)
+        assert restored.dump() == before
+        missing = linked.model_copy(
+            update={"source_observation_id": "source-observation-v1:" + "f" * 64}
+        )
+        invalid = bound_result.model_copy(
+            update={
+                "review_input": bound_input.model_copy(
+                    update={"documents": (missing, *remaining_refs)}
+                )
+            }
+        )
+        with pytest.raises(ValueError, match="review_source_observation_conflict"):
+            restored.save_computation_result(invalid)
+        assert restored.dump() == before
