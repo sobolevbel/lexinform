@@ -120,16 +120,20 @@ def _direct_plan(row: sqlite3.Row) -> DeliveryPlan:
     return plan
 
 
+def _unique_primary_send(db: sqlite3.Connection, row: sqlite3.Row) -> bool:
+    aliases: int = db.execute(
+        "SELECT count(*) FROM publications WHERE kind='new_bill' AND channel_id=? AND message_id=?",
+        (row["channel_id"], row["message_id"]),
+    ).fetchone()[0]
+    return aliases == 1
+
+
 def _inspect(db: sqlite3.Connection, publication_id: int) -> dict[str, object]:
     row = db.execute("SELECT * FROM publications WHERE id=?", (publication_id,)).fetchone()
     if row is None:
         raise CycleNotObservedError("publication_unavailable")
     plan = _direct_plan(row)
-    aliases = db.execute(
-        "SELECT count(*) FROM publications WHERE kind='new_bill' AND channel_id=? AND message_id=?",
-        (row["channel_id"], row["message_id"]),
-    ).fetchone()[0]
-    if aliases != 1:
+    if not _unique_primary_send(db, row):
         raise CycleNotObservedError("physical_root_ambiguous")
     bill = Bill.model_validate_json(plan.bill_json)
     if (bill.term, bill.number) != (row["term"], row["number"]):
@@ -645,6 +649,33 @@ def _legacy_card_text(
     }
 
 
+def _historical_delivery(
+    db: sqlite3.Connection, publication_id: int, checkpoint: ReviewInputCheckpoint
+) -> dict[str, object]:
+    identity_query = (
+        "SELECT term, number, channel_id, kind, status, message_id, created_at, sent_at, "
+        "document_message_ids FROM publications WHERE id=?"
+    )
+    current = db.execute(identity_query, (publication_id,)).fetchone()
+    with open_snapshot(checkpoint.database) as previous:
+        if previous.sha256 != checkpoint.sha256:
+            raise ValueError("Delivery checkpoint SHA-256 differs from its pin")
+        old = previous.connection.execute(identity_query, (publication_id,)).fetchone()
+        if current is None or old is None or tuple(current) != tuple(old):
+            raise ValueError("Delivery checkpoint does not match the recorded physical send")
+        if not _unique_primary_send(db, current):
+            raise ValueError("Current physical send is ambiguous")
+        status, reason, cycle = _observe(previous.connection, publication_id)
+        if not previous.unchanged():
+            raise ValueError("Delivery checkpoint changed during audit")
+    return {
+        "status": status,
+        "reason": reason,
+        "checkpoint_sha256": checkpoint.sha256,
+        "cycle": cycle,
+    }
+
+
 def audit(
     database: Path,
     publication_id: int,
@@ -653,6 +684,7 @@ def audit(
     include_compact: bool = False,
     include_request_prefix: bool = False,
     legacy_text_checkpoint: ReviewInputCheckpoint | None = None,
+    delivery_checkpoint: ReviewInputCheckpoint | None = None,
 ) -> dict[str, object]:
     if not 0 < publication_id < 2**63:
         raise ValueError("Publication ID must be a positive SQLite integer")
@@ -664,7 +696,9 @@ def audit(
         raise ValueError("Compact and secondary evidence modes are mutually exclusive")
     if legacy_text_checkpoint is not None and secondary_application_id is not None:
         raise ValueError("Legacy card text requires a primary publication")
-    legacy_text = None
+    if delivery_checkpoint is not None and secondary_application_id is not None:
+        raise ValueError("Historical delivery checkpoint requires a primary publication")
+    legacy_text = historical = None
     with open_snapshot(database) as snapshot:
         status, reason, cycle = _observe(
             snapshot.connection,
@@ -681,9 +715,13 @@ def audit(
                 publication_id,
                 legacy_text_checkpoint,
             )
+        if delivery_checkpoint is not None and reason == "frozen_plan_unavailable":
+            historical = _historical_delivery(
+                snapshot.connection, publication_id, delivery_checkpoint
+            )
         if not snapshot.unchanged():
             status, reason, cycle = "invalid", "database_changed_during_audit", None
-            legacy_text = None
+            legacy_text = historical = None
     if secondary_application_id is not None:
         return {
             "version": 1,
@@ -711,6 +749,7 @@ def audit(
         "exclusions": ["Current Telegram content", "live verification", "source-family acceptance"],
         "cycle": cycle,
         **({"legacy_submitted_text": legacy_text} if legacy_text is not None else {}),
+        **({"historical_delivery_checkpoint": historical} if historical is not None else {}),
     }
 
 
@@ -795,11 +834,17 @@ def main() -> None:
         help="verify retained submitted request identity for an exact secondary status send",
     )
     parser.add_argument("--legacy-text-checkpoint", nargs=2, metavar=("PATH", "SHA256"))
+    parser.add_argument("--delivery-checkpoint", nargs=2, metavar=("PATH", "SHA256"))
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     legacy_text_checkpoint = (
         ReviewInputCheckpoint(Path(args.legacy_text_checkpoint[0]), args.legacy_text_checkpoint[1])
         if args.legacy_text_checkpoint
+        else None
+    )
+    delivery_checkpoint = (
+        ReviewInputCheckpoint(Path(args.delivery_checkpoint[0]), args.delivery_checkpoint[1])
+        if args.delivery_checkpoint
         else None
     )
     try:
@@ -808,11 +853,14 @@ def main() -> None:
             or args.include_compact
             or args.secondary_application_id is not None
             or legacy_text_checkpoint is not None
+            or delivery_checkpoint is not None
         ):
             raise ValueError("Census uses its own primary and secondary evidence modes")
         protected = snapshot_files(args.database)
         if legacy_text_checkpoint is not None:
             protected.update(snapshot_files(legacy_text_checkpoint.database))
+        if delivery_checkpoint is not None:
+            protected.update(snapshot_files(delivery_checkpoint.database))
         if args.output.resolve() in protected:
             raise ValueError("Report must be separate from the input database")
         report = (
@@ -825,6 +873,7 @@ def main() -> None:
                 include_compact=args.include_compact,
                 include_request_prefix=args.include_request_prefix,
                 legacy_text_checkpoint=legacy_text_checkpoint,
+                delivery_checkpoint=delivery_checkpoint,
             )
         )
         write_json(args.output, report)

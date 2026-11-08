@@ -1,0 +1,74 @@
+{
+  "state_sha": "7598f545010b8a9a33dd13c35d0487c7396fcd8a",
+  "dump_sha256": "a9b23fd06114bd44b8e2d228457f91763b9d485f05361a80e15a527544e9c17d",
+  "cases": [
+    {
+      "case": "snapshot_day",
+      "time": "2026-11-08T00:00:00+00:00",
+      "pruned": {
+        "delivery_payloads": 0,
+        "analysis_memos": 0,
+        "batch_payloads": 0
+      },
+      "sql_bytes_removed": 0,
+      "gzip_bytes_removed": 0,
+      "confirmed_histories": 5,
+      "primary_census_before": {
+        "frozen_plan_unavailable": 27,
+        "recorded_send_unavailable": 1,
+        "frozen_render_context_unavailable": 13,
+        "frozen_paid_reference_unavailable": 3,
+        "consumed_projection_unavailable": 4,
+        "publication_outside_direct_original_scope": 1,
+        "exact_retained_cycle": 1,
+        "prepared_receipt_unavailable": 1
+      },
+      "primary_census_after": {
+        "frozen_plan_unavailable": 27,
+        "recorded_send_unavailable": 1,
+        "frozen_render_context_unavailable": 13,
+        "frozen_paid_reference_unavailable": 3,
+        "consumed_projection_unavailable": 4,
+        "publication_outside_direct_original_scope": 1,
+        "exact_retained_cycle": 1,
+        "prepared_receipt_unavailable": 1
+      },
+      "exact_primary_cycles": [
+        1,
+        1
+      ],
+      "secondary_suffixes": 5
+    },
+    {
+      "case": "future_control",
+      "time": "2027-11-08T00:00:00+00:00",
+      "pruned": {
+        "delivery_payloads": 181,
+        "analysis_memos": 130,
+        "batch_payloads": 0
+      },
+      "sql_bytes_removed": 12443744,
+      "gzip_bytes_removed": 2726764,
+      "confirmed_histories": 5,
+      "primary_census_before": {
+        "frozen_plan_unavailable": 27,
+        "recorded_send_unavailable": 1,
+        "frozen_render_context_unavailable": 13,
+        "frozen_paid_reference_unavailable": 3,
+        "consumed_projection_unavailable": 4,
+        "publication_outside_direct_original_scope": 1,
+        "exact_retained_cycle": 1,
+        "prepared_receipt_unavailable": 1
+      },
+      "primary_census_after": {
+        "frozen_plan_unavailable": 50,
+        "recorded_send_unavailable": 1
+      },
+      "exact_primary_cycles": [
+        1,
+        0
+      ],
+      "secondary_suffixes": 5
+    }
+  ]
+}

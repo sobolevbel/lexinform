@@ -1,3 +1,4 @@
+import hashlib
 import json
 import sqlite3
 from contextlib import closing
@@ -5,6 +6,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import pytest
+from tools.audit_saved_primary_claims import ReviewInputCheckpoint
 from tools.primary_delivery_cycle import audit, census, main
 
 from lexinform.models import (
@@ -106,6 +108,66 @@ def test_primary_cycle_uses_frozen_card_and_exact_saved_receipts(
         for value in ("DO-NOT-EMIT-FROZEN-CARD", "SECRET-CHANNEL", "message_id")
     )
     assert snapshot.read_bytes() == before
+
+
+def test_expired_plan_can_report_the_same_send_from_a_pinned_snapshot(
+    case: Case, tmp_path: Path
+) -> None:
+    earlier = tmp_path / "earlier.db"
+    current = tmp_path / "current.db"
+    identity = card_snapshot(case, earlier)
+    earlier_bytes = earlier.read_bytes()
+    current.write_bytes(earlier_bytes)
+    with closing(sqlite3.connect(current)) as db, db:
+        db.execute("UPDATE publications SET delivery_json=NULL")
+    current_bytes = current.read_bytes()
+    pin = hashlib.sha256(earlier_bytes).hexdigest()
+
+    report = audit(current, identity, delivery_checkpoint=ReviewInputCheckpoint(earlier, pin))
+
+    assert report.pop("historical_delivery_checkpoint") == {
+        "status": "recorded",
+        "reason": "exact_retained_cycle",
+        "checkpoint_sha256": pin,
+        "cycle": audit(earlier, identity)["cycle"],
+    }
+    assert report == audit(current, identity)
+    assert report["reason"] == "frozen_plan_unavailable"
+    assert earlier.read_bytes() == earlier_bytes
+    assert current.read_bytes() == current_bytes
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    [
+        ("UPDATE publications SET message_id=message_id+1", "recorded physical send"),
+        (
+            "INSERT INTO publications (term, number, kind, status, channel_id, message_id, created_at)"
+            " SELECT term, 'other', kind, status, channel_id, message_id, created_at FROM publications",
+            "Current physical send is ambiguous",
+        ),
+    ],
+)
+def test_expired_plan_rejects_checkpoint_for_unproven_send(
+    case: Case, tmp_path: Path, mutation: str, message: str
+) -> None:
+    earlier = tmp_path / "earlier.db"
+    current = tmp_path / "current.db"
+    identity = card_snapshot(case, earlier)
+    earlier_bytes = earlier.read_bytes()
+    current.write_bytes(earlier_bytes)
+    with closing(sqlite3.connect(current)) as db, db:
+        db.execute("UPDATE publications SET delivery_json=NULL")
+        db.execute(mutation)
+
+    with pytest.raises(ValueError, match=message):
+        audit(
+            current,
+            identity,
+            delivery_checkpoint=ReviewInputCheckpoint(
+                earlier, hashlib.sha256(earlier_bytes).hexdigest()
+            ),
+        )
 
 
 def test_absent_and_other_kind_do_not_reuse_the_paid_context(case: Case, tmp_path: Path) -> None:

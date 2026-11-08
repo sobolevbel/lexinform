@@ -1,0 +1,11 @@
+{
+  "state_sha": "7598f545010b8a9a33dd13c35d0487c7396fcd8a",
+  "publication_id": 258,
+  "checkpoint_sha256": "c3540c2808ff788dde9fb4874bccdc30610f730429573f872755f707bc933554",
+  "current_database_sha256": "3b1ed74ac3919f4c351ac86ea5296cda799fe82465e75be03a79e15f642f8d06",
+  "current_status": "not_observed",
+  "historical_status": "recorded",
+  "cli_exit_code": 2,
+  "wrong_pin_rejected": true,
+  "wrong_send_rejected": true
+}
