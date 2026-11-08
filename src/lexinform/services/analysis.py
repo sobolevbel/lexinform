@@ -3737,14 +3737,11 @@ class AnalysisService:
         )
 
     def _worth_triaging(self, loaded: _Loaded) -> bool:
-        """Whether the cheap pass has something to judge.
-
-        `triage_min_chars` measures when a full analysis would be dear enough to be worth it. A
-        scan is worth it whatever its text says: its text is the transmittal letter, so the gate
-        used to send the term's 317 scans — 7,763 pages, $62 on Opus — straight to Opus.
-        """
+        """Reserve text triage for long inputs without known PDF extraction failures."""
         if loaded.scan is not None:
             return True
+        if loaded.selection.has_pdf_page_failure:
+            return False
         long_enough = len(loaded.text) >= self._options.triage_min_chars
         return loaded.source in FULL_TEXT_SOURCES and long_enough
 

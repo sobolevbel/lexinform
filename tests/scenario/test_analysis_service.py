@@ -4,7 +4,8 @@ import pytest
 
 from lexinform.adapters.llm_prompts import build_user_prompt
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.models import AnalysisRecord, BillStatus, Mp, Triage
+from lexinform.models import AnalysisRecord, BillStatus, DocumentPart, DocumentSelection, Mp, Triage
+from lexinform.models.documents import ExtractedDocument
 from lexinform.services.analysis import text_digest
 from tests.fakes import FakeTextExtractor
 from tests.harness import World, print_url
@@ -550,3 +551,34 @@ def test_the_default_fixture_text_is_read_as_a_document_and_not_as_a_scan() -> N
 
     ctx = w.llm.contexts[0]
     assert ctx.text_source == "pdf" and ctx.scan is None
+
+
+@pytest.mark.parametrize("page_failure", [False, True])
+def test_triage_cannot_reject_text_with_a_failed_pdf_page(page_failure: bool) -> None:
+    class PdfText(FakeTextExtractor):
+        def extract_document(self, data: bytes) -> ExtractedDocument:
+            losses = ("PDF text extraction failed on 1 page(s)",) if page_failure else ()
+            return ExtractedDocument(
+                text=self.extract(data),
+                selection=DocumentSelection(parts=(DocumentPart(losses=losses),)),
+            )
+
+    world = World(
+        extractor=PdfText(FOREIGNER_TEXT * 8, page_count=2),
+        triage=True,
+        triage_script={
+            "3039": Triage(affects_foreigners=False, confidence=0.99, rationale="No effect")
+        },
+    )
+    world.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+
+    report = world.run()
+
+    assert report.triaged_out == (0 if page_failure else 1)
+    if page_failure:
+        assert not world.llm.triage_contexts
+        (context,) = world.llm.contexts
+        assert context.truncated
+    else:
+        assert len(world.llm.triage_contexts) == 1
+        assert not world.llm.contexts
