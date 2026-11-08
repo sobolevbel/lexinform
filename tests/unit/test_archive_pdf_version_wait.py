@@ -1,4 +1,6 @@
 import hashlib
+import io
+import zipfile
 
 import pytest
 
@@ -13,6 +15,29 @@ from tests.unit.test_physical_extraction import archive
 
 ROOT = "https://source.test/versions.zip"
 ALTERNATIVE = "https://source.test/older.pdf"
+
+
+def test_failed_member_of_duplicate_nested_archive_does_not_block_other_occurrence() -> None:
+    failed = b"%PDF-failed"
+    broken = archive({"projekt-nowy.pdf": failed}).replace(failed, b"%PDF-broken", 1)
+    readable = archive({"projekt.pdf": b"%PDF-readable"})
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as package:
+        package.writestr("inner.zip", broken)
+        with pytest.warns(UserWarning, match="Duplicate name"):
+            package.writestr("inner.zip", readable)
+    reader = DocumentTextExtractor(
+        FakeTextExtractor(law(), page_count=1), DocxTextExtractor(), FakeTextExtractor()
+    )
+    data = buffer.getvalue()
+
+    physical = reader.extract_parts(data)
+    loaded = reader.extract_document_with_provenance(data).document
+
+    assert physical.part_archive_ordinals == ((1, 0),)
+    (failure,) = physical.unreadable_members
+    assert failure.ordinals == (0, 0)
+    assert loaded.text == law() and not loaded.archive_unpack_blocked
 
 
 @pytest.mark.parametrize(

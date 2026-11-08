@@ -563,6 +563,9 @@ class ExtractedParts(BaseModel):
     unreadable_members: tuple[ArchiveMemberReadFailure, ...] = Field(
         default=(), exclude_if=lambda value: not value
     )
+    part_archive_ordinals: tuple[tuple[Annotated[int, Field(ge=0)], ...], ...] = Field(
+        default=(), exclude_if=lambda value: not value
+    )
     pdf_pages: tuple[PdfPartExtraction, ...] = ()
     word_blocks: tuple[WordPartExtraction, ...] = ()
     word_notes: tuple[WordPartNoteExtraction, ...] = ()
@@ -571,6 +574,15 @@ class ExtractedParts(BaseModel):
 
     @model_validator(mode="after")
     def manifests_refer_to_physical_parts(self) -> Self:
+        if self.part_archive_ordinals and (
+            len(self.part_archive_ordinals) != len(self.parts)
+            or len(set(self.part_archive_ordinals)) != len(self.part_archive_ordinals)
+            or any(
+                not ordinals or len(ordinals) != len(part.members)
+                for ordinals, part in zip(self.part_archive_ordinals, self.parts, strict=True)
+            )
+        ):
+            raise ValueError("Archive ordinals must identify each extracted part")
         seen: set[int] = set()
         for result in self.pdf_pages:
             index = result.part_index

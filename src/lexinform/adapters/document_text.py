@@ -1451,6 +1451,7 @@ class _PhysicalOrigins:
     capture_doc_note_projection: bool = False
     capture_doc_note_cfspec: bool = False
     unreadable_members: list[ArchiveMemberReadFailure] = field(default_factory=list)
+    part_archive_ordinals: list[tuple[int, ...]] = field(default_factory=list)
 
 
 class DocumentTextExtractor:
@@ -1601,6 +1602,7 @@ class DocumentTextExtractor:
             parts=tuple(parts),
             rejected=tuple(rejected),
             unreadable_members=tuple(origins.unreadable_members),
+            part_archive_ordinals=tuple(origins.part_archive_ordinals),
             pdf_pages=tuple(origins.pdf_pages or ()),
             word_blocks=tuple(origins.word_blocks or ()),
             word_notes=tuple(origins.word_notes or ()),
@@ -2054,6 +2056,8 @@ class DocumentTextExtractor:
                 losses=losses,
             )
         )
+        if ordinals:
+            origins.part_archive_ordinals.append(ordinals)
 
         capture = current_physical_walk_capture()
         if capture is not None:

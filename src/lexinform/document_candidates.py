@@ -19,6 +19,7 @@ from lexinform.document_versions import (
 from lexinform.models.candidate_trace import ArchiveMemberPolicyReason
 from lexinform.models.documents import (
     PDF_PAGE_FAILURE_PREFIX,
+    ArchiveMemberReadFailure,
     DocumentPart,
     DocumentSelection,
     ExtractedDocument,
@@ -144,11 +145,12 @@ def select_document_parts(
         parts,
         rejected,
         unreadable_drafts=tuple(
-            failure.members
+            failure
             for failure in extracted.unreadable_members
             if _member_role(base := failure.members[-1].rsplit("/", 1)[-1]) == "bill"
             and names_a_bill(base)
         ),
+        part_archive_ordinals=extracted.part_archive_ordinals,
         max_part_chars=max_part_chars,
         decision_sink=decision_sink,
     )
@@ -169,7 +171,8 @@ def _select_parts(
     parts: list[DocumentPart],
     rejected: list[str],
     *,
-    unreadable_drafts: tuple[tuple[str, ...], ...],
+    unreadable_drafts: tuple[ArchiveMemberReadFailure, ...],
+    part_archive_ordinals: tuple[tuple[int, ...], ...],
     max_part_chars: int | None,
     decision_sink: Callable[[ArchivePolicyDecision], None] | None = None,
 ) -> ExtractedDocument:
@@ -292,17 +295,30 @@ def _select_parts(
     peer_set = CandidateSet.from_parts([p for _, p in peers])
     confirmed = [peers[index] for index in peer_set.bill_indices()]
     comparison_peers = confirmed or [(main_index, main)]
-    comparison_families = {
-        (part.members[:-1], part.members[-1].rpartition("/")[0]) for _, part in comparison_peers
-    }
+
+    def comparison_family(
+        members: tuple[str, ...], ordinals: tuple[int, ...]
+    ) -> tuple[tuple[int, ...], tuple[str, ...], str]:
+        return (
+            ordinals[:-1] if part_archive_ordinals else (),
+            members[:-1],
+            members[-1].rpartition("/")[0],
+        )
+
+    def part_family(index: int, part: DocumentPart) -> tuple[tuple[int, ...], tuple[str, ...], str]:
+        return comparison_family(
+            part.members, part_archive_ordinals[index] if part_archive_ordinals else ()
+        )
+
+    comparison_families = {part_family(index, part) for index, part in comparison_peers}
     incomplete_peers = tuple(
         (index, part)
         for index, part in incomplete_named_bills
-        if (part.members[:-1], part.members[-1].rpartition("/")[0]) in comparison_families
+        if part_family(index, part) in comparison_families
     )
     unreadable_peer = any(
-        (members[:-1], members[-1].rpartition("/")[0]) in comparison_families
-        for members in unreadable_drafts
+        comparison_family(failure.members, failure.ordinals) in comparison_families
+        for failure in unreadable_drafts
     )
     pdf_failure = (
         main.has_pdf_page_failure
