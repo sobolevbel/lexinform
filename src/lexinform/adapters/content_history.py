@@ -146,12 +146,48 @@ def read_content_publication(row: sqlite3.Row) -> Publication:
     )
 
 
+def _card_scan_evidence_candidate(
+    connection: sqlite3.Connection, bill: Bill, result_id: str
+) -> CardPrimaryEvidence | None:
+    reader = ContentSourceRows(connection)
+    paid = reader.get_computation_result(result_id)
+    if paid is None or (paid.term, paid.number) != (bill.term, bill.number):
+        return None
+    item = reader.get_consumed_primary_input(
+        paid.provider, paid.batch_id, paid.custom_id, bill.analysis_generation
+    )
+    if item is None or not isinstance(item.meta, BatchItemMeta):
+        return None
+    meta = item.meta
+    if meta.prepared_input_receipt is not None or meta.text_source != "scan":
+        return None
+    source, _ = read_primary_scan_source(connection, paid, meta)
+    rows = _query(
+        connection,
+        "SELECT id FROM result_applications WHERE result_id=? AND term=? AND number=?"
+        " AND generation=? AND phase='projection'"
+        " AND json_extract(application_json,'$.projected_generation')=?"
+        " AND json_extract(application_json,'$.reason')='batch_result' LIMIT 2",
+        (result_id, paid.term, paid.number, paid.generation, bill.analysis_generation),
+    ).fetchall()
+    if len(rows) != 1:
+        return None
+    return CardPrimaryEvidence(
+        projection_application_id=rows[0]["id"], source_observation_id=source.observation_id
+    )
+
+
 def card_primary_evidence_candidate(
     connection: sqlite3.Connection, bill: Bill
 ) -> CardPrimaryEvidence | None:
     record = bill.analysis
     if record is None or record.computation_id is None or record.request_sha256 is None:
         return None
+    if record.text_source == "scan" and record.selection.scan_input is not None:
+        try:
+            return _card_scan_evidence_candidate(connection, bill, record.computation_id)
+        except ValueError:
+            return None
     rows = _query(
         connection,
         """
