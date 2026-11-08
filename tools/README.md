@@ -492,6 +492,8 @@ uv run --offline --frozen python -m tools.replay_rcl_amendment_editions \
 
 The replay checks the official print and RM identities, reads the pinned original attachment
 and RCL candidates, and returns a candidate edition only for a unique exact bill-body match.
+The original is read through the regular Sejm client with an offline transport serving only
+the pinned process, print and attachment.
 
 ```bash
 mkdir -p out/corpus

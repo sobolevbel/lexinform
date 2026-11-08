@@ -4,13 +4,16 @@ import argparse
 import datetime as dt
 import gzip
 import json
+from contextlib import closing
 from pathlib import Path
 from typing import Any
+
+import httpx2 as httpx
 
 from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.pdf_text import PypdfTextExtractor
-from lexinform.adapters.sejm_api import parse_process_summary
+from lexinform.adapters.sejm_api import SejmApiClient, parse_process_summary
 from lexinform.document_editions import candidate_edition
 from lexinform.models import DocumentPart, DocumentSelectionRecord, RclProject
 from lexinform.rcl_amendments import (
@@ -18,11 +21,13 @@ from lexinform.rcl_amendments import (
     rcl_self_amendment_part,
     rcl_self_amendment_print_number,
 )
+from lexinform.services.documents import TextLoader
+from lexinform.services.rcl_amendment_original import read_rcl_amendment_original
 from tools.audit_rcl_amendment_archives import AS_OF
 from tools.corpus_artifacts import digest, write_json
 from tools.corpus_rcl import document_id, stage_cases
 from tools.corpus_runtime import CorpusReads, source_fingerprints
-from tools.replay_proposal_edition import PinnedInput
+from tools.replay_proposal_edition import PinnedInput, official_print
 
 
 def replay(root: Path, edition_report: bytes, member_report: bytes) -> dict[str, Any]:
@@ -90,7 +95,8 @@ def result(
     process_bytes = PinnedInput(
         path=f"{term_path}/process_details.json.gz", sha256=reference["processes_sha256"]
     ).read(root)
-    process = parse_process_summary(json.loads(gzip.decompress(process_bytes))[print_number])
+    process_row = json.loads(gzip.decompress(process_bytes))[print_number]
+    process = parse_process_summary(process_row)
     if (process.term, process.number) != (int(term), print_number):
         raise ValueError("Print process differs from the pinned reference")
     identity = {"term": process.term, "number": process.number, "rm_number": process.rcl_num}
@@ -107,6 +113,33 @@ def result(
     original = PinnedInput(
         path=f"{term_path}/files/{print_number}__{name}", sha256=reference["primary_sha256"]
     ).read(root)
+    listing = json.loads((root / term_path / "prints.json").read_bytes())
+    print_row = official_print(listing, term=process.term, number=process.number)
+    prefix = f"/sejm/term{term}"
+    request_paths: list[str] = []
+
+    def response(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        request_paths.append(path)
+        if path == f"{prefix}/processes/{print_number}":
+            return httpx.Response(200, json=process_row)
+        if path == f"{prefix}/prints/{print_number}":
+            return httpx.Response(200, json=print_row)
+        if path == f"{prefix}/prints/{print_number}/{name}":
+            return httpx.Response(200, content=original)
+        raise ValueError(f"Unexpected Sejm request: {path}")
+
+    with closing(SejmApiClient(transport=httpx.MockTransport(response))) as gateway:
+        loader = TextLoader({"api.sejm.gov.pl": gateway.download}, extractor, max_bytes=32_000_000)
+        read = read_rcl_amendment_original(
+            gateway,
+            loader.read,
+            project=project,
+            proposal=member,
+        )
+    if read is None:
+        return {"status": "original_not_admitted", "print": identity, "http_paths": request_paths}
+    process, original_file = read
     amendment_urls = {
         doc.url
         for stage in project.reached_stages
@@ -140,11 +173,16 @@ def result(
         member,
         project_rm_number=project.rm_number,
         print_process=process,
-        original=extractor.extract_document(original).selection,
+        original=original_file.selection,
         candidates=tuple(selections),
     )
     if index is None:
-        return {"status": "no_unique_exact_base", "print": identity, "candidates": urls}
+        return {
+            "status": "no_unique_exact_base",
+            "print": identity,
+            "candidates": urls,
+            "http_paths": request_paths,
+        }
     edition = candidate_edition(
         DocumentSelectionRecord.from_selection(selections[index]),
         recorded_at=dt.datetime(1970, 1, 1, tzinfo=dt.UTC),
@@ -157,6 +195,7 @@ def result(
         "base_url": urls[index],
         "edition_id": edition.edition_id,
         "member_sha256": member.sha256,
+        "http_paths": request_paths,
     }
 
 
