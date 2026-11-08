@@ -386,6 +386,11 @@ older batch that has no provider request manifest. A pinned OpenAI submission ch
 also verify the exact text against the saved request when no receipt was recorded.
 Coverage lists verified metadata-only requests separately from text available for review.
 
+Use `tools.review_saved_comparison --database PATH --database-sha256 SHA256
+--result-id RESULT_ID --output PATH.html` to open both verified submitted texts for a
+reanalysis with a recorded baseline. Use `--baseline-checkpoint PATH SHA256` and
+`--input-checkpoint PATH SHA256` if the texts were cleared from the current copy.
+
 Create a review sheet and use the intake command below with `--template` in place of
 `--answers` to prepare a blank answer file. Fill the review fields and remove unanswered
 slots before recording the completed JSON.
