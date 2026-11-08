@@ -3272,15 +3272,24 @@ class AnalysisService:
             )
         digest = loaded.digest
         law = loaded.law
-        if previous is not None and (
-            (
-                document is not None
-                and self._text_identity is not None
-                and not document.amendment_urls
-                and self._text_identity.same_text(bill, previous, document)
+        previous_can_confirm_equivalence = (
+            previous is not None and not previous.selection.has_normative_pdf_page_failure
+        )
+        if (
+            previous is not None
+            and previous_can_confirm_equivalence
+            and (
+                (
+                    document is not None
+                    and self._text_identity is not None
+                    and not document.amendment_urls
+                    and self._text_identity.same_text(bill, previous, document)
+                )
+                or (digest is not None and digest == previous.text_sha256)
+                or (
+                    law is not None and law == self._previous_law(bill, previous, previous_document)
+                )
             )
-            or (digest is not None and digest == previous.text_sha256)
-            or (law is not None and law == self._previous_law(bill, previous, previous_document))
         ):
             return self._unchanged(bill, located, loaded, previous)
         if previous is not None and self._ledger.exhausted:
@@ -3291,6 +3300,7 @@ class AnalysisService:
             return _Prepared(bill, located, text, source, previous, first=False, deferred=True)
         if (
             previous is not None
+            and previous_can_confirm_equivalence
             and not (document and document.amendment_urls)
             and self._changes_settled(bill, loaded, previous, previous_document)
         ):
@@ -3621,6 +3631,8 @@ class AnalysisService:
                     raise error from wrapper
                 raise error
             log.warning("%s: the analysed text not re-read (%s)", document.url, error)
+        if loaded is not None and loaded.selection.has_normative_pdf_page_failure:
+            return None
         return loaded
 
     def _previous_law(

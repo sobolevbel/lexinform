@@ -1,0 +1,96 @@
+{
+  "before": [
+    {
+      "file": "669532.pdf",
+      "sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f",
+      "pages_with_appended_blank": 7,
+      "ordinary_baseline": {
+        "text_sha256": "text-v2:716a67657a274c76bde8ff56021dbad1ff7f4f871dc190418ea13b2af004f5cb",
+        "read_again": false,
+        "analysis_calls": 1
+      },
+      "failed_baseline": {
+        "text_sha256": "text-v2:716a67657a274c76bde8ff56021dbad1ff7f4f871dc190418ea13b2af004f5cb",
+        "read_again": false,
+        "analysis_calls": 1
+      }
+    },
+    {
+      "file": "667159.pdf",
+      "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8",
+      "pages_with_appended_blank": 26,
+      "ordinary_baseline": {
+        "text_sha256": "text-v2:7a06b5506caa25d611a19bedb41a079cd684b824930684fa8560629bfce1e798",
+        "read_again": false,
+        "analysis_calls": 1
+      },
+      "failed_baseline": {
+        "text_sha256": "text-v2:7a06b5506caa25d611a19bedb41a079cd684b824930684fa8560629bfce1e798",
+        "read_again": false,
+        "analysis_calls": 1
+      }
+    },
+    {
+      "file": "716051.pdf",
+      "sha256": "57fd6ccef59e7d024691a8f2164fad5cc8878765b87e1f018d03d3b549bd8d9f",
+      "pages_with_appended_blank": 75,
+      "ordinary_baseline": {
+        "text_sha256": "text-v2:96f4868efbb6c76460467736e3cc31b362d065ccdb19cd6c1a93cb3d0205673e",
+        "read_again": false,
+        "analysis_calls": 1
+      },
+      "failed_baseline": {
+        "text_sha256": "text-v2:96f4868efbb6c76460467736e3cc31b362d065ccdb19cd6c1a93cb3d0205673e",
+        "read_again": false,
+        "analysis_calls": 1
+      }
+    }
+  ],
+  "after": [
+    {
+      "file": "669532.pdf",
+      "sha256": "d4e5d8fb59d5976b42a013230e1ddd8c865bd182152588dbaa89da1142f9e50f",
+      "pages_with_appended_blank": 7,
+      "ordinary_baseline": {
+        "text_sha256": "text-v2:716a67657a274c76bde8ff56021dbad1ff7f4f871dc190418ea13b2af004f5cb",
+        "read_again": false,
+        "analysis_calls": 1
+      },
+      "failed_baseline": {
+        "text_sha256": "text-v2:716a67657a274c76bde8ff56021dbad1ff7f4f871dc190418ea13b2af004f5cb",
+        "read_again": true,
+        "analysis_calls": 2
+      }
+    },
+    {
+      "file": "667159.pdf",
+      "sha256": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8",
+      "pages_with_appended_blank": 26,
+      "ordinary_baseline": {
+        "text_sha256": "text-v2:7a06b5506caa25d611a19bedb41a079cd684b824930684fa8560629bfce1e798",
+        "read_again": false,
+        "analysis_calls": 1
+      },
+      "failed_baseline": {
+        "text_sha256": "text-v2:7a06b5506caa25d611a19bedb41a079cd684b824930684fa8560629bfce1e798",
+        "read_again": true,
+        "analysis_calls": 2
+      }
+    },
+    {
+      "file": "716051.pdf",
+      "sha256": "57fd6ccef59e7d024691a8f2164fad5cc8878765b87e1f018d03d3b549bd8d9f",
+      "pages_with_appended_blank": 75,
+      "ordinary_baseline": {
+        "text_sha256": "text-v2:96f4868efbb6c76460467736e3cc31b362d065ccdb19cd6c1a93cb3d0205673e",
+        "read_again": false,
+        "analysis_calls": 1
+      },
+      "failed_baseline": {
+        "text_sha256": "text-v2:96f4868efbb6c76460467736e3cc31b362d065ccdb19cd6c1a93cb3d0205673e",
+        "read_again": true,
+        "analysis_calls": 2
+      }
+    }
+  ]
+}
