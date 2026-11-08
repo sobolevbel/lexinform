@@ -21,12 +21,11 @@ CandidateTraceResult = Literal["selected", "ambiguous", "fallback"]
 ReadExclusionReason = Literal[
     "missing_response", "refused_response", "pre_send_rejected", "read_error"
 ]
+ReturnedPartGapReason = Literal[
+    "returned_no_text", "download_size_limit", "pdf_page_extraction_failed"
+]
 NormativeAnnexGapReason = Literal[
-    "no_returned_file",
-    "returned_no_text",
-    "non_annex_appendix",
-    "download_size_limit",
-    ReadExclusionReason,
+    "no_returned_file", "non_annex_appendix", ReturnedPartGapReason, ReadExclusionReason
 ]
 CandidateTraceReason = Literal[
     "version_choice",
@@ -594,19 +593,25 @@ class AdmittedNormativeAnnexes(BaseModel):
         return self
 
 
+def _validate_returned_gap(reason: NormativeAnnexGapReason, file_sha256: str | None) -> None:
+    if reason == "download_size_limit" and file_sha256 is not None:
+        raise ValueError("A size refusal cannot claim a complete body")
+    if reason == "pdf_page_extraction_failed" and file_sha256 is None:
+        raise ValueError("A PDF page extraction failure requires the returned file hash")
+
+
 class RequiredPartGap(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
 
     phase: Literal["version_comparison", "fallback"]
     index: Position
     required_index: Position
-    reason: Literal["returned_no_text", "download_size_limit"]
+    reason: ReturnedPartGapReason
     file_sha256: Sha256 | None = Field(default=None, exclude_if=lambda value: value is None)
 
     @model_validator(mode="after")
-    def size_refusal_has_no_completed_body(self) -> Self:
-        if self.reason == "download_size_limit" and self.file_sha256 is not None:
-            raise ValueError("A size refusal cannot claim a complete body")
+    def observed_return(self) -> Self:
+        _validate_returned_gap(self.reason, self.file_sha256)
         return self
 
 
@@ -616,13 +621,12 @@ class AmendmentPartGap(BaseModel):
     phase: Literal["version_comparison", "fallback"]
     index: Position
     amendment_index: Position
-    reason: Literal["returned_no_text", "download_size_limit"]
+    reason: ReturnedPartGapReason
     file_sha256: Sha256 | None = Field(default=None, exclude_if=lambda value: value is None)
 
     @model_validator(mode="after")
-    def size_refusal_has_no_completed_body(self) -> Self:
-        if self.reason == "download_size_limit" and self.file_sha256 is not None:
-            raise ValueError("A size refusal cannot claim a complete body")
+    def observed_return(self) -> Self:
+        _validate_returned_gap(self.reason, self.file_sha256)
         return self
 
 
@@ -638,8 +642,10 @@ class NormativeAnnexGap(BaseModel):
 
     @model_validator(mode="after")
     def observed_return(self) -> Self:
+        _validate_returned_gap(self.reason, self.file_sha256)
         if (
-            self.reason not in ("returned_no_text", "non_annex_appendix")
+            self.reason
+            not in ("returned_no_text", "non_annex_appendix", "pdf_page_extraction_failed")
             and self.file_sha256 is not None
         ):
             raise ValueError("a known file hash requires a returned file")

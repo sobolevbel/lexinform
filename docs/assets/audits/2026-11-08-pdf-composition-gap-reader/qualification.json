@@ -1,0 +1,100 @@
+[
+  {
+    "snapshot": "j534-metadata-only-review/17dc57ee.db",
+    "sha256": "8c21e5781d5d89b911bfb0376ca5fc1a90893755f8e51c908287c26bd3d65c57",
+    "gaps": {
+      "status": "available",
+      "denominator": "retained_candidate_trace_rows",
+      "denominator_rows": 0,
+      "valid_trace_rows": 0,
+      "invalid_trace_rows": 0,
+      "normative_annex": {
+        "recorded_rows": 0,
+        "unknown_valid_rows": 0,
+        "reasons": {}
+      },
+      "required_part": {
+        "recorded_rows": 0,
+        "unknown_valid_rows": 0,
+        "reasons": {}
+      },
+      "supporting_positions": {
+        "denominator": "selected_candidate_extra_url_positions",
+        "selected_traces_with_request": 0,
+        "selected_traces_without_request": 0,
+        "declared_positions": 0,
+        "admitted_positions": 0,
+        "excluded_positions": 0,
+        "unknown_positions": 0
+      },
+      "scope": "Typed fields on validated saved traces; shared traces count once. Unrecorded reasons remain unknown. No raw or current blocker inference."
+    },
+    "findings": []
+  },
+  {
+    "snapshot": "j533-frozen-intent-review/eccdc263.db",
+    "sha256": "e78613cba60318f88374caaab31514a49aa77e2bf7cdf726e6ee565ed3b99a12",
+    "gaps": {
+      "status": "available",
+      "denominator": "retained_candidate_trace_rows",
+      "denominator_rows": 8,
+      "valid_trace_rows": 8,
+      "invalid_trace_rows": 0,
+      "normative_annex": {
+        "recorded_rows": 0,
+        "unknown_valid_rows": 8,
+        "reasons": {}
+      },
+      "required_part": {
+        "recorded_rows": 0,
+        "unknown_valid_rows": 8,
+        "reasons": {}
+      },
+      "supporting_positions": {
+        "denominator": "selected_candidate_extra_url_positions",
+        "selected_traces_with_request": 8,
+        "selected_traces_without_request": 0,
+        "declared_positions": 6,
+        "admitted_positions": 0,
+        "excluded_positions": 0,
+        "unknown_positions": 6
+      },
+      "scope": "Typed fields on validated saved traces; shared traces count once. Unrecorded reasons remain unknown. No raw or current blocker inference."
+    },
+    "findings": []
+  },
+  {
+    "snapshot": "j529-supporting-position-census/required_block.db",
+    "sha256": "b0f7f3d1b7cea70737faefc7ef82d90cb9c495505cdf52a686edc32768e45cdb",
+    "gaps": {
+      "status": "available",
+      "denominator": "retained_candidate_trace_rows",
+      "denominator_rows": 1,
+      "valid_trace_rows": 1,
+      "invalid_trace_rows": 0,
+      "normative_annex": {
+        "recorded_rows": 1,
+        "unknown_valid_rows": 0,
+        "reasons": {
+          "download_size_limit": 1
+        }
+      },
+      "required_part": {
+        "recorded_rows": 0,
+        "unknown_valid_rows": 1,
+        "reasons": {}
+      },
+      "supporting_positions": {
+        "denominator": "selected_candidate_extra_url_positions",
+        "selected_traces_with_request": 1,
+        "selected_traces_without_request": 0,
+        "declared_positions": 2,
+        "admitted_positions": 0,
+        "excluded_positions": 0,
+        "unknown_positions": 2
+      },
+      "scope": "Typed fields on validated saved traces; shared traces count once. Unrecorded reasons remain unknown. No raw or current blocker inference."
+    },
+    "findings": []
+  }
+]
