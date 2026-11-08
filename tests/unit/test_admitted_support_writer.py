@@ -45,6 +45,15 @@ def test_only_native_support_still_in_final_selection_is_recorded(native: bool) 
     assert calls == {MAIN: 1, REQUIRED: 1, duplicate: 1}
     trace = loaded.candidate_trace
     assert trace is not None, "the caller retains the ordinary trace"
+    assert trace.supporting_exclusions is not None
+    (exclusion,) = trace.supporting_exclusions.rows
+    assert (exclusion.reason, exclusion.extra_index, exclusion.duplicate_of_part) == (
+        "duplicate_standalone",
+        1,
+        1,
+    )
+    assert exclusion.file_sha256 == sha256(bodies[REQUIRED]).hexdigest()
+    assert exclusion.duplicate_text_sha256 == loaded.selection.parts[1].text_sha256
     if not native:
         assert trace.admitted_support is None
         return

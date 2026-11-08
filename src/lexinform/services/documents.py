@@ -307,6 +307,78 @@ def _selected_composed_support(
     return tuple(rows)
 
 
+def _with_duplicate_support(
+    trace: CandidateDispositionTrace,
+    selected: TextDocument,
+    loaded: LoadedFile,
+    capture: _CompositionCapture,
+    archive_evidence: ArchiveVersionDecisionEvidence | ArchiveVersionConflictEvidence | None,
+) -> CandidateDispositionTrace:
+    parent = next((row for row in trace.dispositions if row.outcome == "selected"), None)
+    if parent is None:
+        return trace
+    existing = trace.supporting_exclusions
+    rows = existing.rows if existing is not None else ()
+    if len(rows) == MAX_SUPPORTING_EXCLUSIONS:
+        return trace
+    earlier_urls = {
+        selected.url,
+        *selected.required_urls,
+        *selected.amendment_urls,
+        *selected.normative_urls,
+    }
+    occurrences = Counter(selected.extra_urls)
+    for position, url in enumerate(selected.extra_urls):
+        earlier = earlier_urls.copy()
+        earlier_urls.add(url)
+        appended = capture.composed_support.get((parent.phase, parent.index, position), ())
+        if (
+            len(appended) != 1
+            or occurrences[url] != 1
+            or url in earlier
+            or not metadata_url_decision(url).admitted
+            or any(part.url == url for part in loaded.selection.parts)
+        ):
+            continue
+        (source,) = appended
+        if source.members or not source.sha256 or not source.text_sha256:
+            continue
+        matches = [
+            index
+            for index, part in enumerate(loaded.selection.parts)
+            if part.url in earlier
+            and part.model_copy(update={"url": url, "role": source.role}) == source
+        ]
+        if len(matches) != 1:
+            continue
+        row = SupportingPartExclusion(
+            phase=parent.phase,
+            index=parent.index,
+            extra_index=position,
+            reason="duplicate_standalone",
+            file_sha256=source.sha256,
+            duplicate_of_part=matches[0],
+            duplicate_text_sha256=source.text_sha256,
+        )
+        offered = tuple(sorted((*rows, row), key=lambda item: item.extra_index))
+        try:
+            candidate = CandidateDispositionTrace.model_validate(
+                {
+                    **trace.model_dump(),
+                    "supporting_exclusions": SupportingPartExclusions(rows=offered),
+                }
+            )
+            if archive_evidence is not None:
+                _trace_with_archive_evidence(candidate, archive_evidence)
+        except ValueError:
+            break
+        trace = candidate
+        rows = offered
+        if len(rows) == MAX_SUPPORTING_EXCLUSIONS:
+            break
+    return trace
+
+
 def _selected_admitted_annexes(
     trace: CandidateDispositionTrace,
     selected: TextDocument,
@@ -775,6 +847,20 @@ class TextLoader:
                     "composed_support": None,
                 }
             )
+        if record_requested_document and requested != resolved and trace is not None:
+            exclusions = trace.supporting_exclusions
+            if exclusions is not None:
+                remaining = tuple(
+                    row for row in exclusions.rows if row.reason != "duplicate_standalone"
+                )
+                if remaining != exclusions.rows:
+                    trace = trace.model_copy(
+                        update={
+                            "supporting_exclusions": SupportingPartExclusions(rows=remaining)
+                            if remaining
+                            else None
+                        }
+                    )
         defer_archive_trace = None
         evidence = file.archive_version_evidence
         if evidence is not None and trace is not None:
@@ -1249,6 +1335,14 @@ class TextLoader:
                     else:
                         trace = enriched
                         break
+        base_trace = trace or routine_trace
+        if base_trace is not None and composition is not None and composition.composed_support:
+            with suppress(Exception):
+                enriched = _with_duplicate_support(
+                    base_trace, selected, loaded, composition, archive_version_evidence
+                )
+                if enriched is not base_trace:
+                    trace = enriched
         return selected, replace(
             loaded,
             archive_version_evidence=archive_version_evidence,

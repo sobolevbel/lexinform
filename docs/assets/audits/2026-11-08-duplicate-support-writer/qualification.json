@@ -1,0 +1,61 @@
+{
+  "scope": "Paired offline replay of historical RCL catalog stage 6 with local file bodies and one unavailable earlier candidate.",
+  "case": "RCL/12384253",
+  "unchanged_selection_text_and_reads": true,
+  "reader_restored_dump_byte_identically": true,
+  "sql_delta_bytes": 318,
+  "gzip_delta_bytes": 51,
+  "candidate": {
+    "pins": {
+      "corpus/12384253.json": "1677c3923a7d00382ed02601742f01532181fb4e53374cffdd74d7d65aeef0ea",
+      "documents/files/682026.pdf": "3b6edf9d2a62901b04b98a6dd3d64ca28533828b9bb028d6db0e831550374b59",
+      "documents/files/682029.pdf": "1feb0ac322b6ce339d83a2fbe027bb737bb0da1903d38b86e26ab6a62b8bb72b",
+      "documents/files/682025.pdf": "d282a1335f2349123486eb47656d230e974c1c058750ac7f2e3f0775e7ed2b7b",
+      "documents/files/682028.pdf": "1feb0ac322b6ce339d83a2fbe027bb737bb0da1903d38b86e26ab6a62b8bb72b"
+    },
+    "reads": [
+      [
+        "dokument685700.pdf",
+        0
+      ],
+      [
+        "dokument682026.pdf",
+        1
+      ],
+      [
+        "dokument682029.pdf",
+        1
+      ],
+      [
+        "dokument682025.pdf",
+        1
+      ],
+      [
+        "dokument682028.pdf",
+        1
+      ]
+    ],
+    "selection_id": "selection-v1:20a08ab0f7bec64d09f37c851b7d02b3d8feb311a1ee8adeedd112ca449f776d",
+    "text_sha256": "8458f3cc4290a57712b971d1139270a51edcb88a1363d658b6e266760f1db678",
+    "trace_id": "candidate-trace-v1:f469cfed3b954195b8edc3b43fc77fc1e7d71e9d53156601c380f2482cea954b",
+    "duplicates": [
+      {
+        "phase": "version_comparison",
+        "index": 2,
+        "extra_index": 1,
+        "reason": "duplicate_standalone",
+        "file_sha256": "1feb0ac322b6ce339d83a2fbe027bb737bb0da1903d38b86e26ab6a62b8bb72b",
+        "duplicate_of_part": 0,
+        "duplicate_text_sha256": "924cd5d5644e1c5b4d47833db0f5749faed5b83f9acc7a82a3fc152450c187d6"
+      }
+    ],
+    "sql_bytes": 61939,
+    "gzip_bytes": 13665
+  },
+  "latest_catalog_controls": {
+    "paired_cases": 51,
+    "same_pins_as": "docs/assets/audits/2026-11-08-composed-support-writer/qualification.json",
+    "unchanged_selection_text_reads_and_traces": true,
+    "report_sha256": "5e46be0fa27d17bd6aa3f2a515be8c705adadaf76b606f75bc6d569d2a334766"
+  }
+}
