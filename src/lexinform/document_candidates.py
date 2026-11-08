@@ -233,6 +233,21 @@ def _select_parts(
         )
         candidates.append((rank, index, part.model_copy(update={"role": "bill"})))
         note(index, "policy_excluded", "rank_preference")
+    if not candidates and incomplete_named_bills:
+        for index, _ in incomplete_named_bills:
+            note(index, "unclassified", "archive_pdf_page_failure")
+        for index, _ in (*annexes, *supporting):
+            note(index, "unclassified", "no_bill_candidate")
+        return finish(
+            ExtractedDocument(
+                selection=DocumentSelection(
+                    observed_parts=tuple(parts),
+                    state="waiting",
+                    parts=tuple(part for _, part in incomplete_named_bills),
+                    rejected=(*rejected, "PDF page extraction failed in an archive draft"),
+                )
+            )
+        )
     if not candidates:
         for index, _ in annexes:
             note(index, "policy_excluded", "no_bill_candidate")

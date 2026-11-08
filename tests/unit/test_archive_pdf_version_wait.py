@@ -122,3 +122,34 @@ def test_unreadable_named_pdf_only_defers_its_own_archive_family(same_folder: bo
         assert loaded.selection.parts[-1].has_pdf_page_failure
     else:
         assert "1 września" in loaded.text
+
+
+@pytest.mark.parametrize(
+    ("name", "error", "expected"),
+    [
+        ("projekt.pdf", "ValueError", "waiting"),
+        ("projekt.pdf", None, "unsupported"),
+        ("uzasadnienie.pdf", "ValueError", "unsupported"),
+    ],
+)
+def test_unreadable_only_named_draft_waits_after_explicit_page_failure(
+    name: str, error: str | None, expected: str
+) -> None:
+    class Pdf(FakeTextExtractor):
+        def extract_pages(self, data: bytes) -> PdfTextExtraction:
+            return PdfTextExtraction(
+                input_sha256=hashlib.sha256(data).hexdigest(),
+                pypdf_version="fixture",
+                pages=(PdfPageText(number=1, error_type=error),),
+            )
+
+    reader = DocumentTextExtractor(Pdf(page_count=1), DocxTextExtractor(), FakeTextExtractor())
+    data = archive({name: b"%PDF-draft"})
+
+    loaded = reader.extract_document_with_provenance(data).document
+
+    assert loaded.selection.state == expected
+    if expected == "waiting":
+        (part,) = loaded.selection.parts
+        assert part.role == "unknown" and part.has_pdf_page_failure
+        assert not loaded.text
