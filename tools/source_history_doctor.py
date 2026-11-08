@@ -333,15 +333,17 @@ def _supporting_positions(trace: CandidateDispositionTrace) -> Counter[str]:
     (selected,) = (row for row in trace.dispositions if row.outcome == "selected")
     declared = len((request, *request.alternatives)[selected.index].extra_urls)
     admitted = len(trace.admitted_support.rows) if trace.admitted_support is not None else 0
+    composed = len(trace.composed_support.rows) if trace.composed_support is not None else 0
     excluded = (
         len(trace.supporting_exclusions.rows) if trace.supporting_exclusions is not None else 0
     )
     return Counter(
         selected_traces_with_request=1,
         declared_positions=declared,
-        admitted_positions=admitted,
+        admitted_positions=admitted + composed,
+        composed_positions=composed,
         excluded_positions=excluded,
-        unknown_positions=declared - admitted - excluded,
+        unknown_positions=declared - admitted - composed - excluded,
     )
 
 
@@ -536,6 +538,11 @@ def candidate_trace_inventory(
                         "unknown_positions",
                     )
                 },
+                **(
+                    {"composed_positions": supporting_positions["composed_positions"]}
+                    if supporting_positions["composed_positions"]
+                    else {}
+                ),
             }
             if total is not None
             else None,

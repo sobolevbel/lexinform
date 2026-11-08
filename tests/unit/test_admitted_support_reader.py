@@ -15,6 +15,9 @@ from lexinform.models.candidate_trace import (
     AdmittedSupport,
     AdmittedSupportPart,
     CandidateDisposition,
+    ComposedSupport,
+    ComposedSupportPart,
+    composed_support_sha256,
 )
 from lexinform.models.document_history import DocumentSelectionRecord, SourceObservation
 from tests.unit.test_input_receipts import NOW
@@ -124,3 +127,71 @@ def test_admitted_support_reader_preserves_legacy_and_binds_selection(control: s
         "excluded_positions": 0,
         "unknown_positions": 1,
     }
+
+
+def test_composed_support_binds_all_selected_parts_without_claiming_a_role() -> None:
+    document = TextDocument(url=MAIN, kind="print", extra_urls=(REQUIRED,))
+    old = CandidateDispositionTrace.from_decisions(
+        document,
+        (
+            CandidateDisposition(
+                phase="fallback", index=0, outcome="selected", reason="first_acceptable_candidate"
+            ),
+        ),
+        result="selected",
+        reason="first_acceptable_candidate",
+        selection_state="unverified",
+    )
+    support = (
+        DocumentPart(url=REQUIRED, members=("a.docx",), sha256=FILE_SHA, text_sha256=TEXT_SHA),
+        DocumentPart(url=REQUIRED, members=("b.pdf",), sha256=TEXT_SHA, text_sha256=FILE_SHA),
+    )
+    selected = DocumentSelectionRecord.from_selection(
+        DocumentSelection(state="unverified", parts=(DocumentPart(url=MAIN), *support))
+    )
+    observation = SourceObservation(
+        term=10,
+        number="3039",
+        purpose="analysis",
+        document=document,
+        selection_id=selected.selection_id,
+        recorded_at=NOW,
+    )
+    full = ComposedSupportPart(
+        extra_index=0, first_part=1, part_count=2, parts_sha256=composed_support_sha256(support)
+    )
+    partial = full.model_copy(
+        update={"part_count": 1, "parts_sha256": composed_support_sha256(support[:1])}
+    )
+    with closing(SqliteBillRepository(":memory:")) as repo:
+        repo.migrate()
+        repo.save_source_observation(selected, observation)
+        repo.save_candidate_disposition_trace(observation.observation_id, old)
+        before = repo.dump()
+        for row in (partial, full.model_copy(update={"parts_sha256": "f" * 64})):
+            evidence = ComposedSupport(phase="fallback", index=0, rows=(row,))
+            invalid = CandidateDispositionTrace.model_validate(
+                {**old.model_dump(), "composed_support": evidence}
+            )
+            with pytest.raises(ValueError, match="composed_support_parent_mismatch"):
+                repo.save_candidate_disposition_trace(observation.observation_id, invalid)
+            assert repo.dump() == before
+
+        evidence = ComposedSupport(phase="fallback", index=0, rows=(full,))
+        trace = CandidateDispositionTrace.model_validate(
+            {**old.model_dump(), "composed_support": evidence}
+        )
+        repo.save_candidate_disposition_trace(observation.observation_id, trace)
+        sql = repo.dump()
+        repo.restore(sql)
+        assert repo.dump() == sql
+        assert repo.get_candidate_disposition_trace(trace.trace_id) == trace
+        assert repo.get_candidate_disposition_trace(old.trace_id) == old
+
+    with closing(sqlite3.connect(":memory:")) as snapshot:
+        snapshot.executescript(sql)
+        report = candidate_trace_inventory(snapshot, include_gaps=True)
+    assert not report["findings"]
+    assert report["gap_coverage"]["supporting_positions"]["composed_positions"] == 1
+    assert report["gap_coverage"]["supporting_positions"]["unknown_positions"] == 1
+    assert "composed_support" not in old.model_dump_json()

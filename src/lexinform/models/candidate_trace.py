@@ -572,6 +572,40 @@ class AdmittedSupport(BaseModel):
         return self
 
 
+class ComposedSupportPart(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    extra_index: Position
+    first_part: Position
+    part_count: Position = Field(gt=0)
+    parts_sha256: Sha256
+
+
+class ComposedSupport(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    phase: Literal["version_comparison", "fallback"]
+    index: Position
+    rows: tuple[ComposedSupportPart, ...] = Field(min_length=1, max_length=8)
+
+    @model_validator(mode="after")
+    def ordered_disjoint_parts(self) -> Self:
+        previous_extra = -1
+        next_part = 0
+        for row in self.rows:
+            if row.extra_index <= previous_extra or row.first_part < next_part:
+                raise ValueError("Composed support requires ordered, disjoint selected parts")
+            previous_extra = row.extra_index
+            next_part = row.first_part + row.part_count
+        return self
+
+
+def composed_support_sha256(parts: tuple[DocumentPart, ...]) -> str:
+    payload = [part.model_dump(mode="json", exclude={"text"}) for part in parts]
+    encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(encoded.encode()).hexdigest()
+
+
 MAX_ADMITTED_NORMATIVE_ANNEXES = 8
 
 
@@ -996,6 +1030,10 @@ class CandidateDispositionTrace(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
 
+    composed_support: ComposedSupport | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
     admitted_normative_annexes: AdmittedNormativeAnnexes | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
@@ -1166,6 +1204,8 @@ class CandidateDispositionTrace(BaseModel):
             validate_supporting_exclusions(self, self.supporting_exclusions)
         if self.admitted_support is not None:
             validate_admitted_support(self, self.admitted_support)
+        if self.composed_support is not None:
+            validate_composed_support(self, self.composed_support)
         if self.admitted_normative_annexes is not None:
             validate_admitted_normative_annexes(self, self.admitted_normative_annexes)
         if self.version_decision is not None:
@@ -1203,6 +1243,7 @@ class CandidateDispositionTrace(BaseModel):
             and self.sejm_committee_recommendation is None
             and self.supporting_exclusions is None
             and self.admitted_support is None
+            and self.composed_support is None
             and self.admitted_normative_annexes is None
             and self.version_decision is None
             and self.archive_version_decision is None
@@ -1310,6 +1351,28 @@ def validate_admitted_support(trace: CandidateDispositionTrace, evidence: Admitt
         for row in evidence.rows
     ):
         raise ValueError("Admitted support exceeds its available extra URL namespace")
+
+
+def validate_composed_support(trace: CandidateDispositionTrace, evidence: ComposedSupport) -> None:
+    candidate = _selected_admission_candidate(
+        trace, evidence.phase, evidence.index, "Composed support"
+    )
+    extras = candidate.extra_urls
+    excluded = trace.supporting_exclusions.rows if trace.supporting_exclusions is not None else ()
+    admitted = trace.admitted_support.rows if trace.admitted_support is not None else ()
+    known = {row.extra_index for row in excluded} | {row.extra_index for row in admitted}
+    other_urls = {
+        candidate.url,
+        *candidate.required_urls,
+        *candidate.amendment_urls,
+        *candidate.normative_urls,
+    }
+    for row in evidence.rows:
+        if row.extra_index >= len(extras) or row.extra_index in known:
+            raise ValueError("Composed support exceeds its available extra URL namespace")
+        url = extras[row.extra_index]
+        if extras.count(url) != 1 or url in other_urls or not metadata_url_decision(url).admitted:
+            raise ValueError("Composed support requires an unambiguous extra URL")
 
 
 def validate_admitted_normative_annexes(
