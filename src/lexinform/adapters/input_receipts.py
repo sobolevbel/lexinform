@@ -1079,6 +1079,16 @@ def project_pdf_page_ranges(
     return ranges
 
 
+def validate_primary_receipt_parents(
+    connection: sqlite3.Connection,
+    meta: BatchItemMeta,
+    owner: tuple[int, str],
+) -> None:
+    if (receipt := meta.prepared_input_receipt) is None:
+        raise ValueError("primary receipt validation requires a retained receipt")
+    _parents(connection, receipt, primary_meta=meta, owner=owner)
+
+
 def validate_secondary_receipt_parents(
     connection: sqlite3.Connection, receipt: SupplementInputReceipt | AmendmentInputReceipt
 ) -> None:

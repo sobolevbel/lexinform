@@ -116,6 +116,11 @@ from lexinform.adapters.physical_history import (
     physical_recorded_at,
     validate_physical_inventory,
 )
+from lexinform.adapters.primary_claim_receipts import (
+    CheckedPrimaryClaimReceipt,
+    read_primary_claim_receipts,
+    validate_primary_claim_receipts,
+)
 from lexinform.adapters.primary_projections import (
     PrimaryProjectionReader,
     validate_primary_cost_projections,
@@ -1116,6 +1121,16 @@ MIGRATIONS: tuple[str, ...] = (
         UNIQUE (number, to_term)
     ) STRICT;
     """,
+    """
+    CREATE TABLE primary_claim_technical_receipts (
+        receipt_id TEXT PRIMARY KEY NOT NULL,
+        result_id TEXT NOT NULL REFERENCES computation_results(result_id),
+        receipt_json TEXT NOT NULL CHECK(json_valid(receipt_json)
+            AND length(CAST(receipt_json AS BLOB)) <= 8192)
+    ) STRICT;
+    CREATE INDEX ix_primary_claim_technical_receipts_result
+        ON primary_claim_technical_receipts(result_id, receipt_id);
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -1438,6 +1453,7 @@ class SqliteBillRepository:
             validate_source_omissions(scratch)
             validate_catalog_attempts(scratch)
             validate_input_snapshots(scratch)
+            validate_primary_claim_receipts(scratch)
             validate_projected_applications(scratch)
             validate_content_sources(scratch)
             validate_review_source_observations(scratch)
@@ -2026,6 +2042,11 @@ class SqliteBillRepository:
                 request_sha256=result.request_sha256,
             ),
         )
+
+    def list_primary_claim_technical_receipts(
+        self, result_id: str
+    ) -> tuple[CheckedPrimaryClaimReceipt, ...]:
+        return read_primary_claim_receipts(self._conn, result_id)
 
     def get_computation_result(self, result_id: str) -> ComputationResult | None:
         return ContentSourceRows(self._conn).get_computation_result(result_id)

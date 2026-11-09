@@ -395,6 +395,7 @@ def candidate_trace_inventory(
     supporting_reasons: Counter[str] = Counter()
     supporting_positions: Counter[str] = Counter()
     version_wait: Counter[str] = Counter()
+    compact_wait_reasons: Counter[str] = Counter()
     archive_wait: Counter[str] = Counter()
     supporting_omitted = 0
     admitted_roles: Counter[str] = Counter()
@@ -429,6 +430,9 @@ def candidate_trace_inventory(
                                 in ("archive_pdf_page_failure", "archive_comparison_deferred")
                             )
                         if trace.result == "waiting":
+                            compact_wait_reasons.update(
+                                gap.reason for gap in trace.compact_version_part_gaps
+                            )
                             version_wait["deferred_comparisons"] += 1
                             version_wait["deferred_without_dispositions"] += (
                                 trace.coverage == "omitted_over_limit"
@@ -507,6 +511,11 @@ def candidate_trace_inventory(
                             "retained_pdf_failure_positions"
                         ],
                         "version_conflicts": version_wait["version_conflicts"],
+                        **(
+                            {"compact_gap_reasons": dict(sorted(compact_wait_reasons.items()))}
+                            if compact_wait_reasons
+                            else {}
+                        ),
                     }
                 }
                 if version_wait["deferred_comparisons"]

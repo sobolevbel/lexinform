@@ -53,6 +53,7 @@ from lexinform.models.odt_notes import (
 )
 from lexinform.models.odt_tables import OdtTableMerges
 from lexinform.models.word_field_ranges import MAX_WORD_FIELD_BYTES, WordFieldPrefix
+from lexinform.models.word_grid_merges import WordVerticalGridMerges
 from lexinform.models.word_view_capture import WordPartViewStatus, WordViewExtraction
 from lexinform.pdf_projection import legacy_pdf_text, normalized_pdf_page_offsets
 
@@ -712,6 +713,28 @@ def summarize_odt_tables(
         for count in range(len(tables.tables), -1, -1):
             retained = tables.model_copy(update={"tables": tables.tables[:count]})
             parts[index] = part.model_copy(update={"odt_table_merges": retained})
+            try:
+                result = ExtractionResult.model_validate(
+                    result.model_copy(update={"selected_parts": tuple(parts)})
+                )
+                break
+            except ValueError:
+                parts[index] = part
+    return result
+
+
+def summarize_word_grid_merges(
+    baseline: ExtractionResult, captured: dict[int, WordVerticalGridMerges]
+) -> ExtractionResult:
+    result = baseline
+    parts = list(baseline.selected_parts)
+    for index, part in enumerate(baseline.selected_parts):
+        grids = captured.get(part.physical_index)
+        if grids is None:
+            continue
+        for count in range(len(grids.tables), -1, -1):
+            retained = grids.model_copy(update={"tables": grids.tables[:count]})
+            parts[index] = part.model_copy(update={"word_grid_merges": retained})
             try:
                 result = ExtractionResult.model_validate(
                     result.model_copy(update={"selected_parts": tuple(parts)})

@@ -23,9 +23,9 @@ from lexinform.models import (
     WordStructureSupport,
     WordTextExtraction,
 )
+from lexinform.word_table_grid import word_table_grids
 from tools.corpus_artifacts import digest, observation_changes, read_artifact, write_json
 from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
-from tools.word_table_grid import word_table_grids
 
 
 def verify_structure(data: bytes, result: WordStructuredExtraction) -> dict[str, Any]:

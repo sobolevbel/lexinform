@@ -44,6 +44,7 @@ from lexinform.adapters.native_block_copies import (
 from lexinform.adapters.odt_table_capture import capture_odt_tables
 from lexinform.adapters.word_block_copies import PlainWordCopies, current_plain_word_copies
 from lexinform.adapters.word_field_ranges import WordFieldExtraction, WordFieldRanges
+from lexinform.adapters.word_grid_capture import capture_word_grid_merges
 from lexinform.archive_policy_capture import native_archive_policy_sink
 from lexinform.document_candidates import select_document_parts
 from lexinform.extraction_records import (
@@ -57,6 +58,7 @@ from lexinform.extraction_records import (
     summarize_pdf_page_maps,
     summarize_word_block_copies,
     summarize_word_field_prefixes,
+    summarize_word_grid_merges,
     summarize_word_observations,
 )
 from lexinform.models.block_input import MAX_BLOCK_INPUT_ROWS, BlockCopyWitness
@@ -109,6 +111,7 @@ from lexinform.models.physical_inventory import (
 )
 from lexinform.models.rcl import READABLE_EXTENSIONS, text_rank
 from lexinform.models.word_field_ranges import WordFieldPrefix
+from lexinform.models.word_grid_merges import WordVerticalGridMerges
 from lexinform.models.word_notes import (
     NotePartName,
     WordNote,
@@ -150,6 +153,7 @@ from lexinform.word_structure import (
     current_word_structure,
     suspend_word_structure,
 )
+from lexinform.word_table_grid import WordGridTable, word_table_grids
 
 log = logging.getLogger(__name__)
 
@@ -288,7 +292,11 @@ class DocxTextExtractor:
         return self._view_status(data)
 
     def _view_status(
-        self, data: bytes, *, fields: WordFieldRanges | None = None
+        self,
+        data: bytes,
+        *,
+        fields: WordFieldRanges | None = None,
+        capture_grid_merges: bool = False,
     ) -> WordViewExtraction:
         try:
             collector = WordStructureCollector.for_view_status()
@@ -300,12 +308,12 @@ class DocxTextExtractor:
         copies: PlainWordCopies | None = None
         with suppress(Exception):
             copies = PlainWordCopies()
+        grid_tables: list[WordGridTable] | None = [] if capture_grid_merges else None
         with collector.view_scope(), copies.scope() if copies is not None else nullcontext():
-            body = (
-                self._blocks(data, notes=notes)
-                if fields is None
-                else self._blocks(data, notes=notes, fields=fields)
-            )
+            if grid_tables is None and fields is None:
+                body = self._blocks(data, notes=notes)
+            else:
+                body = self._blocks(data, notes=notes, fields=fields, grid_tables=grid_tables)
         legacy = self._detailed(body, notes)
         try:
             status = collector.finish_view_status(legacy)
@@ -315,7 +323,13 @@ class DocxTextExtractor:
         if copies is not None:
             with suppress(Exception):
                 witness = copies.finish(legacy)
-        return WordViewExtraction(legacy=legacy, status=status, block_copy_witness=witness)
+        grids = None
+        if grid_tables:
+            with suppress(Exception):
+                grids = capture_word_grid_merges(grid_tables, legacy)
+        return WordViewExtraction(
+            legacy=legacy, status=status, block_copy_witness=witness, word_grid_merges=grids
+        )
 
     def extract_with_structure(
         self, data: bytes, *, max_events: int = 4096, max_bytes: int = 524288
@@ -361,16 +375,27 @@ class DocxTextExtractor:
         *,
         notes: _WordNoteOrigins | None = None,
         fields: WordFieldRanges | None = None,
+        grid_tables: list[WordGridTable] | None = None,
     ) -> WordTextExtraction:
         blocks: list[WordTextBlock] = []
         projection: list[str] = []
-        text, xml_sha256, state = (
-            self._read(data, blocks=blocks, projection=projection, origins=notes)
-            if fields is None
-            else self._read(
+        if grid_tables is not None:
+            text, xml_sha256, state = self._read(
+                data,
+                blocks=blocks,
+                projection=projection,
+                origins=notes,
+                fields=fields,
+                grid_tables=grid_tables,
+            )
+        elif fields is None:
+            text, xml_sha256, state = self._read(
+                data, blocks=blocks, projection=projection, origins=notes
+            )
+        else:
+            text, xml_sha256, state = self._read(
                 data, blocks=blocks, projection=projection, origins=notes, fields=fields
             )
-        )
         result = WordTextExtraction(
             input_sha256=hashlib.sha256(data).hexdigest(),
             xml_sha256=xml_sha256,
@@ -391,6 +416,7 @@ class DocxTextExtractor:
         projection: list[str] | None = None,
         origins: _WordNoteOrigins | None = None,
         fields: WordFieldRanges | None = None,
+        grid_tables: list[WordGridTable] | None = None,
     ) -> tuple[str, str, WordBodyState]:
         structure = current_word_structure()
         with _physical_zip(data) as archive:
@@ -460,18 +486,18 @@ class DocxTextExtractor:
             structure.report_support(
                 (), root.tag, len(root), "part_root", recognized=state != "unsupported"
             )
-        return (
-            _wordml_text(
-                root,
-                notes=notes,
-                blocks=blocks,
-                projection=projection,
-                origins=origins,
-                fields=fields,
-            ),
-            hashlib.sha256(xml).hexdigest(),
-            state,
+        text = _wordml_text(
+            root,
+            notes=notes,
+            blocks=blocks,
+            projection=projection,
+            origins=origins,
+            fields=fields,
         )
+        if state == "read" and blocks is not None and grid_tables is not None:
+            with suppress(Exception):
+                grid_tables.extend(word_table_grids(root, blocks, vertical_only=True))
+        return text, hashlib.sha256(xml).hexdigest(), state
 
 
 def _wordml_text(
@@ -1445,6 +1471,7 @@ class _PhysicalOrigins:
     word_view_status: list[WordPartViewStatus] | None = None
     word_field_prefixes: dict[int, WordFieldPrefix] | None = None
     word_block_copies: dict[int, BlockCopyWitness] | None = None
+    word_grid_merges: dict[int, WordVerticalGridMerges] | None = None
     odt_notes: list[OdtPartNoteOrigins] | None = None
     odt_tables: dict[str, OdtTableMerges] | None = None
     doc_notes: list[DocPartNoteCapture] | None = None
@@ -1466,6 +1493,7 @@ class DocumentTextExtractor:
         *,
         max_member_bytes: int | None = None,
         max_part_chars: int | None = None,
+        capture_word_grid_merges: bool = False,
     ) -> None:
         self._pdf = pdf
         self._docx = docx
@@ -1474,6 +1502,7 @@ class DocumentTextExtractor:
         self._word_xml = WordXmlTextExtractor()
         self._max_member_bytes = max_member_bytes
         self._max_part_chars = max_part_chars
+        self._capture_word_grid_merges = capture_word_grid_merges
 
     def extract(self, data: bytes) -> str:
         return self.extract_document(data).text
@@ -1625,6 +1654,9 @@ class DocumentTextExtractor:
         views: list[WordPartViewStatus] = []
         word_fields: dict[int, WordFieldPrefix] = {}
         word_copies: dict[int, BlockCopyWitness] = {}
+        word_grids: dict[int, WordVerticalGridMerges] | None = (
+            {} if self._capture_word_grid_merges else None
+        )
         native_copies = NativeBlockCopies()
         odt_notes: list[OdtPartNoteOrigins] = []
         odt_tables: dict[str, OdtTableMerges] = {}
@@ -1642,6 +1674,7 @@ class DocumentTextExtractor:
                 word_view_status=views,
                 word_field_prefixes=word_fields,
                 word_block_copies=word_copies,
+                word_grid_merges=word_grids,
                 odt_notes=odt_notes,
                 odt_tables=odt_tables,
                 doc_notes=doc_notes,
@@ -1714,6 +1747,8 @@ class DocumentTextExtractor:
                 if body.extraction.input_sha256 in native_copies.odt_rows
             },
         )
+        if word_grids:
+            result = summarize_word_grid_merges(result, word_grids)
         capture = current_physical_walk_capture()
         if capture is not None:
             _physical_event(capture, lambda: capture.extraction(result))
@@ -1876,7 +1911,12 @@ class DocumentTextExtractor:
                             ):
                                 word_fields = WordFieldRanges()
                                 view_result = _physical_format(
-                                    partial(self._docx._view_status, data, fields=word_fields)
+                                    partial(
+                                        self._docx._view_status,
+                                        data,
+                                        fields=word_fields,
+                                        capture_grid_merges=origins.word_grid_merges is not None,
+                                    )
                                 )
                             else:
                                 view_result = _physical_format(
@@ -2103,6 +2143,12 @@ class DocumentTextExtractor:
             and view_result.block_copy_witness is not None
         ):
             origins.word_block_copies[len(parts) - 1] = view_result.block_copy_witness
+        if (
+            origins.word_grid_merges is not None
+            and view_result is not None
+            and view_result.word_grid_merges is not None
+        ):
+            origins.word_grid_merges[len(parts) - 1] = view_result.word_grid_merges
         if origins.word_structure is not None and structure_result is not None:
             origins.word_structure.append(
                 WordPartStructureExtraction(part_index=len(parts) - 1, extraction=structure_result)

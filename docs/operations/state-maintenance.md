@@ -68,9 +68,15 @@ uv run python -m tools.state_maintenance prepare \
   --imported-at 2026-10-30T12:00:00Z > /tmp/maintenance-spec.json
 ```
 
-Spec содержит только version/operation, expected state commit, SHA-256 restored dump и полного
-finite plan, фиксированный import time. В нём нет SQL или исходных тел. Проверяйте план и
-совместимость копии отдельно; generation spec сама по себе не разрешает production mutation.
+Spec содержит version/operation, ожидаемый state commit, SHA-256 восстановленного дампа и
+полного плана и фиксированное время импорта. При явном выборе сохраняется также
+`retain_batch_text`. В spec нет SQL или исходных тел.
+
+Для сохранения точного текста завершённых старых запросов добавьте
+`--retain-batch-text` к `prepare`. Общий лимит уникального текста в одном плане — 1 МиБ UTF-8.
+При превышении лимита план отклоняется целиком. Флаг входит в хеш плана, поэтому для
+изменения выбора подготовьте новую спецификацию. Проверьте её на изолированной копии.
+Подготовка spec сама по себе не разрешает изменение рабочей базы.
 В manual dispatch передайте JSON в `maintenance_spec`, оставьте command=`run`, остальные
 normal-run flags пустыми/default. `dry_run=true` повторно проверяет exact план без apply.
 

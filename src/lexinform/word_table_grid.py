@@ -1,10 +1,10 @@
 """Resolve direct OOXML table grid positions without projecting the document."""
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from xml.etree import ElementTree as ET
 
-from lexinform.models import WordTextBlock
+from lexinform.models.documents import WordTextBlock
 
 XmlPath = tuple[int, ...]
 Columns = tuple[int, int]
@@ -55,6 +55,8 @@ def _rows(
     path: XmlPath,
     columns: int,
     block_paths: Mapping[XmlPath, str],
+    *,
+    vertical_only: bool,
 ) -> tuple[int, tuple[WordGridCell, ...]]:
     merged: list[WordGridCell] = []
     previous: dict[Columns, XmlPath] = {}
@@ -101,7 +103,7 @@ def _rows(
                 elif value != "restart":
                     raise ValueError("invalid_vertical_merge")
                 current[interval] = anchor
-            if vertical is not None or end - start > 1:
+            if vertical is not None or not vertical_only and end - start > 1:
                 merged.append(WordGridCell(cell_path, row_number, interval, anchor))
             start = end
         if start + _count(after, namespace, default=0, minimum=0) != columns:
@@ -112,16 +114,17 @@ def _rows(
 
 
 def word_table_grids(
-    root: ET.Element, blocks: tuple[WordTextBlock, ...]
+    root: ET.Element, blocks: Sequence[WordTextBlock], *, vertical_only: bool = False
 ) -> tuple[WordGridTable, ...]:
     namespace = root.tag.rsplit("}", 1)[0] + "}"
     bodies = [(index, child) for index, child in enumerate(root) if child.tag == namespace + "body"]
     if len(bodies) != 1:
         raise ValueError("unsupported_grid_body")
     ((body_position, body),) = bodies
-    block_paths = {block.path: block.kind for block in blocks}
+    block_paths: dict[XmlPath, str] | None = None
     tables: list[WordGridTable] = []
-    markers = {namespace + name for name in ("gridSpan", "vMerge", "hMerge")}
+    merge_names = ("vMerge",) if vertical_only else ("gridSpan", "vMerge", "hMerge")
+    markers = {namespace + name for name in merge_names}
     revisions = {
         namespace + name
         for name in ("cellIns", "cellDel", "cellMerge", "tblGridChange", "tcPrChange", "trPrChange")
@@ -144,7 +147,11 @@ def word_table_grids(
                 or any(node.tag != namespace + "gridCol" for node in grid)
             ):
                 raise ValueError("unsupported_grid_columns")
-            rows, merged = _rows(table, namespace, path, len(grid), block_paths)
+            if block_paths is None:
+                block_paths = {block.path: block.kind for block in blocks}
+            rows, merged = _rows(
+                table, namespace, path, len(grid), block_paths, vertical_only=vertical_only
+            )
             if not merged:
                 raise ValueError("unmapped_merge")
             tables.append(WordGridTable(path, len(grid), rows, merged))

@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import TypedDict
 
 from lexinform.adapters.computation_history import ComputationRowError, read_computation_result
-from lexinform.adapters.extraction_history import read_extraction_result
 from lexinform.adapters.input_receipts import (
     capture_frozen_request_manifest,
     intent_metadata,
@@ -19,6 +18,7 @@ from lexinform.adapters.input_receipts import (
     validate_input_snapshots,
 )
 from lexinform.adapters.llm_prompts import build_user_prompt
+from lexinform.adapters.primary_claim_receipts import retained_primary_claim_block
 from lexinform.json_storage import read_json
 from lexinform.models import AnalysisRecord, BatchItemMeta, ComputationResult, ReviewDocument
 from lexinform.models.batch import AnalysisQuestion, batch_item_meta
@@ -510,36 +510,17 @@ def _retained_block(
 ) -> dict[str, object]:
     if receipt is None or receipt.block_companion is None:
         return {"status": "block_copy_unavailable"}
-    left, right = span
-    copy = next(
-        (row for row in receipt.block_companion.rows if row.start <= left < right <= row.end),
-        None,
-    )
-    if copy is None:
+    block = retained_primary_claim_block(db, receipt, span, text=text)
+    if block is None:
         return {"status": "span_outside_single_copy"}
-    if digest(text[copy.start : copy.end].encode()) != copy.text_sha256:
-        raise ValueError("Retained block copy differs from the exact submitted text")
-    row = db.execute(
-        "SELECT * FROM extraction_results WHERE extraction_id=?", (copy.extraction_id,)
-    ).fetchone()
-    if row is None:
-        raise ValueError("Retained block extraction is unavailable")
-    extraction = read_extraction_result(row)
-    part = next(p for p in extraction.selected_parts if p.physical_index == copy.physical_index)
-    witness = part.block_copy_witness
-    assert witness is not None, "input snapshot validation requires a linked block witness"
-    run = witness.runs[copy.run_index]
-    segment = next(s for s in receipt.segments if s.start <= copy.start < copy.end <= s.end)
-    assert segment.source_start is not None, "input snapshot validation requires a source segment"
-    source_left = segment.source_start + left - segment.start
-    block_left = run.block_start + source_left - run.source_start
+    copy = block.prepared_copy
     return {
         "status": "verified_copy",
         "extraction_id": copy.extraction_id,
         "physical_index": copy.physical_index,
-        "block_id": run.block_id,
-        "block_text_sha256": run.block_text_sha256,
-        "block_span": [block_left, block_left + right - left],
+        "block_id": block.block_id,
+        "block_text_sha256": block.block_text_sha256,
+        "block_span": list(block.block_span),
         "intersection": copy.intersection,
     }
 

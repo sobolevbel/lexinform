@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from lexinform.models.block_input import BlockCopyWitness
 from lexinform.models.documents import WordDetailedExtraction
 from lexinform.models.extractions import WordViewStatus
+from lexinform.models.word_grid_merges import WordVerticalGridMerges
 
 
 class WordViewExtraction(BaseModel):
@@ -15,6 +16,10 @@ class WordViewExtraction(BaseModel):
     legacy: WordDetailedExtraction
     status: WordViewStatus | None
     block_copy_witness: BlockCopyWitness | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
+    word_grid_merges: WordVerticalGridMerges | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
 

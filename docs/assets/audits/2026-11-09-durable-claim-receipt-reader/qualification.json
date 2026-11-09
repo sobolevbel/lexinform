@@ -1,0 +1,52 @@
+{
+  "checkpoint_and_block_controls": {
+    "j576_natural_frozen_checkpoint": {
+      "new_schema": 74,
+      "no_row_diff_only_table_and_schema": true,
+      "no_row_sizes": {
+        "gzip": 5420478,
+        "sql": 27189771
+      },
+      "old_schema": 73,
+      "one_receipt_sizes": {
+        "gzip": 5420857,
+        "sql": 27190800
+      },
+      "restore_byte_identical": true,
+      "result_unchanged": true,
+      "verification": "submitted_input_unavailable"
+    },
+    "j610_pinned_block_in_j654_saved_result": {
+      "cleared_text_verification": "submitted_input_unavailable",
+      "foreign_block_after_cleanup_rollback": true,
+      "new_schema": 74,
+      "no_row_diff_only_table_and_schema": true,
+      "no_row_sizes": {
+        "gzip": 22541,
+        "sql": 109298
+      },
+      "old_schema": 73,
+      "one_receipt_sizes": {
+        "gzip": 22733,
+        "sql": 110688
+      },
+      "restore_byte_identical": true,
+      "result_unchanged": true,
+      "verification": "exact_retained_input"
+    }
+  },
+  "current_state_sha": "0e96a57da4b3a1194dce8513b9d3602455e69674",
+  "integrated_migration_replay": {
+    "candidate": {
+      "schema": 74,
+      "sha256": "445b9db8056f1ae2c6a88b3741113920e84eeea4409dc273dbc1523121cc2371"
+    },
+    "input_sha256": "c0e0b96dbb5a2afcac83d1f63f71698212cae9c19a723237eb2e8c912d330b55",
+    "no_row_diff_only_new_empty_schema": true,
+    "previous": {
+      "schema": 73,
+      "sha256": "8f9496bf666ac85d2c341c995d896ad181df3f99ae8e4879fe3db1bc3303d70c"
+    }
+  },
+  "previous_reader_restores_empty_v74_dump_byte_identically": "07788074"
+}

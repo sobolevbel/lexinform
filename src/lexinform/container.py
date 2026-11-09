@@ -201,6 +201,7 @@ class Container:
                 DocTextExtractor(),
                 max_member_bytes=max_bytes,
                 max_part_chars=self.settings.max_part_chars,
+                capture_word_grid_merges=True,
             )
             self._loader = TextLoader(
                 downloaders,

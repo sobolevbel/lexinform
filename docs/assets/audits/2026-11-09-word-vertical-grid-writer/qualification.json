@@ -1,0 +1,207 @@
+{
+  "cohort_input_sha256": {
+    "documents/files/339908.docx": "1261fb9112731c1eaeb28750c1a54b4317ee845cbd3eff69f8da210c7da7c450",
+    "documents/files/345750.docx": "3d3defbde8771cd42113d94223d16a86d8b2ffc689d9012abbf497754ea1bb1c",
+    "documents/files/375208.docx": "23c2c274ca1bd6e7ca25c357fe623431b07c7831c605c5f2496f6fa6673c6d6d",
+    "documents/files/418603.docx": "8501c9b1b7b3550f5184cc4ef70d9cbf90a7a5eb34b5bfd5cf10213e492afbfd",
+    "documents/files/474076.docx": "c7beb43c43f061725fd525b26ba772649072be1ba6ff15d0f8e04ae6ab4baf2f",
+    "documents/files/539225.docx": "5cab4189b4883aaabf351a4b807b3ca7b736f75e80177b31dfef199689317384",
+    "documents/files/659882.docx": "e576ae24046149dcfa001e555dd6818cd251a1a2db3e4f76e45f3478dae4dc96",
+    "documents/files/659886.docx": "e576ae24046149dcfa001e555dd6818cd251a1a2db3e4f76e45f3478dae4dc96",
+    "documents/files/661515.docm": "8b0f1a74e70bc2000aa33c38500227f36a8c6ddd4331029d5eb3fc7575a93f35",
+    "documents/files/663502.docx": "c3f0792b147c963130a2bc44cc5ac057a825b4de364ce20812411fa47819e9af",
+    "documents/files/663800.docx": "b9747d81c587167d658c1600999d3029a49155d8fc856470f234a2c83855b632",
+    "documents/files/663811.docx": "c5d57e29d4d73ea013415c0388c0c6dace72a3adfa30e6943f486d786122f761",
+    "documents/files/669386.docx": "d33a1f07ee5419e1787458588fd4adcca12f00192424716d37a96985c5e07c7c",
+    "documents/files/671577.docx": "31be3f84cad1b45fa1284624c5d51ba4a986971787fd82a567b773d4b7206b01",
+    "documents/files/675879.docx": "80fbc09700bc91101947151533e2e1ceb67d20d6de915e1c423de56ccf331764",
+    "documents/files/676212.docx": "00eda034d5c04723abc14a9d1a3a1976f902eb1cb2891399bf37cac93c4ffef5",
+    "documents/files/679338.docx": "3e31acbc8bfe8f160193ed3a0547099e270c3f86152fc1bab8018e916549d826",
+    "documents/files/684412.docx": "1f2d58fbd5e5e127b227178321863ba54bf4cbdc3846ed954fa7126531b5193f",
+    "documents/files/699994.docx": "f41f3fb3836182fcad6d39f3fdfd8f0f4cbe285e6083bfce4fdd61852d18b6a8",
+    "documents/files/703822.docx": "86e9a5d35594100aa80b4f6b494ebc3531c3f8fc309436ed7e95767535f1c15b",
+    "documents/files/703834.docx": "051b13aa32f357997b553da834ff76bebf5cc004f85219e3eed1ec78c86f7083",
+    "documents/files/704270.docx": "0c8788f379cc8d6386a47f919e8b1645c9b71fcda9fa7f1281c7d7b3f124dacc",
+    "documents/files/705133.docx": "418c80d2b1941ad185fcab2d43d96d3ffa72496b83588476c4602fa83b05b98b",
+    "documents/files/705987.docx": "a8d694dd29781a201b4da037ea44a4e278ffafb2b07092e3a5309a674ea17317",
+    "documents/files/710934.docx": "b25e4eeb21d3c8705fc831f12033b456256467cae514535422cd452c76925b66",
+    "documents/files/714716.docm": "1f9328bc5e09242f2ae159bf569a9423dd6dcad04b6243de616dfdf4a5c90f3b",
+    "documents/files/715806.docx": "b0aacbb1c8937ab41647427a523c913016192d0eb0eb44b2c3130122b259171d",
+    "documents/files/716817.docm": "9977e1d4fd376b8455d331c8997532b44a21acbbceee77860a117b73a402a5cf",
+    "documents/files/717943.docx": "242c9b73327050fa6617458a78d23e1a58349589fad11aaa3695d37280910a30",
+    "documents/files/719023.docm": "3d2d9acb40d8fdca61cd3f50e1a21f9cb1b8c188f7183ec7954f3cf7a4ed1c4f",
+    "documents/files/722133.docx": "dcf197a48fc691d1e67c770e91270456b6a88ce80896603120f0227056af1bca",
+    "documents/files/723380.docx": "8253521c445546dd02d68aec5931d29504d564dbc6f1b54dcb762024fdd43e0f",
+    "documents/files/725235.docx": "b9fd2f19e199ffead857f6eee3d42a4d0f5b6a23ea61a9638bb8da945f6a7f5f",
+    "documents/files/727879.docx": "d9c237a614acfec83a2d6ce081a7b4a2b27e0d1867b203e28adecdf79bf99434",
+    "documents/files/729132.docx": "647bd70d7d1780859c0023473e9cbb9e44deb65e470c214454e4af4d17e2c186",
+    "documents/files/730153.docx": "ea4b74e35650d8be240b679384efd08f55a8f50642ba5d625447a83371d383cf",
+    "documents/files/731616.docx": "68e440f4c77040f1981484e9167932116f990ce96314ec76792fa653c2c9b5cd",
+    "documents/files/731631.docx": "79f472a072db20dd17fe7686fe9629addd98c425c9041d591471ca65e0350f39",
+    "documents/files/737615.docm": "da55061c80af5644180f8feb15c915391c89721a139408de8715d9da9ffd5ae7",
+    "documents/files/739908.docx": "3072728c13d9baa7595a4f389929391b10c00663f8cbfca183b1d10f1b2cad4b",
+    "documents/files/741796.docx": "9326da4028c30c30e423c274bae87eebb5a64284859bc29c73ac142446df3173",
+    "documents/files/744681.docx": "7df91df052b9687db07fe2475bf1b4e52aefbd387a74b2068bf807b3e1e9bcf8",
+    "documents/files/746806.docx": "d16d05664c70fdc6e5f4c84ca0c4d33f6cc81644e9087640604124ef2858df1c",
+    "documents/files/750761.docx": "031d4ea5925ec93370b67114e21810af11f5cc506a6b86fd80a9ddc41e51f337",
+    "documents/files/750766.docx": "9b4019dc2b00b5abd822693b1bb3f098c35667d11c3a75b08acdd23ca13fc72e",
+    "documents/files/754139.docx": "e80853687f62394bac253b727bdb2feab8fbfd97f26b855a5cb48c8f68df0c62",
+    "documents/files/755728.docm": "3f3cdb502973984c027ce60d12519acd710960fd011c362bb1ca1fd15d792bdd",
+    "documents/files/762710.docx": "7d0bbb7ce243bee6fc414c4c03cf057f560cb0d0068f103b339333ec7fd74cc1",
+    "documents/files/762711.docx": "0621a73dce4a7a817534a05737bec57a37202eeed294af57c9661328a9e7ec4e",
+    "documents/files/762714.docx": "7d0bbb7ce243bee6fc414c4c03cf057f560cb0d0068f103b339333ec7fd74cc1",
+    "documents/files/762718.docx": "7d0bbb7ce243bee6fc414c4c03cf057f560cb0d0068f103b339333ec7fd74cc1",
+    "documents/files/764162.docx": "84d1909e82a951fbfa8d7a04f8b96b1a5b1bde11bdf1a34e94059608dbd0d81e",
+    "documents/files/764163.docx": "659d7acdcc9a510e35b1803d49fdcc668dd5bf4d5b007eba37c7a6e8479cd458",
+    "documents/files/764166.docx": "84d1909e82a951fbfa8d7a04f8b96b1a5b1bde11bdf1a34e94059608dbd0d81e",
+    "documents/files/764172.docx": "5a7e985638b576b45c4d8a3136b724245a854d8c790f049baad3cd271bf4e043",
+    "documents/files/767375.docx": "76732ba8f4c166a24a805c73db0cd4faa0a8b3fc5b98b4ad6e57e6bc15cadb68",
+    "documents/files/772716.docx": "ba8a968b22634a77c5d490426814cde9de0d3278c0742ed1f684589c93ecbd03",
+    "documents/files/772870.docx": "7deaed00d9670b8f9e607dfaf798b45e2db1984be2be00e5c704441e86108a98",
+    "documents/files/774615.docm": "617854a4462d3b5266fd755c5b321823569010337a2c39fca0be18e2d2e5850d",
+    "documents/files/780621.docx": "62cd43b15229b8b9037524427404a562bb12afce25867fa04572840acec021d1",
+    "documents/files/781709.docx": "ea5736d78cd3d9ba6002f30a76a94f00945f8ba91bd6a4a162cdf1ee600ccacc",
+    "documents/files/785032.docx": "dd84e4af035f43a6209a231c593aa0977f778a60c15c3bfc3f470d6927135f35",
+    "documents/files/787179.docx": "13bbafc51d17adda7837f2125eeea4faac627e4a74f2898535fae7dc89a2ed20",
+    "documents/files/787237.docx": "13bbafc51d17adda7837f2125eeea4faac627e4a74f2898535fae7dc89a2ed20",
+    "documents/files/787731.docx": "c1f6384b14514cbfe5e93ab00f06b140db8328279bd06c1f2710b1852fe9d788",
+    "documents/files/787931.docx": "c7cae6ae9913a0e2a57fefc97e98fc16623567aae92a8375a4f12cb276fe887d",
+    "documents/files/792054.docx": "264186f96e9837a2ae555026835aed4cc022404e73dab0da0ad7154a30a78c15",
+    "documents/files/792590.docx": "0e024730ac20f06768c05399fbd68bb56c055135de37ff3cfad2a515a74b017a",
+    "documents/files/794533.docm": "e6eee159f8e8855e07bf5f52c14f0f144a046ec971da19514e46d4dd72bb3fae"
+  },
+  "cohort_sha256": "510eda8ef0f2b51bd5c8a8a621ac7e85c476ec1e1da8410406352bd02df9064f",
+  "cohort_summary": {
+    "admitted_tables": 6,
+    "all_text_roles_and_existing_provenance_equal": true,
+    "catalog_paths": 3055,
+    "catalog_unique_inputs": 1893,
+    "field_report_sha256": "eef1421d65f0a1ca65011ccccc1e769fb0b31be94e1b4eeee4b86f5878c6e5d3",
+    "files": 69,
+    "files_with_admitted_geometry": 6,
+    "files_with_native_probe": 69,
+    "files_with_unsupported_layout": 4,
+    "max_added_metadata_bytes": 1093,
+    "paired_delta_ms": {
+      "max": 36.555,
+      "p50": 0.066,
+      "p90": 2.742,
+      "p95": 5.491
+    },
+    "paired_delta_pct": {
+      "max": 5.871,
+      "p50": 0.464,
+      "p90": 4.077,
+      "p95": 4.602
+    },
+    "sample_method": "48 evenly spaced ranks by compressed byte size from unique SHA Word catalog, union pinned Word field cohort and two natural controls",
+    "source_catalog_sha256": "7bfa79ac7ee2a6981d8106880cad2bde6bc86df0b5da9a966530fcaebbf057f5",
+    "unsupported_reasons": {
+      "nested_table": 4
+    },
+    "verified_tables": 6,
+    "wall_ms_disabled": {
+      "max": 1214.862,
+      "p50": 24.956,
+      "p90": 181.978,
+      "p95": 248.135
+    },
+    "wall_ms_enabled": {
+      "max": 1251.417,
+      "p50": 24.672,
+      "p90": 179.991,
+      "p95": 252.109
+    }
+  },
+  "native_container_replay": {
+    "375208": {
+      "chains": 4,
+      "continuations": 10,
+      "roles": [
+        "bill"
+      ],
+      "selection_id": "selection-v1:870094ba0ed51e8910f97d59a2a552a74fd1796f95bcd4b7d3c617d09f3bb284",
+      "sha256": "23c2c274ca1bd6e7ca25c357fe623431b07c7831c605c5f2496f6fa6673c6d6d",
+      "text_sha256": "c7eb8238e239b0405133d1df071b5204db6aa717d11d6ee85664cc5ecd007540"
+    },
+    "418603": {
+      "chains": 3,
+      "continuations": 6,
+      "roles": [
+        "bill"
+      ],
+      "selection_id": "selection-v1:c3b6b77b163b38bf0e9be33342dcc099ad0ea0b577703717ce1de1f84ff306be",
+      "sha256": "8501c9b1b7b3550f5184cc4ef70d9cbf90a7a5eb34b5bfd5cf10213e492afbfd",
+      "text_sha256": "efc802b7dd769d90a26a05cd5c8c5bedc59653c89d604633450e62958e2c0dd4"
+    }
+  },
+  "native_container_text_roles_and_selection_identical": true,
+  "native_service_enabled_by_container": true,
+  "natural_controls": {
+    "cases": {
+      "documents/files/375208.docx": {
+        "changed_source_hash_roles": [
+          "package",
+          "word",
+          "odt"
+        ],
+        "geometry_bytes": 654,
+        "geometry_only_dump_delta_bytes": {
+          "gzip": 147,
+          "sql": 674
+        },
+        "input_sha256": "23c2c274ca1bd6e7ca25c357fe623431b07c7831c605c5f2496f6fa6673c6d6d",
+        "legacy_text_sha256": "c7eb8238e239b0405133d1df071b5204db6aa717d11d6ee85664cc5ecd007540",
+        "median_wall_seconds_opt_in": 0.06728612491860986,
+        "median_wall_seconds_opt_out": 0.0754292921628803,
+        "selection_sha256": "95daf7c3e44ebef94e4fa9022c6e8fcfe2c703c7ab9e2b42eebff7177ad8dd56",
+        "total_dump_delta_bytes": {
+          "gzip": 152,
+          "sql": 674
+        },
+        "vertical_chains": 4,
+        "vertical_continuations": 10
+      },
+      "documents/files/418603.docx": {
+        "changed_source_hash_roles": [
+          "package",
+          "word",
+          "odt"
+        ],
+        "geometry_bytes": 583,
+        "geometry_only_dump_delta_bytes": {
+          "gzip": 136,
+          "sql": 603
+        },
+        "input_sha256": "8501c9b1b7b3550f5184cc4ef70d9cbf90a7a5eb34b5bfd5cf10213e492afbfd",
+        "legacy_text_sha256": "efc802b7dd769d90a26a05cd5c8c5bedc59653c89d604633450e62958e2c0dd4",
+        "median_wall_seconds_opt_in": 0.10112754092551768,
+        "median_wall_seconds_opt_out": 0.108635124983266,
+        "selection_sha256": "df4801c3384c62276304eeac6c11284165611d04f6e6a9a3f1b4986d58b3e1db",
+        "total_dump_delta_bytes": {
+          "gzip": 139,
+          "sql": 603
+        },
+        "vertical_chains": 3,
+        "vertical_continuations": 6
+      }
+    },
+    "compatible_reader_restores_native_writer_byte_identically": true,
+    "normal_native_writer_opt_in": true,
+    "normalized_extraction_and_dumps_match": true,
+    "old_opt_in_geometry_report_matches_shared_helper": true,
+    "reader_qualification_sha256": "df6f73f42ec50fa688e76b5bc314742f39ac4b1ce50a58464a0551f515850273"
+  },
+  "v74_integrated_restore": {
+    "word_375208": {
+      "input_sha256": "e0fb9a93986be776062c4b84cdf4eebcfa09d833abf9f1a9a0cf7224b94580cc",
+      "only_schema_delta": true,
+      "v74_sha256": "5dd315a48f3a5399ec98f5444cce29d4a84562969fee23155899120caaa66f10"
+    },
+    "word_418603": {
+      "input_sha256": "30cf921e4e6a933953c3d85dced2564ca36cc6fb18d0c09a4b8771ceb6a00cdf",
+      "only_schema_delta": true,
+      "v74_sha256": "5e14b7425be2c4bd1e6b20b53e7488ab0c8ca4eac5a84b96f4895e182d44136a"
+    }
+  }
+}

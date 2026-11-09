@@ -735,6 +735,9 @@ class NormativeAnnexGap(BaseModel):
         return self
 
 
+type VersionPartGap = RequiredPartGap | AmendmentPartGap | NormativeAnnexGap
+
+
 class SejmOriginalProposal(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
 
@@ -1109,6 +1112,16 @@ type ArchiveVersionEvidence = (
 )
 
 
+def candidate_universe_sha256(requested: TextDocument) -> str:
+    universe = json.dumps(
+        requested.model_dump(mode="json"),
+        sort_keys=True,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(universe.encode()).hexdigest()
+
+
 class CandidateDispositionTrace(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -1152,7 +1165,10 @@ class CandidateDispositionTrace(BaseModel):
     amendment_part_gap: AmendmentPartGap | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
-    version_part_gaps: tuple[RequiredPartGap | AmendmentPartGap | NormativeAnnexGap, ...] = Field(
+    version_part_gaps: tuple[VersionPartGap, ...] = Field(
+        default=(), max_length=MAX_VERSION_DECISION_ROWS, exclude_if=lambda value: not value
+    )
+    compact_version_part_gaps: tuple[VersionPartGap, ...] = Field(
         default=(), max_length=MAX_VERSION_DECISION_ROWS, exclude_if=lambda value: not value
     )
 
@@ -1198,13 +1214,7 @@ class CandidateDispositionTrace(BaseModel):
         reason: CandidateTraceReason,
         selection_state: SelectionState,
     ) -> Self:
-        universe = json.dumps(
-            requested.model_dump(mode="json"),
-            sort_keys=True,
-            ensure_ascii=False,
-            separators=(",", ":"),
-        )
-        universe_sha256 = hashlib.sha256(universe.encode()).hexdigest()
+        universe_sha256 = candidate_universe_sha256(requested)
         candidate_count = 1 + len(requested.alternatives)
         complete = cls.model_construct(
             schema_version=1,
@@ -1248,13 +1258,7 @@ class CandidateDispositionTrace(BaseModel):
             count = 1 + len(self.requested_document.alternatives)
             if self.candidate_count != count:
                 raise ValueError("candidate count differs from the original request")
-            universe = json.dumps(
-                self.requested_document.model_dump(mode="json"),
-                sort_keys=True,
-                ensure_ascii=False,
-                separators=(",", ":"),
-            )
-            if self.universe_sha256 != hashlib.sha256(universe.encode()).hexdigest():
+            if self.universe_sha256 != candidate_universe_sha256(self.requested_document):
                 raise ValueError("candidate universe digest differs from the original request")
             version = tuple(
                 item.index for item in self.dispositions if item.phase == "version_comparison"
@@ -1342,6 +1346,20 @@ class CandidateDispositionTrace(BaseModel):
             validate_amendment_part_gap_parent(self, self.amendment_part_gap)
         if self.version_part_gaps:
             validate_version_part_gaps(self)
+        if self.compact_version_part_gaps:
+            indices = tuple(gap.index for gap in self.compact_version_part_gaps)
+            if (
+                self.coverage != "omitted_over_limit"
+                or not waiting
+                or self.candidate_count < 2
+                or self.omitted_dispositions != self.candidate_count
+                or indices != tuple(sorted(set(indices)))
+                or indices[-1] >= self.candidate_count
+                or any(gap.phase != "version_comparison" for gap in self.compact_version_part_gaps)
+            ):
+                raise ValueError(
+                    "compact version gaps require ordered positions in an omitted wait"
+                )
         if self.sejm_original_proposal is not None:
             validate_sejm_original_proposal(self, self.sejm_original_proposal)
         if self.rcl_original_proposal is not None:
@@ -1757,7 +1775,6 @@ def validate_version_part_gaps(trace: CandidateDispositionTrace) -> None:
     request = trace.requested_document
     if request is None or trace.result != "waiting":
         raise ValueError("version part gaps require a retained waiting comparison")
-    candidates = (request, *request.alternatives)
     failed = {
         row.index
         for row in trace.dispositions
@@ -1772,15 +1789,23 @@ def validate_version_part_gaps(trace: CandidateDispositionTrace) -> None:
         ):
             raise ValueError("version part gaps require ordered distinct failed candidates")
         previous_index = gap.index
-        candidate = candidates[gap.index]
-        if isinstance(gap, RequiredPartGap):
-            urls, position = candidate.required_urls, gap.required_index
-        elif isinstance(gap, AmendmentPartGap):
-            urls, position = candidate.amendment_urls, gap.amendment_index
-        else:
-            urls, position = candidate.normative_urls, gap.normative_index
-        if position >= len(urls) or not metadata_url_decision(urls[position]).admitted:
-            raise ValueError("version part gap requires its declared part URL")
+        version_part_gap_url(request, gap)
+
+
+def version_part_gap_url(request: TextDocument, gap: VersionPartGap) -> str:
+    candidates = (request, *request.alternatives)
+    if gap.index >= len(candidates):
+        raise ValueError("version part gap exceeds its candidate universe")
+    candidate = candidates[gap.index]
+    if isinstance(gap, RequiredPartGap):
+        urls, position = candidate.required_urls, gap.required_index
+    elif isinstance(gap, AmendmentPartGap):
+        urls, position = candidate.amendment_urls, gap.amendment_index
+    else:
+        urls, position = candidate.normative_urls, gap.normative_index
+    if position >= len(urls) or not metadata_url_decision(urls[position]).admitted:
+        raise ValueError("version part gap requires its declared part URL")
+    return urls[position]
 
 
 def validate_required_part_gap_parent(

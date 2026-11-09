@@ -19,7 +19,9 @@ from lexinform.models.candidate_trace import (
     archive_conflict_attempt,
     archive_version_group_members,
     archive_version_main,
+    candidate_universe_sha256,
     composed_support_sha256,
+    version_part_gap_url,
 )
 from lexinform.models.document_editions import DocumentEdition
 from lexinform.models.documents import DocumentPart
@@ -45,6 +47,7 @@ class CandidateTraceRowError(ValueError):
             "candidate_trace_archive_version_parent_mismatch",
             "candidate_trace_archive_conflict_parent_mismatch",
             "candidate_trace_archive_group_parent_mismatch",
+            "candidate_trace_compact_version_wait_parent_mismatch",
             "candidate_trace_admitted_support_parent_mismatch",
             "candidate_trace_composed_support_parent_mismatch",
             "candidate_trace_duplicate_support_parent_mismatch",
@@ -809,9 +812,61 @@ def _validate_admitted_normative_link(
             raise CandidateTraceRowError(code)
 
 
+def _validate_compact_version_wait_link(
+    connection: sqlite3.Connection, trace: CandidateDispositionTrace, observation_id: str
+) -> None:
+    if not trace.compact_version_part_gaps:
+        return
+    try:
+        reader = DocumentSourceRows(connection)
+        source = reader.get_source_observation(observation_id)
+        if source is None:
+            raise ValueError("compact version gaps require their exact source observation")
+        request = source.document
+        selection = reader.get_document_selection(source.selection_id)
+        candidates = (request, *request.alternatives)
+        if (
+            not request.compare_versions
+            or len(candidates) != trace.candidate_count
+            or candidate_universe_sha256(request) != trace.universe_sha256
+            or selection is None
+            or selection.selection.state != "waiting"
+        ):
+            raise ValueError("compact version gaps differ from their observed comparison")
+        with closing(connection.cursor()) as cursor:
+            cursor.row_factory = sqlite3.Row
+            for gap in trace.compact_version_part_gaps:
+                url = version_part_gap_url(request, gap)
+                if candidates[gap.index].official_link_conflict:
+                    raise ValueError("compact version gaps require an attempted candidate")
+                if gap.file_sha256 is None:
+                    continue
+                row = cursor.execute(
+                    "SELECT r.*, a.byte_size AS artifact_size FROM artifact_reads AS r"
+                    " JOIN artifacts AS a ON a.sha256=r.artifact_sha256"
+                    " WHERE r.requested_url=? AND r.artifact_sha256=?",
+                    (url, gap.file_sha256),
+                ).fetchone()
+                if row is None:
+                    raise ValueError("compact version gap hash requires its exact body read")
+                receipt = ArtifactReadReceipt(
+                    requested_url=url,
+                    sha256=gap.file_sha256,
+                    byte_size=row["byte_size"],
+                    recorded_at=row["recorded_at"],
+                )
+                if receipt.read_id != row["read_id"] or receipt.byte_size != row["artifact_size"]:
+                    raise ValueError("compact version gap read differs from its artifact")
+    except ValueError, TypeError, RecursionError, IndexError, KeyError, sqlite3.Error:
+        raise CandidateTraceRowError(
+            "candidate_trace_compact_version_wait_parent_mismatch"
+        ) from None
+
+
 def validate_candidate_trace_link(
     connection: sqlite3.Connection, trace: CandidateDispositionTrace, observation_id: str
 ) -> None:
+    _validate_compact_version_wait_link(connection, trace, observation_id)
     _validate_admitted_support_link(connection, trace, observation_id)
     _validate_composed_support_link(connection, trace, observation_id)
     _validate_duplicate_support_link(connection, trace, observation_id)
@@ -922,12 +977,15 @@ def validate_candidate_trace_links(
         "candidate_trace_archive_version_parent_mismatch",
         "candidate_trace_archive_conflict_parent_mismatch",
         "candidate_trace_archive_group_parent_mismatch",
+        "candidate_trace_compact_version_wait_parent_mismatch",
         "candidate_trace_admitted_support_parent_mismatch",
         "candidate_trace_composed_support_parent_mismatch",
         "candidate_trace_duplicate_support_parent_mismatch",
         "candidate_trace_admitted_normative_parent_mismatch",
     ]
-    if trace.admitted_normative_annexes is not None:
+    if trace.compact_version_part_gaps:
+        code = "candidate_trace_compact_version_wait_parent_mismatch"
+    elif trace.admitted_normative_annexes is not None:
         code = "candidate_trace_admitted_normative_parent_mismatch"
     elif trace.supporting_exclusions is not None and any(
         row.reason == "duplicate_standalone" for row in trace.supporting_exclusions.rows
