@@ -6,12 +6,13 @@ import pytest
 
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.pdf_text import PypdfTextExtractor
+from lexinform.document_selection import ARCHIVE_UNREADABLE_EDITION_POLICY_VERSION
 from lexinform.models import PdfPageText, PdfTextExtraction, TextDocument
 from lexinform.physical_observations import PhysicalObservationCollector
 from lexinform.services.documents import TextLoader
 from tests.fakes import FakeTextExtractor
 from tests.scenario.test_document_selection_contract import law
-from tests.unit.test_physical_extraction import archive
+from tests.unit.test_physical_extraction import archive, docx
 
 ROOT = "https://source.test/versions.zip"
 ALTERNATIVE = "https://source.test/older.pdf"
@@ -41,20 +42,25 @@ def test_failed_member_of_duplicate_nested_archive_does_not_block_other_occurren
 
 
 @pytest.mark.parametrize(
-    ("name", "waiting"),
+    ("name", "annex_directory", "waiting"),
     [
-        ("draft/projekt-nowy.pdf", True),
-        ("other/projekt-nowy.pdf", False),
-        ("draft/pismo.pdf", False),
-        ("draft/material.pdf", False),
+        ("draft/projekt-nowy.pdf", None, True),
+        ("other/projekt-nowy.pdf", None, False),
+        ("draft/pismo.pdf", None, False),
+        ("draft/material.pdf", None, False),
+        ("other/projekt-nowy.pdf", "other/annexes", True),
+        ("other/projekt-nowy.pdf", "draft/annexes", False),
     ],
 )
 @pytest.mark.parametrize("compare_versions", [False, True])
 def test_archive_selection_keeps_a_failed_draft_in_its_family(
-    name: str, waiting: bool, compare_versions: bool
+    name: str, annex_directory: str | None, waiting: bool, compare_versions: bool
 ) -> None:
     failed = b"%PDF-failed"
-    data = archive({"draft/projekt.pdf": b"%PDF-readable", name: failed})
+    members = {"draft/projekt.pdf": b"%PDF-readable", name: failed}
+    if annex_directory is not None:
+        members[f"{annex_directory}/zalacznik.docx"] = docx("Załącznik do ustawy\nWykaz\n300 zł")
+    data = archive(members)
     data = data.replace(failed, b"%PDF-broken", 1)
     reader = DocumentTextExtractor(
         FakeTextExtractor(law(), page_count=1), DocxTextExtractor(), FakeTextExtractor()
@@ -63,7 +69,7 @@ def test_archive_selection_keeps_a_failed_draft_in_its_family(
 
     def download(url: str, *, max_bytes: int | None = None) -> bytes:
         reads.append(url)
-        return data if url == ROOT else b"%PDF-readable"
+        return data if url == ROOT or annex_directory == "draft/annexes" else b"%PDF-readable"
 
     loader = TextLoader({"source.test": download}, reader, max_bytes=100_000)
     document = TextDocument(
@@ -87,6 +93,11 @@ def test_archive_selection_keeps_a_failed_draft_in_its_family(
     assert (file.selection.state == "waiting") == waiting
     assert (file.text is None) == waiting
     assert all(part.members[-1] != name for part in file.selection.parts)
+    if annex_directory is not None:
+        if waiting:
+            assert file.selection.policy_version == ARCHIVE_UNREADABLE_EDITION_POLICY_VERSION
+        else:
+            assert file.text is not None and "300 zł" in file.text
 
 
 @pytest.mark.parametrize("failed", [False, True])

@@ -28,6 +28,7 @@ from lexinform.document_fingerprints import text_digest as text_digest
 from lexinform.document_input import (
     amended_input_projection,
     append_self_amendments,
+    archive_normative_input_projection,
     loose_normative_input_projection,
 )
 from lexinform.document_selection import paid_input_selection, selection_for_input
@@ -4382,8 +4383,14 @@ class AnalysisService:
                 "metadata_only",
                 selection=DocumentSelection(policy_version=file.selection.policy_version),
             )
+        archive_assembly = archive_normative_input_projection(file.selection, text)
         if not trim:
             budgeted = self._budget.apply(text, self._keywords.spans(text))
+            projection = budgeted.projection
+            if projection is not None and text != PAGE_BREAK.join(
+                part.text for part in file.selection.parts
+            ):
+                projection = projection.compose(archive_assembly) if archive_assembly else None
             return _Loaded(
                 budgeted.text,
                 budgeted.truncated or file.selection.has_pdf_page_failure,
@@ -4392,11 +4399,7 @@ class AnalysisService:
                 whole=text,
                 document=document,
                 selection=file.selection,
-                projection=(
-                    budgeted.projection
-                    if text == PAGE_BREAK.join(part.text for part in file.selection.parts)
-                    else None
-                ),
+                projection=projection,
             )
         trimmed = trim_print(text)
         amendments = tuple(part for part in file.selection.parts if part.role == "self_amendment")
@@ -4414,7 +4417,9 @@ class AnalysisService:
         projection = None
         rcl_projection: Literal["annexes", "annexes_and_amendments"] | None = None
         if amendments and trimmed.projection is not None and budgeted.projection is not None:
-            amended = amended_input_projection(file.selection, trimmed.projection, combined)
+            amended = amended_input_projection(
+                file.selection, trimmed.projection, combined, assembly=archive_assembly
+            )
             if amended is None:
                 assembly = loose_normative_input_projection(
                     document, file.selection, text, with_amendments=True
@@ -4430,6 +4435,10 @@ class AnalysisService:
         if not amendments and trimmed.projection is not None and budgeted.projection is not None:
             if text == PAGE_BREAK.join(part.text for part in file.selection.parts):
                 projection = budgeted.projection.compose(trimmed.projection)
+            elif archive_assembly is not None:
+                projection = budgeted.projection.compose(
+                    trimmed.projection.compose(archive_assembly)
+                )
             else:
                 assembly = loose_normative_input_projection(document, file.selection, text)
                 if assembly is not None:

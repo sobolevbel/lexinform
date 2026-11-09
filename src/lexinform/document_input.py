@@ -2,7 +2,8 @@
 
 import hashlib
 
-from lexinform.document_versions import normative_annex_key, normative_insertion_offset
+from lexinform.document_selection import ARCHIVE_EDITION_DIRECTORY_POLICY_VERSION
+from lexinform.document_versions import normative_annex_key, normative_text_pieces
 from lexinform.models.documents import DocumentPart, DocumentSelection
 from lexinform.models.sejm import TextDocument
 from lexinform.sections import PAGE_BREAK
@@ -99,16 +100,38 @@ def loose_normative_input_projection(
     ):
         return None
 
-    position = normative_insertion_offset(main.text)
-    pieces = [SourcePiece(main.text[:position], 0)]
-    offset = len(main.text) + len(PAGE_BREAK)
-    for part in annexes:
-        pieces.extend((SourcePiece(PAGE_BREAK), SourcePiece(part.text, offset)))
-        offset += len(part.text) + len(PAGE_BREAK)
-    pieces.extend((SourcePiece(PAGE_BREAK), SourcePiece(main.text[position:], position)))
-    offset += sum(len(part.text) + len(PAGE_BREAK) for part in amendments)
-    for part in supporting:
-        pieces.extend((SourcePiece(PAGE_BREAK), SourcePiece(part.text, offset)))
+    return _normative_input_projection(parts, annex_count, text)
+
+
+def archive_normative_input_projection(
+    selection: DocumentSelection, text: str
+) -> TextProjection | None:
+    parts = selection.parts
+    if (
+        selection.policy_version != ARCHIVE_EDITION_DIRECTORY_POLICY_VERSION
+        or not parts
+        or not parts[0].members
+        or parts[0].role != "bill"
+    ):
+        return None
+    annex_end = next(
+        (index for index, part in enumerate(parts[1:], start=1) if part.role != "normative_annex"),
+        len(parts),
+    )
+    if annex_end == 1 or any(part.role == "normative_annex" for part in parts[annex_end:]):
+        return None
+    return _normative_input_projection(parts, annex_end - 1, text)
+
+
+def _normative_input_projection(
+    parts: tuple[DocumentPart, ...], annex_count: int, text: str
+) -> TextProjection | None:
+    annex_end = 1 + annex_count
+    pieces = normative_text_pieces(parts[0].text, [part.text for part in parts[1:annex_end]])
+    offset = sum(len(part.text) + len(PAGE_BREAK) for part in parts[:annex_end])
+    for part in parts[annex_end:]:
+        if part.role != "self_amendment":
+            pieces.extend((SourcePiece(PAGE_BREAK), SourcePiece(part.text, offset)))
         offset += len(part.text) + len(PAGE_BREAK)
     source = PAGE_BREAK.join(part.text for part in parts)
     projection = project_pieces(source, pieces)

@@ -1,11 +1,12 @@
 import datetime as dt
 import hashlib
 import re
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 
 from lexinform.law_digest import law_digest
-from lexinform.sections import trim_print
+from lexinform.sections import PAGE_BREAK, trim_print
+from lexinform.text_projection import SourcePiece
 
 
 def normative_annex_key(text: str) -> tuple[int, str]:
@@ -134,8 +135,19 @@ def normative_name(name: str) -> bool:
 def join_normative_parts(text: str, parts: list[str]) -> str:
     if not parts:
         return text
+    return "".join(piece.text for piece in normative_text_pieces(text, parts))
+
+
+def normative_text_pieces(text: str, annexes: Sequence[str]) -> list[SourcePiece]:
+    """Place annexes before the justification with coordinates in the original flat assembly."""
     position = normative_insertion_offset(text)
-    return text[:position] + "\f" + "\f".join(parts) + "\f" + text[position:]
+    pieces = [SourcePiece(text[:position], 0)]
+    offset = len(text) + len(PAGE_BREAK)
+    for annex in annexes:
+        pieces.extend((SourcePiece(PAGE_BREAK), SourcePiece(annex, offset)))
+        offset += len(annex) + len(PAGE_BREAK)
+    pieces.extend((SourcePiece(PAGE_BREAK), SourcePiece(text[position:], position)))
+    return pieces
 
 
 def normative_insertion_offset(text: str) -> int:

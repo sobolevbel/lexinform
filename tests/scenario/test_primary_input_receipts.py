@@ -11,6 +11,7 @@ from lexinform.adapters import document_text as document_module
 from lexinform.adapters.llm_prompts import build_user_prompt
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
+    AnalysisQuestion,
     BatchIntent,
     BatchItemMeta,
     BatchRequest,
@@ -365,6 +366,53 @@ def test_single_archive_bill_gets_a_prepared_input_receipt() -> None:
     (part,) = receipt.source_parts
     assert part.physical_index == 0 and part.role == "bill"
     assert receipt.request_sha256 == current.batch.submitted[0].payload_sha256
+
+
+def test_archive_annex_before_embedded_justification_keeps_exact_input_receipt() -> None:
+    def draft(day: int) -> bytes:
+        return docx(
+            f"Projekt z dnia {day} września 2026 r.\nUSTAWA\nz dnia …\n"
+            "o zmianie ustawy o cudzoziemcach\n"
+            + "".join(
+                f"Art. {number}. Cudzoziemiec składa wniosek w terminie 30 dni.\n"
+                for number in range(1, 35)
+            )
+            + "Art. 35. Ustawa wchodzi w życie po upływie 14 dni od dnia ogłoszenia.\n"
+            "UZASADNIENIE\n" + "Treść uzasadnienia. " * 40
+        )
+
+    current = World(extractor=reader(), batch_only=True, text_prefilter=False)
+    package = rcl_document(1, "Projekt ustawy.zip")
+    current.add_rcl_project(
+        rcl_project(
+            stages=(rcl_stage(1, "Projekt", "reached", rcl_folder(1, "Projekt", package)),),
+            consultation=None,
+        )
+    )
+    current.rcl.files[package.url] = archive(
+        {
+            "old/projekt.docx": draft(1),
+            "new/projekt.docx": draft(2),
+            "new/zalacznik.docx": docx("Załącznik do ustawy\nWykaz szczegółowych kryteriów."),
+        }
+    )
+
+    current.run(track=False)
+
+    (request,) = current.batch.submitted
+    (batch,) = current.repo.list_open_llm_batches()
+    (item,) = current.repo.list_llm_batch_items(batch.batch_id)
+    receipt = item.meta.prepared_input_receipt
+    assert isinstance(request.question, AnalysisQuestion), "the fake submitted a primary analysis"
+    assert isinstance(receipt, RclArchiveInputReceipt), "the submitted archive has verified origins"
+    text = request.question.ctx.text
+    assert text.index("Załącznik do ustawy") < text.index("UZASADNIENIE")
+    assert tuple(part.role for part in receipt.source_parts) == ("bill", "normative_annex")
+    assert receipt.request_sha256 == request.payload_sha256
+    (annex,) = [segment for segment in receipt.segments if segment.part_index == 1]
+    assert text[annex.start : annex.end] == "Załącznik do ustawy\nWykaz szczegółowych kryteriów."
+    current.repo.restore(current.repo.dump())
+    assert current.repo.list_llm_batch_items(batch.batch_id) == [item]
 
 
 def test_odt_row_receipt_survives_batch_cleanup_and_restore() -> None:

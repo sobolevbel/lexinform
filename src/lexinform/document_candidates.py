@@ -12,7 +12,10 @@ from lexinform.archive_policy_capture import (
     ArchiveVersionGroup,
     PolicyOutcome,
 )
-from lexinform.document_selection import ARCHIVE_EDITION_DIRECTORY_POLICY_VERSION
+from lexinform.document_selection import (
+    ARCHIVE_EDITION_DIRECTORY_POLICY_VERSION,
+    ARCHIVE_UNREADABLE_EDITION_POLICY_VERSION,
+)
 from lexinform.document_versions import (
     VersionComparison,
     compare_version_decision,
@@ -60,6 +63,33 @@ _ARCHIVE_RESPONSE_COLUMNS = re.compile(
     r"Proponowana\s+treść\s*/\s*Uzasadnienie\s+dla\s+zmiany\s+Stanowisko\s+Ministerstwa",
     re.I | re.S,
 )
+
+
+def _edition_directory(path: str, roots: set[str]) -> str:
+    return max(
+        (root for root in roots if not root or path == root or path.startswith(f"{root}/")),
+        key=len,
+        default=path,
+    )
+
+
+def _annex_backed_failed_editions(
+    failed: set[_ArchiveFamily],
+    readable: dict[_ArchiveOccurrence, set[str]],
+    annexes: set[_ArchiveFamily],
+) -> set[_ArchiveFamily]:
+    """A named unreadable draft in another directory is a peer if it owns a normative annex."""
+    candidates: dict[_ArchiveOccurrence, set[str]] = {}
+    for occurrence, directory in failed:
+        if directory and occurrence in readable and directory not in readable[occurrence]:
+            candidates.setdefault(occurrence, set()).add(directory)
+    matched = set()
+    for occurrence, path in annexes:
+        if occurrence in candidates:
+            directory = _edition_directory(path, readable[occurrence] | candidates[occurrence])
+            if directory in candidates[occurrence]:
+                matched.add((occurrence, directory))
+    return matched
 
 
 def _physical_kind(part: DocumentPart) -> Kind:
@@ -247,7 +277,7 @@ def _select_parts(
     version_choice: ArchiveVersionChoice | None = None
     conflict_slots: tuple[int, ...] = ()
     version_group: ArchiveVersionGroup | None = None
-    partitioned_editions = False
+    policy_version: str | None = None
 
     def note(index: int, outcome: PolicyOutcome, reason: ArchiveMemberPolicyReason) -> None:
         if decision_sink is not None:
@@ -275,11 +305,11 @@ def _select_parts(
                     )
             except Exception:
                 pass
-        if partitioned_editions:
+        if policy_version is not None:
             return result.model_copy(
                 update={
                     "selection": result.selection.model_copy(
-                        update={"policy_version": ARCHIVE_EDITION_DIRECTORY_POLICY_VERSION}
+                        update={"policy_version": policy_version}
                     )
                 }
             )
@@ -402,33 +432,34 @@ def _select_parts(
     edition_directories: dict[_ArchiveOccurrence, set[str]] = {}
     for occurrence, directory in comparison_families:
         edition_directories.setdefault(occurrence, set()).add(directory)
-    partitioned_editions = any(len(directories) > 1 for directories in edition_directories.values())
+    if any(len(directories) > 1 for directories in edition_directories.values()):
+        policy_version = ARCHIVE_EDITION_DIRECTORY_POLICY_VERSION
 
     def edition_family(index: int, part: DocumentPart) -> _ArchiveFamily:
         occurrence, directory = part_family(index, part)
         roots = edition_directories.get(occurrence, set())
         if len(roots) < 2:
             return occurrence, ""
-        owner = max(
-            (
-                root
-                for root in roots
-                if not root or directory == root or directory.startswith(f"{root}/")
-            ),
-            key=len,
-            default=directory,
-        )
-        return occurrence, owner
+        return occurrence, _edition_directory(directory, roots)
+
+    unreadable_families = {
+        comparison_family(failure.members, failure.ordinals) for failure in unreadable_drafts
+    }
+    failed_editions = _annex_backed_failed_editions(
+        unreadable_families | {part_family(index, part) for index, part in incomplete_named_bills},
+        edition_directories,
+        {part_family(index, part) for index, part in annexes},
+    )
+    if failed_editions:
+        comparison_families |= failed_editions
+        policy_version = ARCHIVE_UNREADABLE_EDITION_POLICY_VERSION
 
     incomplete_peers = tuple(
         (index, part)
         for index, part in incomplete_named_bills
         if part_family(index, part) in comparison_families
     )
-    unreadable_peer = any(
-        comparison_family(failure.members, failure.ordinals) in comparison_families
-        for failure in unreadable_drafts
-    )
+    unreadable_peer = bool(unreadable_families & comparison_families)
     pdf_failure = (
         main.has_pdf_page_failure
         or bool(incomplete_peers)
