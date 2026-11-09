@@ -2674,6 +2674,8 @@ class SqliteBillRepository:
 
     def read_card_content_history(self, root_publication_id: int) -> EditorialContentHistory:
         inventory = read_card_content_inventory(self._conn, root_publication_id)
+        if root_publication_id not in inventory.publications:
+            return self.read_bound_content_history(root_publication_id)
         return self._verified_editorial_history(
             inventory.versions,
             inventory.publications,

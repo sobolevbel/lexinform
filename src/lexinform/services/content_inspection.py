@@ -96,6 +96,8 @@ def _inspect_multipart_card(
     root_id = selected.root_publication_id
     root = inventory.publications.get(root_id)
     original = inventory.bindings.get(root_id)
+    if original is None and root is None:
+        original = repo.get_publication_content(root_id)
     if original is None:
         return ContentHistoryView(integrity="unavailable")
     current = (
