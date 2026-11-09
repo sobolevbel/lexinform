@@ -19,7 +19,12 @@ from lexinform.services.grouped_edit_dispatch import dispatch_reserved_grouped_e
 from tests.checkpoint_state import saved_state
 from tests.harness import World
 from tests.scenario.test_group_remote_checkpoints import flush, queued_world, rows
-from tests.scenario.test_grouped_stage_revision_reader import corrected_render, revision_fixture
+from tests.scenario.test_grouped_stage_revision_reader import (
+    corrected_render,
+    original_fixture,
+    revision_fixture,
+    save_slot,
+)
 from tests.scenario.test_grouped_stage_revision_reservation import reserve
 from tests.scenario.test_grouped_telegram_receipt import CHAT_ID, MESSAGE_ID, telegram_send
 
@@ -185,6 +190,66 @@ def test_nonmatching_or_rejected_edit_is_inert_after_restore(
         assert history is not None
         assert history.current_id == (original.content_id if result == "rejected" else None)
     assert len(edits) == 1 and len(dumps) == 2
+
+
+def test_reader_accepts_a_candidate_scoped_slot_alongside_a_rejected_legacy_slot(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with monkeypatch.context() as patch:
+        world, root, original, version, candidate, slot = reserved(patch)
+    assert (
+        dispatch(
+            world,
+            world.repo,
+            lambda *_: VerifiedEditRejection(429),
+            lambda: None,
+            original,
+            version,
+            candidate,
+            slot,
+        )
+        is PublicationStatus.FAILED
+    )
+    rejected = world.repo.publication_by_id(slot)
+    with monkeypatch.context() as patch:
+        _, _, _, news = original_fixture(patch)
+    alternative = corrected_render(world, original, news, days=2)
+    assert root.id is not None, "the confirmed original has a publication identity"
+    revision = revision_fixture(original, alternative, target=MESSAGE_ID, changed_member=root.id)
+    alternative_slot = save_slot(world, root, revision, candidate_scoped=True)
+    frozen = world.repo.dump()
+
+    with saved_state(frozen) as restored:
+        stored = restored.repo.publication_by_id(alternative_slot)
+        assert stored is not None and stored.ref is not None, "the exact candidate ref was saved"
+        assert restored.repo.get_publication_content(alternative_slot) == revision
+        assert (
+            dispatch(
+                world,
+                restored.repo,
+                lambda chat, message, _: TelegramEditReceipt(chat, message),
+                lambda: None,
+                original,
+                revision,
+                alternative,
+                alternative_slot,
+            )
+            is PublicationStatus.SENT
+        )
+        assert restored.repo.publication_by_id(slot) == rejected
+        confirmed = restored.repo.dump()
+
+    with saved_state(confirmed) as restored:
+        history = inspect_content(restored.repo, root)
+        assert history is not None and history.current_id == revision.content_id
+        assert restored.repo.dump() == confirmed
+
+    wrong_ref = stored.ref.replace(revision.content_id.removeprefix("content-v1:"), "f" * 64)
+    with (
+        pytest.raises(ValueError, match="invalid_content_history"),
+        saved_state(confirmed.replace(stored.ref, wrong_ref)),
+    ):
+        pytest.fail("an unrelated candidate digest must fail restore")
 
 
 @pytest.mark.parametrize("phase", ["before", "after"])

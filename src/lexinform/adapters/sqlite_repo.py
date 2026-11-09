@@ -2852,23 +2852,41 @@ class SqliteBillRepository:
     def _grouped_stage_edit_conflict(
         self, root: Publication, ref: str, *, excluding_slot: int | None = None
     ) -> bool:
+        group_pattern = f"{GROUPED_STAGE_REVISION_REF_PREFIX}{root.id}/*"
         return (
             self._conn.execute(
-                "SELECT 1 FROM publications WHERE channel_id=? AND (? IS NULL OR id!=?) AND ("
-                " (kind='message_part' AND ref=?) OR ("
-                " status IN ('queued','failed','pending','unknown') AND ("
-                " (kind='message_part' AND ref GLOB ?) OR (delivery_json IS NOT NULL AND CASE"
-                " WHEN NOT json_valid(delivery_json) THEN 1"
-                " WHEN json_type(delivery_json) != 'object' THEN 1"
-                " ELSE CAST(json_extract(delivery_json, '$.edit_message_id') AS INTEGER)=?"
-                " END)))) LIMIT 1",
+                """
+                SELECT 1 FROM publications p WHERE p.channel_id=? AND (? IS NULL OR p.id!=?)
+                AND (
+                    (p.kind='message_part' AND p.ref=?) OR (
+                        p.status IN ('queued','failed','pending','unknown')
+                        AND ((p.kind='message_part' AND p.ref GLOB ?) OR (
+                            p.delivery_json IS NOT NULL AND CASE
+                                WHEN NOT json_valid(p.delivery_json) THEN 1
+                                WHEN json_type(p.delivery_json)!='object' THEN 1
+                                ELSE CAST(json_extract(p.delivery_json,'$.edit_message_id')
+                                    AS INTEGER)=? END
+                        ))
+                        AND NOT (p.status='failed' AND p.attempts>0 AND p.error IS ?
+                            AND p.kind='message_part' AND p.ref GLOB ? AND EXISTS (
+                                SELECT 1 FROM publication_content b JOIN content_versions v
+                                ON v.content_id=b.content_id
+                                WHERE b.publication_id=p.id AND v.root_publication_id=?
+                            )
+                        )
+                    )
+                ) LIMIT 1
+                """,
                 (
                     root.channel_id,
                     excluding_slot,
                     excluding_slot,
                     ref,
-                    f"{GROUPED_STAGE_REVISION_REF_PREFIX}{root.id}/*",
+                    group_pattern,
                     root.message_id,
+                    _GROUPED_EDIT_REJECTED,
+                    group_pattern,
+                    root.id,
                 ),
             ).fetchone()
             is not None
@@ -2947,11 +2965,16 @@ class SqliteBillRepository:
                 return False
             root = self.publication_by_id(version.root_publication_id)
             original = self.get_publication_content(version.root_publication_id)
-            ref = grouped_stage_revision_ref(version)
+            ref = slot.ref
             if (
                 root is None
                 or original is None
                 or ref is None
+                or ref
+                not in (
+                    grouped_stage_revision_ref(version),
+                    grouped_stage_revision_ref(version, candidate_scoped=True),
+                )
                 or read_grouped_stage_telegram_target(self._conn, original)
                 != (claim.chat_id, claim.message_id)
                 or self._grouped_stage_edit_conflict(root, ref, excluding_slot=claim.publication_id)
@@ -3080,17 +3103,25 @@ class SqliteBillRepository:
         ):
             return None
         bindings = self._conn.execute(
-            "SELECT b.content_id, p.id, p.status FROM publication_content b"
+            "SELECT b.content_id, p.id, p.status, p.attempts, p.error FROM publication_content b"
             " JOIN content_versions v ON v.content_id=b.content_id"
             " JOIN publications p ON p.id=b.publication_id"
             " WHERE v.root_publication_id=? AND (? IS NULL OR b.content_id!=?)",
             (root.id, excluding_content_id, excluding_content_id),
         ).fetchall()
-        if len(bindings) != len(versions) or any(row["status"] != "sent" for row in bindings):
+        if len(bindings) != len(versions) or any(
+            row["status"] != "sent"
+            and not (
+                row["status"] == "failed"
+                and row["attempts"] > 0
+                and row["error"] == _GROUPED_EDIT_REJECTED
+            )
+            for row in bindings
+        ):
             return None
-        confirmed = {row["content_id"] for row in bindings}
-        if confirmed != versions.keys():
+        if {row["content_id"] for row in bindings} != versions.keys():
             return None
+        confirmed = {row["content_id"] for row in bindings if row["status"] == "sent"}
         current = confirmed_content_version(
             {identity: version.previous_version_id for identity, version in versions.items()},
             confirmed,
@@ -3100,7 +3131,7 @@ class SqliteBillRepository:
         base = versions[current]
         evidence = base.grouped_stage_evidence
         assert evidence is not None, "the supported history has exact grouped evidence"
-        known_receipts = {row["id"] for row in bindings} | {
+        known_receipts = {row["id"] for row in bindings if row["status"] == "sent"} | {
             member.publication_id for member in evidence.members
         }
         receipts = self._conn.execute(

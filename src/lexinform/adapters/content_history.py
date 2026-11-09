@@ -1525,14 +1525,26 @@ def _grouped_revision_slot(
     *,
     require_bound: bool,
 ) -> Publication:
-    ref = grouped_stage_revision_ref(version)
+    legacy_ref = grouped_stage_revision_ref(version)
+    candidate_ref = grouped_stage_revision_ref(version, candidate_scoped=True)
     plan = grouped_stage_revision_plan(version, bill)
+    if legacy_ref is None or candidate_ref is None or plan is None:
+        raise ValueError("grouped_revision_slot_missing")
+    bindings = _query(
+        connection,
+        "SELECT publication_id FROM publication_content WHERE content_id=? LIMIT 2",
+        (version.content_id,),
+    ).fetchall()
+    if len(bindings) > 1 or (require_bound and not bindings):
+        raise ValueError("grouped_revision_slot_binding")
+    bound_id = bindings[0][0] if bindings else None
     row = _query(
         connection,
-        "SELECT * FROM publications WHERE channel_id=? AND kind='message_part' AND ref=?",
-        (root.channel_id, ref),
+        "SELECT * FROM publications WHERE channel_id=? AND kind='message_part'"
+        " AND ref IN (?,?) AND (? IS NULL OR id=?) ORDER BY (ref=?) DESC LIMIT 1",
+        (root.channel_id, legacy_ref, candidate_ref, bound_id, bound_id, candidate_ref),
     ).fetchone()
-    if ref is None or plan is None or row is None:
+    if row is None:
         raise ValueError("grouped_revision_slot_missing")
     slot = read_content_publication(row)
     if (
@@ -1542,13 +1554,6 @@ def _grouped_revision_slot(
         or plan.edit_message_id != root.message_id
     ):
         raise ValueError("grouped_revision_slot_owner")
-    bindings = _query(
-        connection,
-        "SELECT publication_id FROM publication_content WHERE content_id=? LIMIT 2",
-        (version.content_id,),
-    ).fetchall()
-    if (bindings or require_bound) and [binding[0] for binding in bindings] != [slot.id]:
-        raise ValueError("grouped_revision_slot_binding")
     if slot.delivery is None:
         if not bindings or slot.status is not PublicationStatus.SENT:
             raise ValueError("grouped_revision_expired_slot")

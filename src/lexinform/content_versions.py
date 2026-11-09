@@ -161,11 +161,16 @@ def is_grouped_stage_revision_slot(publication: Publication) -> bool:
     )
 
 
-def grouped_stage_revision_ref(version: ContentVersion) -> str | None:
+def grouped_stage_revision_ref(
+    version: ContentVersion, *, candidate_scoped: bool = False
+) -> str | None:
     if version.reason != "grouped_stage_revision" or version.previous_version_id is None:
         return None
     predecessor = version.previous_version_id.removeprefix("content-v1:")
-    return f"{GROUPED_STAGE_REVISION_REF_PREFIX}{version.root_publication_id}/{predecessor}/1"
+    root = f"{GROUPED_STAGE_REVISION_REF_PREFIX}{version.root_publication_id}/{predecessor}"
+    if candidate_scoped:
+        root += f"/{version.content_id.removeprefix('content-v1:')}"
+    return f"{root}/1"
 
 
 def grouped_stage_revision_plan(

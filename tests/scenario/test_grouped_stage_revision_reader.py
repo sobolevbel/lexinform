@@ -97,7 +97,12 @@ def revision_fixture(
 
 
 def save_slot(
-    world: World, root: Publication, version: ContentVersion, *, wrong_owner: bool = False
+    world: World,
+    root: Publication,
+    version: ContentVersion,
+    *,
+    wrong_owner: bool = False,
+    candidate_scoped: bool = False,
 ) -> int:
     bill = world.repo.get_content_snapshot(version.bill_context_id)
     assert bill is not None, "the root compact bill is retained"
@@ -111,7 +116,7 @@ def save_slot(
                 channel_id=root.channel_id,
                 kind=PublicationKind.MESSAGE_PART,
                 status=PublicationStatus.QUEUED,
-                ref=grouped_stage_revision_ref(version),
+                ref=grouped_stage_revision_ref(version, candidate_scoped=candidate_scoped),
                 created_at=world.clock.now(),
                 delivery=plan,
             )
