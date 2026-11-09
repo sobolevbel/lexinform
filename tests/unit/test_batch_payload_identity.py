@@ -1,5 +1,6 @@
 import hashlib
 from collections.abc import Callable
+from datetime import UTC, datetime
 
 import httpx2 as httpx
 import pytest
@@ -8,7 +9,15 @@ from openai import OpenAI
 
 from lexinform.adapters.llm_anthropic import AnthropicAnalyzer
 from lexinform.adapters.llm_openai import OpenAiAnalyzer
-from lexinform.models import AmendmentsContext, BatchRequest
+from lexinform.adapters.sqlite_repo import SqliteBillRepository
+from lexinform.models import (
+    AmendmentsContext,
+    BatchIntent,
+    BatchRequest,
+    DigestItemMeta,
+    LlmBatch,
+    LlmBatchItem,
+)
 from lexinform.models.batch import AmendmentsQuestion
 from lexinform.ports import BatchBackend
 from tests.unit.test_scan_input import loaded_scan
@@ -33,6 +42,53 @@ def request_for(*, scan: bool = False) -> BatchRequest:
             )
         ),
     )
+
+
+def test_group_submission_preserves_each_request_and_prioritizes_its_intent(
+    repo: SqliteBillRepository,
+) -> None:
+    backend = openai_backend()
+    now = datetime(2026, 11, 9, tzinfo=UTC)
+    identities = ("first", "second")
+    intents = [
+        BatchIntent.from_request(
+            request=backend.prepare_request(
+                request_for().model_copy(update={"custom_id": identity})
+            ),
+            meta=DigestItemMeta(memo_key=identity),
+            provider="openai",
+            created_at=now,
+        )
+        for identity in identities
+    ]
+    for intent in intents:
+        repo.save_batch_intent(intent)
+    repo.mark_batch_intents_submitting(identities)
+    batch = LlmBatch(
+        batch_id="batch",
+        provider="openai",
+        call_kind="amendments",
+        submitted_at=now,
+        status="submitted",
+        request_count=len(intents),
+        estimated_cost_usd=0,
+    )
+
+    repo.save_llm_batch(
+        batch, [LlmBatchItem.from_intent(batch.batch_id, intent) for intent in intents]
+    )
+
+    items = {item.custom_id: item for item in repo.list_llm_batch_items(batch.batch_id)}
+    for intent in intents:
+        custom_id = intent.request.custom_id
+        manifest = items[custom_id].meta.frozen_request_manifest
+        assert manifest is not None and manifest.request_sha256 == intent.request.payload_sha256
+        job = repo.batch_job(custom_id)
+        assert job is not None and job.state == "submitting" and job.submissions == 1
+    repo.delete_batch_intents(identities)
+    for custom_id in identities:
+        job = repo.batch_job(custom_id)
+        assert job is not None and job.state == "open" and job.submissions == 1
 
 
 @pytest.mark.parametrize("factory", [openai_backend, anthropic_backend])

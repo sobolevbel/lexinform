@@ -1344,6 +1344,12 @@ class SqliteBillRepository:
             Path(self._path).parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(self._path, isolation_level=None)  # autocommit, see begin()
         self._conn.row_factory = self._legacy_row
+        self._conn.create_function(
+            "lexinform_casefold",
+            1,
+            lambda value: value.casefold() if isinstance(value, str) else None,
+            deterministic=True,
+        )
         self._conn.execute("PRAGMA foreign_keys = ON")
         if self._path != ":memory:":
             self._conn.execute("PRAGMA journal_mode = WAL")
@@ -1351,7 +1357,10 @@ class SqliteBillRepository:
 
     def _legacy_row(self, cursor: sqlite3.Cursor, row: tuple[object, ...]) -> sqlite3.Row:
         columns = cursor.description
-        if columns is None:
+        if columns is None or not any(
+            column[0] in LEGACY_PROJECTION_COLUMNS and isinstance(value, str)
+            for column, value in zip(columns, row, strict=True)
+        ):
             return sqlite3.Row(cursor, row)
         values = {column[0]: value for column, value in zip(columns, row, strict=True)}
         term, number = values.get("term"), values.get("number")
@@ -1362,12 +1371,14 @@ class SqliteBillRepository:
         )
         reader = PrimaryProjectionReader(self._conn)
         generation = values.get("analysis_generation")
+        owner_unlinked = "linked_number" in values and values["linked_number"] is None
         materialized = tuple(
             reader.materialize(
                 column[0],
                 read_legacy_json(value, self.get_legacy_result),
                 owner,
                 generation if isinstance(generation, int) else None,
+                owner_unlinked=owner_unlinked,
             )
             if column[0] in LEGACY_PROJECTION_COLUMNS and isinstance(value, str)
             else value
@@ -1561,6 +1572,8 @@ class SqliteBillRepository:
                     "rcl_link": summary.rcl_link or existing.summary.rcl_link,
                 }
             )
+            encoded = storage_json(summary)
+            checked_at = now.isoformat()
             self._conn.execute(
                 """
                 UPDATE bills SET title = ?, change_date = ?, closure_date = ?, passed = ?,
@@ -1572,11 +1585,17 @@ class SqliteBillRepository:
                     summary.change_date.isoformat(),
                     _iso_date(summary.closure_date),
                     _bool(summary.passed),
-                    storage_json(summary),
-                    now.isoformat(),
+                    encoded,
+                    checked_at,
                     summary.term,
                     summary.number,
                 ),
+            )
+            return existing.model_copy(
+                update={
+                    "summary": ProcessSummary.model_validate_json(encoded),
+                    "last_checked_at": datetime.fromisoformat(checked_at),
+                }
             )
         bill = self.get(summary.term, summary.number)
         assert bill is not None, "the row was written just above on this connection"
@@ -4710,33 +4729,30 @@ class SqliteBillRepository:
             )
 
     def batch_job(self, custom_id: str) -> BatchJob | None:
-        submissions = self._conn.execute(
-            "SELECT COUNT(*) FROM llm_batch_items WHERE custom_id = ?", (custom_id,)
-        ).fetchone()[0]
-        intent = self._conn.execute(
-            "SELECT state, created_at FROM llm_batch_intents WHERE custom_id = ?", (custom_id,)
-        ).fetchone()
-        if intent is not None:
-            return BatchJob(
-                state=intent["state"],
-                since=datetime.fromisoformat(intent["created_at"]),
-                submissions=submissions,
-            )
         row = self._conn.execute(
-            "SELECT i.consumed_at, b.status, "
-            "COALESCE(json_extract(i.meta_json, '$.queued_at'), b.submitted_at) AS since "
-            "FROM llm_batch_items i JOIN llm_batches b USING (batch_id) "
-            "WHERE i.custom_id = ? ORDER BY b.submitted_at DESC, i.rowid DESC LIMIT 1",
-            (custom_id,),
+            """
+            WITH intent AS (
+                SELECT state, created_at AS since FROM llm_batch_intents WHERE custom_id=:id
+            ), latest_submission AS (
+                SELECT CASE WHEN i.consumed_at IS NOT NULL OR b.status = 'failed'
+                            THEN 'failed' ELSE 'open' END AS state,
+                       COALESCE(json_extract(i.meta_json, '$.queued_at'), b.submitted_at) AS since
+                FROM llm_batch_items i JOIN llm_batches b USING (batch_id)
+                WHERE i.custom_id=:id AND NOT EXISTS (SELECT 1 FROM intent)
+                ORDER BY b.submitted_at DESC, i.rowid DESC LIMIT 1
+            )
+            SELECT state, since,
+                   (SELECT count(*) FROM llm_batch_items WHERE custom_id=:id) AS submissions
+            FROM (SELECT * FROM intent UNION ALL SELECT * FROM latest_submission)
+            """,
+            {"id": custom_id},
         ).fetchone()
         if row is None:
             return None
         return BatchJob(
-            state="failed"
-            if row["consumed_at"] is not None or row["status"] == "failed"
-            else "open",
+            state=row["state"],
             since=datetime.fromisoformat(row["since"]),
-            submissions=submissions,
+            submissions=row["submissions"],
         )
 
     def computation_owner_terms(self, number: str, kind: BatchKind) -> tuple[int, ...]:
@@ -4880,24 +4896,27 @@ class SqliteBillRepository:
         return intents
 
     def mark_batch_intents_submitting(self, custom_ids: Sequence[str]) -> None:
-        self._conn.executemany(
-            "UPDATE llm_batch_intents SET state = 'submitting'"
-            " WHERE custom_id = ? AND state = 'queued'",
-            [(custom_id,) for custom_id in custom_ids],
-        )
+        if custom_ids:
+            self._conn.execute(
+                "UPDATE llm_batch_intents SET state = 'submitting' WHERE state = 'queued'"
+                " AND custom_id IN (SELECT value FROM json_each(?))",
+                (json.dumps(tuple(custom_ids)),),
+            )
 
     def mark_batch_intents_queued(self, custom_ids: Sequence[str]) -> None:
-        self._conn.executemany(
-            "UPDATE llm_batch_intents SET state = 'queued'"
-            " WHERE custom_id = ? AND state = 'submitting'",
-            [(custom_id,) for custom_id in custom_ids],
-        )
+        if custom_ids:
+            self._conn.execute(
+                "UPDATE llm_batch_intents SET state = 'queued' WHERE state = 'submitting'"
+                " AND custom_id IN (SELECT value FROM json_each(?))",
+                (json.dumps(tuple(custom_ids)),),
+            )
 
     def delete_batch_intents(self, custom_ids: Sequence[str]) -> None:
-        self._conn.executemany(
-            "DELETE FROM llm_batch_intents WHERE custom_id = ?",
-            [(custom_id,) for custom_id in custom_ids],
-        )
+        if custom_ids:
+            self._conn.execute(
+                "DELETE FROM llm_batch_intents WHERE custom_id IN (SELECT value FROM json_each(?))",
+                (json.dumps(tuple(custom_ids)),),
+            )
 
     def _save_llm_batch_rows(self, batch: LlmBatch, items: Sequence[LlmBatchItem]) -> None:
         for item in items:
@@ -4925,6 +4944,21 @@ class SqliteBillRepository:
                 batch.estimated_cost_usd,
             ),
         )
+        submitting = {
+            item.custom_id: item for item in items if item.meta.request_sha256 is not None
+        }
+        submitted_metadata: dict[str, str] = {}
+        if submitting:
+            for row in self._conn.execute(
+                "SELECT custom_id, request_json, meta_json FROM llm_batch_intents"
+                " WHERE provider=? AND state='submitting'"
+                " AND custom_id IN (SELECT value FROM json_each(?))",
+                (batch.provider, json.dumps(tuple(submitting))),
+            ):
+                custom_id = row["custom_id"]
+                submitted_metadata[custom_id] = self._submitted_item_metadata(
+                    batch.provider, submitting[custom_id], row
+                )
         self._conn.executemany(
             """
             INSERT INTO llm_batch_items (batch_id, custom_id, call_kind, term, number, meta_json)
@@ -4937,7 +4971,7 @@ class SqliteBillRepository:
                     i.call_kind,
                     i.term,
                     i.number,
-                    self._submitted_item_metadata(batch.provider, i),
+                    submitted_metadata.get(i.custom_id) or i.meta.model_dump_json(),
                 )
                 for i in items
             ],
@@ -4952,17 +4986,10 @@ class SqliteBillRepository:
                 ),
             )
 
-    def _submitted_item_metadata(self, provider: BatchProvider, item: LlmBatchItem) -> str:
+    def _submitted_item_metadata(
+        self, provider: BatchProvider, item: LlmBatchItem, row: sqlite3.Row
+    ) -> str:
         meta = item.meta
-        if meta.request_sha256 is None:
-            return meta.model_dump_json()
-        row = self._conn.execute(
-            "SELECT request_json, meta_json FROM llm_batch_intents"
-            " WHERE custom_id=? AND provider=? AND state='submitting'",
-            (item.custom_id, provider),
-        ).fetchone()
-        if row is None:
-            return meta.model_dump_json()
         try:
             request = parse_batch_request(row["request_json"])
         except (ValueError, RecursionError, KeyError) as exc:
@@ -5244,24 +5271,22 @@ class SqliteBillRepository:
         return [self._row_to_publication(row) for row in rows]
 
     def search(self, text: str, *, limit: int) -> list[Bill]:
-        """A title or number search for the operator, who remembers what a bill is about and
-        not its number. SQLite folds case for ASCII only, so a Polish letter matches as it was
-        typed; the titles are mixed-case Polish and a word from the middle is the usual query.
-        """
+        """Match Polish titles and current or former reader names before loading bill histories."""
         rows = self._conn.execute(
-            "SELECT * FROM bills ORDER BY change_date DESC, term, number",
+            """
+            SELECT * FROM bills
+            WHERE instr(lexinform_casefold(json_extract(summary_json, '$.title')), :query)
+               OR instr(lexinform_casefold(json_extract(summary_json, '$.number')), :query)
+               OR instr(lexinform_casefold(json_extract(editorial_json, '$.mnemonic.name')), :query)
+               OR EXISTS (
+                    SELECT 1 FROM json_each(editorial_json, '$.previous') AS previous
+                    WHERE instr(lexinform_casefold(json_extract(previous.value, '$.name')), :query)
+               )
+            ORDER BY change_date DESC, term, number LIMIT :limit
+            """,
+            {"query": text.strip().casefold(), "limit": max(1, limit)},
         ).fetchall()
-        query = text.strip().casefold()
-        matches: list[Bill] = []
-        for row in rows:
-            bill = self._row_to_bill(row)
-            names = [bill.summary.title, bill.number, bill.reader_name]
-            names.extend(name.name for name in bill.editorial.previous)
-            if any(query in name.casefold() for name in names):
-                matches.append(bill)
-                if len(matches) >= limit:
-                    break
-        return matches
+        return [self._row_to_bill(row) for row in rows]
 
     def list_publish_candidates(
         self, channel_id: str, *, min_score: int, limit: int, max_attempts: int = 3

@@ -98,17 +98,28 @@ class PrimaryProjectionReader:
         return PrimaryProjectionSource(row["result_json"], tuple(applications))
 
     def materialize(
-        self, column: str, raw: str, owner: ProjectionOwner | None, generation: int | None = None
+        self,
+        column: str,
+        raw: str,
+        owner: ProjectionOwner | None,
+        generation: int | None = None,
+        *,
+        owner_unlinked: bool = False,
     ) -> str:
         try:
-            return self._materialize(column, raw, owner, generation)
+            return self._materialize(column, raw, owner, generation, owner_unlinked)
         except PrimaryProjectionError:
             raise
         except (ValueError, TypeError, RecursionError, sqlite3.Error) as error:
             raise PrimaryProjectionError("invalid stored primary projection") from error
 
     def _materialize(
-        self, column: str, raw: str, owner: ProjectionOwner | None, generation: int | None = None
+        self,
+        column: str,
+        raw: str,
+        owner: ProjectionOwner | None,
+        generation: int | None,
+        owner_unlinked: bool,
     ) -> str:
         if "modern_primary_ref" not in raw and "\\u" not in raw:
             return raw
@@ -129,7 +140,7 @@ class PrimaryProjectionReader:
             raise PrimaryProjectionError("primary projection has no known consumer owner")
         context = PrimaryProjectionContext(
             owner,
-            self._aliases(owner),
+            () if owner_unlinked else self._aliases(owner),
             "ready"
             if column == "ready_analysis_json"
             else "memo"

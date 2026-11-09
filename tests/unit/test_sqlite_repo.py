@@ -25,11 +25,13 @@ from lexinform.models import (
     CheckAspect,
     DeliveryAlert,
     DigestItemMeta,
+    Editorial,
     Freshness,
     IncomingCommand,
     LlmBatch,
     LlmBatchItem,
     LocatedText,
+    Mnemonic,
     ObservationBasis,
     ObservationMode,
     ProcessDetail,
@@ -209,11 +211,27 @@ def test_upsert_keeps_status_and_hits_of_a_known_bill(
     first = repo.upsert_summary(process, now=now)
     repo.set_status(10, process.number, BillStatus.ANALYSIS_PENDING, prefilter_hits=["cudzoziemcy"])
 
-    again = repo.upsert_summary(process, now=now)
+    checked = now + timedelta(minutes=1)
+    again = repo.upsert_summary(process, now=checked)
 
     assert first.status is BillStatus.DISCOVERED
     assert again.status is BillStatus.ANALYSIS_PENDING
     assert again.prefilter_hits == ["cudzoziemcy"]
+    assert again.last_checked_at == checked
+    assert again == repo.get(10, process.number)
+
+
+def test_search_matches_casefolded_titles_numbers_and_literal_editorial_names(
+    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+) -> None:
+    bill = repo.upsert_summary(process_3039.model_copy(update={"title": "Łódź za 100%"}), now=now)
+    current = Mnemonic(name="Таймер", language="ru", basis="review", selected_at=now)
+    former = current.model_copy(update={"name": "Straße 5_"})
+    repo.save_editorial(bill.term, bill.number, Editorial(mnemonic=current, previous=(former,)))
+
+    for query in ("  ŁÓDŹ  ", "%", bill.number, "ТАЙМЕР", "STRASSE 5_"):
+        assert [match.number for match in repo.search(query, limit=1)] == [bill.number]
+    assert repo.search("STRASSE 5X", limit=1) == []
 
 
 def test_discovery_cannot_overwrite_the_tracking_closure_baseline(
@@ -232,6 +250,7 @@ def test_discovery_cannot_overwrite_the_tracking_closure_baseline(
 
     assert changed.observed_closure_date == closed
     assert changed.summary.closure_date == date(2026, 9, 11)
+    assert changed == repo.get(10, "3039")
     assert restored is not None and restored.observed_closure_date == closed
 
 
