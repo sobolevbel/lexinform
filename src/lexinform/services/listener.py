@@ -46,7 +46,6 @@ class CommandListener:
         self._max_retry_delay = max_retry_delay
         self._sleep = sleep
         self._offset: int | None = None
-        self._stalled = False
         self._failures = 0
         self.filed: list[ChannelPost] = []
         self._acknowledged: dict[int, IncomingCommand] = {}
@@ -57,13 +56,17 @@ class CommandListener:
         return self._offset
 
     def poll_once(self, *, timeout: int | None = None) -> int:
-        """One `getUpdates` and the handling of what it brought; returns how many commands
-        were filed. Stops at the first command that could not be filed (the offset stays
-        below it, so Telegram delivers it again)."""
+        """Return the number of commands filed by one poll."""
+        filed, _ = self._handle_posts(self._fetch_posts(timeout))
+        return filed
+
+    def _fetch_posts(self, timeout: int | None) -> list[ChannelPost]:
         wait = self._poll_timeout if timeout is None else timeout
-        posts = self._updates.get_updates(offset=self._offset, timeout=wait)
+        return self._updates.get_updates(offset=self._offset, timeout=wait)
+
+    def _handle_posts(self, posts: list[ChannelPost]) -> tuple[int, bool]:
+        """Stop before confirming an update whose command could not be filed."""
         filed = 0
-        self._stalled = False
         for post in posts:
             command = self._command_in(post)
             if command is not None:
@@ -73,12 +76,11 @@ class CommandListener:
                     else self._file(post)
                 )
                 if not handled:
-                    self._stalled = True
-                    break
+                    return filed, False
                 filed += 1
                 self._acknowledged.pop(post.update_id, None)
             self._offset = post.update_id + 1
-        return filed
+        return filed, True
 
     def confirm(self) -> None:
         """Tell Telegram the handled updates are done with (an empty poll at the offset)."""
@@ -94,20 +96,21 @@ class CommandListener:
         log.info("listening for commands in %s", self._channel)
         while not stop():
             try:
-                self.poll_once(timeout=0 if on_ready is not None else None)
+                posts = self._fetch_posts(0 if on_ready is not None else None)
+                if on_ready is not None:
+                    on_ready()
+                    on_ready = None
+                _, completed = self._handle_posts(posts)
             except ServiceUnavailableError as exc:
                 self._back_off(exc.describe())
             except Exception as exc:
                 log.exception("listener error: %s", exc)
                 self._back_off(str(exc))
             else:
-                if self._stalled:
-                    self._back_off("a command could not be filed")
-                else:
+                if completed:
                     self._failures = 0
-                    if on_ready is not None:
-                        on_ready()
-                        on_ready = None
+                else:
+                    self._back_off("a command could not be filed")
 
     def _back_off(self, reason: str) -> None:
         """Wait before the next poll, longer the longer the failures have been going on.

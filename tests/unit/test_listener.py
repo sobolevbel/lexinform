@@ -185,12 +185,13 @@ def test_run_forever_survives_an_outage_and_stops_when_told() -> None:
     assert slept == [15.0, 30.0, 60.0]
 
 
-def test_relay_signals_readiness_once_after_a_successful_poll(
+def test_relay_signals_readiness_before_filing_updates(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.chdir(tmp_path)
-    updates = FakeUpdates([channel_post(1, "/analyze 3039")], outage=True)
-    writer = FakeInboxWriter()
+    batch = [channel_post(1, "/analyze 3039")]
+    updates = FakeUpdates(batch, batch, outage=True)
+    writer = FakeInboxWriter(error=ServiceUnavailableError("GitHub API is down"))
     checks = iter(range(5))
     sent: list[bytes] = []
     with socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as receiver:
@@ -198,11 +199,16 @@ def test_relay_signals_readiness_once_after_a_successful_poll(
         receiver.settimeout(0.2)
 
         def recover(_: float) -> None:
-            assert not sent, "the initial failed poll cannot signal readiness"
-            updates.outage = False
+            if updates.outage:
+                assert not sent, "the initial failed poll cannot signal readiness"
+                updates.outage = False
+            else:
+                assert sent == [b"READY=1"]
+                assert listener.offset is None
+                writer.error = None
 
         def ready() -> None:
-            assert len(writer.filed) == 1, "the successful poll first files the received command"
+            assert not writer.filed
             notify_ready("notify.sock")
             sent.append(receiver.recv(128))
 
@@ -210,6 +216,8 @@ def test_relay_signals_readiness_once_after_a_successful_poll(
         listener.run_forever(stop=lambda: next(checks) >= 4, on_ready=ready)
 
     assert sent == [b"READY=1"]
+    assert [command.update_id for command in writer.filed] == [1]
+    assert updates.offsets == [None, None, None, 2]
 
 
 def test_run_forever_waits_when_a_command_cannot_be_filed_at_all() -> None:

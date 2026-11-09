@@ -36,6 +36,19 @@ if [ -n "$wanted" ] && [ "$after" != "$wanted" ]; then
   echo "skip: CI passed $wanted, waiting for CI on origin/main $after"
   exit 0
 fi
+target_type=$(git show "$after:deploy/$SERVICE.service" | awk '
+  /^[[:space:]]*\[/ { service = ($0 ~ /^[[:space:]]*\[Service\][[:space:]]*$/) }
+  service && /^[[:space:]]*Type[[:space:]]*=/ {
+    type = $0
+    sub(/^[[:space:]]*Type[[:space:]]*=[[:space:]]*/, "", type)
+    sub(/[[:space:]]*$/, "", type)
+  }
+  END { print type }
+')
+case "$target_type" in
+  notify|simple) ;;
+  *) echo "$SERVICE target unit has unsupported Type=$target_type" >&2; exit 1 ;;
+esac
 git reset -q --hard "$after"
 
 # Units live in /etc, outside the checkout: without this a change to one would never reach the
@@ -59,6 +72,12 @@ sync_unit "$POLL_TIMER" poll_unit_changed
 if [ "$reload_needed" = 1 ] || [ "$deployed" != "$after" ] || [ -f "$pending_file" ]; then
   systemctl daemon-reload
 fi
+loaded_type=$(systemctl show --property=Type --value "$SERVICE")
+if [ "$loaded_type" != "$target_type" ]; then
+  : > "$pending_file"
+  echo "$SERVICE loaded Type=$loaded_type, expected $target_type" >&2
+  exit 1
+fi
 
 if [ "$deployed" = "$after" ] && [ ! -f "$pending_file" ] \
   && systemctl is-active --quiet "$SERVICE"; then
@@ -68,12 +87,14 @@ else
   : > "$pending_file"
   export UV_CONCURRENT_DOWNLOADS=1 UV_CONCURRENT_BUILDS=1 UV_CONCURRENT_INSTALLS=1
   "$UV" sync --frozen --no-dev -q
-  [ "$(systemctl show --property=Type --value "$SERVICE")" = notify ] \
-    || { echo "$SERVICE does not have a readiness-enabled unit" >&2; exit 1; }
   systemctl restart "$SERVICE"
-  echo "$SERVICE accepted first Telegram poll"
+  if [ "$target_type" = notify ]; then
+    echo "$SERVICE accepted first Telegram poll"
+  else
+    echo "$SERVICE uses legacy liveness checks"
+  fi
 
-  # The notify startup proves the first poll; these checks detect immediate subsequent exits.
+  # Both unit types must stay active during the observation window after restart.
   for _ in $(seq 9); do
     sleep 5
     systemctl is-active --quiet "$SERVICE" || { systemctl status "$SERVICE" --no-pager -l; exit 1; }

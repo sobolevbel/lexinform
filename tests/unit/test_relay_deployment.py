@@ -2,7 +2,7 @@ import os
 import shlex
 import shutil
 import subprocess
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import pytest
@@ -274,14 +274,67 @@ def test_failed_reload_after_unit_copy_is_retried_despite_identical_unit_files(
     assert_installed(deployment, target)
 
 
+@pytest.mark.parametrize("previously_verified", [False, True])
 def test_deploy_cannot_report_readiness_from_a_liveness_only_service(
-    deployment: Deployment,
+    deployment: Deployment, previously_verified: bool
 ) -> None:
+    if previously_verified:
+        deployment.marker.write_text(deployment.head + "\n")
+
     result = deployment.run(FAKE_UNIT_TYPE="simple")
 
     assert result.returncode != 0
     assert "accepted first Telegram poll" not in result.stdout
-    assert not deployment.marker.exists() and deployment.pending.exists()
+    assert deployment.marker.exists() == previously_verified and deployment.pending.exists()
+    assert not any(event.startswith(("uv ", "systemctl restart")) for event in deployment.events)
+
+
+def test_legacy_rollback_restarts_without_claiming_telegram_readiness(
+    deployment: Deployment,
+) -> None:
+    current = deployment.head
+    deployment.marker.write_text(current + "\n")
+    target_unit = deployment.seed / "deploy" / UNITS[0]
+    target_unit.write_text(
+        target_unit.read_text().replace("Type=notify\nNotifyAccess=main\n", "Type=simple\n")
+    )
+    (deployment.seed / "deploy/update.sh").write_text("#!/bin/bash\nexit 99\n")
+    target = deployment.advance()
+    running_script = deployment.checkout / "deploy/update.sh"
+    shutil.copyfile(deployment.executable, running_script)
+
+    result = replace(deployment, executable=running_script).run(
+        SSH_ORIGINAL_COMMAND=target, FAKE_UNIT_TYPE="simple"
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "accepted first Telegram poll" not in result.stdout
+    assert "up 45 s after restart" in result.stdout
+    assert "systemctl restart lexinform-listen" in deployment.events
+    assert deployment.events.count("sleep 5") == 9
+    assert deployment.head == target and "Type=simple" in (deployment.units / UNITS[0]).read_text()
+    assert deployment.marker.read_text() == target + "\n" and not deployment.pending.exists()
+    assert running_script.read_text() == "#!/bin/bash\nexit 99\n"
+
+
+@pytest.mark.parametrize("type_lines", ["Type=exec", "Type=notify\nType=oneshot", "# Type=notify"])
+def test_deploy_refuses_incompatible_target_before_changing_live_files(
+    deployment: Deployment, type_lines: str
+) -> None:
+    current = deployment.head
+    deployment.marker.write_text(current + "\n")
+    live_unit = (deployment.units / UNITS[0]).read_text()
+    target_unit = deployment.seed / "deploy" / UNITS[0]
+    target_unit.write_text(live_unit.replace("Type=notify", type_lines))
+    target = deployment.advance()
+
+    result = deployment.run(SSH_ORIGINAL_COMMAND=target)
+
+    assert result.returncode != 0 and "target unit has unsupported Type=" in result.stderr
+    assert deployment.head == current
+    assert (deployment.units / UNITS[0]).read_text() == live_unit
+    assert deployment.marker.read_text() == current + "\n" and not deployment.pending.exists()
+    assert not deployment.events
 
 
 def test_failed_same_head_unit_repair_cannot_reuse_a_previous_success_marker(
