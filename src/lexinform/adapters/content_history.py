@@ -390,6 +390,7 @@ def _verify_card_primary_evidence(
     revision_analysis_sha256: str | None = None,
     projection_after: datetime | None = None,
     compact_revision: bool = False,
+    original_owner_verified: bool = False,
 ) -> dict[str, object]:
     projection_row = _query(
         connection,
@@ -406,6 +407,7 @@ def _verify_card_primary_evidence(
         or projection.reason != "batch_result"
         or projection.projected_generation != bill.analysis_generation
         or root is not None
+        and not original_owner_verified
         and (root.term, root.number) != (bill.term, bill.number)
     ):
         raise CardPrimaryEvidenceError("card_primary_projection_scope")
@@ -423,8 +425,10 @@ def _verify_card_primary_evidence(
         or (paid.input_binding.term, paid.input_binding.number) != (paid.term, paid.number)
     ):
         raise CardPrimaryEvidenceError("card_primary_paid_scope")
-    if root is not None and root.delivery is not None:
-        rendered_bill = Bill.model_validate(read_json(root.delivery.bill_json))
+    if original_owner_verified or root is not None and root.delivery is not None:
+        rendered_bill = bill
+        if root is not None and root.delivery is not None:
+            rendered_bill = Bill.model_validate(read_json(root.delivery.bill_json))
         record = rendered_bill.analysis
         if (
             record is None
@@ -2062,6 +2066,20 @@ def verify_original_delivery_content(
                 )
             ):
                 raise ValueError("original_delivery_frozen_root")
+            if version.card_primary_evidence is not None:
+                try:
+                    _verify_card_primary_evidence(
+                        connection,
+                        version.card_primary_evidence,
+                        version,
+                        bill,
+                        publication,
+                        original_owner_verified=True,
+                    )
+                except CardPrimaryEvidenceError:
+                    raise
+                except ValueError as exc:
+                    raise CardPrimaryEvidenceError("invalid_card_primary_evidence") from exc
         else:
             _verify_original_delivery_child(
                 version, part, index, publication, parent, bill, review_notice=review_notice
@@ -2307,7 +2325,80 @@ def verify_multipart_card_revision(
         ):
             raise ValueError("multipart_card_frozen_target")
         parent = row
+    if version.card_primary_evidence is not None:
+        try:
+            _verify_multipart_card_primary_evidence(
+                connection, version, previous, predecessors, semantic, plan.slots[0].id
+            )
+        except CardPrimaryEvidenceError:
+            raise
+        except ValueError as exc:
+            raise CardPrimaryEvidenceError("invalid_card_primary_evidence") from exc
     return plan
+
+
+def _verify_multipart_card_primary_evidence(
+    connection: sqlite3.Connection,
+    version: ContentVersion,
+    previous: ContentVersion,
+    predecessors: list[Publication],
+    semantic: Bill,
+    first_slot: int,
+) -> None:
+    reference = version.card_primary_evidence
+    assert reference is not None, "the multipart verifier only requests explicitly recorded proof"
+    record = semantic.analysis
+    if record is None or reference.revision_analysis_sha256 != primary_record_sha256(record):
+        raise CardPrimaryEvidenceError("card_revision_primary_result_mismatch")
+    snapshot = ContentSourceRows(connection).get_content_snapshot(previous.bill_context_id)
+    if snapshot is None:
+        raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
+    if (
+        previous.multipart_card_revision is not None
+        or previous.original_delivery_evidence is not None
+    ):
+        original = previous.original_delivery_evidence
+        snapshot = original_bill_context(
+            snapshot,
+            packed=previous.multipart_card_revision == "card-multipart-revision-packed-v1"
+            or bool(original is not None and original.packed_bill),
+        )
+    old_bill = Bill.model_validate_json(snapshot.payload_json)
+    if version.recorded_at.utcoffset() is None:
+        raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
+    timestamps: list[datetime] = []
+    for predecessor in predecessors:
+        sent_at = predecessor.sent_at
+        if (
+            (predecessor.term, predecessor.number) != (semantic.term, semantic.number)
+            or sent_at is None
+            or sent_at.utcoffset() is None
+            or sent_at > version.recorded_at
+        ):
+            raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
+        timestamps.append(sent_at)
+    if (old_bill.term, old_bill.number) != (semantic.term, semantic.number):
+        raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
+    prior = previous.card_primary_evidence
+    same_paid = (
+        prior is not None
+        and 0 < old_bill.analysis_generation == semantic.analysis_generation
+        and prior.projection_application_id == reference.projection_application_id
+        and prior.source_observation_id == reference.source_observation_id
+        and prior.revision_analysis_sha256 in (None, reference.revision_analysis_sha256)
+    )
+    if not same_paid and not 0 < old_bill.analysis_generation < semantic.analysis_generation:
+        raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
+    _verify_card_primary_evidence(
+        connection,
+        reference,
+        version,
+        semantic,
+        _edition_publication(connection, first_slot),
+        revision_analysis_sha256=reference.revision_analysis_sha256,
+        projection_after=None if same_paid else max(timestamps),
+        compact_revision=True,
+    )
 
 
 def validate_content_history(connection: sqlite3.Connection) -> None:

@@ -18,7 +18,10 @@ from lexinform.adapters.input_receipts import (
     validate_input_snapshots,
 )
 from lexinform.adapters.llm_prompts import build_user_prompt
-from lexinform.adapters.primary_claim_receipts import retained_primary_claim_block
+from lexinform.adapters.primary_claim_receipts import (
+    primary_claim_block_copies,
+    retained_primary_claim_block,
+)
 from lexinform.json_storage import read_json
 from lexinform.models import AnalysisRecord, BatchItemMeta, ComputationResult, ReviewDocument
 from lexinform.models.batch import AnalysisQuestion, batch_item_meta
@@ -262,7 +265,7 @@ def _block_copy_status(
         return "receipt_unavailable"
     if receipt.request_sha256 != paid.request_sha256 or receipt.text_chars != meta.input_chars:
         raise ValueError("Block copy inventory found a mismatched request receipt")
-    if receipt.block_companion is None:
+    if not primary_claim_block_copies(receipt):
         return "block_copy_unavailable"
     if not meta.text:
         return "metadata_only"
@@ -508,7 +511,7 @@ def _retained_block(
     text: str,
     span: tuple[int, int],
 ) -> dict[str, object]:
-    if receipt is None or receipt.block_companion is None:
+    if not primary_claim_block_copies(receipt):
         return {"status": "block_copy_unavailable"}
     block = retained_primary_claim_block(db, receipt, span, text=text)
     if block is None:
@@ -560,11 +563,7 @@ def verify_primary_claim_technical_receipt(
             raise ValueError("claim receipt differs from its exact literal citation")
         if (block := receipt.block) is None:
             return
-        if (
-            input_receipt is None
-            or input_receipt.block_companion is None
-            or (block.prepared_copy not in input_receipt.block_companion.rows)
-        ):
+        if block.prepared_copy not in primary_claim_block_copies(input_receipt):
             raise ValueError("claim receipt requires its exact retained block copy")
         observed = _retained_block(db, input_receipt, saved.text, receipt.submitted_span)
         if (

@@ -353,8 +353,10 @@ class ContentVersion(BaseModel):
     @model_validator(mode="after")
     def predecessor(self) -> Self:
         notice = self.act_published_evidence is not None
-        original = self.original_delivery_evidence is not None
+        delivery = self.original_delivery_evidence
+        original = delivery is not None
         multipart = self.multipart_card_revision is not None
+        primary = self.card_primary_evidence
         profiles = sum(
             (
                 self.digest_profile is not None,
@@ -377,7 +379,18 @@ class ContentVersion(BaseModel):
                 or len(self.formatter_version) > 128
                 or self.status_change_id is not None
                 or self.card_context_profile is not None
-                or self.card_primary_evidence is not None
+                or (
+                    primary is not None
+                    and not (
+                        multipart
+                        and primary.revision_projection == "current"
+                        and primary.revision_analysis_sha256 is not None
+                        or delivery is not None
+                        and delivery.kind is PublicationKind.NEW_BILL
+                        and primary.revision_projection is None
+                        and primary.revision_analysis_sha256 is None
+                    )
+                )
                 or self.direct_stage_evidence is not None
                 or self.grouped_stage_evidence is not None
                 or self.source_scope is not None

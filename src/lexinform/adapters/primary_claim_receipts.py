@@ -14,6 +14,7 @@ from lexinform.adapters.input_receipts import (
 )
 from lexinform.models.analysis import AnalysisRecord
 from lexinform.models.batch import BatchItemMeta, batch_item_meta
+from lexinform.models.block_input import PreparedBlockCopy
 from lexinform.models.claim_evidence import (
     PRIMARY_COMPARISON_RECEIPT_PROFILE,
     PrimaryClaimTechnicalBlock,
@@ -22,8 +23,13 @@ from lexinform.models.claim_evidence import (
     PrimaryComparisonTechnicalReceipt,
 )
 from lexinform.models.computations import ComputationResult
-from lexinform.models.input_receipts import MultipartTextInputReceipt, PrimaryInputReceipt
+from lexinform.models.input_receipts import (
+    MultipartTextInputReceipt,
+    PrimaryInputReceipt,
+    RclPairedArchiveInputReceipt,
+)
 from lexinform.models.reviews import ReviewDocument
+from lexinform.primary_claim_input import multipart_claim_part_role
 from lexinform.primary_claims import validate_retained_claim_citation
 
 MAX_TECHNICAL_CLAIM_RECEIPTS_PER_RESULT = 32
@@ -49,6 +55,26 @@ class CheckedPrimaryComparisonReceipt:
     after_verification: ComparisonVerification
 
 
+def primary_claim_block_copies(
+    receipt: PrimaryInputReceipt | MultipartTextInputReceipt | None,
+) -> tuple[PreparedBlockCopy, ...]:
+    if isinstance(receipt, RclPairedArchiveInputReceipt):
+        companion = receipt.paired_block_companion
+        if companion is None:
+            return ()
+        return tuple(
+            row
+            for row in companion.rows
+            if multipart_claim_part_role(receipt, row.part_index)
+            == receipt.source_parts[row.part_index].role
+        )
+    return (
+        receipt.block_companion.rows
+        if receipt is not None and receipt.block_companion is not None
+        else ()
+    )
+
+
 def retained_primary_claim_block(
     connection: sqlite3.Connection,
     receipt: PrimaryInputReceipt | MultipartTextInputReceipt | None,
@@ -56,11 +82,15 @@ def retained_primary_claim_block(
     *,
     text: str | None = None,
 ) -> PrimaryClaimTechnicalBlock | None:
-    if receipt is None or receipt.block_companion is None:
+    if receipt is None:
         return None
     left, right = span
     copy = next(
-        (row for row in receipt.block_companion.rows if row.start <= left < right <= row.end),
+        (
+            row
+            for row in primary_claim_block_copies(receipt)
+            if row.start <= left < right <= row.end
+        ),
         None,
     )
     if copy is None:
@@ -82,6 +112,25 @@ def retained_primary_claim_block(
         None,
     )
     witness = part.block_copy_witness if part is not None else None
+    if (
+        isinstance(receipt, RclPairedArchiveInputReceipt)
+        and receipt.paired_block_companion is not None
+    ):
+        role = receipt.source_parts[copy.part_index].role
+        if (
+            role == "self_amendment"
+            or receipt.paired_block_companion.base_bill_capture_id is not None
+        ):
+            member = (
+                extraction.observed_member_block_copy
+                if role == "self_amendment"
+                else extraction.selected_bill_block_sample
+            )
+            witness = (
+                member.witness
+                if member is not None and member.physical_index == copy.physical_index
+                else None
+            )
     segment = next((s for s in receipt.segments if s.start <= copy.start < copy.end <= s.end), None)
     if (
         witness is None

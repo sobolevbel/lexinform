@@ -1,0 +1,11 @@
+{
+  "fixture": "Controlled original two-part publication with corpus-backed source and synthetic analysis and delivery",
+  "before_sql_sha256": "b91a3b95b1393bafc2b7b3e87dd14a2b04424cbf207f2d2763a0f62e2c9855fd",
+  "after_sql_sha256": "1dc6b9221ceb59c0a229832d8c3bb489985b80c508ddc4d681ff139d4ded543a",
+  "legacy_normalized_sql_sha256": "7c4bfcb88f97678c1fa0dce3a47bb5e660667fd11ec51f4740ed654e54e110c8",
+  "candidate_restore": "Both controlled dumps byte-exact twice; wrong source rejected atomically",
+  "previous_restore": "Unmarked dump byte-exact twice; marked dump rejected atomically",
+  "natural_legacy": "RCL/12408601 remains unmarked with both readers",
+  "two_marker_delta_sql_bytes": 538,
+  "two_marker_delta_gzip_bytes": 100
+}

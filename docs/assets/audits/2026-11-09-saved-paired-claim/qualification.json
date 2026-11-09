@@ -1,0 +1,60 @@
+{
+  "mismatched_frozen_copy": "Retained block copy differs from the exact submitted text",
+  "bill_block_technical_only": {
+    "prepared_copy": {
+      "start": 2195,
+      "end": 2534,
+      "part_index": 0,
+      "extraction_id": "extraction-v1:2baa7d5b185beb96f7eb0d3fdb08a1333c4f72407d553272e4986a87a90d5d0b",
+      "physical_index": 2,
+      "witness_id": "block-copy-v1:9c6649973aa1dfae8fe1a32b9acdf96a96956ba600c5d8c431d6eac627e958cd",
+      "run_index": 0,
+      "text_sha256": "66dfc8bea7c76fe973c6a2e5ba5c564578247e96786bdea1b063cd9a9e2a7ebb"
+    },
+    "block_id": "word-xml:word/document.xml:0/10",
+    "block_text_sha256": "66dfc8bea7c76fe973c6a2e5ba5c564578247e96786bdea1b063cd9a9e2a7ebb",
+    "block_span": [
+      0,
+      10
+    ]
+  },
+  "amendment_saved_report": {
+    "request_sha256": "5bbe16bcaaa8428261fc4e9dacbedac8a2f97565d67b73811f2f1ee30b958be2",
+    "text_sha256": "52bda29d7235ebec8125de7373748f13ee499cb306b6a9fd90190a77a93c1da0",
+    "status": "checked",
+    "semantic": "semantic_not_assessed",
+    "citations": [
+      {
+        "field": "key_changes",
+        "index": 0,
+        "claim_sha256": "90372a2cf059654e76521175857a1a7eef41b2062298965022b71d1f0e395c16",
+        "status": "quote_present",
+        "submitted_text_span": [
+          429479,
+          429504
+        ],
+        "block": {
+          "status": "verified_copy",
+          "extraction_id": "extraction-v1:712c91bbe98dfc1e2231a55d7d3b52ee97bc156b91bd74289eb9b302bb38ef88",
+          "physical_index": 0,
+          "block_id": "word-xml:word/document.xml:0/7",
+          "block_text_sha256": "850dc77d8222c44b04ef564177510efaa62e38deafcf0d74cbef9e8e33980d17",
+          "block_span": [
+            0,
+            25
+          ],
+          "intersection": null
+        }
+      }
+    ]
+  },
+  "wrong_block_id": "technical claim receipt differs from its exact retained block",
+  "wrong_witness": "technical claim receipt differs from its exact retained block",
+  "wrong_scope": "technical claim receipt differs from its exact retained block",
+  "admitted_verification": "exact_retained_input",
+  "technical_receipt_bytes": 1189,
+  "controlled_paid_result_id": "result-v1:eab65c5098acd1b70ffa754ea9b8b588157f8de22d379079f0670123c958279c",
+  "scope": "Pinned natural UD138 source and exact frozen request; synthetic provider result and claim citation, no semantic judgment.",
+  "osr_rows_rejected_as_normative": 5,
+  "legacy_output_byte_identical": true
+}

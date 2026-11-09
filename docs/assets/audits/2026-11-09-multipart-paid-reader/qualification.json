@@ -1,0 +1,16 @@
+{
+  "exact_double_restore": true,
+  "gzip_delta_bytes": 131,
+  "old_reader_rejects_mark_atomically": true,
+  "same_frozen_render_and_targets": true,
+  "scope": "Controlled 1-to-2 then 2-to-2 multipart edit with synthetic paid projections",
+  "sha256": {
+    "writer-0.sql": "b48a7c60b9e2b428b896d15bd9ddacc344f1d1b02a3f72c19efdb135f8c37514",
+    "writer-1.sql": "898d672ef6ea5bf39290aaf0f5bc424fee610f7ae5a441bc145aeb3d70f20cd1",
+    "writer-2.sql": "3bf03478240a2fa76e8cd88063f053a486fae5add3a281ecebfcaa4ece2595d2",
+    "wrong_result.sql": "d8bc44c7e719a54b6bbdcaf319f093fb906b0e80496cc7e515c0aa04cb987fb1",
+    "wrong_source.sql": "af001ed5b8e5fd8de940ad3b24a0e8693accaae71ca998bf37e508a328b7b40e"
+  },
+  "sql_delta_bytes": 332,
+  "wrong_source_result_and_latest_slot_rejected_atomically": true
+}
