@@ -151,7 +151,7 @@ def capture_rcl_archive_input_receipt(
         or projection is None
         or len(projection.segments) > MAX_INPUT_RECEIPT_SEGMENTS
         or not isinstance(source, DocumentSourceRead)
-        or not 2 <= len(selection.parts) <= 6
+        or not 1 <= len(selection.parts) <= 6
         or not selection.parts[0].members
         or selection.scan_input is not None
         or any(span.stage == "analysis" for span in selection.coverage)

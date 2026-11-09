@@ -22,7 +22,7 @@ from lexinform.models import (
     SourceObservation,
     TextDocument,
 )
-from lexinform.models.input_receipts import LooseRclInputReceipt
+from lexinform.models.input_receipts import LooseRclInputReceipt, RclArchiveInputReceipt
 from lexinform.services import analysis as module
 from tests.harness import World, print_url, rcl_document, rcl_folder, rcl_project, rcl_stage
 from tests.scenario.test_extraction_source_history import reader
@@ -344,6 +344,27 @@ def test_loose_rcl_receipt_is_saved_only_with_its_recorded_parents(
     current.repo.restore(dumped)
     assert current.repo.list_llm_batch_items(batch.batch_id) == [item]
     assert current.repo.dump() == dumped
+
+
+def test_single_archive_bill_gets_a_prepared_input_receipt() -> None:
+    current = World(extractor=reader(), batch_only=True, text_prefilter=False)
+    package = rcl_document(1, "Projekt ustawy.zip")
+    project = rcl_project(
+        stages=(rcl_stage(1, "Projekt", "reached", rcl_folder(1, "Projekt", package)),),
+        consultation=None,
+    )
+    current.add_rcl_project(project)
+    current.rcl.files[package.url] = archive({"projekt.docx": docx(TEXT)})
+
+    current.run(track=False)
+
+    (batch,) = current.repo.list_open_llm_batches()
+    (item,) = current.repo.list_llm_batch_items(batch.batch_id)
+    receipt = item.meta.prepared_input_receipt
+    assert isinstance(receipt, RclArchiveInputReceipt), "the archive receipt covers a single bill"
+    (part,) = receipt.source_parts
+    assert part.physical_index == 0 and part.role == "bill"
+    assert receipt.request_sha256 == current.batch.submitted[0].payload_sha256
 
 
 def test_odt_row_receipt_survives_batch_cleanup_and_restore() -> None:

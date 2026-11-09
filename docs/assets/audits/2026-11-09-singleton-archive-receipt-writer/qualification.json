@@ -1,0 +1,71 @@
+{
+  "cases": {
+    "12353551/12": {
+      "cost_usd": 0.060762,
+      "generated_segments": 0,
+      "payload_sha256": "08872a7e491f6a55e477d57881881f99cacb34673f94006becca626e37ee4b36",
+      "physical_index": 1,
+      "receipt_profile": "primary-rcl-archive-package-text-v1",
+      "segments": 1,
+      "size_deltas": {
+        "queued": {
+          "gzip_bytes": 371,
+          "sql_bytes": 1226
+        },
+        "submitted": {
+          "gzip_bytes": 283,
+          "sql_bytes": 1226
+        }
+      }
+    },
+    "12353551/9": {
+      "cost_usd": 0.06081,
+      "generated_segments": 0,
+      "payload_sha256": "a07c5ce9d494d3d9ea4735654ae918a84fef2ef1bcd837755ce5eef41b54d7f4",
+      "physical_index": 0,
+      "receipt_profile": "primary-rcl-archive-package-text-v1",
+      "segments": 1,
+      "size_deltas": {
+        "queued": {
+          "gzip_bytes": 373,
+          "sql_bytes": 1224
+        },
+        "submitted": {
+          "gzip_bytes": 344,
+          "sql_bytes": 1224
+        }
+      }
+    },
+    "12374702/12": {
+      "cost_usd": 0.061702,
+      "generated_segments": 1,
+      "payload_sha256": "49e520e25ad102486a3486171bf5b0e64eeaabaf90ea2f248110ab90d5670297",
+      "physical_index": 2,
+      "receipt_profile": "primary-rcl-archive-package-text-v1",
+      "segments": 3,
+      "size_deltas": {
+        "queued": {
+          "gzip_bytes": 1183,
+          "sql_bytes": 5378
+        },
+        "submitted": {
+          "gzip_bytes": 689,
+          "sql_bytes": 5378
+        }
+      }
+    }
+  },
+  "census_sha256": "142832040fd91f25f3246d5902afd5a1a761b74f02092a313ab9b75646387e2b",
+  "frozen_request_and_selection_parity": true,
+  "inputs": {
+    "corpus/12353551.json": "d7fdc91465f1287e30e532923234dd166276da8ae0c5bcaf306ab33daa01297e",
+    "corpus/12374702.json": "f4a5487023e8cf51fa92aa4eaf4d1b6e461330ccbbf2e6b8251dd7acef5efc87",
+    "documents/files/577806.zip": "5ea245ab1364571e0d928c81ac346940daf995f40b4458f6f8d11e35de449c00",
+    "documents/files/577807.zip": "df4ab4ea9f73458fbd859eedf02aefad32947ee746072c8eda46d24bd1afbf56",
+    "documents/files/632123.zip": "5aa7af0a46a51e599171d67c7425abe77e9bc5650af3fb6317086bc6a4ed5e21"
+  },
+  "only_database_difference_is_receipt_metadata": true,
+  "queued_and_submitted_restore_and_reopen_byte_identical": true,
+  "rollback_reader": "b3923b17",
+  "rollback_reader_restores_all_six_dumps_byte_identically": true
+}

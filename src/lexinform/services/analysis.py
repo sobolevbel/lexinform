@@ -3450,7 +3450,7 @@ class AnalysisService:
                             loaded.source_read,
                             recorded_at=self._clock.now(),
                         )
-                    if receipt is None and len(loaded.selection.parts) > 1:
+                    if receipt is None:
                         receipt = capture_rcl_archive_input_receipt(
                             request, loaded.selection, fitted.projection, loaded.source_read
                         )
