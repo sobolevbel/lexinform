@@ -1,0 +1,92 @@
+{
+  "cleaned_and_delivered_evidence_identical": true,
+  "input_sql_sha256": {
+    "cleaned": "77224b7c744a2b707a886b2084e57a8c4e34b397662a0aae2dcfd067163fffab",
+    "delivered": "7748b33d6fcdf62dc8353f52297a30647d8e0b2ee1e0e3a2e75d49a076ca3047"
+  },
+  "negative_controls": {
+    "late_projection": {
+      "reason": "invalid_snapshot_evidence",
+      "status": "invalid"
+    },
+    "missing_answer": {
+      "reason": "matching_secondary_collection_checkpoint_unavailable",
+      "status": "not_observed"
+    },
+    "missing_application": {
+      "reason": "invalid_snapshot_evidence",
+      "status": "invalid"
+    },
+    "missing_metadata": {
+      "reason": "exact_consultation_request_metadata_unavailable",
+      "status": "not_observed"
+    },
+    "missing_source": {
+      "reason": "invalid_snapshot_evidence",
+      "status": "invalid"
+    },
+    "unknown_delivery": {
+      "reason": "recorded_send_unavailable",
+      "status": "not_observed"
+    },
+    "wrong_answer": {
+      "reason": "invalid_snapshot_evidence",
+      "status": "invalid"
+    },
+    "wrong_model": {
+      "reason": "invalid_snapshot_evidence",
+      "status": "invalid"
+    },
+    "wrong_prepared_text": {
+      "reason": "invalid_snapshot_evidence",
+      "status": "invalid"
+    }
+  },
+  "positive": {
+    "cycle": {
+      "application_id": 1,
+      "collection": "matching_retained_parsed_answer_and_consumed_checkpoint",
+      "collection_application": "not_applicable_to_secondary_collection",
+      "content_version_id": "content-v1:c82e6dce1ba296a8a471cf18da98b36b8a0f0d56c18a881ff8c5293f137c2628",
+      "frozen_render_sha256": "f7479518aedf066adf9a711f4f4fc987f520be57cd3b8b97034be99fe061d8f5",
+      "original_provider_payload": "not_verified",
+      "prepared_context_sha256": "4d3cd3a053c538bef2add4f7936f0329cac0c8d75465abcd75c41605343a81e5",
+      "purpose": "consultation_review",
+      "recorded_sent_at": "2026-09-07T06:00:00+00:00",
+      "reported_answer_model": "fake-batch",
+      "request_manifest_sha256": "703fb39ab17df39a7fe46ed8824a22a761e2955b52d8ae24de475e8b78f395f6",
+      "request_sha256": "012078e4f06b678d07e733166f5b01c63784b4b53d97857292514b299fc37dd8",
+      "requested_model": "gpt-6.1-sol",
+      "result_id": "result-v1:0ef2246109b989864c12115886acef5121c420423bbff0647d913dbcb63f7fcf",
+      "source_observations": [
+        {
+          "document_index": 0,
+          "observation_id": "source-observation-v1:ed9ac2075e43253c484a17ae290c0f902a97a81832ff2dc8eb3e37158397c52a"
+        },
+        {
+          "document_index": 1,
+          "observation_id": "source-observation-v1:f3036cd5f95b8e290b99735b6e4916e31c95a5cd70e1d0e425dd2d0fccb47901"
+        },
+        {
+          "document_index": 2,
+          "observation_id": "source-observation-v1:c621d0c8b0c4f0a7eadbfd45c4e8c3b78fb0713eda2879d9d7dfc20b2d9a39d8"
+        }
+      ]
+    },
+    "database_sha256": "60a910aee511226cfc55df5165ffd875b5b1fa1342cba01f7025f5750da1fca2",
+    "exclusions": [
+      "Exact original provider request payload",
+      "Current Telegram content",
+      "live verification",
+      "source-family acceptance"
+    ],
+    "publication_id": 2,
+    "reason": "exact_retained_consultation_review_metadata_cycle",
+    "scope": "Direct consultation review. Synthetic outcome and delivery in qualification.",
+    "status": "recorded",
+    "version": 1
+  },
+  "qualification": "Synthetic outcome and delivery on three pinned real RCL source files",
+  "source_db_mutation": false,
+  "unchanged_legacy_report_count": 6
+}

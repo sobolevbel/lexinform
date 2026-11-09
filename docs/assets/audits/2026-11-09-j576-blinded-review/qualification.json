@@ -1,0 +1,9 @@
+{
+  "archive_sha256": "f4f819c045a02bc46145b6d1a39f5419a7a34ea364846df0fb09a9f221d4fc00",
+  "case_count": 10,
+  "independent_judgments": 0,
+  "manifest_sha256": "e4eb0bebce08464ac80e5074b2f9d4af525f551cfea4d9dbcca50e37aec3288f",
+  "prior_input_unavailable_slots": 8,
+  "reviewable_slots": 96,
+  "synthetic_export_and_intake_cases": 10
+}

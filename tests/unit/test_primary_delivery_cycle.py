@@ -694,3 +694,21 @@ def test_secondary_metadata_cycle_does_not_promote_a_partial_prefix(
         "outside_retained_amendment_profile",
     }
     assert suffix == standard["suffix"]
+
+
+def test_consultation_cycle_keeps_status_updates_outside_its_scope(
+    secondary_snapshot: tuple[Path, int, int],
+) -> None:
+    target, publication, application = secondary_snapshot
+    qualified = audit(target, publication, include_consultation_review_cycle=True)
+
+    assert qualified["status"] == "not_observed"
+    assert qualified["reason"] == "publication_outside_consultation_review_scope"
+    assert qualified["cycle"] is None
+    with pytest.raises(ValueError, match="separate retained metadata profile"):
+        audit(
+            target,
+            publication,
+            secondary_application_id=application,
+            include_consultation_review_cycle=True,
+        )

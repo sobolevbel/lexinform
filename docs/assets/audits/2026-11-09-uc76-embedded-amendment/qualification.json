@@ -1,0 +1,84 @@
+{
+  "project": 12393550,
+  "wykaz": "UC76",
+  "rm": "RM-0610-151-25",
+  "as_of": "2026-10-17T00:00:00+00:00",
+  "official_stage": 13106000,
+  "official_documents": {
+    "730644": {
+      "id": 730644,
+      "name": "Projekt ustawy o zmianie ustawy – Prawo o ruchu drogowym oraz niektórych innych ustaw (UC76), RM-0610-151-25.zip",
+      "url": "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument730644.zip",
+      "created": "2025-08-04",
+      "author": "Departament Koordynacji Procesu Legislacyjnego"
+    },
+    "730661": {
+      "id": 730661,
+      "name": "autopoprawka do projektu ustawy o zmianie ustawy – Prawo o ruchu drogowym oraz niektórych innych ustaw (UC76), RM-0610-151-25.zip",
+      "url": "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument730661.zip",
+      "created": "2025-08-04",
+      "author": "Departament Koordynacji Procesu Legislacyjnego"
+    },
+    "734614": {
+      "id": 734614,
+      "name": "nowy tekst projektu ustawy o zmianie ustawy – Prawo o ruchu drogowym oraz niektórych innych ustaw (UC76), RM-0610-151-25.zip",
+      "url": "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument734614.zip",
+      "created": "2025-08-29",
+      "author": "Departament Koordynacji Procesu Legislacyjnego"
+    }
+  },
+  "input_sha256": {
+    "corpus/12393550.json": "8925a9c90155049d281a5cccbabb42a44357621f044f3038b6ac0cab5c9f9c10",
+    "documents/files/730644.zip": "d3703beb66836bb68ec247c06c2005e71cf4917aa79f7e9fc1fe7e849bfb7695",
+    "documents/files/730661.zip": "4725af91aba4607fd0bef43e82209bd083a59aebe56c54eee67f9648691a7f44",
+    "documents/files/734614.zip": "e025586a6442a027828ecc29068abbb981db0116f5700f831b90f639049faa13"
+  },
+  "stage_graph": {
+    "12393550/12": {
+      "primary_index": 0,
+      "older_edition_index": 1,
+      "amendment_alternative_index": 2,
+      "older_amendment_part_index": 0
+    },
+    "12393550/14": {
+      "primary_index": 0,
+      "older_edition_index": 1,
+      "amendment_alternative_index": 2,
+      "older_amendment_part_index": 0
+    }
+  },
+  "embedded_formula": {
+    "member": "pismo.pdf",
+    "member_sha256": "a884a1dfcfc169f6365145148d83fb87b3b97ed6ca3a63ac1c7026b4da3ffa57",
+    "page": 1,
+    "native_page_text_sha256": "631be66d4ddf92e771c190e416238f5ea7aff5e5127a8f4d48d9001e1b214f2b",
+    "pypdf_version": "6.17.0",
+    "coordinates": "zero_based_unicode_in_native_page_text",
+    "start": 679,
+    "end_exclusive": 768,
+    "sha256": "f20f577140ed44e8e86fe794a6c5d58e80a7c61020d43c066690432efeb68a82"
+  },
+  "later_target": {
+    "member": "1. projekt ustawy UC76_II RM (8444516).docx",
+    "member_sha256": "537e9a75a90c14d4b792b8f0be4997abaeff13ff02d4621a95d4c068f73389a4",
+    "document_text_sha256": "4f2ff70fbdaea9cbd73d3e7f5b7b14bfca9c323bbd8aca2d40215df7a1f06832",
+    "coordinates": "zero_based_unicode_in_docx_text",
+    "start": 3066,
+    "end_exclusive": 3424,
+    "sha256": "dd7c6c11f56cbdd1c90cc08c4b4aacdc5ea3a7331d8753bf18ba52760c950176"
+  },
+  "negative_controls": [
+    "transmittal",
+    "changed_formula_target",
+    "duplicated_formula",
+    "changed_later_target",
+    "duplicated_later_target"
+  ],
+  "status": "embedded_formula_and_official_newer_target_observed",
+  "complete_subsumption": "unverified",
+  "next_evidence": [
+    "Establish a complete transcription of the two quoted provisions on page 1. Native text omits meaningful words.",
+    "Verify the older edition's affected article and both operations against the later complete normative body.",
+    "Require the same target, operation polarity, cross-reference and affected scope. The official label and date are insufficient."
+  ]
+}

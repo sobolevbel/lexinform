@@ -1,0 +1,44 @@
+{
+  "pinned_amendment_member_sha256": "a884a1dfcfc169f6365145148d83fb87b3b97ed6ca3a63ac1c7026b4da3ffa57",
+  "pinned_old_member_sha256": "6ce07096e3e1e624aa0a1fd1572d21bfdd4c0489dc5d8781253d180b4a3e3b2a",
+  "old_pdfkit_view_sha256": "052601bbe3ea2f3ce2768ea1c7e12394c3fdd107a31fc267a375bb6b7632c970",
+  "new_docx_view_sha256": "4f2ff70fbdaea9cbd73d3e7f5b7b14bfca9c323bbd8aca2d40215df7a1f06832",
+  "amendment_pdfkit_view_sha256": "615d6593e2796303b4aad1b8aaa70f290db2d46edd4e6d558a4f94c488370564",
+  "amendment_native_view_sha256": "631be66d4ddf92e771c190e416238f5ea7aff5e5127a8f4d48d9001e1b214f2b",
+  "image_xobjects_inside_formula": {
+    "10": "9af65e620c447bba00c9965a392b45eaaf97af3faaea8a4f95b08d5db43c1a03",
+    "11": "d427190f13e21eb9ec230d28547d8bb8c8cc4136fd9ab345ad27c1a0dc9c6e89",
+    "12": "13c95bdd13a2558ac6ac104d5b94e9007d4e715757e709b1cde8a3c4cc388b98",
+    "13": "1f3dde170957effd5ca8350e699b286c64ccf95bc47542adbd03b73c34786f0f",
+    "14": "b0e1c8fefafa1412a6b512200abe807f995788d4348d4861b7068d7f6dd4f0e2"
+  },
+  "text_views_recover_words": false,
+  "ocr_role": "diagnostic_only_no_transcription_or_label_admitted",
+  "independent_old_new_witnesses": {
+    "old_probationary_speed_limits": {
+      "view": "old",
+      "start": 388,
+      "end_exclusive": 447,
+      "sha256": "3a62577ac446dde68a5b1667b13ad86f56f2892482a4e30a712e1f38c8f04fcf"
+    },
+    "new_parental_supervision_exception": {
+      "view": "new",
+      "start": 2352,
+      "end_exclusive": 2388,
+      "sha256": "e3d5e63d7ae70f3e52af0dd9cb6f29dcda2cd771af00486791c2b38b9cc398ee"
+    },
+    "old_amendment_to_art_100aa_8": {
+      "view": "old",
+      "start": 3714,
+      "end_exclusive": 3790,
+      "sha256": "bbe29e95286d48acf3668ae8418920f19123508f0ddf1fc5278ed6e12f602405"
+    }
+  },
+  "amendment_operation_targets": [
+    "art_100aa_4_8_replace",
+    "art_100aa_4_8a_insert"
+  ],
+  "operation_wording_equality": "unverified_raster_text",
+  "all_old_to_new_differences_accounted_for": false,
+  "reason": "The older probationary speed clause and the newer parental supervision exception concern provisions outside Art. 1 pkt 5."
+}

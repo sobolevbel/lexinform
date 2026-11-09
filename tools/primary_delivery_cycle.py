@@ -14,7 +14,9 @@ from lexinform.adapters.amendment_inputs import read_amendment_input
 from lexinform.adapters.computation_history import read_result_application
 from lexinform.adapters.content_history import (
     read_bound_card_primary_cycle,
+    read_content_version,
     read_expired_card_primary_cycle,
+    verify_original_delivery_content,
 )
 from lexinform.adapters.content_source_refs import ContentSourceRows, validate_projected_application
 from lexinform.adapters.document_source_rows import DocumentSourceRows
@@ -35,6 +37,7 @@ from lexinform.models import (
     ComputationResult,
     DeliveryPlan,
     DigestItemMeta,
+    DocumentReview,
     PrimaryInputReceipt,
     ResultApplication,
     ResultApplicationTarget,
@@ -44,7 +47,9 @@ from lexinform.models import (
     TokenUsage,
 )
 from lexinform.models.batch import batch_item_meta
+from lexinform.models.computations import ReviewInputReference, ReviewResultRecord
 from lexinform.models.primary_projections import PRIMARY_USAGE_FIELDS
+from lexinform.models.reviews import ReviewContext, validate_review
 from lexinform.primary_projections import primary_record_matches
 from tools.audit_saved_primary_claims import (
     ReviewInputCheckpoint,
@@ -78,7 +83,7 @@ def _application(
     return row["id"], value
 
 
-def _sent_plan(row: sqlite3.Row) -> DeliveryPlan:
+def _require_recorded_send(row: sqlite3.Row) -> None:
     if (
         row["status"] != "sent"
         or type(row["message_id"]) is not int
@@ -87,6 +92,10 @@ def _sent_plan(row: sqlite3.Row) -> DeliveryPlan:
         or not row["sent_at"]
     ):
         raise CycleNotObservedError("recorded_send_unavailable")
+
+
+def _sent_plan(row: sqlite3.Row) -> DeliveryPlan:
+    _require_recorded_send(row)
     if row["delivery_json"] is None:
         raise CycleNotObservedError("frozen_plan_unavailable")
     return DeliveryPlan.model_validate_json(row["delivery_json"])
@@ -390,15 +399,13 @@ def _secondary_suffix(
     return suffix
 
 
-def _secondary_request_prefix(
+def _submitted_secondary_request(
     db: sqlite3.Connection,
     paid: ComputationResult,
     applied: datetime,
     publication_created: datetime,
     sent: datetime,
-    *,
-    include_metadata_cycle: bool = False,
-) -> dict[str, object]:
+) -> tuple[sqlite3.Row, DigestItemMeta, datetime, datetime]:
     if paid.request_sha256 is None or paid.input_binding is None:
         raise CycleNotObservedError("original_secondary_request_binding_unavailable")
     row = db.execute(
@@ -440,6 +447,22 @@ def _secondary_request_prefix(
     )
     if any(date.utcoffset() is None for date in dates) or dates != tuple(sorted(dates)):
         raise ValueError("Original secondary request and delivery chronology disagree")
+    return row, meta, submitted, consumed
+
+
+def _secondary_request_prefix(
+    db: sqlite3.Connection,
+    paid: ComputationResult,
+    applied: datetime,
+    publication_created: datetime,
+    sent: datetime,
+    *,
+    include_metadata_cycle: bool = False,
+) -> dict[str, object]:
+    row, meta, submitted, consumed = _submitted_secondary_request(
+        db, paid, applied, publication_created, sent
+    )
+    assert meta.queued_at is not None, "validated submitted metadata contains its queue time"
     collection = db.execute(
         "SELECT 1 FROM result_applications WHERE result_id=? AND phase='collection'",
         (paid.result_id,),
@@ -554,7 +577,9 @@ def _secondary_metadata_cycle(
     }
 
 
-def _retained_provider_answer(paid: ComputationResult, raw: str | None) -> str:
+def _retained_provider_answer(
+    paid: ComputationResult, raw: str | None, *, review_context: ReviewContext | None = None
+) -> str:
     if raw is None:
         return "not_retained"
     result = BatchResult.model_validate_json(raw)
@@ -568,6 +593,11 @@ def _retained_provider_answer(paid: ComputationResult, raw: str | None) -> str:
         answer_matches = result.answer == record.amendments
     elif isinstance(record, SupplementRecord):
         answer_matches = result.answer == record.digest
+    elif isinstance(record, ReviewResultRecord) and review_context is not None:
+        answer_matches = (
+            isinstance(result.answer, DocumentReview)
+            and validate_review(result.answer, review_context) == record.review
+        )
     else:
         raise ValueError("Retained provider answer has no supported paid result")
     usage = TokenUsage(
@@ -652,6 +682,143 @@ def _secondary_records(
     raise CycleNotObservedError("result_outside_secondary_status_scope")
 
 
+def _consultation_review_cycle(db: sqlite3.Connection, publication_id: int) -> dict[str, object]:
+    row = db.execute("SELECT * FROM publications WHERE id=?", (publication_id,)).fetchone()
+    if row is None:
+        raise CycleNotObservedError("publication_unavailable")
+    if row["kind"] != "consultation_review":
+        raise CycleNotObservedError("publication_outside_consultation_review_scope")
+    _require_recorded_send(row)
+    if (
+        json.loads(row["document_message_ids"]) != []
+        or db.execute(
+            "SELECT 1 FROM digest_event_links WHERE source_publication_id=?", (publication_id,)
+        ).fetchone()
+        or db.execute(
+            "SELECT 1 FROM delivery_resolutions WHERE publication_id=?", (publication_id,)
+        ).fetchone()
+    ):
+        raise CycleNotObservedError("publication_outside_direct_review_scope")
+    if (
+        db.execute(
+            "SELECT count(*) FROM publications WHERE channel_id=? AND message_id=?",
+            (row["channel_id"], row["message_id"]),
+        ).fetchone()[0]
+        != 1
+    ):
+        raise CycleNotObservedError("physical_root_ambiguous")
+    binding = db.execute(
+        "SELECT v.* FROM publication_content p JOIN content_versions v USING(content_id)"
+        " WHERE p.publication_id=?",
+        (publication_id,),
+    ).fetchone()
+    if binding is None:
+        raise CycleNotObservedError("original_review_history_unavailable")
+    version = read_content_version(binding)
+    evidence = version.original_delivery_evidence
+    if (
+        version.root_publication_id != publication_id
+        or evidence is None
+        or evidence.kind.value != "consultation_review"
+        or evidence.review_application_id is None
+    ):
+        raise CycleNotObservedError("bound_direct_review_application_unavailable")
+    plan = verify_original_delivery_content(db, version, require_bound=True)
+    if plan is None or len(plan.parts) != 1 or _outside_direct_original(plan.root):
+        raise CycleNotObservedError("publication_outside_direct_review_scope")
+    application_row = db.execute(
+        "SELECT * FROM result_applications WHERE id=?", (evidence.review_application_id,)
+    ).fetchone()
+    if application_row is None:
+        raise ValueError("Verified review is missing its projection application")
+    application = read_result_application(application_row)
+    paid = ContentSourceRows(db).get_computation_result(application.result_id)
+    if (
+        paid is None
+        or paid.purpose != "consultation_review"
+        or (paid.term, paid.number) != (row["term"], row["number"])
+    ):
+        raise ValueError("Review result differs from its physical publication owner")
+    if application.reason != "retained_result":
+        raise ValueError("Review projection must apply its retained result")
+    sent = datetime.fromisoformat(row["sent_at"])
+    item, meta, _, consumed = _submitted_secondary_request(
+        db, paid, application.created_at, version.recorded_at, sent
+    )
+    manifest, witness, context = (
+        meta.frozen_request_manifest,
+        meta.review_input_witness,
+        meta.review_context,
+    )
+    record, reference = paid.record, paid.review_input
+    if manifest is None or witness is None or context is None or reference is None:
+        raise CycleNotObservedError("exact_consultation_request_metadata_unavailable")
+    if (
+        not isinstance(record, ReviewResultRecord)
+        or manifest.provider != paid.provider
+        or manifest.prompt_version != meta.prompt_version
+        or record.prompt_version != meta.prompt_version
+        or record.model != (paid.model or "")
+    ):
+        raise ValueError("Consultation manifest differs from its paid result")
+    assert paid.input_binding is not None and meta.queued_at is not None, (
+        "validated submitted metadata supplies the request binding and queue time"
+    )
+    if reference != ReviewInputReference.from_context(
+        context,
+        term=paid.term,
+        recorded_key=paid.input_binding.reuse_key,
+        source_observation_ids=meta.review_source_observation_ids,
+    ):
+        raise ValueError("Saved consultation request differs from its exact source reference")
+    sources = DocumentSourceRows(db)
+    observations = sources.review_source_observations(paid)
+    if len(observations) != len(reference.documents) or not observations:
+        raise CycleNotObservedError("complete_consultation_source_observations_unavailable")
+    for _, identity in observations:
+        observation = sources.get_source_observation(identity)
+        if (
+            observation is None
+            or observation.recorded_at.utcoffset() is None
+            or observation.recorded_at > meta.queued_at
+        ):
+            raise ValueError("Recorded review source does not precede its queue entry")
+    if (
+        _retained_provider_answer(paid, item["result_json"], review_context=context)
+        != "exact_retained_answer"
+        or consumed != paid.collected_at
+    ):
+        raise CycleNotObservedError("matching_secondary_collection_checkpoint_unavailable")
+    if (
+        db.execute(
+            "SELECT 1 FROM result_applications WHERE result_id=? AND phase='collection'",
+            (paid.result_id,),
+        ).fetchone()
+        is not None
+    ):
+        raise CycleNotObservedError("secondary_collection_application_outside_profile")
+    return {
+        "purpose": paid.purpose,
+        "content_version_id": version.content_id,
+        "result_id": paid.result_id,
+        "application_id": evidence.review_application_id,
+        "source_observations": [
+            {"document_index": index, "observation_id": identity}
+            for index, identity in observations
+        ],
+        "request_sha256": paid.request_sha256,
+        "request_manifest_sha256": manifest.manifest_sha256,
+        "requested_model": manifest.model,
+        "reported_answer_model": paid.model,
+        "prepared_context_sha256": witness.context_sha256,
+        "collection": "matching_retained_parsed_answer_and_consumed_checkpoint",
+        "collection_application": "not_applicable_to_secondary_collection",
+        "original_provider_payload": "not_verified",
+        "recorded_sent_at": sent.isoformat(),
+        "frozen_render_sha256": hashlib.sha256(plan.parts[0].html.encode()).hexdigest(),
+    }
+
+
 def _inspect_card(
     db: sqlite3.Connection, publication_id: int, *, include_compact: bool
 ) -> tuple[str, dict[str, object]]:
@@ -683,11 +850,15 @@ def _observe(
     include_compact: bool = False,
     include_request_prefix: bool = False,
     include_secondary_metadata_cycle: bool = False,
+    include_consultation_review_cycle: bool = False,
 ) -> tuple[str, str, dict[str, object] | None]:
     cycle: dict[str, object] | None = None
     status, reason = "recorded", "exact_retained_cycle"
     try:
-        if secondary_application_id is None:
+        if include_consultation_review_cycle:
+            reason = "exact_retained_consultation_review_metadata_cycle"
+            cycle = _consultation_review_cycle(db, publication_id)
+        elif secondary_application_id is None:
             reason, cycle = _inspect_card(db, publication_id, include_compact=include_compact)
         else:
             reason = "exact_retained_secondary_suffix"
@@ -774,6 +945,7 @@ def audit(
     include_compact: bool = False,
     include_request_prefix: bool = False,
     include_secondary_metadata_cycle: bool = False,
+    include_consultation_review_cycle: bool = False,
     legacy_text_checkpoint: ReviewInputCheckpoint | None = None,
     delivery_checkpoint: ReviewInputCheckpoint | None = None,
 ) -> dict[str, object]:
@@ -790,6 +962,14 @@ def audit(
         raise ValueError("Legacy card text requires a primary publication")
     if delivery_checkpoint is not None and secondary_application_id is not None:
         raise ValueError("Historical delivery checkpoint requires a primary publication")
+    if include_consultation_review_cycle and (
+        secondary_application_id is not None
+        or include_compact
+        or include_request_prefix
+        or legacy_text_checkpoint is not None
+        or delivery_checkpoint is not None
+    ):
+        raise ValueError("Consultation review uses a separate retained metadata profile")
     legacy_text = historical = None
     with open_snapshot(database) as snapshot:
         status, reason, cycle = _observe(
@@ -799,6 +979,7 @@ def audit(
             include_compact=include_compact,
             include_request_prefix=include_request_prefix,
             include_secondary_metadata_cycle=include_secondary_metadata_cycle,
+            include_consultation_review_cycle=include_consultation_review_cycle,
         )
         if legacy_text_checkpoint is not None and reason == "prepared_receipt_unavailable":
             legacy_text = _legacy_card_text(
@@ -815,6 +996,22 @@ def audit(
         if not snapshot.unchanged():
             status, reason, cycle = "invalid", "database_changed_during_audit", None
             legacy_text = historical = None
+    if include_consultation_review_cycle:
+        return {
+            "version": 1,
+            "status": status,
+            "reason": reason,
+            "database_sha256": snapshot.sha256,
+            "publication_id": publication_id,
+            "scope": "Direct consultation review. Synthetic outcome and delivery in qualification.",
+            "exclusions": [
+                "Exact original provider request payload",
+                "Current Telegram content",
+                "live verification",
+                "source-family acceptance",
+            ],
+            "cycle": cycle,
+        }
     if secondary_application_id is not None:
         return {
             "version": 1,
@@ -921,6 +1118,11 @@ def main() -> None:
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--secondary-application-id", type=int)
     mode.add_argument(
+        "--include-consultation-review-cycle",
+        action="store_true",
+        help="verify one direct consultation review in the retained metadata profile",
+    )
+    mode.add_argument(
         "--include-compact",
         action="store_true",
         help="allow validated original card evidence before and after plan expiry",
@@ -953,6 +1155,7 @@ def main() -> None:
         if args.census and (
             args.include_request_prefix
             or args.include_secondary_metadata_cycle
+            or args.include_consultation_review_cycle
             or args.include_compact
             or args.secondary_application_id is not None
             or legacy_text_checkpoint is not None
@@ -976,6 +1179,7 @@ def main() -> None:
                 include_compact=args.include_compact,
                 include_request_prefix=args.include_request_prefix,
                 include_secondary_metadata_cycle=args.include_secondary_metadata_cycle,
+                include_consultation_review_cycle=args.include_consultation_review_cycle,
                 legacy_text_checkpoint=legacy_text_checkpoint,
                 delivery_checkpoint=delivery_checkpoint,
             )
