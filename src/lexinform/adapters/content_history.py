@@ -9,7 +9,7 @@ from typing import Literal, NamedTuple
 
 from lexinform.adapters.computation_history import read_result_application
 from lexinform.adapters.content_applications import verify_content_applications
-from lexinform.adapters.content_source_refs import ContentSourceRows
+from lexinform.adapters.content_source_refs import ContentSourceRows, verify_content_source
 from lexinform.adapters.digest_content import verify_digest_content
 from lexinform.adapters.input_receipts import (
     project_pdf_page_ranges,
@@ -2464,6 +2464,63 @@ def _verify_multipart_card_primary_evidence(
     )
 
 
+def verify_content_version(
+    connection: sqlite3.Connection,
+    version: ContentVersion,
+    *,
+    phase: Literal["write", "read", "restore"],
+    publication_id: int | None = None,
+    inventory: CardContentInventory | None = None,
+) -> None:
+    restoring = phase == "restore"
+    retained = phase != "write"
+    if not restoring:
+        verify_content_source(connection, version)
+    verify_content_applications(connection, version, retained=retained)
+    card = (
+        None
+        if restoring
+        else verify_card_content(connection, version, retained=retained, inventory=inventory)
+    )
+    require_bound = restoring or publication_id is not None
+    stage = verify_direct_stage_content(connection, version, require_bound=require_bound)
+    verify_grouped_stage_content(connection, version, require_bound=require_bound)
+    verify_digest_content(connection, version, require_bound=require_bound)
+    sitting = verify_sitting_content(connection, version, require_bound=require_bound)
+    verify_act_published_content(connection, version, require_bound=require_bound)
+    original = verify_original_delivery_content(connection, version, require_bound=require_bound)
+    edition = verify_multipart_card_revision(connection, version, require_bound=require_bound)
+    if restoring:
+        card = verify_card_content(connection, version, retained=True, inventory=inventory)
+        if card is not None and any(
+            identity != card
+            for identity in _card_content_bindings(connection, version.content_id, inventory)
+        ):
+            raise ValueError("card_content_binding_mismatch")
+        return
+    if publication_id is None:
+        return
+    if (
+        stage is not None
+        and publication_id not in stage.bindings
+        or stage is None
+        and (
+            version.direct_stage_evidence is not None
+            or (version.grouped_stage_evidence is not None and version.reason == "original")
+        )
+        and version.root_publication_id != publication_id
+    ):
+        raise ValueError("direct_stage_binding_scope")
+    if sitting is not None and publication_id not in sitting.bindings:
+        raise ValueError("sitting_history_binding_scope")
+    if original is not None and publication_id not in original.bindings:
+        raise ValueError("original_delivery_binding_scope")
+    if edition is not None and publication_id not in edition.bindings:
+        raise ValueError("multipart_card_binding_scope")
+    if card is not None and card != publication_id:
+        raise ValueError("card content binding differs from its physical operation")
+
+
 def validate_content_history(connection: sqlite3.Connection) -> None:
     try:
         tables = {
@@ -2506,22 +2563,7 @@ def validate_content_history(connection: sqlite3.Connection) -> None:
                 and value.previous_version_id is not None
             ):
                 card_inventory = read_card_content_inventory(connection, value.root_publication_id)
-            verify_content_applications(connection, value)
-            verify_direct_stage_content(connection, value, require_bound=True)
-            verify_grouped_stage_content(connection, value, require_bound=True)
-            verify_digest_content(connection, value, require_bound=True)
-            verify_sitting_content(connection, value, require_bound=True)
-            verify_act_published_content(connection, value, require_bound=True)
-            verify_original_delivery_content(connection, value, require_bound=True)
-            verify_multipart_card_revision(connection, value, require_bound=True)
-            physical_identity = verify_card_content(
-                connection, value, retained=True, inventory=card_inventory
-            )
-            if physical_identity is not None and any(
-                identity != physical_identity
-                for identity in _card_content_bindings(connection, value.content_id, card_inventory)
-            ):
-                raise ValueError("card_content_binding_mismatch")
+            verify_content_version(connection, value, phase="restore", inventory=card_inventory)
         if "retired_card_roots" in tables:
             for row in _query(connection, "SELECT id FROM retired_card_roots"):
                 if _query(

@@ -53,8 +53,8 @@ from lexinform.adapters.content_history import (
     read_grouped_stage_telegram_target,
     recorded_command_matches,
     validate_content_history,
-    verify_act_published_content,
     verify_card_content,
+    verify_content_version,
     verify_direct_stage_content,
     verify_grouped_stage_content,
     verify_multipart_card_revision,
@@ -66,7 +66,6 @@ from lexinform.adapters.content_source_refs import (
     validate_content_sources,
     validate_projected_application,
     validate_projected_applications,
-    verify_content_source,
 )
 from lexinform.adapters.digest_content import ResolvedDigestRenderedContent, verify_digest_content
 from lexinform.adapters.document_source_rows import (
@@ -2567,16 +2566,7 @@ class SqliteBillRepository:
 
     def save_content_version(self, version: ContentVersion) -> None:
         version = ContentVersion.model_validate_json(version.model_dump_json())
-        verify_content_source(self._conn, version)
-        verify_content_applications(self._conn, version, retained=False)
-        verify_card_content(self._conn, version)
-        verify_direct_stage_content(self._conn, version)
-        verify_grouped_stage_content(self._conn, version)
-        verify_digest_content(self._conn, version)
-        verify_sitting_content(self._conn, version)
-        verify_act_published_content(self._conn, version)
-        verify_original_delivery_content(self._conn, version)
-        verify_multipart_card_revision(self._conn, version)
+        verify_content_version(self._conn, version, phase="write")
         for kind, identity in content_snapshot_refs(version):
             snapshot = self.get_content_snapshot(identity)
             if snapshot is None or snapshot.kind != kind:
@@ -2618,50 +2608,8 @@ class SqliteBillRepository:
         if row is None:
             return None
         version = read_content_version(row)
-        self._verify_retained_content_version(version)
+        verify_content_version(self._conn, version, phase="read")
         return version
-
-    def _verify_retained_content_version(
-        self,
-        version: ContentVersion,
-        *,
-        inventory: CardContentInventory | None = None,
-        publication_id: int | None = None,
-    ) -> None:
-        verify_content_source(self._conn, version)
-        verify_content_applications(self._conn, version)
-        card = verify_card_content(self._conn, version, retained=True, inventory=inventory)
-        require_bound = publication_id is not None
-        stage = verify_direct_stage_content(self._conn, version, require_bound=require_bound)
-        verify_grouped_stage_content(self._conn, version, require_bound=require_bound)
-        verify_digest_content(self._conn, version, require_bound=require_bound)
-        sitting = verify_sitting_content(self._conn, version, require_bound=require_bound)
-        verify_act_published_content(self._conn, version, require_bound=require_bound)
-        original = verify_original_delivery_content(
-            self._conn, version, require_bound=require_bound
-        )
-        edition = verify_multipart_card_revision(self._conn, version, require_bound=require_bound)
-        if publication_id is None:
-            return
-        if (
-            stage is not None
-            and publication_id not in stage.bindings
-            or stage is None
-            and (
-                version.direct_stage_evidence is not None
-                or (version.grouped_stage_evidence is not None and version.reason == "original")
-            )
-            and version.root_publication_id != publication_id
-        ):
-            raise ValueError("direct_stage_binding_scope")
-        if sitting is not None and publication_id not in sitting.bindings:
-            raise ValueError("sitting_history_binding_scope")
-        if original is not None and publication_id not in original.bindings:
-            raise ValueError("original_delivery_binding_scope")
-        if edition is not None and publication_id not in edition.bindings:
-            raise ValueError("multipart_card_binding_scope")
-        if card is not None and card != publication_id:
-            raise ValueError("card content binding differs from its physical operation")
 
     def list_content_versions(self, root_publication_id: int) -> list[ContentVersion]:
         versions: list[ContentVersion] = []
@@ -2670,7 +2618,7 @@ class SqliteBillRepository:
             (root_publication_id,),
         ):
             version = read_content_version(row)
-            self._verify_retained_content_version(version)
+            verify_content_version(self._conn, version, phase="read")
             versions.append(version)
         return versions
 
@@ -2729,8 +2677,12 @@ class SqliteBillRepository:
                 raise ValueError("content history contains a foreign or missing binding")
             first_binding.setdefault(content_id, identity)
         for content_id, version in versions.items():
-            self._verify_retained_content_version(
-                version, inventory=card_inventory, publication_id=first_binding.get(content_id)
+            verify_content_version(
+                self._conn,
+                version,
+                phase="read",
+                inventory=card_inventory,
+                publication_id=first_binding.get(content_id),
             )
         return EditorialContentHistory(
             list(versions.values()),
@@ -3275,7 +3227,7 @@ class SqliteBillRepository:
         if row["content_id"] is None:
             raise ValueError("a publication content binding has lost its version")
         version = read_content_version(row)
-        self._verify_retained_content_version(version, publication_id=publication_id)
+        verify_content_version(self._conn, version, phase="read", publication_id=publication_id)
         return version
 
     def verified_content_publications(self, version: ContentVersion) -> list[Publication]:
@@ -3285,7 +3237,7 @@ class SqliteBillRepository:
         if publications:
             identity = publications[0].id
             assert identity is not None, "a content binding names a stored publication"
-            self._verify_retained_content_version(version, publication_id=identity)
+            verify_content_version(self._conn, version, phase="read", publication_id=identity)
         return publications
 
     def list_content_publications(
