@@ -209,6 +209,24 @@ def _exact_archive_parent(
     return next(iter(parents.values())) if len(parents) == 1 else None
 
 
+def paired_fitted_base(
+    source: DocumentSourceRead, observations: tuple[OrderedPhysicalObservation, ...]
+) -> PhysicalAssemblyPacket | None:
+    proposal = source.rcl_proposal
+    proof = proposal.trace.rcl_original_proposal if proposal is not None else None
+    bill = source.selection.selection.parts[0]
+    if proof is None or (bill.role, bill.source_sha256, bill.sha256) != (
+        "bill",
+        proof.base_sha256,
+        proof.base_member_sha256,
+    ):
+        return None
+    parent = _exact_archive_parent(
+        bill, {item.result_id for item in source.extractions}, observations
+    )
+    return parent.packet if parent is not None else None
+
+
 def capture_rcl_archive_input_receipt(
     request: BatchRequest,
     selection: DocumentSelection,
@@ -216,6 +234,7 @@ def capture_rcl_archive_input_receipt(
     source: SourceReadCapture | None,
     *,
     paired: PairedArchiveParent | None = None,
+    fitted_base: PhysicalAssemblyPacket | None = None,
 ) -> (
     RclArchiveInputReceipt
     | RclArchiveSelfAmendmentInputReceipt
@@ -385,12 +404,20 @@ def capture_rcl_archive_input_receipt(
             fields["selected_version_trace_id"] = trace.trace_id
         return RclArchiveInputReceipt.model_validate({**fields, "source_parts": tuple(parts)})
     final = prepared.segments[-1]
-    if (final.part_index, final.source_start, final.source_end) != (
+    complete_amendment = (final.part_index, final.source_start, final.source_end) == (
         len(archive),
         0,
         amendment.chars,
-    ) or input_text_sha256(ctx.text[final.start : final.end]) != amendment.text_sha256:
-        return None
+    ) and input_text_sha256(ctx.text[final.start : final.end]) == amendment.text_sha256
+    if not complete_amendment:
+        if (
+            paired is None
+            or fitted_base is None
+            or not ctx.truncated
+            or fitted_base.capture.extraction_id != extraction.result_id
+        ):
+            return None
+        fields["fitted_base_capture_id"] = fitted_base.capture.capture_id
     if paired is not None and source.rcl_proposal is not None:
         return RclPairedArchiveInputReceipt.model_validate(
             {

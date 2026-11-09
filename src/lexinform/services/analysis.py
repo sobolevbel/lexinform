@@ -228,6 +228,7 @@ from lexinform.services.input_receipts import (
     enrich_primary_input_intent,
     enrich_secondary_input_intent,
     paired_archive_parent,
+    paired_fitted_base,
     paired_normative_base,
     senate_work_input_receipt,
     with_block_companion,
@@ -4023,6 +4024,23 @@ class AnalysisService:
             receipt = capture_rcl_archive_input_receipt(
                 intent.request, selection, projection, source, paired=parent
             )
+            fitted_base = None
+            question = intent.request.question
+            if (
+                receipt is None
+                and isinstance(question, AnalysisQuestion)
+                and question.ctx.truncated
+            ):
+                fitted_base = paired_fitted_base(source, observations)
+                if fitted_base is not None:
+                    receipt = capture_rcl_archive_input_receipt(
+                        intent.request,
+                        selection,
+                        projection,
+                        source,
+                        paired=parent,
+                        fitted_base=fitted_base,
+                    )
             if receipt is None:
                 return False
             enriched = enrich_primary_input_intent(intent, receipt)
@@ -4032,7 +4050,13 @@ class AnalysisService:
                 self._repo.save_physical_inventory(
                     packet.metadata, (packet.capture,), recorded_at=created_at
                 )
-                question = intent.request.question
+                if fitted_base is not None:
+                    record_artifacts(self._repo, fitted_base.artifacts, recorded_at=created_at)
+                    self._repo.save_physical_inventory(
+                        fitted_base.metadata, (fitted_base.capture,), recorded_at=created_at
+                    )
+                    self._repo.save_batch_intent(enriched)
+                    return True
                 if isinstance(receipt, RclPairedArchiveInputReceipt) and isinstance(
                     question, AnalysisQuestion
                 ):

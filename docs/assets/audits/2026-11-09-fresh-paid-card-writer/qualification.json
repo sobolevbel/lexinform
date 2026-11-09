@@ -1,0 +1,10 @@
+{
+  "double_restore_byte_identical": true,
+  "exact_predecessor": true,
+  "gzip_delta_bytes": 121,
+  "old_reader_rejects_new_mark_atomically": true,
+  "same_render_as_control": true,
+  "scope": "Controlled confirmed one-part edit with exact synthetic paid projections, no historical edit asserted",
+  "sql_delta_bytes": 664,
+  "wrong_projection_chronology_falls_back": true
+}

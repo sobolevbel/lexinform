@@ -38,6 +38,7 @@ from lexinform.models.content import (
     MAX_EXTENDED_GROUPED_STAGE_MEMBERS,
     MAX_GROUPED_STAGE_CONTENT_BYTES,
     ActPublishedContentEvidence,
+    CardPrimaryEvidence,
     ContentApplicationProfile,
     DirectStageContentEvidence,
     GroupedStageContentEvidence,
@@ -98,6 +99,22 @@ def restore_content_delivery(repo: BillRepository, content: ContentVersion) -> D
             "rendered_text": content.rendered_text or "",
         }
     )
+
+
+def _save_marked_card(
+    repo: BillRepository,
+    publication_id: int,
+    version: ContentVersion,
+    evidence: CardPrimaryEvidence,
+) -> ContentVersion | None:
+    marked = version.model_copy(update={"card_primary_evidence": evidence})
+    try:
+        with repo.atomic():
+            repo.save_content_version(marked)
+            repo.bind_publication_content(publication_id, marked.content_id)
+    except CardPrimaryEvidenceError:
+        return None
+    return marked
 
 
 def record_publication_content(
@@ -206,15 +223,34 @@ def record_publication_content(
                     }
                 )
             if reference is not None:
-                marked = version.model_copy(update={"card_primary_evidence": reference})
-                try:
-                    with repo.atomic():
-                        repo.save_content_version(marked)
-                        repo.bind_publication_content(publication.id, marked.content_id)
-                except CardPrimaryEvidenceError:
-                    pass
-                else:
+                marked = _save_marked_card(repo, publication.id, version, reference)
+                if marked is not None:
                     return marked
+            if (
+                isinstance(card_history_parent, ContentVersion)
+                and card_revision_analysis is not None
+                and publication.delivery is not None
+            ):
+                bill = Bill.model_validate_json(publication.delivery.bill_json).model_copy(
+                    update={"analysis": card_revision_analysis}
+                )
+                current_reference = repo.find_card_primary_evidence(bill)
+                if current_reference is not None and (
+                    reference is None
+                    or current_reference.projection_application_id
+                    != reference.projection_application_id
+                ):
+                    refreshed = current_reference.model_copy(
+                        update={
+                            "revision_analysis_sha256": primary_record_sha256(
+                                card_revision_analysis
+                            ),
+                            "revision_projection": "current",
+                        }
+                    )
+                    marked = _save_marked_card(repo, publication.id, version, refreshed)
+                    if marked is not None:
+                        return marked
             repo.save_content_version(version)
             repo.bind_publication_content(publication.id, version.content_id)
     except SupplementContentEvidenceError:

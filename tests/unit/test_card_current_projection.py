@@ -21,6 +21,9 @@ from lexinform.models import (
 )
 from lexinform.models.content import CardPrimaryEvidence
 from lexinform.primary_projections import primary_record_sha256
+from lexinform.services.card_edits import edit_card
+from tests.fakes import FakePublisher, FixedClock
+from tests.unit.test_card_content_writer import renamed
 from tests.unit.test_card_primary_evidence_reader import (
     compact_revision_candidate,
     store_marked_card,
@@ -204,3 +207,86 @@ def test_reader_requires_current_paid_projection_and_its_confirmed_predecessor(
     assert case.repo.dump() == sql
     assert case.repo.get_publication_content(root.id) == previous
     assert case.repo.get_publication_content(identity) == marked
+
+
+@pytest.mark.parametrize("exact_projection", [False, True])
+@pytest.mark.parametrize("unmarked_generation", [None, 3, 5])
+def test_real_card_refresh_marks_new_paid_analysis_only_with_exact_projection(
+    case: Case, exact_projection: bool, unmarked_generation: int | None
+) -> None:
+    original, previous = store_marked_card(case)
+    assert original.id is not None, "the fixture retains the original physical card"
+    case.repo.mark_publication(
+        original.id, PublicationStatus.SENT, message_id=10, sent_at=NOW + timedelta(days=1)
+    )
+    paid_at = NOW + timedelta(days=2) if exact_projection else NOW
+    bill, reference = changed_paid_card(case, paid_at)
+    bill = renamed(bill)
+    publisher = FakePublisher()
+    confirmed = previous
+    if unmarked_generation is not None:
+        assert bill.analysis is not None, "the fixture uses an actual paid answer"
+        unbound_analysis = bill.analysis.model_copy(update={"model": "historical-unbound"})
+        unmarked = bill.model_copy(
+            update={"analysis": unbound_analysis, "analysis_generation": unmarked_generation}
+        )
+        root = case.repo.publication_by_id(original.id)
+        assert root is not None, "the historical edit targets the same physical message"
+        predecessor_at = NOW + timedelta(days=1, hours=1)
+        result = edit_card(
+            case.repo,
+            FixedClock(predecessor_at),
+            publisher,
+            unmarked,
+            root,
+            None,
+            channel_id=root.channel_id,
+            today=predecessor_at.date(),
+        )
+        assert result.completed
+        confirmed = case.repo.list_content_versions(original.id)[-1]
+        assert confirmed.previous_version_id == previous.content_id
+        assert confirmed.card_primary_evidence is None
+    historical = confirmed
+    for step in (3, 4):
+        at = NOW + timedelta(days=step)
+        root = case.repo.publication_by_id(original.id)
+        assert root is not None, "each edition targets the original physical message"
+        title = bill.editorial.mnemonic
+        assert title is not None, "the test makes an ordinary visible metadata change"
+        edition = bill.model_copy(
+            update={
+                "editorial": bill.editorial.model_copy(
+                    update={
+                        "mnemonic": title.model_copy(update={"name": f"Paid edition {step}"}),
+                    }
+                ),
+            }
+        )
+        expected = publisher.render_card_parts(edition, None, minimum=1, today=at.date())
+        assert len(expected) == 1
+        result = edit_card(
+            case.repo,
+            FixedClock(at),
+            publisher,
+            edition,
+            root,
+            None,
+            channel_id=root.channel_id,
+            today=at.date(),
+        )
+        assert result.completed
+        assert (publisher.edited[-1][0].text, publisher.edited[-1][1]) == (expected[0], 10)
+        versions = case.repo.list_content_versions(original.id)
+        current = versions[-1]
+        assert current.previous_version_id == confirmed.content_id
+        assert current.card_primary_evidence == (
+            reference if exact_projection and unmarked_generation != 5 else None
+        )
+        assert versions[0] == previous
+        assert historical in versions
+        case.repo.prune_history(before=at + timedelta(days=1), memo_before=NOW)
+        sql = case.repo.dump()
+        case.repo.restore(sql)
+        assert case.repo.dump() == sql
+        confirmed = current
