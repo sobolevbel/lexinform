@@ -1,0 +1,34 @@
+{
+  "J576_blank_packet": {
+    "cases": 10,
+    "claim_slots_by_field": {
+      "affected_groups": 32,
+      "changes_since_previous": 8,
+      "effective_date": 10,
+      "key_changes": 44,
+      "practical_impact": 10
+    },
+    "comparison_slots_missing_prior_exact_text": 8,
+    "manifest_sha256": "0a42381299b91100853c461eef546117b28a5de868a58b5930735e005fce4252",
+    "verified_files": 20
+  },
+  "accepted_independent_judgments_in_checked_material": 0,
+  "retained_independent_review_reports": {
+    "J356": {
+      "claims": 8,
+      "independent_reviews": 0,
+      "judgments": {
+        "unreviewed": 8
+      },
+      "sha256": "d0cda614dc2b41988b9f1a7bd8e39f4de6b1c6035eda8965a027cfef8cf89b7b"
+    },
+    "J538": {
+      "claims": 5,
+      "independent_reviews": 0,
+      "judgments": {
+        "unreviewed": 5
+      },
+      "sha256": "cac756eb7efdb5ca19e7503b8256f0cbea5a190f3fccb0fa9773b55e48b5537d"
+    }
+  }
+}

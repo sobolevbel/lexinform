@@ -106,7 +106,9 @@ from lexinform.models.candidate_trace import (
     SupportingPartExclusions,
     VersionDecisionEvidence,
     VersionPackageInput,
+    candidate_universe_sha256,
     composed_support_sha256,
+    version_part_gap_url,
 )
 from lexinform.models.document_reads import DocumentPhysicalDiagnostics, RclProposalRead
 from lexinform.models.document_reads import LoadedFile as LoadedFile
@@ -848,7 +850,15 @@ class TextLoader:
                 tuple(extractions[key] for key in sorted(extractions)),
                 omission=observation.record if observation is not None else None,
             )
+        source_document = requested if record_requested_document else resolved
         trace = file.candidate_trace
+        source_reads = physical.reads
+        if trace is not None and trace.compact_version_part_gaps:
+            gap_reads = self._compact_wait_reads(source_document, trace)
+            if gap_reads is None:
+                trace = trace.model_copy(update={"compact_version_part_gaps": ()})
+            else:
+                source_reads = tuple(dict.fromkeys((*source_reads, *gap_reads)))
         if (
             record_requested_document
             and requested != resolved
@@ -887,10 +897,10 @@ class TextLoader:
                 enriched = _trace_with_archive_evidence(trace, evidence)
                 defer_archive_trace = partial(self._defer_archive_trace, trace.trace_id, enriched)
         return DocumentSourceRead(
-            requested if record_requested_document else resolved,
+            source_document,
             DocumentSelectionRecord.from_selection(file.selection),
             physical.artifacts,
-            reads=physical.reads,
+            reads=source_reads,
             extractions=physical.extractions,
             candidate_trace=trace,
             rcl_proposal=file.rcl_proposal
@@ -898,6 +908,31 @@ class TextLoader:
             else None,
             defer_archive_trace=defer_archive_trace,
         )
+
+    def _compact_wait_reads(
+        self, document: TextDocument, trace: CandidateDispositionTrace
+    ) -> tuple[ArtifactReadIdentity, ...] | None:
+        if candidate_universe_sha256(document) != trace.universe_sha256:
+            return None
+        try:
+            parents = {
+                (version_part_gap_url(document, gap), gap.file_sha256)
+                for gap in trace.compact_version_part_gaps
+                if gap.file_sha256 is not None
+            }
+        except ValueError:
+            return None
+        if not parents:
+            return ()
+        with self._lock:
+            reads = tuple(
+                read
+                for read in self._known_reads.values()
+                if (read.requested_url, read.sha256) in parents
+            )
+        if {(read.requested_url, read.sha256) for read in reads} != parents:
+            return None
+        return tuple(sorted(reads, key=lambda read: read.read_id))
 
     def _defer_archive_trace(
         self, base_id: str, enriched: CandidateDispositionTrace, observation_id: str
@@ -1522,10 +1557,15 @@ class TextLoader:
                     trace = enriched
         if trace is not None and trace.result == "waiting" and composition is not None:
             gaps = tuple(composition.version_part_gaps)
+            gap_field = (
+                "compact_version_part_gaps"
+                if trace.coverage == "omitted_over_limit"
+                else "version_part_gaps"
+            )
             while gaps:
                 try:
                     trace = CandidateDispositionTrace.model_validate(
-                        {**trace.model_dump(), "version_part_gaps": gaps}
+                        {**trace.model_dump(), gap_field: gaps}
                     )
                 except ValueError:
                     gaps = gaps[:-1]

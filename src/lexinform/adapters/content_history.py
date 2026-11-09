@@ -15,7 +15,7 @@ from lexinform.adapters.input_receipts import (
     validate_multipart_item,
 )
 from lexinform.adapters.primary_scan_history import read_primary_scan_source
-from lexinform.adapters.review_content_evidence import commission_review_application_id
+from lexinform.adapters.review_content_evidence import direct_review_application_id
 from lexinform.adapters.status_changes import read_status_change
 from lexinform.bill_context import continuation_snapshot
 from lexinform.content_versions import (
@@ -1684,14 +1684,11 @@ def verify_original_delivery_content(
     bill = Bill.model_validate(read_json(context.payload_json))
     if review_notice:
         review = validate_review_notice(bill, evidence.kind, evidence.ref)
-        if (
-            evidence.commission_review_application_id is not None
-            and evidence.commission_review_application_id
-            != commission_review_application_id(
-                connection, bill, review, recorded_at=version.recorded_at
-            )
+        application_id = evidence.commission_review_application_id or evidence.review_application_id
+        if application_id is not None and application_id != direct_review_application_id(
+            connection, bill, review, evidence.kind, recorded_at=version.recorded_at
         ):
-            raise ValueError("original_delivery_commission_application_mismatch")
+            raise ValueError("original_delivery_review_application_mismatch")
     if evidence.kind is PublicationKind.ACT_PUBLISHED and bill.act is None:
         raise ValueError("original_delivery_act_missing")
     primary_context = None

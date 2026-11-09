@@ -836,3 +836,19 @@ question status distinguishes a retained text question from a scan witness
 that still requires the exact PDF. The retained provider manifest and parsed
 answer are reported separately from the original provider payload bytes. The database checksum pins the inspected
 snapshot. A recorded census does not establish live or source-family acceptance.
+
+### Проверить и записать техническую квитанцию цитаты в новую копию
+
+```sh
+uv run --offline --frozen python -m tools.admit_primary_claim_receipt \
+  --database /path/to/checkpointed-copy.db --database-sha256 EXPECTED_SHA256 \
+  --result-id result-v1:RESULT_SHA256 --receipt /path/to/receipt.json \
+  --output /path/to/new-copy.db
+```
+
+Квитанция должна ссылаться на точный сохранённый запрос. Если исходный
+текст доступен только в предыдущем снимке, укажите `--input-checkpoint`
+с путём и SHA-256 именно этого снимка. Команда открывает входные снимки
+для чтения и создаёт только новый выходной файл. Повтор той же квитанции
+оставляет содержимое копии побайтно прежним. Проверка относится к точной
+цитате и её диапазону, смысловое обоснование утверждения оценивается отдельно.

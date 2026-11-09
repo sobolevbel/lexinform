@@ -1,0 +1,45 @@
+{
+  "integrated_replay_matches_pinned_report_byte_identically": true,
+  "j576_natural_frozen_checkpoint": {
+    "checkpoint_sha256": "5ee32f1eae088dd16d34c070d74051a866f4044606829fcf03c7e56c9aae3687",
+    "current_input_verification": "submitted_input_unavailable",
+    "offline_cli_verified": true,
+    "only_receipt_inserted": true,
+    "paid_result_unchanged": true,
+    "receipt_id": "primary-claim-technical-v1:3cca400d77cdb47a20092bdccd159a816fe27f2083fbaea9975148cbf16d08cd",
+    "rejected_no_output": [
+      "foreign_owner",
+      "missing_exact_input"
+    ],
+    "repeat_output_byte_identical": true,
+    "restore_dump_byte_identical": true,
+    "size_delta_bytes": {
+      "gzip": 379,
+      "sql": 1029
+    },
+    "source_unchanged": true,
+    "source_v73_snapshot_sha256": "2fa282b623328efa9bec50d3d6da771fd6a8b098565ea619d1a1a4ed38f351b7",
+    "v74_admission_base_sha256": "55315ebdd4001a8e2aad74c1f553d1c27e7930a2acb4c5d791886f4d2cc546cc"
+  },
+  "j610_pinned_block_in_j654_saved_result": {
+    "checkpoint_sha256": null,
+    "current_input_verification": "exact_retained_input",
+    "offline_cli_verified": true,
+    "only_receipt_inserted": true,
+    "paid_result_unchanged": true,
+    "receipt_id": "primary-claim-technical-v1:171413f1d40837810bdeef9d303d5d452efd10e02bd281fa45012820d4250ee1",
+    "rejected_no_output": [
+      "foreign_owner",
+      "stale_block"
+    ],
+    "repeat_output_byte_identical": true,
+    "restore_dump_byte_identical": true,
+    "size_delta_bytes": {
+      "gzip": 192,
+      "sql": 1390
+    },
+    "source_unchanged": true,
+    "source_v73_snapshot_sha256": "5de72cf5f8a02ebe39ea06bfeb6ccc157e6c2a50102192e4c8a6b864eaacf51b",
+    "v74_admission_base_sha256": "64e8008704b8517923c8b9c91a443ab114fe22c1bfb5abb32272694e5ed45fe6"
+  }
+}

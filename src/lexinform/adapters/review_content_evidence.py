@@ -36,15 +36,30 @@ def commission_review_application_id(
     *,
     recorded_at: datetime,
 ) -> int | None:
-    if not frozen.review.commission_findings:
+    return direct_review_application_id(
+        db, bill, frozen, PublicationKind.COMMISSION_REVIEW, recorded_at=recorded_at
+    )
+
+
+def direct_review_application_id(
+    db: sqlite3.Connection,
+    bill: Bill,
+    frozen: DocumentReviewRecord,
+    kind: PublicationKind,
+    *,
+    recorded_at: datetime,
+) -> int | None:
+    if kind not in REVIEW_NOTICE_KINDS:
+        return None
+    findings = (
+        frozen.review.commission_findings
+        if kind is PublicationKind.COMMISSION_REVIEW
+        else frozen.review.consultation_findings
+    )
+    if not findings:
         return None
     report = _resolve_review_application(
-        db,
-        bill,
-        frozen,
-        PublicationKind.COMMISSION_REVIEW,
-        recorded_at=recorded_at,
-        complete_owner=True,
+        db, bill, frozen, kind, recorded_at=recorded_at, complete_owner=True
     )
     identity = report.get("application_id")
     return identity if type(identity) is int else None
