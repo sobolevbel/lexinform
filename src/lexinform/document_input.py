@@ -19,6 +19,10 @@ def append_self_amendments(text: str, amendments: tuple[DocumentPart, ...]) -> s
     return text + _AMENDMENTS + "\n\n".join(_label(part) + part.text for part in amendments)
 
 
+def self_amendment_header(first: DocumentPart) -> str:
+    return _AMENDMENTS + _label(first)
+
+
 def amended_input_projection(
     selection: DocumentSelection,
     trimmed: TextProjection,

@@ -1,0 +1,31 @@
+{
+  "both_sides_cleaned": [
+    "submitted_input_unavailable",
+    "submitted_input_unavailable"
+  ],
+  "both_sides_verified_using_existing_offline_checkpoint": true,
+  "capture": [
+    "exact_retained_input",
+    "exact_retained_input"
+  ],
+  "capture_sha256": "44f2dda934b74932d96a978ac936ab37e2fc23df641e541658f25a658b7797b0",
+  "checkpoint_pin_does_not_claim_live_verification": true,
+  "cleaned_sha256": "793c907846466fee07c1a63e8934f6ba883f30c4b2f03851d54248099d4d9d4d",
+  "gzip_delta_bytes": 277,
+  "negative_controls": {
+    "wrong_baseline": "Comparison receipt requires the recorded reanalysis baseline",
+    "wrong_claim_hash": "Comparison receipt requires the exact retained change claim",
+    "wrong_current_range": "Comparison citation differs from its exact submitted text range",
+    "wrong_current_text_sha": "Comparison citation differs from its exact prepared input",
+    "wrong_previous_range": "Comparison citation differs from its exact submitted text range",
+    "wrong_previous_request": "Comparison citation differs from its exact prepared input",
+    "wrong_previous_scope": "1 validation error for PrimaryComparisonTechnicalReceipt"
+  },
+  "one_side_cleaned": [
+    "submitted_input_unavailable",
+    "exact_retained_input"
+  ],
+  "receipt_bytes": 1046,
+  "schema_version": 74,
+  "sql_delta_bytes": 1281
+}

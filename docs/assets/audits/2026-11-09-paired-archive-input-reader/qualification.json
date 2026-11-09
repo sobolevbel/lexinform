@@ -1,0 +1,252 @@
+{
+  "cases": {
+    "12": {
+      "atomic_rejections": {
+        "ordinal": "invalid_input_intent_snapshot",
+        "root": "invalid_input_intent_snapshot",
+        "slot": "invalid_input_intent_snapshot",
+        "source": "invalid_input_intent_snapshot"
+      },
+      "baseline": {
+        "gzip_bytes": 425020,
+        "sha256": "4d3fc125f750804cebfe1a937c4164869f350e2f0f3236e93ee7f24e42a47013",
+        "sql_bytes": 1651654
+      },
+      "before_physical_capture_rejection": "input_receipt_parent_missing",
+      "candidate": {
+        "gzip_bytes": 425733,
+        "sha256": "4c6f5e11d9a9c42cb5d8b76b3a8a47fdf45cc6f12ec48c41ba704c2fbc6ef9ee",
+        "sql_bytes": 1654064
+      },
+      "receipt": {
+        "amendment_capture_id": "7d27cf115fa67e941f6c8375400b81e1f619c85c7aa15dbd4705b4936cb18e17",
+        "amendment_ordinal": 0,
+        "context_encoding": "bill-context-json-v1",
+        "context_sha256": "bf92f0c35284ba4fb060757383f2e22f6e2b10b8561e62f1c3038a85ac47b69e",
+        "coordinates": "legacy_part_text_v1",
+        "extraction_id": "extraction-v1:16582cf3da4b2497b071d43a3a3cd713d0a0a4a45b4804be155d5d4364e4ab42",
+        "full_map_sha256": "51a33f65b8bc97d8a2951007c87f94c4fd0f0191766aa0872f814a9612965560",
+        "input_completeness": "not_asserted",
+        "map_encoding": "prepared-text-segments-json-v1",
+        "physical_origins": "unmapped",
+        "profile": "primary-rcl-paired-archive-text-v1",
+        "proposal_trace_id": "candidate-trace-v1:9ae419d918ba451439a1a32840cd01d5c1d3b1ce03c0974d006ad513c5d35bfa",
+        "request_sha256": "73da919a2717f73b0f40444d32aa870e989ed3f4dde6f0233fa98493e8b48d27",
+        "retention": "complete",
+        "schema_version": 1,
+        "segments": [
+          {
+            "end": 180757,
+            "origin": "source",
+            "part_index": 0,
+            "source_end": 180757,
+            "source_start": 0,
+            "start": 0
+          },
+          {
+            "end": 180758,
+            "origin": "generated",
+            "start": 180757,
+            "system_origin": "part_separator"
+          },
+          {
+            "end": 310318,
+            "origin": "source",
+            "part_index": 1,
+            "source_end": 129560,
+            "source_start": 0,
+            "start": 180758
+          },
+          {
+            "end": 310319,
+            "origin": "generated",
+            "start": 310318,
+            "system_origin": "part_separator"
+          },
+          {
+            "end": 428784,
+            "origin": "source",
+            "part_index": 2,
+            "source_end": 118465,
+            "source_start": 0,
+            "start": 310319
+          },
+          {
+            "end": 429004,
+            "origin": "generated",
+            "start": 428784,
+            "system_origin": "input_transform"
+          },
+          {
+            "end": 451494,
+            "origin": "source",
+            "part_index": 3,
+            "source_end": 22490,
+            "source_start": 0,
+            "start": 429004
+          }
+        ],
+        "source_observation_id": "source-observation-v1:d3c8a6b5aedeba5565400293d66bcd889e8df6e54bc953cc007bd727e5cbd7af",
+        "source_parts": [
+          {
+            "chars": 180757,
+            "physical_index": 2,
+            "role": "bill",
+            "text_sha256": "c21bb374ae5f266f5aff4e018f46b82eeb06e5a3493afdda1d7e62c70ba73aa9"
+          },
+          {
+            "chars": 129560,
+            "physical_index": 1,
+            "role": "justification",
+            "text_sha256": "f5dfafebe02acef9237d38876ef1f685e402a3f4162e87f5142d6160f0e45d31"
+          },
+          {
+            "chars": 160558,
+            "physical_index": 0,
+            "role": "osr",
+            "text_sha256": "6d325382ab2f19470d0bf3ef0e3d9c3ee6488788254e0c59beeb7b7eec043ba6"
+          },
+          {
+            "chars": 22490,
+            "physical_index": 0,
+            "role": "self_amendment",
+            "text_sha256": "0f929ceecf488e871ee83326cd4fcf5bff7e388504b37114d7db65696882fdb4"
+          }
+        ],
+        "source_selection_id": "selection-v1:d63327c173a4d26d0349ba0235905b22702722f17bdbe50d1005447332a4ebeb",
+        "text_chars": 451494,
+        "text_sha256": "52bda29d7235ebec8125de7373748f13ee499cb306b6a9fd90190a77a93c1da0"
+      },
+      "request_bytes": 486140,
+      "request_sha256": "73da919a2717f73b0f40444d32aa870e989ed3f4dde6f0233fa98493e8b48d27"
+    },
+    "14": {
+      "atomic_rejections": {
+        "ordinal": "invalid_input_intent_snapshot",
+        "root": "invalid_input_intent_snapshot",
+        "slot": "invalid_input_intent_snapshot",
+        "source": "invalid_input_intent_snapshot"
+      },
+      "baseline": {
+        "gzip_bytes": 425020,
+        "sha256": "4d3fc125f750804cebfe1a937c4164869f350e2f0f3236e93ee7f24e42a47013",
+        "sql_bytes": 1651654
+      },
+      "before_physical_capture_rejection": "input_receipt_parent_missing",
+      "candidate": {
+        "gzip_bytes": 425733,
+        "sha256": "4c6f5e11d9a9c42cb5d8b76b3a8a47fdf45cc6f12ec48c41ba704c2fbc6ef9ee",
+        "sql_bytes": 1654064
+      },
+      "receipt": {
+        "amendment_capture_id": "7d27cf115fa67e941f6c8375400b81e1f619c85c7aa15dbd4705b4936cb18e17",
+        "amendment_ordinal": 0,
+        "context_encoding": "bill-context-json-v1",
+        "context_sha256": "bf92f0c35284ba4fb060757383f2e22f6e2b10b8561e62f1c3038a85ac47b69e",
+        "coordinates": "legacy_part_text_v1",
+        "extraction_id": "extraction-v1:16582cf3da4b2497b071d43a3a3cd713d0a0a4a45b4804be155d5d4364e4ab42",
+        "full_map_sha256": "51a33f65b8bc97d8a2951007c87f94c4fd0f0191766aa0872f814a9612965560",
+        "input_completeness": "not_asserted",
+        "map_encoding": "prepared-text-segments-json-v1",
+        "physical_origins": "unmapped",
+        "profile": "primary-rcl-paired-archive-text-v1",
+        "proposal_trace_id": "candidate-trace-v1:9ae419d918ba451439a1a32840cd01d5c1d3b1ce03c0974d006ad513c5d35bfa",
+        "request_sha256": "73da919a2717f73b0f40444d32aa870e989ed3f4dde6f0233fa98493e8b48d27",
+        "retention": "complete",
+        "schema_version": 1,
+        "segments": [
+          {
+            "end": 180757,
+            "origin": "source",
+            "part_index": 0,
+            "source_end": 180757,
+            "source_start": 0,
+            "start": 0
+          },
+          {
+            "end": 180758,
+            "origin": "generated",
+            "start": 180757,
+            "system_origin": "part_separator"
+          },
+          {
+            "end": 310318,
+            "origin": "source",
+            "part_index": 1,
+            "source_end": 129560,
+            "source_start": 0,
+            "start": 180758
+          },
+          {
+            "end": 310319,
+            "origin": "generated",
+            "start": 310318,
+            "system_origin": "part_separator"
+          },
+          {
+            "end": 428784,
+            "origin": "source",
+            "part_index": 2,
+            "source_end": 118465,
+            "source_start": 0,
+            "start": 310319
+          },
+          {
+            "end": 429004,
+            "origin": "generated",
+            "start": 428784,
+            "system_origin": "input_transform"
+          },
+          {
+            "end": 451494,
+            "origin": "source",
+            "part_index": 3,
+            "source_end": 22490,
+            "source_start": 0,
+            "start": 429004
+          }
+        ],
+        "source_observation_id": "source-observation-v1:d3c8a6b5aedeba5565400293d66bcd889e8df6e54bc953cc007bd727e5cbd7af",
+        "source_parts": [
+          {
+            "chars": 180757,
+            "physical_index": 2,
+            "role": "bill",
+            "text_sha256": "c21bb374ae5f266f5aff4e018f46b82eeb06e5a3493afdda1d7e62c70ba73aa9"
+          },
+          {
+            "chars": 129560,
+            "physical_index": 1,
+            "role": "justification",
+            "text_sha256": "f5dfafebe02acef9237d38876ef1f685e402a3f4162e87f5142d6160f0e45d31"
+          },
+          {
+            "chars": 160558,
+            "physical_index": 0,
+            "role": "osr",
+            "text_sha256": "6d325382ab2f19470d0bf3ef0e3d9c3ee6488788254e0c59beeb7b7eec043ba6"
+          },
+          {
+            "chars": 22490,
+            "physical_index": 0,
+            "role": "self_amendment",
+            "text_sha256": "0f929ceecf488e871ee83326cd4fcf5bff7e388504b37114d7db65696882fdb4"
+          }
+        ],
+        "source_selection_id": "selection-v1:d63327c173a4d26d0349ba0235905b22702722f17bdbe50d1005447332a4ebeb",
+        "text_chars": 451494,
+        "text_sha256": "52bda29d7235ebec8125de7373748f13ee499cb306b6a9fd90190a77a93c1da0"
+      },
+      "request_bytes": 486140,
+      "request_sha256": "73da919a2717f73b0f40444d32aa870e989ed3f4dde6f0233fa98493e8b48d27"
+    }
+  },
+  "inputs": {
+    "corpus/12389752.json": "796824f7d7072e35618c613b43fba8a2b0c580f57e507d20948bbc002853939d",
+    "documents/files/684251.zip": "4d2c1be3c8c1a48811e50f58c516b517f115965ab95bf6014756bef42dbb0843",
+    "documents/files/684485.zip": "8f1dd7f69eaf8741cc2646fea2a6b4f20d642ed205b2eab605bd3edce79375ab",
+    "sejm/term10/files/672__672-ustawa.docx": "ba4a93c5c4f3a8400f7dedc06783a8044ef3ce453319a816bd908f14e08705e8",
+    "sejm/term10/prints.json": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72",
+    "sejm/term10/process_details.json.gz": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f"
+  }
+}

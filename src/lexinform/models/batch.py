@@ -42,6 +42,7 @@ from lexinform.models.input_receipts import (
     PrimaryInputReceipt,
     RclArchiveInputReceipt,
     RclArchiveSelfAmendmentInputReceipt,
+    RclPairedArchiveInputReceipt,
     SejmSelfAmendmentInputReceipt,
     SupplementInputReceipt,
     amendment_context_sha256,
@@ -421,6 +422,7 @@ class BatchItemMeta(BaseModel):
         | SejmSelfAmendmentInputReceipt
         | RclArchiveInputReceipt
         | RclArchiveSelfAmendmentInputReceipt
+        | RclPairedArchiveInputReceipt
         | None
     ) = Field(default=None, exclude_if=lambda value: value is None)
 
@@ -947,7 +949,9 @@ class BatchIntent(BaseModel):
                     or (binding.term, binding.number) != (request.term, request.number)
                 ):
                     raise ValueError("Multipart text receipt requires its actual source question")
-            if isinstance(receipt, RclArchiveSelfAmendmentInputReceipt):
+            if isinstance(
+                receipt, (RclArchiveSelfAmendmentInputReceipt, RclPairedArchiveInputReceipt)
+            ):
                 final = receipt.segments[-1]
                 if input_text_sha256(ctx.text[final.start : final.end]) != (
                     receipt.amendment_part.text_sha256

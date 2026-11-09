@@ -14,6 +14,8 @@ from lexinform.models.claim_evidence import (
     MAX_PRIMARY_CLAIM_RECEIPT_BYTES,
     PrimaryClaimCitation,
     PrimaryClaimTechnicalReceipt,
+    PrimaryComparisonCitation,
+    PrimaryComparisonTechnicalReceipt,
 )
 from lexinform.models.reviews import EvidenceCitation
 from tests.unit.test_primary_claim_citation_reader import primary_result
@@ -98,3 +100,44 @@ def test_technical_receipt_rechecks_exact_parent_and_literal_range(tmp_path: Pat
             verify(receipt.model_copy(update={"request_sha256": "b" * 64}))
         with pytest.raises(ValueError, match="exact literal citation"):
             verify(receipt.model_copy(update={"submitted_span": (SPAN[0] - 1, SPAN[1] - 1)}))
+
+
+def test_comparison_receipt_requires_two_distinct_ordered_scopes() -> None:
+    _, saved = receipt_and_saved()
+    result_id = saved.record.computation_id
+    assert result_id is not None, "the fixture retains a paid result identity"
+    current = PrimaryComparisonCitation(
+        result_id=result_id,
+        request_sha256=saved.request_sha256,
+        submitted_text_sha256=saved.text_sha256,
+        submitted_span=SPAN,
+        citation=EvidenceCitation(document_id="submitted-context", locator="Art. 6", quote=QUOTE),
+    )
+    previous = PrimaryComparisonCitation(
+        result_id="result-v1:" + "b" * 64,
+        request_sha256="c" * 64,
+        submitted_text_sha256="d" * 64,
+        submitted_span=(0, len(QUOTE)),
+        citation=EvidenceCitation(
+            document_id="previous-submitted-context", locator="Art. 6", quote=QUOTE
+        ),
+    )
+    receipt = PrimaryComparisonTechnicalReceipt(
+        field="changes_since_previous",
+        index=0,
+        claim_text_sha256=digest(b"A change"),
+        before=previous,
+        after=current,
+    )
+    answer = saved.record.analysis.model_copy(update={"changes_since_previous": ["A change"]})
+    receipt.require_claim(answer)
+    with pytest.raises(ValueError, match="exact retained change claim"):
+        receipt.require_claim(answer.model_copy(update={"changes_since_previous": ["Other"]}))
+    raw = receipt.model_dump_json()
+    assert PrimaryComparisonTechnicalReceipt.read(" " + raw).receipt_id == receipt.receipt_id
+    with pytest.raises(ValueError, match="UTF-8 byte limit"):
+        PrimaryComparisonTechnicalReceipt.read(raw + " " * MAX_PRIMARY_CLAIM_RECEIPT_BYTES)
+    with pytest.raises(ValueError, match="distinct before and after"):
+        PrimaryComparisonTechnicalReceipt.read(
+            receipt.model_copy(update={"before": current, "after": previous}).model_dump_json()
+        )

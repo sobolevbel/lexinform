@@ -8,13 +8,17 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from lexinform.adapters.candidate_trace_history import (
+    archive_member_in_execution,
     read_candidate_disposition_trace,
+    validate_rcl_proposal_link,
     validate_sejm_proposal_link,
 )
 from lexinform.adapters.computation_history import read_computation_result
 from lexinform.adapters.document_source_rows import DocumentSourceRows
 from lexinform.adapters.extraction_history import read_extraction_result
 from lexinform.adapters.llm_prompts import build_supplement_prompt
+from lexinform.adapters.physical_history import PhysicalInventoryReader
+from lexinform.document_input import self_amendment_header
 from lexinform.errors import PreparedInputParentError
 from lexinform.input_receipts import (
     archive_member_matches,
@@ -60,8 +64,10 @@ from lexinform.models.input_receipts import (
     MultipartTextInputReceipt,
     RclArchiveInputReceipt,
     RclArchiveSelfAmendmentInputReceipt,
+    RclPairedArchiveInputReceipt,
     SejmSelfAmendmentInputReceipt,
 )
+from lexinform.models.physical_inventory import PhysicalRootOrder
 from lexinform.models.prepared_input import PreparedTextSegment
 from lexinform.models.scan_input import MAX_SCAN_BYTES, MAX_SCAN_PAGES
 from lexinform.models.sejm import TextDocument
@@ -620,9 +626,99 @@ def _source_selection(connection: sqlite3.Connection, identity: str) -> Document
     return selection
 
 
+def _paired_archive_amendment_parent(
+    connection: sqlite3.Connection,
+    receipt: RclPairedArchiveInputReceipt,
+    selection: DocumentSelectionRecord,
+    document: TextDocument,
+) -> None:
+    trace_row = _one(
+        connection,
+        "SELECT t.* FROM source_candidate_traces l"
+        " JOIN candidate_disposition_traces t USING(trace_id)"
+        " WHERE l.observation_id=? AND l.trace_id=?",
+        (receipt.source_observation_id, receipt.proposal_trace_id),
+    )
+    trace = read_candidate_disposition_trace(trace_row)
+    proof = trace.rcl_original_proposal
+    if proof is None:
+        raise ValueError("paired archive receipt requires an exact applicable proposal")
+    validate_rcl_proposal_link(connection, trace, receipt.source_observation_id)
+    parts = selection.selection.parts
+    root, _ = _archive_parts_parent(
+        connection,
+        selection.selection_id,
+        receipt.extraction_id,
+        document.url,
+        parts[:-1],
+        receipt.source_parts[:-1],
+    )
+    amendment = parts[-1]
+    recorded = receipt.amendment_part
+    label = receipt.segments[-2]
+    expected_label = self_amendment_header(amendment)
+    if (
+        root != proof.base_sha256
+        or root == proof.proposal_sha256
+        or label.end - label.start < len(expected_label)
+        or (amendment.source_sha256, amendment.sha256)
+        != (proof.proposal_sha256, proof.proposal_member_sha256)
+        or (amendment.role, amendment.text_sha256, amendment.text_start, amendment.text_end)
+        != (recorded.role, recorded.text_sha256, 0, recorded.chars)
+    ):
+        raise ValueError("paired archive receipt differs from its exact amendment source")
+    old_factory = connection.row_factory
+    connection.row_factory = sqlite3.Row
+    try:
+        reader = PhysicalInventoryReader(connection)
+        capture = reader.capture(
+            _one(
+                connection,
+                "SELECT * FROM physical_captures WHERE capture_id=?",
+                (receipt.amendment_capture_id,),
+            )
+        )
+        if capture.artifact_sha256 != amendment.source_sha256 or capture.extraction_id is None:
+            raise ValueError("paired archive receipt differs from its amendment root")
+        _one(
+            connection,
+            "SELECT 1 FROM selection_extractions l"
+            " JOIN extraction_results e USING(extraction_id)"
+            " WHERE l.selection_id=? AND l.extraction_id=? AND e.artifact_sha256=?",
+            (selection.selection_id, capture.extraction_id, capture.artifact_sha256),
+        )
+        _one(
+            connection,
+            "SELECT 1 FROM artifact_reads WHERE requested_url=? AND artifact_sha256=?",
+            (amendment.url, capture.artifact_sha256),
+        )
+        execution = reader.typed(capture.execution_id, "execution")
+        order = execution.metadata
+        if execution.coverage != "complete" or not isinstance(order, PhysicalRootOrder):
+            raise ValueError("paired archive receipt requires complete amendment execution")
+        if archive_member_in_execution(reader, order, recorded.physical_index) != (
+            (receipt.amendment_ordinal,),
+            amendment.sha256,
+            amendment.text_sha256,
+        ):
+            raise ValueError("paired archive receipt differs from its exact amendment slot")
+        graph = reader.typed(capture.inventory_id, "graph")
+        header = _one(
+            connection,
+            "SELECT runtime_name FROM physical_header_rows WHERE header_id=? AND ordinal=?",
+            (graph.header_id, receipt.amendment_ordinal),
+        )
+        if amendment.members != (header["runtime_name"],):
+            raise ValueError("paired archive receipt differs from its exact amendment occurrence")
+    finally:
+        connection.row_factory = old_factory
+
+
 def _archive_parents(
     connection: sqlite3.Connection,
-    receipt: RclArchiveInputReceipt | RclArchiveSelfAmendmentInputReceipt,
+    receipt: RclArchiveInputReceipt
+    | RclArchiveSelfAmendmentInputReceipt
+    | RclPairedArchiveInputReceipt,
     meta: BatchItemMeta,
     owner: tuple[int, str] | None,
     selection: DocumentSelectionRecord,
@@ -643,6 +739,10 @@ def _archive_parents(
         raise ValueError("input_receipt_archive_observation_mismatch")
     document = observation.document
     parts = selection.selection.parts
+    if isinstance(receipt, RclPairedArchiveInputReceipt):
+        _paired_archive_amendment_parent(connection, receipt, selection, document)
+        # The second root retains an observed part, not a selected extraction summary.
+        return ()
     if isinstance(receipt, RclArchiveInputReceipt):
         if receipt.selected_version_trace_id is None and not ordinary_rcl_archive_document(
             document
@@ -849,7 +949,10 @@ def _multipart_parents(
         or parts != fitted.without_text().parts
     ):
         raise ValueError("input_receipt_selection_mismatch")
-    if isinstance(receipt, (RclArchiveInputReceipt, RclArchiveSelfAmendmentInputReceipt)):
+    if isinstance(
+        receipt,
+        (RclArchiveInputReceipt, RclArchiveSelfAmendmentInputReceipt, RclPairedArchiveInputReceipt),
+    ):
         return _archive_parents(connection, receipt, meta, owner, source)
     if not isinstance(receipt, LooseMultipartInputReceipt) or len(
         {part.url for part in parts}
@@ -956,6 +1059,7 @@ def _parents(
     | SejmSelfAmendmentInputReceipt
     | RclArchiveInputReceipt
     | RclArchiveSelfAmendmentInputReceipt
+    | RclPairedArchiveInputReceipt
     | SupplementInputReceipt
     | AmendmentInputReceipt,
     *,
@@ -1249,13 +1353,18 @@ def validate_multipart_intent(connection: sqlite3.Connection, intent: BatchInten
         meta.prepared_input_receipt, MultipartTextInputReceipt
     ):
         raise ValueError("Multipart receipt requires primary metadata")
+    receipt = meta.prepared_input_receipt
     try:
         _multipart_parents(
-            connection,
-            meta.prepared_input_receipt,
-            meta,
-            (validated.request.term, validated.request.number),
+            connection, receipt, meta, (validated.request.term, validated.request.number)
         )
+        if isinstance(receipt, RclPairedArchiveInputReceipt):
+            question = validated.request.question
+            label = receipt.segments[-2]
+            if not isinstance(question, AnalysisQuestion) or not question.ctx.text[
+                label.start : label.end
+            ].endswith(self_amendment_header(meta.selection.parts[-1])):
+                raise ValueError("paired archive receipt differs from its frozen amendment label")
     except ValueError as exc:
         raise PreparedInputParentError(str(exc)) from None
 
@@ -1275,14 +1384,14 @@ def validate_multipart_item(
     )
 
 
-def _validate_reanalysis_baseline(
+def read_reanalysis_baseline(
     connection: sqlite3.Connection,
     baseline: ReanalysisBaselineReference,
     *,
     owner: tuple[int, str],
     custom_id: str,
     before: datetime,
-) -> None:
+) -> ComputationResult:
     row = _one(
         connection, "SELECT * FROM computation_results WHERE result_id=?", (baseline.result_id,)
     )
@@ -1299,6 +1408,7 @@ def _validate_reanalysis_baseline(
     ):
         raise ValueError("Reanalysis baseline requires an earlier validated primary result")
     baseline.require_context(record.analysis.summary, record.analysis.key_changes)
+    return result
 
 
 def _input_snapshot_checks(
@@ -1382,7 +1492,7 @@ def _input_snapshot_checks(
                         isinstance(intent.meta, BatchItemMeta)
                         and (baseline := intent.meta.reanalysis_baseline) is not None
                     ):
-                        _validate_reanalysis_baseline(
+                        read_reanalysis_baseline(
                             connection,
                             baseline,
                             owner=(actual.term, actual.number),
@@ -1393,6 +1503,10 @@ def _input_snapshot_checks(
                         validate_scan_attachment(intent)
                     if has_word_formula_input(actual):
                         validate_word_formula_intent(connection, intent)
+                    elif isinstance(
+                        intent.meta.prepared_input_receipt, RclPairedArchiveInputReceipt
+                    ):
+                        validate_multipart_intent(connection, intent)
                     elif has_receipt:
                         if intent.meta.prepared_input_receipt is None:
                             raise ValueError("input_snapshot_receipt_metadata")
@@ -1477,7 +1591,7 @@ def _input_snapshot_checks(
                     binding = item_meta.input_binding
                     if binding is None:
                         raise ValueError("Reanalysis baseline requires the original request owner")
-                    _validate_reanalysis_baseline(
+                    read_reanalysis_baseline(
                         connection,
                         baseline,
                         owner=(binding.term, binding.number),

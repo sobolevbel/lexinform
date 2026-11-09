@@ -8,10 +8,19 @@ from typing import Literal
 
 from lexinform.adapters.computation_history import read_computation_result
 from lexinform.adapters.extraction_history import read_extraction_result
-from lexinform.adapters.input_receipts import validate_primary_receipt_parents
+from lexinform.adapters.input_receipts import (
+    read_reanalysis_baseline,
+    validate_primary_receipt_parents,
+)
 from lexinform.models.analysis import AnalysisRecord
 from lexinform.models.batch import BatchItemMeta, batch_item_meta
-from lexinform.models.claim_evidence import PrimaryClaimTechnicalBlock, PrimaryClaimTechnicalReceipt
+from lexinform.models.claim_evidence import (
+    PRIMARY_COMPARISON_RECEIPT_PROFILE,
+    PrimaryClaimTechnicalBlock,
+    PrimaryClaimTechnicalReceipt,
+    PrimaryComparisonCitation,
+    PrimaryComparisonTechnicalReceipt,
+)
 from lexinform.models.computations import ComputationResult
 from lexinform.models.input_receipts import MultipartTextInputReceipt, PrimaryInputReceipt
 from lexinform.models.reviews import ReviewDocument
@@ -26,6 +35,18 @@ class CheckedPrimaryClaimReceipt:
     verification: Literal[
         "exact_retained_input", "submitted_input_unavailable", "checkpoint_required"
     ]
+
+
+ComparisonVerification = Literal[
+    "exact_retained_input", "submitted_input_unavailable", "checkpoint_required"
+]
+
+
+@dataclass(frozen=True)
+class CheckedPrimaryComparisonReceipt:
+    receipt: PrimaryComparisonTechnicalReceipt
+    before_verification: ComparisonVerification
+    after_verification: ComparisonVerification
 
 
 def retained_primary_claim_block(
@@ -166,9 +187,80 @@ def _verify_receipt(
     return CheckedPrimaryClaimReceipt(receipt, status)
 
 
+def _verify_comparison_side(
+    connection: sqlite3.Connection,
+    side: PrimaryComparisonCitation,
+    result: ComputationResult,
+    meta: BatchItemMeta,
+) -> ComparisonVerification:
+    prepared = meta.prepared_input_receipt
+    if (
+        side.result_id != result.result_id
+        or side.request_sha256 != result.request_sha256
+        or prepared is None
+        or (prepared.request_sha256, prepared.text_sha256, prepared.text_chars)
+        != (side.request_sha256, side.submitted_text_sha256, meta.input_chars)
+        or side.submitted_span[1] > prepared.text_chars
+    ):
+        raise ValueError("Comparison citation differs from its exact prepared input")
+    validate_primary_receipt_parents(connection, meta, (result.term, result.number))
+    if not meta.text:
+        return "submitted_input_unavailable"
+    left, right = side.submitted_span
+    if (
+        len(meta.text) != prepared.text_chars
+        or hashlib.sha256(meta.text.encode()).hexdigest() != side.submitted_text_sha256
+        or meta.text[left:right] != side.citation.quote
+    ):
+        raise ValueError("Comparison citation differs from its exact submitted text range")
+    return "checkpoint_required" if side.input_checkpoint_sha256 else "exact_retained_input"
+
+
+def _verify_comparison(
+    connection: sqlite3.Connection,
+    cursor: sqlite3.Cursor,
+    receipt: PrimaryComparisonTechnicalReceipt,
+    result: ComputationResult,
+    record: AnalysisRecord,
+    meta: BatchItemMeta | None,
+) -> CheckedPrimaryComparisonReceipt:
+    if (
+        result.purpose != "reanalysis"
+        or meta is None
+        or meta.queued_at is None
+        or meta.reanalysis_baseline is None
+        or meta.reanalysis_baseline.result_id != receipt.before.result_id
+    ):
+        raise ValueError("Comparison receipt requires the recorded reanalysis baseline")
+    previous = read_reanalysis_baseline(
+        connection,
+        meta.reanalysis_baseline,
+        owner=(result.term, result.number),
+        custom_id=result.custom_id,
+        before=meta.queued_at,
+    )
+    previous_record = previous.record
+    if (
+        not isinstance(previous_record, AnalysisRecord)
+        or previous.input_binding is None
+        or (previous.input_binding.term, previous.input_binding.number)
+        != (previous.term, previous.number)
+    ):
+        raise ValueError("Comparison receipt requires a bound baseline result")
+    previous_meta = _batch_meta(cursor, previous, previous_record)
+    if previous_meta is None:
+        raise ValueError("Comparison receipt requires the baseline batch metadata")
+    receipt.require_claim(record.analysis)
+    return CheckedPrimaryComparisonReceipt(
+        receipt,
+        _verify_comparison_side(connection, receipt.before, previous, previous_meta),
+        _verify_comparison_side(connection, receipt.after, result, meta),
+    )
+
+
 def read_primary_claim_receipts(
     connection: sqlite3.Connection, result_id: str
-) -> tuple[CheckedPrimaryClaimReceipt, ...]:
+) -> tuple[CheckedPrimaryClaimReceipt | CheckedPrimaryComparisonReceipt, ...]:
     with closing(connection.cursor()) as cursor:
         cursor.row_factory = sqlite3.Row
         rows = cursor.execute(
@@ -198,8 +290,16 @@ def read_primary_claim_receipts(
             raise ValueError("technical claim receipt requires a bound primary result")
         meta = _batch_meta(cursor, result, record)
         owner = (result.term, result.number)
-        checked = []
+        checked: list[CheckedPrimaryClaimReceipt | CheckedPrimaryComparisonReceipt] = []
         for row in rows:
+            if row["receipt_id"].startswith(PRIMARY_COMPARISON_RECEIPT_PROFILE + ":"):
+                comparison = PrimaryComparisonTechnicalReceipt.read(row["receipt_json"])
+                if comparison.receipt_id != row["receipt_id"]:
+                    raise ValueError("Comparison receipt identity mismatch")
+                checked.append(
+                    _verify_comparison(connection, cursor, comparison, result, record, meta)
+                )
+                continue
             receipt = PrimaryClaimTechnicalReceipt.read(row["receipt_json"])
             if (receipt.receipt_id, receipt.result_id, receipt.request_sha256) != (
                 row["receipt_id"],

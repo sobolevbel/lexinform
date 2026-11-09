@@ -374,7 +374,7 @@ def _validate_superseded_draft(
         raise ValueError("Supersession parents differ from the recorded report edition")
 
 
-def _archive_member_in_execution(
+def archive_member_in_execution(
     reader: PhysicalInventoryReader, order: PhysicalRootOrder, slot: int
 ) -> tuple[tuple[int, ...], str, str]:
     if slot >= len(order.physical):
@@ -400,7 +400,7 @@ def _archive_peer_in_execution(
     reader: PhysicalInventoryReader, order: PhysicalRootOrder, row: ArchiveMemberDisposition
 ) -> None:
     slot = row.physical_part_index
-    if slot is None or _archive_member_in_execution(reader, order, slot) != (
+    if slot is None or archive_member_in_execution(reader, order, slot) != (
         row.ordinals,
         row.leaf_sha256,
         row.text_sha256,
@@ -540,7 +540,7 @@ def _validate_archive_conflict_link(
                 raise ValueError("archive conflict requires retained physical execution")
             for slot in evidence.compared_slots:
                 part = selected_parts[slot]
-                _, leaf_sha, text_sha = _archive_member_in_execution(reader, order, slot)
+                _, leaf_sha, text_sha = archive_member_in_execution(reader, order, slot)
                 if (leaf_sha, text_sha) != (part.sha256, part.text_sha256):
                     raise ValueError("archive conflict extraction differs from its physical member")
             members = trace.archive_members

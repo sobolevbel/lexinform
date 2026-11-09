@@ -3,6 +3,7 @@ from contextlib import closing
 
 import pytest
 
+from lexinform.adapters.primary_claim_receipts import CheckedPrimaryClaimReceipt
 from lexinform.adapters.sqlite_repo import SCHEMA_VERSION, SqliteBillRepository
 from lexinform.models.claim_evidence import PrimaryClaimTechnicalReceipt
 from lexinform.models.computation_inputs import ComputationInputBinding
@@ -36,6 +37,7 @@ def test_receipt_restore_preserves_unavailable_input_and_the_original_result() -
         assert repo.dump() == dump
         assert repo.get_computation_result(result.result_id) == result
         (checked,) = repo.list_primary_claim_technical_receipts(result.result_id)
+        assert isinstance(checked, CheckedPrimaryClaimReceipt)
         assert checked.receipt == receipt and checked.verification == "submitted_input_unavailable"
 
 

@@ -118,6 +118,7 @@ from lexinform.adapters.physical_history import (
 )
 from lexinform.adapters.primary_claim_receipts import (
     CheckedPrimaryClaimReceipt,
+    CheckedPrimaryComparisonReceipt,
     read_primary_claim_receipts,
     validate_primary_claim_receipts,
 )
@@ -2045,7 +2046,7 @@ class SqliteBillRepository:
 
     def list_primary_claim_technical_receipts(
         self, result_id: str
-    ) -> tuple[CheckedPrimaryClaimReceipt, ...]:
+    ) -> tuple[CheckedPrimaryClaimReceipt | CheckedPrimaryComparisonReceipt, ...]:
         return read_primary_claim_receipts(self._conn, result_id)
 
     def get_computation_result(self, result_id: str) -> ComputationResult | None:

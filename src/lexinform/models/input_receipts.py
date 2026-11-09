@@ -408,6 +408,43 @@ class RclArchiveSelfAmendmentInputReceipt(MultipartTextInputReceipt):
         return self
 
 
+class RclPairedArchiveInputReceipt(MultipartTextInputReceipt):
+    source_kind = "rcl"
+    profile: Literal["primary-rcl-paired-archive-text-v1"] = "primary-rcl-paired-archive-text-v1"
+    source_parts: tuple[ArchiveInputPart, ...] = Field(min_length=2, max_length=6)
+    source_observation_id: str = Field(pattern=r"^source-observation-v1:[0-9a-f]{64}$")
+    extraction_id: str = Field(pattern=r"^extraction-v1:[0-9a-f]{64}$")
+    proposal_trace_id: str = Field(pattern=r"^candidate-trace-v1:[0-9a-f]{64}$")
+    amendment_capture_id: str = Field(pattern=r"^[0-9a-f]{64}$")
+    amendment_ordinal: int = Field(ge=0, le=MAX_INPUT_RECEIPT_INTEGER, strict=True)
+
+    @property
+    def amendment_part(self) -> ArchiveInputPart:
+        return self.source_parts[-1]
+
+    @model_validator(mode="after")
+    def archive_pair(self) -> Self:
+        archive = self.source_parts[:-1]
+        _require_archive_parts(archive)
+        amendment = self.amendment_part
+        final = self.segments[-1]
+        if (
+            amendment.role != "self_amendment"
+            or self.block_companion is not None
+            or len(self.segments) < 2
+            or self.segments[-2].origin != "generated"
+            or self.segments[-2].system_origin != "input_transform"
+            or final.origin != "source"
+            or (final.part_index, final.source_start, final.source_end)
+            != (len(archive), 0, amendment.chars)
+            or any(segment.part_index == len(archive) for segment in self.segments[:-1])
+        ):
+            raise ValueError(
+                "Paired archives require one complete final amendment and generated label"
+            )
+        return self
+
+
 class LooseRclInputReceipt(LooseMultipartInputReceipt):
     source_kind = "rcl"
     profile: Literal["primary-loose-rcl-annex-text-v1", "primary-loose-rcl-mixed-text-v1"] = (
