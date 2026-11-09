@@ -1,6 +1,7 @@
 import sqlite3
 from contextlib import closing
 from datetime import timedelta
+from unittest.mock import patch
 
 import pytest
 
@@ -21,7 +22,8 @@ def test_commission_notice_reader_retains_paid_application_after_cleanup() -> No
     world = prepared_world()
     assert world.run().ok
     world.batch.resolve()
-    assert world.run().commission_reviews_posted == 1
+    with patch.object(world.repo, "find_commission_review_application_id", return_value=None):
+        assert world.run().commission_reviews_posted == 1
     publication = world.publication(RCL, PublicationKind.COMMISSION_REVIEW)
     assert publication is not None and publication.id is not None
     legacy = world.repo.get_publication_content(publication.id)

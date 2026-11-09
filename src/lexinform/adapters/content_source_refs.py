@@ -6,6 +6,7 @@ from datetime import datetime
 from lexinform.adapters.amendment_inputs import checked_computation_result, validate_item_input
 from lexinform.adapters.computation_history import parse_computation_result
 from lexinform.adapters.document_source_rows import DocumentSourceRows
+from lexinform.adapters.legacy_history import read_legacy_batch_item_meta
 from lexinform.content_sources import verify_primary_content_source
 from lexinform.models import (
     AnalysisRecord,
@@ -20,7 +21,6 @@ from lexinform.models import (
     StatusChange,
     amendments_stage,
 )
-from lexinform.models.batch import batch_item_meta
 
 
 def _row_to_llm_batch_item(row: sqlite3.Row, connection: sqlite3.Connection) -> LlmBatchItem:
@@ -30,7 +30,7 @@ def _row_to_llm_batch_item(row: sqlite3.Row, connection: sqlite3.Connection) -> 
         call_kind=row["call_kind"],
         term=row["term"],
         number=row["number"],
-        meta=batch_item_meta(row["call_kind"], row["meta_json"]),
+        meta=read_legacy_batch_item_meta(connection, row),
         consumed_at=datetime.fromisoformat(row["consumed_at"]) if row["consumed_at"] else None,
         result=BatchResult.model_validate_json(row["result_json"]) if row["result_json"] else None,
     )

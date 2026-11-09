@@ -1,0 +1,21 @@
+{
+  "comparison": {
+    "application_id": 1,
+    "dump_delta_bytes": {
+      "cleaned": {
+        "gzip": 9,
+        "sql": 37
+      },
+      "delivered": {
+        "gzip": 11,
+        "sql": 37
+      }
+    },
+    "only_editorial_link_changed": true,
+    "original_html_identical": true,
+    "post_cleanup_restore_identical": true,
+    "previous_reader_rejected_new_dump_atomically": true
+  },
+  "rollback_reader_sha": "aa3b07c54dfe65c637f3640e98f9ad76e21d28f7",
+  "writer_dump_restored_byte_identically_by_rollback_reader": true
+}

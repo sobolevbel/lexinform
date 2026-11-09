@@ -1,0 +1,68 @@
+{
+  "authorization": {
+    "default_cli_spec_byte_identical": true,
+    "default_cli_spec_sha256": "9f526abd7677617f46ae48b13554dea843e970f2f404723f0d9f23b98a2d4cf4",
+    "default_plan_sha256": "7b1f691f5f2711cd299dddf234ef0d2049c2907c2417c22edd03d600faebabc0",
+    "max_distinct_retained_utf8_bytes": 1048576,
+    "omitted_opt_in_field_refused": true,
+    "opt_in_apply_succeeded": true,
+    "opt_in_dry_run_unchanged": true,
+    "opt_in_plan_sha256": "63093a99cb97bc9073d668ba3bbee3312506540970725e8ef3a7f67acd408a0a",
+    "opt_in_snapshot_sha256": "4a578b65e6ee91abe0d8d62ff6dc8c8f02a0db8b6cd0e23cd9b1f4da1276e7e9",
+    "scope": "Offline J526 state SQL in a temporary local Git fixture. No production or tracked writes."
+  },
+  "comparison": {
+    "candidate_finite_import": {
+      "after_cleanup_gzip": 2917733,
+      "after_cleanup_sql": 15687525,
+      "baseline_gzip": 5462079,
+      "baseline_sql": 27299159,
+      "bytes": 183091,
+      "cleanup": {
+        "analysis_memos": 128,
+        "batch_payloads": 5,
+        "delivery_payloads": 180
+      },
+      "compact_gzip": 5597127,
+      "compact_sql": 27898855,
+      "copies_after_apply": 1,
+      "exact_owner_key_hydration": true,
+      "observed_request_sha256": "d8853139629fb84f6d567e8e7857ab9b3135d81a824d453a423ef9b0802554a6",
+      "restore_byte_identical": true,
+      "source_sha256": "4a578b65e6ee91abe0d8d62ff6dc8c8f02a0db8b6cd0e23cd9b1f4da1276e7e9",
+      "text_occurrences_after_cleanup": 1,
+      "text_sha256": "42ba1f9d959483b59b4213589788cd33c6b984cf0136c657127234cf64bac7c9",
+      "value_id": "legacy-value-v1:e44791251406113d3a09575c7cca5fee08aefca649c2f32483343126ce55003d"
+    },
+    "marginal_after_cleanup": {
+      "gzip": 50486,
+      "sql": 184881
+    },
+    "marginal_immediate": {
+      "gzip": 1031,
+      "sql": 565
+    },
+    "same_snapshot": "ca2353d112dedb6a47962976a4bd29e6f19836a9",
+    "unchanged_finite_import": {
+      "applied": {
+        "gzip": 5596096,
+        "sql": 27898290
+      },
+      "before": {
+        "gzip": 5462079,
+        "sql": 27299159
+      },
+      "cleanup": {
+        "analysis_memos": 128,
+        "batch_payloads": 5,
+        "delivery_payloads": 180
+      },
+      "pruned": {
+        "gzip": 2867247,
+        "sql": 15502644
+      }
+    }
+  },
+  "rollback_reader_sha": "aa3b07c54dfe65c637f3640e98f9ad76e21d28f7",
+  "writer_dump_restored_byte_identically_by_rollback_reader": true
+}

@@ -3,13 +3,17 @@
 import hashlib
 import re
 from collections import Counter
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 
 from pydantic import JsonValue
 
+from lexinform.models.batch import BatchItemMeta, batch_item_meta
 from lexinform.models.legacy_results import (
     LEGACY_REFERENCE_FIELDS,
+    MAX_LEGACY_BATCH_TEXT_BYTES,
+    LegacyBatchTextValue,
     LegacyResultImport,
     LegacyResultOccurrence,
     LegacyResultValue,
@@ -73,6 +77,7 @@ class LegacyMaintenancePlan:
     existing_manifest_sha256: str | None = None
     surveyed_columns: int = 0
     modern_occurrences: int = 0
+    retain_batch_text: bool = False
 
 
 @dataclass(frozen=True)
@@ -154,12 +159,47 @@ def _shared_analyses(values: tuple[LegacyResultValue, ...]) -> tuple[LegacyShare
     return tuple(item for item in candidates if counts[item.body_sha256] > 1)
 
 
+def _settled_batch_text(
+    column: LegacySnapshotColumn, purpose: str, provider: str
+) -> tuple[LegacyResultValue, int] | None:
+    meta = batch_item_meta(purpose, column.raw_json)
+    if (
+        not isinstance(meta, BatchItemMeta)
+        or not meta.text
+        or meta.prepared_input_receipt is not None
+        or meta.input_binding is None
+        or meta.frozen_request_manifest is None
+    ):
+        return None
+    owner = (column.container_term, column.container_number)
+    manifest = meta.frozen_request_manifest
+    if (
+        (meta.input_binding.term, meta.input_binding.number) != owner
+        or (manifest.provider, manifest.purpose, manifest.request_sha256)
+        != (provider, purpose, meta.request_sha256)
+        or len(meta.text) != meta.input_chars
+    ):
+        raise ValueError("legacy batch text differs from its observed request and owner")
+    data = meta.text.encode()
+    if len(data) > MAX_LEGACY_BATCH_TEXT_BYTES:
+        raise ValueError("legacy batch text import exceeds its cumulative UTF-8 byte limit")
+    digest = hashlib.sha256(data).hexdigest()
+    if meta.text_sha256 and _SHA256.fullmatch(meta.text_sha256) and meta.text_sha256 != digest:
+        raise ValueError("legacy batch text differs from its recorded exact checksum")
+    body = LegacyBatchTextValue(text=meta.text, text_sha256=digest)
+    return LegacyResultValue(value_json=canonical_legacy_json(body.model_dump(mode="json"))), len(
+        data
+    )
+
+
 def plan_legacy_maintenance(
     columns: tuple[LegacySnapshotColumn, ...],
     *,
     snapshot_sha256: str,
     imported_at: datetime,
     share_analysis_bodies: bool = True,
+    retain_batch_text: bool = False,
+    settled_batch_inputs: Mapping[str, tuple[str, str]] | None = None,
 ) -> LegacyMaintenancePlan:
     if _SHA256.fullmatch(snapshot_sha256) is None:
         raise ValueError("a legacy maintenance plan requires its exact normalized raw dump SHA")
@@ -170,6 +210,7 @@ def plan_legacy_maintenance(
     occurrences: list[LegacyResultOccurrence] = []
     replacements: list[LegacyProjectionReplacement] = []
     modern = 0
+    retained_batch_bytes = 0
     for column in columns:
         shape = CONTEXT_RESULT_TABLES.get(column.table)
         if shape is None or column.column not in shape.columns:
@@ -210,6 +251,35 @@ def plan_legacy_maintenance(
                 )
             )
         compact = _compact(column, value)
+        if (
+            retain_batch_text
+            and column.table == "llm_batch_items"
+            and settled_batch_inputs is not None
+            and (batch := settled_batch_inputs.get(column.key_json)) is not None
+            and (retained := _settled_batch_text(column, *batch)) is not None
+        ):
+            input_value, byte_count = retained
+            if input_value.value_id not in values:
+                retained_batch_bytes += byte_count
+                if retained_batch_bytes > MAX_LEGACY_BATCH_TEXT_BYTES:
+                    raise ValueError(
+                        "legacy batch text import exceeds its cumulative UTF-8 byte limit"
+                    )
+            assert isinstance(compact, dict), "validated batch metadata is a JSON object"
+            compact = {name: item for name, item in compact.items() if name != "text"}
+            values[input_value.value_id] = input_value
+            occurrences.append(
+                LegacyResultOccurrence(
+                    value_id=input_value.value_id,
+                    source_table=column.table,
+                    source_key_json=column.key_json,
+                    source_column=column.column,
+                    source_path="/text",
+                    container_term=column.container_term,
+                    container_number=column.container_number,
+                    purpose=batch[0],
+                )
+            )
         if canonical_legacy_json(compact) != canonical_legacy_json(value):
             replacements.append(LegacyProjectionReplacement(column, canonical_legacy_json(compact)))
     imported = (
@@ -231,4 +301,5 @@ def plan_legacy_maintenance(
         shared=_shared_analyses(imported.values) if imported and share_analysis_bodies else (),
         surveyed_columns=len(columns),
         modern_occurrences=modern,
+        retain_batch_text=retain_batch_text,
     )

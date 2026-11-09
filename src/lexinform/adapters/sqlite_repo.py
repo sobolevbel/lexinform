@@ -95,6 +95,7 @@ from lexinform.adapters.input_receipts import (
     validate_scan_attachment,
     validate_word_formula_intent,
 )
+from lexinform.adapters.legacy_history import read_legacy_batch_item_meta
 from lexinform.adapters.legacy_history import (
     read_legacy_result as _read_legacy_result,
 )
@@ -120,6 +121,7 @@ from lexinform.adapters.primary_projections import (
     validate_primary_cost_projections,
     validate_primary_projections,
 )
+from lexinform.adapters.review_content_evidence import commission_review_application_id
 from lexinform.adapters.review_memos import validate_review_memo_row, validate_review_memos
 from lexinform.adapters.review_prepared_input import capture_submitted_review_input
 from lexinform.adapters.secondary_dependencies import (
@@ -276,7 +278,7 @@ from lexinform.models import (
     valid_mnemonic,
 )
 from lexinform.models.amendment_inputs import AmendmentInputSnapshot, AmendmentScanInputWitness
-from lexinform.models.batch import BatchJob, BatchKind, batch_item_meta
+from lexinform.models.batch import BatchJob, BatchKind
 from lexinform.models.commands import (
     GroupedEditDeliveryResolution,
     GroupedEditResolutionEnvelope,
@@ -1177,7 +1179,7 @@ def _row_to_llm_batch_item(row: sqlite3.Row, connection: sqlite3.Connection) -> 
         call_kind=row["call_kind"],
         term=row["term"],
         number=row["number"],
-        meta=batch_item_meta(row["call_kind"], row["meta_json"]),
+        meta=read_legacy_batch_item_meta(connection, row),
         consumed_at=_parse_dt(row["consumed_at"]),
         result=BatchResult.model_validate_json(row["result_json"]) if row["result_json"] else None,
     )
@@ -1777,8 +1779,23 @@ class SqliteBillRepository:
             digest("SELECT * FROM status_changes ORDER BY id", self._row_to_status_change),
         )
 
+    def _legacy_settled_batch_inputs(self) -> dict[str, tuple[str, str]]:
+        return {
+            canonical_legacy_json([batch_id, custom_id]): (purpose, provider)
+            for batch_id, custom_id, purpose, provider in self._conn.execute(
+                batch_retention_cte() + " SELECT i.batch_id,i.custom_id,i.call_kind,b.provider"
+                " FROM llm_batch_items i JOIN llm_batches b USING (batch_id)"
+                " WHERE i.call_kind IN ('analysis','reanalysis')"
+                " AND json_type(i.meta_json,'$.text')='text' AND " + batch_payload_cleanup_filter()
+            )
+        }
+
     def plan_legacy_maintenance(
-        self, *, imported_at: datetime, share_analysis_bodies: bool = True
+        self,
+        *,
+        imported_at: datetime,
+        share_analysis_bodies: bool = True,
+        retain_batch_text: bool = False,
     ) -> LegacyMaintenancePlan:
         with self.atomic():
             _validate_legacy_import(self._conn)
@@ -1793,12 +1810,17 @@ class SqliteBillRepository:
                     imported_at,
                     share_analysis_bodies,
                     existing_manifest_sha256=marker[0],
+                    retain_batch_text=retain_batch_text,
                 )
             return plan_legacy_maintenance(
                 self._legacy_snapshot_columns(),
                 snapshot_sha256=snapshot_sha,
                 imported_at=imported_at,
                 share_analysis_bodies=share_analysis_bodies,
+                retain_batch_text=retain_batch_text,
+                settled_batch_inputs=self._legacy_settled_batch_inputs()
+                if retain_batch_text
+                else None,
             )
 
     def apply_legacy_maintenance(self, plan: LegacyMaintenancePlan) -> LegacyMaintenanceResult:
@@ -1829,6 +1851,10 @@ class SqliteBillRepository:
                 snapshot_sha256=snapshot_sha,
                 imported_at=plan.imported_at,
                 share_analysis_bodies=plan.share_analysis_bodies,
+                retain_batch_text=plan.retain_batch_text,
+                settled_batch_inputs=(
+                    self._legacy_settled_batch_inputs() if plan.retain_batch_text else None
+                ),
             )
             if plan != expected:
                 raise ValueError("the legacy maintenance plan does not match its exact snapshot")
@@ -1866,9 +1892,27 @@ class SqliteBillRepository:
                 raise ValueError("legacy maintenance changed an immutable whole value")
             if self._conn.execute("PRAGMA foreign_key_check").fetchone() is not None:
                 raise ValueError("legacy maintenance requires valid foreign keys")
+            batch_texts = {
+                value.value_id: body.text
+                for value in plan.imported.values
+                if (body := value.batch_text) is not None
+            }
+            relocated = {
+                occurrence.source_key_json: batch_texts[occurrence.value_id]
+                for occurrence in plan.imported.occurrences
+                if occurrence.value_id in batch_texts
+            }
             for original, current in zip(columns, self._legacy_snapshot_columns(), strict=True):
                 hydrated = read_legacy_json(current.raw_json, self.get_legacy_result)
-                if canonical_legacy_json(legacy_json(hydrated)) != canonical_legacy_json(
+                value = legacy_json(hydrated)
+                if (
+                    current.table == "llm_batch_items"
+                    and (relocated_text := relocated.get(current.key_json)) is not None
+                ):
+                    if not isinstance(value, dict) or "text" in value:
+                        raise ValueError("legacy maintenance must relocate exact batch text once")
+                    value["text"] = relocated_text
+                if canonical_legacy_json(value) != canonical_legacy_json(
                     legacy_json(original.raw_json)
                 ):
                     raise ValueError("legacy maintenance changed a saved JSON view")
@@ -2359,6 +2403,16 @@ class SqliteBillRepository:
                 [(identity, version.content_id) for identity in edition.bindings],
             )
             verify_multipart_card_revision(self._conn, version, require_bound=True)
+
+    def find_commission_review_application_id(
+        self, bill: Bill, record: DocumentReviewRecord, *, recorded_at: datetime
+    ) -> int | None:
+        try:
+            return commission_review_application_id(
+                self._conn, bill, record, recorded_at=recorded_at
+            )
+        except ValueError, TypeError, RecursionError, sqlite3.Error:
+            return None
 
     def save_original_delivery_content(
         self,

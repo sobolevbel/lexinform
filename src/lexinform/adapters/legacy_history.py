@@ -11,7 +11,8 @@ from lexinform.legacy_results import (
     read_legacy_json,
 )
 from lexinform.models import LegacyResultImport, LegacyResultOccurrence, LegacyResultValue
-from lexinform.models.legacy_results import LegacyBatchTextValue, legacy_json
+from lexinform.models.batch import BatchItemMeta, DigestItemMeta, batch_item_meta
+from lexinform.models.legacy_results import LegacyBatchTextValue, canonical_legacy_json, legacy_json
 
 
 def read_legacy_result(connection: sqlite3.Connection, value_id: str) -> LegacyResultValue | None:
@@ -32,6 +33,56 @@ def read_legacy_result(connection: sqlite3.Connection, value_id: str) -> LegacyR
     if value.value_id != value_id:
         raise ValueError("immutable legacy value checksum mismatch")
     return value
+
+
+def read_legacy_batch_text(
+    connection: sqlite3.Connection,
+    batch_id: str,
+    custom_id: str,
+    term: int,
+    number: str,
+    purpose: str,
+) -> LegacyBatchTextValue | None:
+    row = connection.execute(
+        "SELECT o.value_id FROM legacy_result_occurrences o"
+        " JOIN legacy_result_imports i USING(import_id)"
+        " WHERE o.source_table='llm_batch_items' AND o.source_key_json=?"
+        " AND o.source_column='meta_json' AND o.source_path='/text'"
+        " AND o.container_term=? AND o.container_number=? AND o.purpose=?"
+        " AND i.source_sha256 IS NOT NULL",
+        (canonical_legacy_json([batch_id, custom_id]), term, number, purpose),
+    ).fetchone()
+    if row is None:
+        return None
+    value = read_legacy_result(connection, row[0])
+    if value is None or (body := value.batch_text) is None:
+        raise ValueError("missing immutable legacy batch text")
+    return body
+
+
+def read_legacy_batch_item_meta(
+    connection: sqlite3.Connection, row: sqlite3.Row
+) -> BatchItemMeta | DigestItemMeta:
+    meta = batch_item_meta(row["call_kind"], row["meta_json"])
+    if (
+        not row["consumed_at"]
+        or not isinstance(meta, BatchItemMeta)
+        or meta.text
+        or meta.prepared_input_receipt is not None
+        or meta.frozen_request_manifest is None
+        or meta.input_binding is None
+    ):
+        return meta
+    body = read_legacy_batch_text(
+        connection, row["batch_id"], row["custom_id"], row["term"], row["number"], row["call_kind"]
+    )
+    if body is None:
+        return meta
+    if (meta.input_binding.term, meta.input_binding.number) != (row["term"], row["number"]) or (
+        meta.input_chars != len(body.text)
+    ):
+        raise ValueError("immutable legacy batch text differs from its original metadata")
+    return meta.model_copy(update={"text": body.text})
 
 
 def _validate_batch_text_occurrence(

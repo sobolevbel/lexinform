@@ -23,6 +23,7 @@ class MaintenanceSpec(BaseModel):
     snapshot_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     plan_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     imported_at: AwareDatetime
+    retain_batch_text: bool = Field(default=False, exclude_if=lambda value: not value)
 
     @field_validator("version", mode="before")
     @classmethod
@@ -66,10 +67,15 @@ def _state_baseline(state_file: Path, expected: str) -> str:
 
 
 def plan_sha256(plan: LegacyMaintenancePlan) -> str:
-    return hashlib.sha256(TypeAdapter(LegacyMaintenancePlan).dump_json(plan)).hexdigest()
+    exclude = None if plan.retain_batch_text else {"retain_batch_text"}
+    return hashlib.sha256(
+        TypeAdapter(LegacyMaintenancePlan).dump_json(plan, exclude=exclude)
+    ).hexdigest()
 
 
-def _plan(repo: SqliteBillRepository, imported_at: datetime, source: str) -> LegacyMaintenancePlan:
+def _plan(
+    repo: SqliteBillRepository, imported_at: datetime, source: str, *, retain_batch_text: bool
+) -> LegacyMaintenancePlan:
     if repo.schema_version != SCHEMA_VERSION:
         raise ValueError("Maintenance requires an already restored current schema")
     restored = SqliteBillRepository(":memory:")
@@ -79,23 +85,31 @@ def _plan(repo: SqliteBillRepository, imported_at: datetime, source: str) -> Leg
             raise ValueError("Maintenance database differs from its exact restored state")
     finally:
         restored.close()
-    return repo.plan_legacy_maintenance(imported_at=imported_at, share_analysis_bodies=True)
+    return repo.plan_legacy_maintenance(
+        imported_at=imported_at, share_analysis_bodies=True, retain_batch_text=retain_batch_text
+    )
 
 
 def prepare(
-    database: Path, state_file: Path, *, expected_state_sha: str, imported_at: datetime
+    database: Path,
+    state_file: Path,
+    *,
+    expected_state_sha: str,
+    imported_at: datetime,
+    retain_batch_text: bool = False,
 ) -> MaintenanceSpec:
     source = _state_baseline(state_file, expected_state_sha)
     database.resolve(strict=True)
     repo = SqliteBillRepository(database)
     try:
         with repo.atomic():
-            plan = _plan(repo, imported_at, source)
+            plan = _plan(repo, imported_at, source, retain_batch_text=retain_batch_text)
         return MaintenanceSpec(
             expected_state_sha=expected_state_sha,
             snapshot_sha256=plan.snapshot_sha256,
             plan_sha256=plan_sha256(plan),
             imported_at=imported_at,
+            retain_batch_text=retain_batch_text,
         )
     finally:
         repo.close()
@@ -109,7 +123,7 @@ def apply(
     repo = SqliteBillRepository(database)
     try:
         with repo.atomic():
-            plan = _plan(repo, spec.imported_at, source)
+            plan = _plan(repo, spec.imported_at, source, retain_batch_text=spec.retain_batch_text)
             if (
                 plan.snapshot_sha256 != spec.snapshot_sha256
                 or plan_sha256(plan) != spec.plan_sha256
@@ -145,6 +159,7 @@ def main() -> None:
         if name == "prepare":
             command.add_argument("--expected-state-sha", required=True)
             command.add_argument("--imported-at", required=True)
+            command.add_argument("--retain-batch-text", action="store_true")
         else:
             command.add_argument("--spec", required=True)
             command.add_argument("--dry-run", action="store_true")
@@ -157,6 +172,7 @@ def main() -> None:
                 args.state_file,
                 expected_state_sha=args.expected_state_sha,
                 imported_at=TypeAdapter(AwareDatetime).validate_python(args.imported_at),
+                retain_batch_text=args.retain_batch_text,
             )
             print(spec.model_dump_json())
         else:
