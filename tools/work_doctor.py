@@ -15,7 +15,7 @@ from lexinform.adapters.document_work import (
     revision_handoff_checks,
 )
 from lexinform.adapters.input_receipts import parse_batch_request
-from lexinform.models import AmendmentRevisionApplicationWork, ReviewWork
+from lexinform.models import AmendmentRevisionApplicationWork, DocumentWork, ReviewWork
 from lexinform.models.documents import DocumentDeferReason
 from lexinform.saved_clock import saved_clock_age
 from tools.corpus_artifacts import write_json
@@ -202,6 +202,7 @@ class WorkAudit:
     findings: list[dict[str, str]] = field(default_factory=list)
     owners: list[dict[str, Any]] = field(default_factory=list)
     document_defer_reasons: dict[str, DocumentDeferReason] = field(default_factory=dict)
+    memo_counts: dict[tuple[int, str], int] = field(default_factory=dict)
 
     def issue(self, code: str, ref: str, *, level: str = "error") -> None:
         self.findings.append({"code": code, "ref": ref, "level": level})
@@ -211,13 +212,47 @@ class WorkAudit:
             self.counts["revision_application_handoffs"] += 1
             if code is not None:
                 self.issue(code, ref)
-        for row in connection.execute("SELECT * FROM document_work ORDER BY key"):
+        decoded: list[
+            tuple[
+                sqlite3.Row, DocumentWork | AmendmentRevisionApplicationWork | DocumentWorkRowError
+            ]
+        ] = []
+        for row in connection.execute(
+            "SELECT w.*, b.term AS bill_exists FROM document_work w"
+            " LEFT JOIN bills b ON b.term=w.term AND b.number=w.number ORDER BY w.key"
+        ):
+            try:
+                decoded.append((row, read_document_work(connection, row)))
+            except DocumentWorkRowError as exc:
+                decoded.append((row, exc))
+        changes_arg = json.dumps(
+            sorted({work.change_id for _, work in decoded if isinstance(work, DocumentWork)})
+        )
+        changes = {
+            row["id"]: (row["term"], row["number"])
+            for row in connection.execute(
+                "SELECT id, term, number FROM status_changes"
+                " WHERE id IN (SELECT value FROM json_each(?))",
+                (changes_arg,),
+            )
+        }
+        publications: dict[int, Counter[str]] = {}
+        retained_payloads: Counter[int] = Counter()
+        for row in connection.execute(
+            "SELECT status_change_id, status, COUNT(*) AS count,"
+            " SUM(delivery_json IS NOT NULL) AS payloads FROM publications"
+            " WHERE status_change_id IN (SELECT value FROM json_each(?))"
+            " GROUP BY status_change_id, status",
+            (changes_arg,),
+        ):
+            identity = row["status_change_id"]
+            publications.setdefault(identity, Counter())[row["status"]] = row["count"]
+            retained_payloads[identity] += row["payloads"]
+        for row, work in decoded:
             ref = f"document_work/{row['key']}"
             self.counts["document_rows"] += 1
-            try:
-                work = read_document_work(connection, row)
-            except DocumentWorkRowError as exc:
-                self.issue(str(exc), ref)
+            if isinstance(work, DocumentWorkRowError):
+                self.issue(str(work), ref)
                 continue
             if isinstance(work, AmendmentRevisionApplicationWork):
                 self.revision_application(connection, ref, work)
@@ -225,24 +260,15 @@ class WorkAudit:
             for name in ("bill_json", "detail_json", "stage_json", "document_json", "context_json"):
                 self.snapshot(getattr(work, name), f"{ref}/{name}")
             self.counts[f"document_{work.state}"] += 1
-            bill = connection.execute(
-                "SELECT 1 FROM bills WHERE term=? AND number=?", (work.term, work.number)
-            ).fetchone()
-            change = connection.execute(
-                "SELECT term, number FROM status_changes WHERE id=?", (work.change_id,)
-            ).fetchone()
-            if bill is None:
+            change = changes.get(work.change_id)
+            if row["bill_exists"] is None:
                 self.issue("missing_document_bill", ref)
             if change is None:
                 self.issue("missing_document_change", ref)
-            elif (change["term"], change["number"]) != (work.term, work.number):
+            elif change != (work.term, work.number):
                 self.issue("document_change_owner_mismatch", ref)
-            publications = connection.execute(
-                "SELECT status, delivery_json IS NOT NULL AS payload FROM publications "
-                "WHERE status_change_id=? ORDER BY id",
-                (work.change_id,),
-            ).fetchall()
-            if work.state != "complete" and not publications:
+            linked = publications.get(work.change_id)
+            if work.state != "complete" and not linked:
                 self.issue("document_publication_unavailable", ref, level="warning")
             if work.state == "waiting" and work.last_defer_reason is not None:
                 self.document_defer_reasons[ref] = work.last_defer_reason
@@ -259,11 +285,9 @@ class WorkAudit:
                     "next_at": work.next_at.isoformat(),
                     "frozen_document": work.document_json is not None,
                     "frozen_context": work.context_json is not None,
-                    "linked_publications": dict(
-                        sorted(Counter(pub["status"] for pub in publications).items())
-                    ),
-                    "retained_delivery_payloads": sum(pub["payload"] for pub in publications),
-                    "protected_memo_rows": self.memos(connection, work.term, work.number)
+                    "linked_publications": dict(sorted(linked.items())) if linked else {},
+                    "retained_delivery_payloads": retained_payloads[work.change_id],
+                    "protected_memo_rows": self.memo_counts.get((work.term, work.number), 0)
                     if work.state != "complete"
                     else 0,
                 }
@@ -315,7 +339,7 @@ class WorkAudit:
                 "original_publication_id": work.original_publication_id,
                 "revision_publication_id": work.revision_publication_id,
                 "original_context_witness": witness,
-                "protected_memo_rows": self.memos(connection, work.term, work.number)
+                "protected_memo_rows": self.memo_counts.get((work.term, work.number), 0)
                 if work.state != "complete"
                 else 0,
             }
@@ -374,7 +398,9 @@ class WorkAudit:
                         "recorded_question_key": bool(work.memo_key),
                         "recorded_source_key": bool(work.source_key),
                         "comparison_snapshot": work.comparison_document is not None,
-                        "protected_memo_rows": self.memos(connection, row["term"], row["number"]),
+                        "protected_memo_rows": self.memo_counts.get(
+                            (row["term"], row["number"]), 0
+                        ),
                     }
                 )
 
@@ -392,13 +418,21 @@ class WorkAudit:
         if not isinstance(value, dict):
             self.issue("invalid_work_snapshot", ref)
 
-    @staticmethod
-    def memos(connection: sqlite3.Connection, term: int, number: str) -> int:
-        return int(
-            connection.execute(
-                "SELECT COUNT(*) FROM analysis_memo WHERE term=? AND number=?", (term, number)
-            ).fetchone()[0]
-        )
+    def load_memo_counts(self, connection: sqlite3.Connection) -> None:
+        self.memo_counts = {
+            (row["term"], row["number"]): row["total"]
+            for row in connection.execute(
+                """
+                WITH owners AS (
+                    SELECT term, number FROM document_work WHERE state!='complete'
+                    UNION SELECT term, number FROM bills WHERE review_work_json IS NOT NULL
+                )
+                SELECT m.term, m.number, COUNT(*) AS total FROM owners o
+                JOIN analysis_memo m ON m.term=o.term AND m.number=o.number
+                GROUP BY m.term, m.number
+                """
+            )
+        }
 
 
 def audit(
@@ -418,6 +452,7 @@ def audit(
         }
         missing = sorted(_REQUIRED - tables)
         if not missing:
+            result.load_memo_counts(connection)
             result.documents(connection)
             result.reviews(connection)
         latencies = (

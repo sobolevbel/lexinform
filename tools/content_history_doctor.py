@@ -2,8 +2,9 @@
 
 import argparse
 import hashlib
+import json
 import sqlite3
-from collections import Counter
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -116,10 +117,11 @@ def _read_history(
     counts: Counter[str],
     findings: _Findings,
     digest_parts: dict[str, dict[str, object]] | None,
-) -> tuple[dict[str, ContentSnapshot], dict[str, ContentVersion], set[str]]:
+) -> tuple[dict[str, ContentSnapshot], dict[str, ContentVersion], set[str], dict[str, int | None]]:
     snapshots: dict[str, ContentSnapshot] = {}
     versions: dict[str, ContentVersion] = {}
     validated_primary_refs: set[str] = set()
+    card_physical_ids: dict[str, int | None] = {}
     if "content_snapshots" in tables:
         counts["snapshot_rows"] = 0
         for row in db.execute("SELECT rowid AS audit_id, * FROM content_snapshots ORDER BY rowid"):
@@ -206,6 +208,7 @@ def _read_history(
                     findings.add(code, version.content_id)
         try:
             physical_id = verify_card_content(db, version, retained=True)
+            card_physical_ids[version.content_id] = physical_id
             if (
                 version.change_snapshot_id is None
                 and version.digest_profile is None
@@ -225,7 +228,7 @@ def _read_history(
             previous = versions.get(version.previous_version_id)
             if previous is None or previous.root_publication_id != version.root_publication_id:
                 findings.add("content_predecessor_unavailable", version.content_id)
-    return snapshots, versions, validated_primary_refs
+    return snapshots, versions, validated_primary_refs, card_physical_ids
 
 
 def _publication_bindings(
@@ -235,22 +238,39 @@ def _publication_bindings(
     findings: _Findings,
     snapshots: dict[str, ContentSnapshot],
     versions: dict[str, ContentVersion],
+    card_physical_ids: dict[str, int | None],
 ) -> dict[str, list[dict[str, Any]]]:
     bindings: dict[str, list[dict[str, Any]]] = {}
     if "publication_content" in tables:
+        rows = db.execute("SELECT * FROM publication_content ORDER BY publication_id").fetchall()
+        publications: dict[int, sqlite3.Row] = {}
+        if "publications" in tables:
+            ids = {row["publication_id"] for row in rows if row["content_id"] in versions}
+            ids.update(version.root_publication_id for version in versions.values())
+            publications = {
+                row["id"]: row
+                for row in db.execute(
+                    "SELECT * FROM publications WHERE id IN (SELECT value FROM json_each(?))",
+                    (json.dumps(sorted(ids)),),
+                )
+            }
+        resolutions: dict[int, list[sqlite3.Row]] = defaultdict(list)
+        if "delivery_resolutions" in tables:
+            for resolution in db.execute(
+                "SELECT d.id, d.publication_id, d.command_update_id, d.resolution_json"
+                " FROM delivery_resolutions d JOIN publication_content b USING(publication_id)"
+                " ORDER BY d.id"
+            ):
+                resolutions[resolution["publication_id"]].append(resolution)
         counts["binding_rows"] = 0
-        for row in db.execute("SELECT * FROM publication_content ORDER BY publication_id"):
+        for row in rows:
             counts["binding_rows"] += 1
             identity = row["publication_id"]
             bound = versions.get(row["content_id"])
             if bound is None:
                 findings.add("content_version_unavailable", f"publication_content/{identity}")
                 continue
-            publication = (
-                db.execute("SELECT * FROM publications WHERE id=?", (identity,)).fetchone()
-                if "publications" in tables
-                else None
-            )
+            publication = publications.get(identity)
             physical: dict[str, Any] = {
                 "publication_id": identity,
                 "available": publication is not None,
@@ -267,9 +287,7 @@ def _publication_bindings(
                     code = _frozen_content_issue(publication["delivery_json"], bound, snapshots)
                     if code is not None:
                         findings.add(code, str(identity))
-                root = db.execute(
-                    "SELECT * FROM publications WHERE id=?", (bound.root_publication_id,)
-                ).fetchone()
+                root = publications.get(bound.root_publication_id)
                 if root is not None and tuple(
                     publication[key] for key in ("term", "number", "channel_id")
                 ) != tuple(root[key] for key in ("term", "number", "channel_id")):
@@ -303,18 +321,12 @@ def _publication_bindings(
                 and bound.digest_profile is None
                 and not _independent_profile(bound)
             ):
-                try:
-                    physical_id = verify_card_content(db, bound, retained=True)
-                    if physical_id is not None and physical_id != identity:
-                        findings.add("content_binding_kind_mismatch", str(identity))
-                except ValueError, TypeError, RecursionError, sqlite3.Error, IndexError, KeyError:
+                if bound.content_id not in card_physical_ids:
                     findings.add("invalid_card_content_history", str(identity))
-            if "delivery_resolutions" in tables:
-                for resolution in db.execute(
-                    "SELECT id, command_update_id, resolution_json FROM delivery_resolutions"
-                    " WHERE publication_id=? ORDER BY id",
-                    (identity,),
-                ):
+                elif card_physical_ids[bound.content_id] not in (None, identity):
+                    findings.add("content_binding_kind_mismatch", str(identity))
+            if identity in resolutions:
+                for resolution in resolutions[identity]:
                     try:
                         decision = read_delivery_resolution(resolution["resolution_json"])
                     except (
@@ -446,11 +458,13 @@ def audit(
         if schema >= 55 or _TABLES.intersection(tables):
             for name in missing:
                 findings.add("content_history_table_unavailable", name)
-        snapshots, versions, validated_primary_refs = _read_history(
+        snapshots, versions, validated_primary_refs, card_physical_ids = _read_history(
             db, tables, counts, findings, digest_parts
         )
         try:
-            bindings = _publication_bindings(db, tables, counts, findings, snapshots, versions)
+            bindings = _publication_bindings(
+                db, tables, counts, findings, snapshots, versions, card_physical_ids
+            )
         except sqlite3.Error, IndexError, KeyError:
             findings.add("content_publication_layout_unavailable", "publications")
             bindings = {}
@@ -488,19 +502,19 @@ def audit(
                     cards[root_id] = current.content_id
             except ValueError, TypeError, RecursionError, sqlite3.Error, IndexError, KeyError:
                 findings.add("invalid_multipart_card_current_history", str(root_id))
-        for value in versions.values():
-            if (
-                value.root_publication_id not in multipart_roots
-                and value.change_snapshot_id is None
-                and value.digest_profile is None
-                and not _independent_profile(value)
-            ):
-                try:
-                    cards[value.root_publication_id] = card_current_content(
-                        db, value.root_publication_id
-                    )
-                except ValueError, TypeError, RecursionError, sqlite3.Error, IndexError, KeyError:
-                    cards[value.root_publication_id] = None
+        ordinary_roots = {
+            value.root_publication_id
+            for value in versions.values()
+            if value.root_publication_id not in multipart_roots
+            and value.change_snapshot_id is None
+            and value.digest_profile is None
+            and not _independent_profile(value)
+        }
+        for root_id in ordinary_roots:
+            try:
+                cards[root_id] = card_current_content(db, root_id)
+            except ValueError, TypeError, RecursionError, sqlite3.Error, IndexError, KeyError:
+                cards[root_id] = None
         validated_primary_refs = {
             identity
             for identity in validated_primary_refs
