@@ -1,0 +1,19 @@
+{
+  "integrated_base": "bd40d86f399f4c0696847823db24bb44cfbe2b4f",
+  "integrated_source_pins_sha256": "b79be3f5fa816cda5b9b5eaaeb1a234fcf648086891c85a31c2247d378d14074",
+  "baseline_shards": {
+    "broad-shard-0.json": "eeca4f25ce11edf18e731bc46c9dd57473924f4debd53073a6f260eb899c5887",
+    "broad-shard-1.json": "e4d3f2fdd9859a123ca9b377c60a84f6e2de8168da5f5ddf1ea3bff37ce8682c",
+    "broad-shard-2.json": "b204df9ab5a17a4837c080b179b17a70d2e7caa30df989f75eef5b5f5180087d"
+  },
+  "stage_rows": 148,
+  "identical_complete_rows": 148,
+  "identical_input_hashes": 358,
+  "extraction_ids": 203,
+  "row_differences": {},
+  "scoped_rcl_reads_unchanged": true,
+  "uc76_proof_unchanged": true,
+  "proof_dump_sizes_identical": true,
+  "standalone_odt_roots": [],
+  "unreadable_zip_roots": []
+}

@@ -8,7 +8,11 @@ from typing import ClassVar, Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from lexinform.models.analysis import AmendmentsContext, BillContext, SupplementContext
-from lexinform.models.block_input import PreparedBlockCompanion
+from lexinform.models.block_input import (
+    MAX_BLOCK_INPUT_BYTES,
+    PreparedBlockCompanion,
+    PreparedBlockCopy,
+)
 from lexinform.models.prepared_input import PreparedTextPart, PreparedTextSegment
 
 MAX_INPUT_RECEIPT_BYTES = 8192
@@ -408,6 +412,23 @@ class RclArchiveSelfAmendmentInputReceipt(MultipartTextInputReceipt):
         return self
 
 
+class PairedArchiveBlockCompanion(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    base: PreparedBlockCompanion
+    amendment: PreparedBlockCompanion
+
+    @model_validator(mode="after")
+    def shared_budget(self) -> Self:
+        if len(self.model_dump_json().encode()) > MAX_BLOCK_INPUT_BYTES:
+            raise ValueError("Paired archive block companions exceed their aggregate byte limit")
+        return self
+
+    @property
+    def rows(self) -> tuple[PreparedBlockCopy, ...]:
+        return self.base.rows + self.amendment.rows
+
+
 class RclPairedArchiveInputReceipt(MultipartTextInputReceipt):
     source_kind = "rcl"
     profile: Literal["primary-rcl-paired-archive-text-v1"] = "primary-rcl-paired-archive-text-v1"
@@ -417,6 +438,9 @@ class RclPairedArchiveInputReceipt(MultipartTextInputReceipt):
     proposal_trace_id: str = Field(pattern=r"^candidate-trace-v1:[0-9a-f]{64}$")
     amendment_capture_id: str = Field(pattern=r"^[0-9a-f]{64}$")
     amendment_ordinal: int = Field(ge=0, le=MAX_INPUT_RECEIPT_INTEGER, strict=True)
+    paired_block_companion: PairedArchiveBlockCompanion | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
     @property
     def amendment_part(self) -> ArchiveInputPart:
@@ -442,6 +466,14 @@ class RclPairedArchiveInputReceipt(MultipartTextInputReceipt):
             raise ValueError(
                 "Paired archives require one complete final amendment and generated label"
             )
+        companion = self.paired_block_companion
+        if companion is not None:
+            if any(row.part_index >= len(archive) for row in companion.base.rows) or any(
+                row.part_index != len(archive) for row in companion.amendment.rows
+            ):
+                raise ValueError("Paired block companions must keep distinct root scopes")
+            validate_block_companion(companion.base, self.segments)
+            validate_block_companion(companion.amendment, self.segments)
         return self
 
 

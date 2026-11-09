@@ -3,9 +3,9 @@ import re
 from dataclasses import dataclass
 from urllib.parse import urlsplit
 
+from lexinform.document_candidate_observations import CandidateObservation, CandidateObservations
 from lexinform.models.documents import DocumentPart
 from lexinform.models.rcl import RclDocument, RclProject, rcl_num_key
-from lexinform.models.sejm import TextDocument
 from lexinform.rcl_letters import parse_letter
 from lexinform.sections import PAGE_BREAK, document_kind
 
@@ -27,8 +27,12 @@ class RclResubmissionSources:
 
 
 def resubmission_sources(
-    project: RclProject, requested: TextDocument
+    project: RclProject, observations: CandidateObservations
 ) -> RclResubmissionSources | None:
+    candidates = observations.official_sources()
+    if len(candidates) != 3:
+        return None
+    requested, older, amendment = candidates
     reached = project.reached_stages
     rm_key = rcl_num_key(project.rm_number or "")
     project_code = project.wykaz_number
@@ -43,8 +47,6 @@ def resubmission_sources(
     ):
         return None
     stage = reached[-1]
-    older, amendment = requested.alternatives
-    candidates = (requested, older, amendment)
     if (
         older.amendment_urls != (amendment.url,)
         or requested.amendment_urls
@@ -132,14 +134,46 @@ class RclResubmissionProof:
     secretary: DocumentPart
 
 
+def resubmission_members(
+    sources: RclResubmissionSources, observations: CandidateObservations
+) -> tuple[DocumentPart, DocumentPart, DocumentPart] | None:
+    if tuple(item.slot for item in observations.entries) != (0, 1, 2):
+        return None
+    later, older, amendment = (item.candidate for item in observations.entries)
+    if (later.source, older.source, amendment.source) != (
+        sources.later.url,
+        sources.older.url,
+        sources.amendment.url,
+    ):
+        return None
+    bills = tuple(part for part in later.parts if part.role == "bill")
+    covers = tuple(
+        part
+        for part in later.observed_parts
+        if part.pages == 3 and "w załączeniu przekazuję poprawiony projekt" in part.text.casefold()
+    )
+    proposals = tuple(
+        part for part in amendment.observed_parts if "AUTOPOPRAWKA\nArt." in part.text
+    )
+    if len(bills) != 1 or len(covers) != 1 or len(proposals) != 1:
+        return None
+    return bills[0], covers[0], proposals[0]
+
+
 def resubmission_proof(
     sources: RclResubmissionSources,
     *,
     bill: DocumentPart,
     cover: DocumentPart,
     amendment: DocumentPart,
-    secretary: DocumentPart,
+    corroboration: CandidateObservation,
 ) -> RclResubmissionProof | None:
+    if (
+        corroboration.candidate.source != sources.secretary.url
+        or len(corroboration.candidate.parts) != 1
+    ):
+        return None
+    (secretary,) = corroboration.candidate.parts
     if (
         bill.role != "bill"
         or len(bill.members) != 1

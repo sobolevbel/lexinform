@@ -120,6 +120,7 @@ def verify_content_applications(
         error = (
             SupplementContentEvidenceError
             if version.supplement_evidence is not None
+            or version.supplement_pair_evidence is not None
             else ContentApplicationError
         )
         raise error("content_application_reference_invalid") from None
@@ -142,18 +143,20 @@ def _verify(
         raise ValueError("content_application_change_unavailable")
     change = StatusChange.model_validate(read_json(change_snapshot.payload_json))
     supplement = version.supplement_evidence
+    pair = version.supplement_pair_evidence
+    has_supplement = supplement is not None or pair is not None
     if (
         change.id is None
         or change.id <= 0
         or change.id != version.status_change_id
         or (
             version.reason == "original"
-            and supplement is None
+            and not has_supplement
             and amendments_stage(change.new_stages) is None
         )
     ):
         raise ValueError("content_application_change_mismatch")
-    if supplement is not None:
+    if has_supplement:
         bill_snapshot = snapshots.get(version.bill_context_id)
         if bill_snapshot is None or bill_snapshot.kind != "bill":
             raise ValueError("supplement_content_bill_unavailable")
@@ -161,7 +164,8 @@ def _verify(
         if (
             (bill.term, bill.number) != (change.term, change.number)
             or change.amendments is not None
-            or len(change.supplements) != 1
+            or len(change.supplements) != (2 if pair is not None else 1)
+            or (pair is not None and len(change.new_stages) > 2)
             or amendments_stage(change.new_stages) is not None
         ):
             raise ValueError("supplement_content_change_scope_invalid")
@@ -195,7 +199,7 @@ def _verify(
         )
     ):
         raise ValueError("content_application_plan_scope_invalid")
-    if supplement is not None and (
+    if has_supplement and (
         semantic.publication_ids
         or semantic.continuation_root is not None
         or semantic.continuation_index != 1
@@ -207,7 +211,8 @@ def _verify(
         [] if version.reason == "amendments_revision" else list(change.supplements)
     )
     targets: set[int] = set()
-    for identity in version.application_ids:
+    applied_supplements: set[str] = set()
+    for index, identity in enumerate(version.application_ids):
         rows = _rows(connection, "SELECT * FROM result_applications WHERE id=?", (identity,))
         if len(rows) != 1:
             raise ValueError("content_application_unavailable")
@@ -230,8 +235,13 @@ def _verify(
             if purpose != expected:
                 raise ValueError("content_application_purpose_mismatch")
             validate_secondary_dependency(connection, record, expected)
-        if supplement is not None:
-            _verify_supplement(connection, reader, supplement, change, application, result)
+        source = pair[index] if pair is not None else supplement
+        if source is not None:
+            (projected,) = matching
+            if not isinstance(projected, SupplementRecord):
+                raise ValueError("supplement_content_projection_invalid")
+            _verify_supplement(connection, reader, source, change, application, result, projected)
+            applied_supplements.add(result.result_id)
         if version.reason == "original":
             if target.kind != "status_change" or target.ref != str(change.id):
                 raise ValueError("content_application_target_mismatch")
@@ -240,6 +250,8 @@ def _verify(
             raise ValueError("content_application_target_mismatch")
         else:
             targets.add(int(target.ref))
+    if pair is not None and len(applied_supplements) != 2:
+        raise ValueError("supplement_content_pair_requires_distinct_results")
     if len(targets) != 1:
         raise ValueError("content_application_target_ambiguous")
     physical_id = next(iter(targets))
@@ -264,7 +276,7 @@ def _verify(
         version.reason == "original" and physical["status_change_id"] != change.id
     ):
         raise ValueError("content_application_physical_target_mismatch")
-    if supplement is not None and (
+    if has_supplement and (
         (physical["term"], physical["number"]) != (change.term, change.number)
         or _rows(
             connection,
@@ -293,10 +305,10 @@ def _verify_supplement(
     change: StatusChange,
     application: ResultApplication,
     result: ComputationResult,
+    projected: SupplementRecord,
 ) -> None:
-    selection_id = _supplement_selection(connection, change, application, result)
+    selection_id = _supplement_selection(connection, change, application, result, projected)
     observation = reader.get_source_observation(evidence.source_observation_id)
-    projected = change.supplements[0]
     if observation is None or (
         observation.term,
         observation.number,
@@ -320,8 +332,8 @@ def _supplement_selection(
     change: StatusChange,
     application: ResultApplication,
     result: ComputationResult,
+    projected: SupplementRecord,
 ) -> str:
-    projected = change.supplements[0]
     owner = (change.term, change.number)
     paid = result.record
     if (
@@ -395,7 +407,7 @@ def find_supplement_content_evidence(
         (row,) = _rows(connection, "SELECT * FROM result_applications WHERE id=?", (identity,))
         application = _application(row)
         result = _result(connection, application)
-        selection_id = _supplement_selection(connection, change, application, result)
+        selection_id = _supplement_selection(connection, change, application, result, projected)
         observations = ContentSourceRows(connection).source_observations_for_selection(
             change.term, change.number, selection_id
         )

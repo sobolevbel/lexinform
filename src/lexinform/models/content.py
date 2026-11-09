@@ -163,6 +163,11 @@ class CardPrimaryEvidence(BaseModel):
     )
 
 
+type ContentApplicationProfile = Literal[
+    "amendment-projections-v1", "supplement-projection-v1", "supplement-pair-projections-v1"
+]
+
+
 class SupplementContentEvidence(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -319,11 +324,14 @@ class ContentVersion(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
     computation_ids: tuple[str, ...] = ()
-    application_ref_profile: (
-        Literal["amendment-projections-v1", "supplement-projection-v1"] | None
-    ) = Field(default=None, exclude_if=lambda value: value is None)
+    application_ref_profile: ContentApplicationProfile | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     supplement_evidence: SupplementContentEvidence | None = Field(
         default=None, exclude_if=lambda value: value is None
+    )
+    supplement_pair_evidence: tuple[SupplementContentEvidence, SupplementContentEvidence] | None = (
+        Field(default=None, exclude_if=lambda value: value is None)
     )
     application_ids: tuple[PositiveInt, ...] = ()
     status_change_id: PositiveInt | None = None
@@ -374,6 +382,7 @@ class ContentVersion(BaseModel):
                 or self.application_ref_profile is not None
                 or self.application_ids
                 or self.supplement_evidence is not None
+                or self.supplement_pair_evidence is not None
             ):
                 raise ValueError("independent content requires a bounded original profile")
             return self
@@ -424,6 +433,21 @@ class ContentVersion(BaseModel):
             direct is not None and direct.multipart == "direct-stage-application-parts-v1"
         )
         supplement_profile = self.application_ref_profile == "supplement-projection-v1"
+        pair_profile = self.application_ref_profile == "supplement-pair-projections-v1"
+        pair = self.supplement_pair_evidence
+        if pair_profile != (pair is not None) or (
+            pair is not None
+            and (
+                pair[0] == pair[1]
+                or self.reason != "original"
+                or len(self.application_ids) != 2
+                or (not self.rendered_text and not direct_application)
+                or self.language is None
+                or self.formatter_version is None
+                or self.source_scope is not None
+            )
+        ):
+            raise ValueError("Supplement pair requires two distinct original projections")
         if supplement_profile != (self.supplement_evidence is not None) or (
             supplement_profile
             and (
@@ -456,8 +480,8 @@ class ContentVersion(BaseModel):
             or self.source_observation_ids
             or (
                 self.application_ref_profile is None
-                or len(self.computation_ids) != 1
-                or len(self.application_ids) != 1
+                or len(self.computation_ids) != (2 if pair_profile else 1)
+                or len(self.application_ids) != (2 if pair_profile else 1)
                 if direct_application
                 else bool(
                     self.computation_ids or self.application_ref_profile or self.application_ids
@@ -588,9 +612,9 @@ class ContentVersionSummary(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
     computation_ids: tuple[str, ...]
-    application_ref_profile: (
-        Literal["amendment-projections-v1", "supplement-projection-v1"] | None
-    ) = Field(default=None, exclude_if=lambda value: value is None)
+    application_ref_profile: ContentApplicationProfile | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     application_ids: tuple[int, ...]
     status_change_id: int | None
     recorded_at: AwareDatetime

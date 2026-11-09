@@ -30,6 +30,7 @@ from lexinform.models.word_field_ranges import MAX_WORD_FIELD_BYTES, WordFieldPr
 from lexinform.models.word_grid_merges import (
     MAX_WORD_GRID_MERGE_BYTES,
     WordHorizontalGridSpans,
+    WordMixedGridSpans,
     WordVerticalGridMerges,
 )
 
@@ -326,6 +327,10 @@ class ExtractedPartSummary(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
 
+    word_mixed_grid_spans: WordMixedGridSpans | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
     odt_note_status: OdtNoteStatus | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
@@ -475,6 +480,21 @@ class ExtractedPartSummary(BaseModel):
             & {table.path for table in horizontal.tables}
         ):
             raise ValueError("Word horizontal-only tables cannot include retained vertical merges")
+        if self.word_mixed_grid_spans is not None:
+            mixed = WordMixedGridSpans.model_validate(self.word_mixed_grid_spans)
+            if (
+                vertical is None
+                or mixed.parent_sha256 != word_mixed_grid_parent_sha256(vertical)
+                or self.block_count is None
+                or grid_cells + sum(len(table.spans) for table in mixed.tables) > self.block_count
+            ):
+                raise ValueError("Word mixed spans require their exact retained vertical parent")
+            vertical_tables = {table.path: table for table in vertical.tables}
+            for table in mixed.tables:
+                original = vertical_tables.get(table.path)
+                if original is None:
+                    raise ValueError("Word mixed spans require their exact retained vertical table")
+                table.require_vertical_table(original)
         if self.odt_table_merges is not None:
             tables = OdtTableMerges.model_validate(self.odt_table_merges)
             if (
@@ -578,6 +598,19 @@ def _odt_prefix_budget(parts: object) -> None:
                 raise ValueError("stored ODT origin prefixes exceed the aggregate 4096-byte cap")
 
 
+class ObservedMemberBlockCopy(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    physical_index: Position
+    witness: BlockCopyWitness
+
+    @model_validator(mode="after")
+    def word_coordinates(self) -> Self:
+        if self.witness.coordinates not in ("word-xml-plain-run-copy-v1", "word-blocks-v1"):
+            raise ValueError("Observed member block copies require exact Word coordinates")
+        return self
+
+
 class ExtractionResult(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -600,6 +633,9 @@ class ExtractionResult(BaseModel):
         max_length=MAX_EXTRACTION_PART_SUMMARIES
     )
     omitted_selected_parts: int = Field(ge=0)
+    observed_member_block_copy: ObservedMemberBlockCopy | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     bodies: Literal["not_retained"] = "not_retained"
     physical_coordinates: Literal["manifest_not_retained"] = "manifest_not_retained"
     input_mapping: Literal["unmapped"] = "unmapped"
@@ -626,6 +662,14 @@ class ExtractionResult(BaseModel):
     def bounded_summary(self) -> Self:
         if len(self.selected_parts) > MAX_EXTRACTION_PART_SUMMARIES:
             raise ValueError("extraction summaries exceed their existing part limit")
+        observed = self.observed_member_block_copy
+        if observed is not None and (
+            observed.physical_index >= self.physical_part_count
+            or self.omitted_selected_parts != 0
+            or self.rejected_count != 0
+            or any(part.physical_index == observed.physical_index for part in self.selected_parts)
+        ):
+            raise ValueError("Observed member witness requires its unselected physical slot")
         _odt_prefix_budget(self.selected_parts)
         for part in self.selected_parts:
             if part.block_copy_witness is not None:
@@ -678,15 +722,21 @@ class ExtractionResult(BaseModel):
         for part in self.selected_parts:
             vertical = part.word_grid_merges
             horizontal = part.word_horizontal_spans
-            if vertical is not None or horizontal is not None:
-                if (vertical is not None and not isinstance(vertical, WordVerticalGridMerges)) or (
-                    horizontal is not None and not isinstance(horizontal, WordHorizontalGridSpans)
+            mixed = part.word_mixed_grid_spans
+            if vertical is not None or horizontal is not None or mixed is not None:
+                if (
+                    (vertical is not None and not isinstance(vertical, WordVerticalGridMerges))
+                    or (
+                        horizontal is not None
+                        and not isinstance(horizontal, WordHorizontalGridSpans)
+                    )
+                    or (mixed is not None and not isinstance(mixed, WordMixedGridSpans))
                 ):
                     raise ValueError("Constructed Word summary requires typed grid metadata")
                 ExtractedPartSummary.model_validate(part)
                 word_grid_bytes += sum(
                     len(grids.model_dump_json().encode())
-                    for grids in (vertical, horizontal)
+                    for grids in (vertical, horizontal, mixed)
                     if grids is not None
                 )
         if word_grid_bytes > MAX_WORD_GRID_MERGE_BYTES:
@@ -779,3 +829,7 @@ def odt_soft_row_parent_sha256(witness: BlockCopyWitness) -> str:
             witness.text_chars,
         )
     )
+
+
+def word_mixed_grid_parent_sha256(vertical: WordVerticalGridMerges) -> str:
+    return extraction_metadata_sha256(vertical.model_dump(mode="json"))

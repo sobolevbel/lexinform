@@ -889,12 +889,13 @@ def verify_direct_stage_content(
     application = evidence.multipart == "direct-stage-application-parts-v1"
     amendment = amendments_stage(change.new_stages) is not None
     if application:
+        pair = version.supplement_pair_evidence is not None
         scope = (
             change.amendments is None
-            and len(change.supplements) == 1
+            and len(change.supplements) == (2 if pair else 1)
             and not amendment
-            and len(change.new_stages) <= 1
-            if version.supplement_evidence is not None
+            and len(change.new_stages) <= (2 if pair else 1)
+            if version.supplement_evidence is not None or pair
             else change.amendments is not None
             and not change.supplements
             and has_single_amendments_stage(change.new_stages)

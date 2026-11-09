@@ -29,9 +29,9 @@ from lexinform.archive_disposition_observations import (
     complete_standalone_root,
 )
 from lexinform.archive_policy_capture import optional_archive_policy_capture
+from lexinform.document_candidate_observations import CandidateObservation, CandidateObservations
 from lexinform.document_candidates import (
     AmbiguousCandidates,
-    CandidateSet,
     DocumentCandidate,
     select_candidate_versions,
 )
@@ -135,6 +135,7 @@ from lexinform.ports import (
 )
 from lexinform.rcl_amendments import rcl_amendment_base_index, rcl_self_amendment_part
 from lexinform.rcl_resubmission import (
+    resubmission_members,
     resubmission_proof,
     resubmission_sources,
 )
@@ -1318,7 +1319,8 @@ class TextLoader:
     def _recover_rcl_resubmission(
         self, document: TextDocument, project: RclProject, waiting: LoadedFile
     ) -> LoadedFile | None:
-        sources = resubmission_sources(project, document)
+        source_set = CandidateObservations.from_sources(document)
+        sources = resubmission_sources(project, source_set)
         if sources is None:
             return None
         trace = waiting.candidate_trace
@@ -1381,35 +1383,43 @@ class TextLoader:
             or not any(fact.kind == "coverage" for fact in loaded.selection.facts)
         ):
             return None
-        bills = tuple(part for part in loaded.selection.parts if part.role == "bill")
-        covers = tuple(
-            part
-            for part in main.selection.observed_parts
-            if part.pages == 3
-            and "w załączeniu przekazuję poprawiony projekt" in part.text.casefold()
+        observations = CandidateObservations(
+            tuple(
+                entry.with_read(file.text, file.selection.parts, file.selection.observed_parts)
+                for entry, file in zip(source_set.entries, (loaded, older, amendment), strict=True)
+            )
         )
-        proposals = tuple(
-            part for part in amendment.selection.observed_parts if "AUTOPOPRAWKA\nArt." in part.text
-        )
-        if len(bills) != 1 or len(covers) != 1 or len(proposals) != 1:
+        members = resubmission_members(sources, observations)
+        if members is None:
             return None
+        bill, cover, proposal = members
         letter = self.read_bounded(sources.secretary.url, max_bytes=2_000_000)
         _, letter_read, _ = self.file_origins(sources.secretary.url, letter)
         page = letter.first_pdf_page
         if letter_read is None or page is None or letter.complete_pdf_pages != 1:
             return None
+        corroboration = CandidateObservation(
+            3,
+            DocumentCandidate(
+                letter_read.requested_url,
+                page.text,
+                (
+                    DocumentPart(
+                        url=letter_read.requested_url,
+                        sha256=letter_read.sha256,
+                        text=page.text,
+                        pages=1,
+                        text_sha256=hashlib.sha256(page.text.encode()).hexdigest(),
+                    ),
+                ),
+            ),
+        )
         proof = resubmission_proof(
             sources,
-            bill=bills[0],
-            cover=covers[0],
-            amendment=proposals[0],
-            secretary=DocumentPart(
-                url=letter_read.requested_url,
-                sha256=letter_read.sha256,
-                text=page.text,
-                pages=1,
-                text_sha256=hashlib.sha256(page.text.encode()).hexdigest(),
-            ),
+            bill=bill,
+            cover=cover,
+            amendment=proposal,
+            corroboration=corroboration,
         )
         earlier_date, revised_date = sources.older.created, sources.later.created
         if proof is None or earlier_date is None or revised_date is None:
@@ -1950,7 +1960,8 @@ class TextLoader:
         composition: _CompositionCapture | None,
     ) -> tuple[TextDocument, LoadedFile, CandidateTraceResult, CandidateTraceReason] | None:
         candidates: list[tuple[TextDocument, LoadedFile]] = []
-        prepared: list[DocumentCandidate] = []
+        source_set = CandidateObservations.from_sources(document)
+        observations = list(source_set.entries)
         candidate_indices: list[int] = []
         incomplete: dict[int, DocumentSelection] = {}
         unpack_blocked: set[int] = set()
@@ -1958,7 +1969,7 @@ class TextLoader:
         conflicts: dict[int, DocumentSelection] = {}
         observed: dict[int, tuple[DocumentPart, ...]] = {}
         decisions: list[CandidateDisposition] = []
-        sources = (document, *document.alternatives)
+        sources = source_set.official_sources()
         compare_packages = len(sources) > 1 and any(
             item.required_urls or item.normative_urls or item.amendment_urls for item in sources
         )
@@ -1992,10 +2003,10 @@ class TextLoader:
                     unpack_blocked.add(index)
                 if file.archive_unpack_blocked or file.selection.has_normative_pdf_page_failure:
                     incomplete[index] = file.selection
-            item = DocumentCandidate(
-                candidate.url, file.text, file.selection.parts, file.selection.observed_parts
+            item = observations[index].with_read(
+                file.text, file.selection.parts, file.selection.observed_parts
             )
-            is_bill = item.is_bill
+            is_bill = item.candidate.is_bill
             if compare_packages and is_bill and index not in incomplete:
                 if candidate.required_urls or candidate.normative_urls or candidate.amendment_urls:
                     normative = candidate.model_copy(update={"extra_urls": ()})
@@ -2027,24 +2038,27 @@ class TextLoader:
                                     composition.version_part_gaps.append(gap)
                         is_bill = False
                     else:
-                        item = DocumentCandidate(
-                            candidate.url,
+                        item = item.with_read(
                             composed.text,
                             composed.selection.parts,
-                            tuple(dict.fromkeys((*item.observed_parts, *composed.selection.parts))),
+                            tuple(
+                                dict.fromkeys(
+                                    (*item.candidate.observed_parts, *composed.selection.parts)
+                                )
+                            ),
                         )
                 if is_bill:
-                    item = item.with_normative_parts()
+                    item = replace(item, candidate=item.candidate.with_normative_parts())
             if (
                 file.selection.state == "ambiguous"
                 and "draft_version_conflict" in file.selection.limitations
             ):
                 conflicts[index] = file.selection
             if index in incomplete or index in conflicts or is_bill:
-                observed[index] = item.observed_parts or item.parts
+                observed[index] = item.candidate.observed_parts or item.candidate.parts
+            observations[index] = item
             if is_bill:
                 candidates.append((candidate, file))
-                prepared.append(item)
                 candidate_indices.append(index)
                 decisions.append(
                     CandidateDisposition(
@@ -2145,7 +2159,9 @@ class TextLoader:
                 "waiting",
                 "version_input_incomplete",
             )
-        choice = select_candidate_versions(CandidateSet(tuple(prepared)))
+        comparison_set = CandidateObservations(tuple(observations)).comparison(candidate_indices)
+        prepared = comparison_set.entries
+        choice = select_candidate_versions(comparison_set)
         if choice is None:
             dispositions.extend(decisions)
             return None

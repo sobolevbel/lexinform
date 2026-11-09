@@ -55,6 +55,7 @@ from lexinform.models.batch import (
     batch_item_meta,
     validate_batch_item_meta,
 )
+from lexinform.models.block_input import BlockCopyWitness
 from lexinform.models.extractions import ExtractedPartSummary
 from lexinform.models.input_receipts import (
     ArchiveInputPart,
@@ -67,7 +68,7 @@ from lexinform.models.input_receipts import (
     RclPairedArchiveInputReceipt,
     SejmSelfAmendmentInputReceipt,
 )
-from lexinform.models.physical_inventory import PhysicalRootOrder
+from lexinform.models.physical_inventory import PhysicalContainerExecution, PhysicalRootOrder
 from lexinform.models.prepared_input import PreparedTextSegment
 from lexinform.models.scan_input import MAX_SCAN_BYTES, MAX_SCAN_PAGES
 from lexinform.models.sejm import TextDocument
@@ -631,7 +632,7 @@ def _paired_archive_amendment_parent(
     receipt: RclPairedArchiveInputReceipt,
     selection: DocumentSelectionRecord,
     document: TextDocument,
-) -> None:
+) -> tuple[str, str | None]:
     trace_row = _one(
         connection,
         "SELECT t.* FROM source_candidate_traces l"
@@ -710,6 +711,25 @@ def _paired_archive_amendment_parent(
         )
         if amendment.members != (header["runtime_name"],):
             raise ValueError("paired archive receipt differs from its exact amendment occurrence")
+        if receipt.paired_block_companion is None:
+            return capture.extraction_id, None
+        context_index = order.physical[recorded.physical_index][0]
+        unit = reader.typed(order.contexts[context_index][3], "unit")
+        native = unit.metadata
+        if (
+            unit.coverage != "complete"
+            or not isinstance(native, PhysicalContainerExecution)
+            or native.route != "word"
+        ):
+            raise ValueError("Paired observed block witness requires complete Word execution")
+        body_reads = [
+            request
+            for request in native.requests
+            if request[:3] == ("xml", "name", "word/document.xml")
+        ]
+        if len(body_reads) != 1 or body_reads[0][4] != "complete" or body_reads[0][6] is None:
+            raise ValueError("Paired observed block witness requires its exact Word body read")
+        return capture.extraction_id, body_reads[0][6]
     finally:
         connection.row_factory = old_factory
 
@@ -740,8 +760,15 @@ def _archive_parents(
     document = observation.document
     parts = selection.selection.parts
     if isinstance(receipt, RclPairedArchiveInputReceipt):
-        _paired_archive_amendment_parent(connection, receipt, selection, document)
-        # The second root retains an observed part, not a selected extraction summary.
+        amendment_extraction, amendment_xml_sha256 = _paired_archive_amendment_parent(
+            connection, receipt, selection, document
+        )
+        _block_parents(
+            connection,
+            receipt,
+            paired_amendment_extraction_id=amendment_extraction,
+            paired_amendment_xml_sha256=amendment_xml_sha256,
+        )
         return ()
     if isinstance(receipt, RclArchiveInputReceipt):
         if receipt.selected_version_trace_id is None and not ordinary_rcl_archive_document(
@@ -865,8 +892,16 @@ def _block_parents(
     | SupplementInputReceipt
     | AmendmentInputReceipt
     | MultipartTextInputReceipt,
+    *,
+    paired_amendment_extraction_id: str | None = None,
+    paired_amendment_xml_sha256: str | None = None,
 ) -> None:
-    companion = receipt.block_companion
+    paired = isinstance(receipt, RclPairedArchiveInputReceipt)
+    companion = (
+        receipt.paired_block_companion
+        if isinstance(receipt, RclPairedArchiveInputReceipt)
+        else receipt.block_companion
+    )
     if companion is None:
         return
     if receipt.source_selection_id is None:
@@ -875,12 +910,25 @@ def _block_parents(
     for row in companion.rows:
         if row.part_index >= len(selection.parts):
             raise ValueError("block companion part is absent")
+        amendment = paired and row.part_index == len(selection.parts) - 1
         if isinstance(receipt, MultipartTextInputReceipt):
             recorded = receipt.source_parts[row.part_index]
+            if paired and (
+                not isinstance(recorded, ArchiveInputPart)
+                or row.physical_index != recorded.physical_index
+            ):
+                raise ValueError("paired block companion differs from its exact physical slot")
             expected = (
-                receipt.extraction_id
+                paired_amendment_extraction_id
+                if amendment
+                else receipt.extraction_id
                 if isinstance(
-                    receipt, (RclArchiveInputReceipt, RclArchiveSelfAmendmentInputReceipt)
+                    receipt,
+                    (
+                        RclArchiveInputReceipt,
+                        RclArchiveSelfAmendmentInputReceipt,
+                        RclPairedArchiveInputReceipt,
+                    ),
                 )
                 and isinstance(recorded, ArchiveInputPart)
                 else recorded.extraction_id
@@ -899,17 +947,41 @@ def _block_parents(
             (receipt.source_selection_id, row.extraction_id),
         )
         extraction = read_extraction_result(saved)
-        matches = [p for p in extraction.selected_parts if p.physical_index == row.physical_index]
-        if len(matches) != 1:
-            raise ValueError("block companion physical part is absent")
-        summary = matches[0]
-        witness = summary.block_copy_witness
+        if extraction.artifact_sha256 != part.source_sha256:
+            raise ValueError("block companion extraction parent mismatch")
+        witness: BlockCopyWitness | None
+        if amendment:
+            observed = extraction.observed_member_block_copy
+            if (
+                observed is None
+                or observed.physical_index != row.physical_index
+                or paired_amendment_xml_sha256 is None
+                or observed.witness.xml_sha256 != paired_amendment_xml_sha256
+                or (
+                    observed.witness.part_sha256,
+                    observed.witness.text_sha256,
+                    observed.witness.text_chars,
+                )
+                != (part.sha256, part.text_sha256, part.text_end)
+            ):
+                raise ValueError("paired block companion lacks its exact observed amendment")
+            witness = observed.witness
+        else:
+            matches = [
+                summary
+                for summary in extraction.selected_parts
+                if summary.physical_index == row.physical_index
+            ]
+            if len(matches) != 1:
+                raise ValueError("block companion physical part is absent")
+            summary = matches[0]
+            if not archive_member_matches(part, summary, chars=summary.text_chars):
+                raise ValueError("block companion extraction parent mismatch")
+            witness = summary.block_copy_witness
         if (
             witness is None
             or witness.witness_id != row.witness_id
             or row.run_index >= len(witness.runs)
-            or extraction.artifact_sha256 != part.source_sha256
-            or not archive_member_matches(part, summary, chars=summary.text_chars)
         ):
             raise ValueError("block companion extraction parent mismatch")
         run = witness.runs[row.run_index]
@@ -935,7 +1007,8 @@ def _multipart_parents(
     meta: BatchItemMeta,
     owner: tuple[int, str] | None,
 ) -> tuple[ExtractedPartSummary, ...]:
-    _block_parents(connection, receipt)
+    if not isinstance(receipt, RclPairedArchiveInputReceipt):
+        _block_parents(connection, receipt)
     source = _source_selection(connection, receipt.source_selection_id)
     selection = source.selection
     fitted = meta.selection

@@ -1,0 +1,31 @@
+{
+  "exact_stage_rows": [
+    "12383101/10",
+    "12383101/9",
+    "12392400/5",
+    "12393550/12",
+    "12393550/14"
+  ],
+  "exact_extraction_ids": [
+    "extraction-v1:47f06d51dcfedbac869130222c172f28ab9f6c3fa7d41547b21f9fa05d56b1ee",
+    "extraction-v1:4c44e2a3bc70dd0c35dff7006aa9c87230c359bb877582849550e8da8f0647eb",
+    "extraction-v1:6053f4a92442a21d222594b2eb38487396a18760668393f680d4d62810145051",
+    "extraction-v1:79817ad4808f3da197f1a4edb714b1bd712528d601ee3dd2e96319553548a51c",
+    "extraction-v1:894fc2725255802100c3f89855631e4f8523f9de7992b1341bb88cc4d1f2731d",
+    "extraction-v1:a8fa1a3389b9b121579d232767fc0c7b6a2bb559c1c2dbd7d189aee08b8ced3f",
+    "extraction-v1:cfc25c6dfdf871158251d0fdeeee2bf984f0908ad32e56fb70335be054e23dfe",
+    "extraction-v1:d40040edf8fe4bf20ee17deafb70d3a05c9589aff7c503ef3a6e9ddbf7de5e93"
+  ],
+  "exact_raw_hashes": 12,
+  "scoped_requests": {
+    "12393550/12": [
+      "734607"
+    ]
+  },
+  "exact_native_dumps": {
+    "activated-native.sql": "05654a0c90bdf9c7b582a5e9b03029ccc610198ed8facca6b03902a6cbb147f8",
+    "waiting-native.sql": "9af7d3850a801824c7ccdf271ab4683a0122bef4055d9fc474624c9c74751cc8"
+  },
+  "package_policy_source_sha256": "38eadebb35f944100c3601be83017a4fe80b9daa9759789165c919c548eca79c",
+  "scope": "actual_outer_and_resubmission_observations_preserve_existing_archive_policy"
+}

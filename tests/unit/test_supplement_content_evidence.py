@@ -326,3 +326,30 @@ def test_first_freeze_only_records_exact_standalone_supplement_evidence(
             assert version is None
             with closing(sqlite3.connect(path)) as db:
                 assert db.execute("SELECT count(*) FROM content_snapshots").fetchone() == (0,)
+
+
+def test_supplement_pair_profile_requires_two_distinct_ordered_references(tmp_path: Path) -> None:
+    path = tmp_path / "pair.db"
+    with closing(supplement_source(path, parents=True)[0]) as repo:
+        single, _ = seed(repo, path)
+    evidence = single.supplement_evidence
+    assert evidence is not None, "the original profile contains a single source"
+    assert "supplement_pair_evidence" not in single.model_dump_json()
+    other = SupplementContentEvidence(source_observation_id="source-observation-v1:" + "a" * 64)
+    pair = single.model_copy(
+        update={
+            "application_ref_profile": "supplement-pair-projections-v1",
+            "application_ids": (1, 2),
+            "supplement_evidence": None,
+            "supplement_pair_evidence": (evidence, other),
+        }
+    )
+    assert ContentVersion.model_validate_json(pair.model_dump_json()) == pair
+    for damage in (
+        {"supplement_pair_evidence": (evidence, evidence)},
+        {"supplement_evidence": evidence},
+        {"application_ids": (2, 1)},
+        {"application_ids": (1,)},
+    ):
+        with pytest.raises(ValueError):
+            ContentVersion.model_validate_json(pair.model_copy(update=damage).model_dump_json())

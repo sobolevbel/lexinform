@@ -1,0 +1,30 @@
+{
+  "amendment_xml_sha256": "ac97124d3a792ad17eee39f589aff274c06418e42c39f60da9fc8f349867901f",
+  "base_role": "osr",
+  "gzip_delta_bytes": 1429,
+  "negative_controls": {
+    "missing_witness": "invalid_input_intent_snapshot",
+    "wrong_emitted_hash": "invalid_input_intent_snapshot",
+    "wrong_leaf": "invalid_input_intent_snapshot",
+    "wrong_root": "invalid_input_intent_snapshot",
+    "wrong_slot": "invalid_input_intent_snapshot",
+    "wrong_xml": "invalid_input_intent_snapshot"
+  },
+  "observed_candidates": {
+    "amendment": 11,
+    "base": 11
+  },
+  "old_reader_rejects_new_shape_atomically": true,
+  "old_reader_restores_legacy_byte_identical": true,
+  "paired_companion_bytes": 1758,
+  "pinned_db_sha256": "3c8330e1c335e45252827d5cc67179ac16373ceb59d94f91b65fc9723326a35a",
+  "qualification": "reader-only manual attachment of native witness from original member in copied database",
+  "restore_byte_stable": true,
+  "row_counts": {
+    "amendment": 2,
+    "base": 2
+  },
+  "source_unchanged": true,
+  "sql_delta_bytes": 5745,
+  "witness_bytes": 3900
+}

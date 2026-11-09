@@ -1,0 +1,338 @@
+{
+  "cases": {
+    "345750": {
+      "capture_id": "8be8729d2a35c18e8dd1aa3b1e6e58c8bee568f9e36b9086d04ca78c217eabf0",
+      "input_sha256": "3d3defbde8771cd42113d94223d16a86d8b2ffc689d9012abbf497754ea1bb1c",
+      "mixed": null,
+      "native_read_cpu_ms": 84.655,
+      "normalized_result_id": "extraction-v1:337ee1cdda8993dc7a98e79839c88e6036b3802fd264751e3cd7678e911f0d4b",
+      "recipe_id": "1b86f8e01cfd208f64dc34c7b904ae2d55169e9fc093e8f8f97980e4fa7c7810",
+      "result_id": "extraction-v1:337ee1cdda8993dc7a98e79839c88e6036b3802fd264751e3cd7678e911f0d4b",
+      "selection_sha256": "8aff7b02fe97130fa869e7ce32e941f10ae2dca856ceb4810cf993e183dd8b5d",
+      "text_sha256": "c07b35aef30b84d30ada935bd8d847d6538b92eb10ce9336e47dfa36a3f26c36"
+    },
+    "375208": {
+      "capture_id": "1dc4e6432d004ed1fed8fb68f4afb77c4535edc009b4435f79a117dfdf09987b",
+      "input_sha256": "23c2c274ca1bd6e7ca25c357fe623431b07c7831c605c5f2496f6fa6673c6d6d",
+      "mixed": null,
+      "native_dump_size": {
+        "gzip": 11545,
+        "sql": 56663
+      },
+      "native_read_cpu_ms": 128.566,
+      "normalized_result_id": "extraction-v1:0d4ad930aee98bf812361be3e11c1a679a9e05ab4d7933639b6c8819b1a5e080",
+      "reader_control": {
+        "parent_sha256": "ebf33c7e7082abc96a197a89ccf582a95eee3a55b2af2ba920d4164dc09d58aa",
+        "profile": "word-mixed-grid-spans-v1",
+        "tables": [
+          {
+            "columns": 29,
+            "observed_spans": 263,
+            "path": [
+              0,
+              87
+            ],
+            "rows": 66,
+            "spans": [
+              {
+                "cell": [
+                  2,
+                  1
+                ],
+                "columns": [
+                  0,
+                  17
+                ],
+                "row": 0
+              },
+              {
+                "cell": [
+                  2,
+                  2
+                ],
+                "columns": [
+                  17,
+                  29
+                ],
+                "row": 0
+              },
+              {
+                "cell": [
+                  3,
+                  1
+                ],
+                "columns": [
+                  0,
+                  29
+                ],
+                "row": 1
+              },
+              {
+                "cell": [
+                  4,
+                  1
+                ],
+                "columns": [
+                  0,
+                  29
+                ],
+                "row": 2
+              },
+              {
+                "cell": [
+                  5,
+                  1
+                ],
+                "columns": [
+                  0,
+                  29
+                ],
+                "row": 3
+              },
+              {
+                "cell": [
+                  6,
+                  1
+                ],
+                "columns": [
+                  0,
+                  29
+                ],
+                "row": 4
+              },
+              {
+                "cell": [
+                  7,
+                  1
+                ],
+                "columns": [
+                  0,
+                  29
+                ],
+                "row": 5
+              },
+              {
+                "cell": [
+                  8,
+                  1
+                ],
+                "columns": [
+                  0,
+                  29
+                ],
+                "row": 6
+              },
+              {
+                "cell": [
+                  9,
+                  1
+                ],
+                "columns": [
+                  0,
+                  29
+                ],
+                "row": 7
+              },
+              {
+                "cell": [
+                  10,
+                  1
+                ],
+                "columns": [
+                  0,
+                  29
+                ],
+                "row": 8
+              },
+              {
+                "cell": [
+                  11,
+                  1
+                ],
+                "columns": [
+                  0,
+                  3
+                ],
+                "row": 9
+              },
+              {
+                "cell": [
+                  11,
+                  2
+                ],
+                "columns": [
+                  3,
+                  11
+                ],
+                "row": 9
+              },
+              {
+                "cell": [
+                  11,
+                  3
+                ],
+                "columns": [
+                  11,
+                  23
+                ],
+                "row": 9
+              },
+              {
+                "cell": [
+                  11,
+                  4
+                ],
+                "columns": [
+                  23,
+                  29
+                ],
+                "row": 9
+              },
+              {
+                "cell": [
+                  12,
+                  1
+                ],
+                "columns": [
+                  0,
+                  3
+                ],
+                "row": 10
+              },
+              {
+                "cell": [
+                  12,
+                  2
+                ],
+                "columns": [
+                  3,
+                  11
+                ],
+                "row": 10
+              },
+              {
+                "cell": [
+                  12,
+                  3
+                ],
+                "columns": [
+                  11,
+                  23
+                ],
+                "row": 10
+              },
+              {
+                "cell": [
+                  12,
+                  4
+                ],
+                "columns": [
+                  23,
+                  29
+                ],
+                "row": 10
+              },
+              {
+                "cell": [
+                  13,
+                  1
+                ],
+                "columns": [
+                  0,
+                  3
+                ],
+                "row": 11
+              },
+              {
+                "cell": [
+                  13,
+                  2
+                ],
+                "columns": [
+                  3,
+                  11
+                ],
+                "row": 11
+              },
+              {
+                "cell": [
+                  13,
+                  3
+                ],
+                "columns": [
+                  11,
+                  23
+                ],
+                "row": 11
+              },
+              {
+                "cell": [
+                  13,
+                  4
+                ],
+                "columns": [
+                  23,
+                  29
+                ],
+                "row": 11
+              },
+              {
+                "cell": [
+                  14,
+                  1
+                ],
+                "columns": [
+                  0,
+                  3
+                ],
+                "row": 12
+              },
+              {
+                "cell": [
+                  14,
+                  2
+                ],
+                "columns": [
+                  3,
+                  11
+                ],
+                "row": 12
+              }
+            ]
+          }
+        ]
+      },
+      "reader_control_dump_size": {
+        "gzip": 9347,
+        "sql": 46173
+      },
+      "recipe_id": "1b86f8e01cfd208f64dc34c7b904ae2d55169e9fc093e8f8f97980e4fa7c7810",
+      "result_id": "extraction-v1:0d4ad930aee98bf812361be3e11c1a679a9e05ab4d7933639b6c8819b1a5e080",
+      "selection_sha256": "963c6045ef1de2aa82aab7e28f2debb1dbb9dbeaf10544f207f6a999b862c818",
+      "text_sha256": "c7eb8238e239b0405133d1df071b5204db6aa717d11d6ee85664cc5ecd007540"
+    },
+    "418603": {
+      "capture_id": "7ec51dad9368d699bd9317fd51e7ba84b667bbce2bd8be9417b16b09ea00b95d",
+      "input_sha256": "8501c9b1b7b3550f5184cc4ef70d9cbf90a7a5eb34b5bfd5cf10213e492afbfd",
+      "mixed": null,
+      "native_read_cpu_ms": 234.078,
+      "normalized_result_id": "extraction-v1:273b6f41583899bb2fa8903386fc556891ea515ad4984b30d40d2546b50ffe3d",
+      "recipe_id": "1b86f8e01cfd208f64dc34c7b904ae2d55169e9fc093e8f8f97980e4fa7c7810",
+      "result_id": "extraction-v1:273b6f41583899bb2fa8903386fc556891ea515ad4984b30d40d2546b50ffe3d",
+      "selection_sha256": "26ca27c13cb14d5c596c704538ed773996ce5a42c51d365fda618805bf585196",
+      "text_sha256": "efc802b7dd769d90a26a05cd5c8c5bedc59653c89d604633450e62958e2c0dd4"
+    },
+    "684340": {
+      "capture_id": "08baad08fafc35f3aeaa0ab7bd5f098f64c593bdfe49de9ab2ed05ef04f29b67",
+      "input_sha256": "743d88976846877fcc7d9c4a81ed0e1128822b1c2f5e70c71b1b518a1027143f",
+      "mixed": null,
+      "native_read_cpu_ms": 73.424,
+      "normalized_result_id": "extraction-v1:6241c077a1ac8bd014047fa7912753bd102be854d41a63bf67b7ecdaad23a913",
+      "recipe_id": "1b86f8e01cfd208f64dc34c7b904ae2d55169e9fc093e8f8f97980e4fa7c7810",
+      "result_id": "extraction-v1:6241c077a1ac8bd014047fa7912753bd102be854d41a63bf67b7ecdaad23a913",
+      "selection_sha256": "695921164024ade08ae862b602b982c2ab4fa6ea7e98fb8ae17662c5194a512b",
+      "text_sha256": "a3d540a05977f1c27d5b3e35287294632453519bde8ef953fefe77064d3cc8f9"
+    }
+  },
+  "mode": "reader"
+}

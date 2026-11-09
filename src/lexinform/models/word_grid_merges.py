@@ -151,3 +151,58 @@ class WordHorizontalGridSpans(BaseModel):
         if len(self.model_dump_json().encode()) > MAX_WORD_GRID_MERGE_BYTES:
             raise ValueError("Stored Word horizontal spans exceed their byte limit")
         return self
+
+
+MAX_WORD_MIXED_SPANS = 24
+
+
+class WordMixedGridTable(WordHorizontalGridTable):
+    spans: tuple[WordHorizontalSpan, ...] = Field(min_length=1, max_length=MAX_WORD_MIXED_SPANS)
+    observed_spans: Position = Field(gt=0, le=_MAX_GRID_AREA)
+
+    @model_validator(mode="after")
+    def bounded_prefix(self) -> Self:
+        if not len(self.spans) <= self.observed_spans <= self.rows * self.columns // 2:
+            raise ValueError("Word mixed grid spans differ from their bounded observed count")
+        return self
+
+    def require_vertical_table(self, vertical: WordVerticalGridTable) -> None:
+        if (self.path, self.rows, self.columns) != (vertical.path, vertical.rows, vertical.columns):
+            raise ValueError("Word mixed spans require their matching vertical table geometry")
+        occupied: dict[int, list[tuple[GridPosition, GridPosition]]] = {}
+        for merge in vertical.merges:
+            for row, cell in enumerate(merge.cells, start=merge.row):
+                occupied.setdefault(row, []).append((merge.columns, cell))
+        for span in self.spans:
+            occupied.setdefault(span.row, []).append((span.columns, span.cell))
+        previous_row = -1
+        for row in sorted(occupied):
+            cells = sorted(occupied[row])
+            xml_row = cells[0][1][0]
+            if xml_row <= previous_row:
+                raise ValueError("Word mixed grid rows differ from their vertical XML order")
+            previous_row = xml_row
+            last_end = last_cell = -1
+            for (start, end), (physical_row, physical_cell) in cells:
+                if start < last_end or physical_row != xml_row or physical_cell <= last_cell:
+                    raise ValueError(
+                        "Word mixed spans overlap or disagree with retained vertical cells"
+                    )
+                last_end, last_cell = end, physical_cell
+
+
+class WordMixedGridSpans(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    profile: Literal["word-mixed-grid-spans-v1"] = "word-mixed-grid-spans-v1"
+    parent_sha256: Sha256
+    tables: tuple[WordMixedGridTable, ...] = Field(min_length=1, max_length=_MAX_TABLES)
+
+    @model_validator(mode="after")
+    def bounded_tables(self) -> Self:
+        paths = [table.path for table in self.tables]
+        if paths != sorted(set(paths)):
+            raise ValueError("Retained Word mixed tables require distinct ordered coordinates")
+        if len(self.model_dump_json().encode()) > MAX_WORD_GRID_MERGE_BYTES:
+            raise ValueError("Stored Word mixed spans exceed their byte limit")
+        return self
