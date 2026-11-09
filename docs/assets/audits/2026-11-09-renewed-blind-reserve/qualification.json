@@ -1,0 +1,59 @@
+{
+  "status": "pending_holdout",
+  "source_bodies_parsed_or_rendered": 0,
+  "human_or_agent_labels": 0,
+  "selection_sha256": "b9be0468bd75defff6b9b0f8435d5ae088fbe35690a7e34ab9e0e5a3bae46475",
+  "catalogue_manifest_sha256": "388fc6cb0c5c4b40ca2859aa5be1b2d41dff1054caaeb58c17fdead0ea6316cf",
+  "source_manifest_sha256": "4147fa94060a0c0a69a3ca6ce582e012db4c8d615c064f40583a0e8d24d6990e",
+  "queue_manifest_sha256": "1c166ddb95fb444b687f785cffaa7ff166c15ec1bae4ddef9cd138492b659f04",
+  "prior_queue_manifest_sha256": "dfb933090c83125f5c50e54eb2439eb526f53ec4d00acda3995c13cb50b1436f",
+  "historical_exposure_receipt_sha256": {
+    "J507-assisted.json": "7d0b43a3cbc9e720fd77a087a2d44e67154f2776cd3b6d22471d3390af6763fc",
+    "J508-qualification.json": "c18b11d1227cdd0ed5707206eda8890c9b71a3768e5d8b2ebc6c45317ac4ed61"
+  },
+  "nested_archive_scan_sha256": "500e21c0c47141fa6e2927df5d12653f3e3a84f8c0457430ead044f4a5d38fbd",
+  "deflate64_scan_sha256": "dfe9424551f8fc30796a8e5a76fe58b6055fee56b0be544a36e65bba8e01f6d2",
+  "direct_archives_checked": 6032,
+  "checked_raw_identities": 12366,
+  "nested_archives_checked": {
+    "1": 6826,
+    "2": 8454,
+    "3": 2599,
+    "4": 169,
+    "5": 3
+  },
+  "deflate64_members_checked": 21,
+  "prior_exposed_or_reviewed_cases": 6,
+  "prior_case_or_byte_aliases": 0,
+  "groups": [
+    {
+      "id": "rpw:RPW/35850/2026",
+      "group": "doc:cdec8d0e5d6b7bbfbe71aaa76f03ee2cdd9333c6580e1217983787cb0a8ae6f9",
+      "originals": [
+        "cdec8d0e5d6b7bbfbe71aaa76f03ee2cdd9333c6580e1217983787cb0a8ae6f9"
+      ]
+    },
+    {
+      "id": "rpw:RPW/36924/2026",
+      "group": "doc:c4c790bf139259d1513ed9aa01976959a0f8bc58fc21840cbfa25842dc820737",
+      "originals": [
+        "c4c790bf139259d1513ed9aa01976959a0f8bc58fc21840cbfa25842dc820737"
+      ]
+    },
+    {
+      "id": "rpw:RPW/37631/2026",
+      "group": "doc:26222d928dcabec04664a0965154d3e2be44403f0e4b261951add74df0bdb4fa",
+      "originals": [
+        "26222d928dcabec04664a0965154d3e2be44403f0e4b261951add74df0bdb4fa"
+      ]
+    }
+  ],
+  "limitations": [
+    "Exact identity and bytes only; repackaged or differently serialized semantic aliases remain possible.",
+    "Bounded ZIP traversal; non-ZIP formats and nested ZIPs without matching signatures or known filename suffixes were not traversed.",
+    "Metadata reservation and hash checks do not establish legal correctness or an independent gold label."
+  ],
+  "combined_split_census_sha256": "d76831ce7095ae13d017a3b5288a9a016fa56a33f517238e5eef2aa5604c8ca4",
+  "combined_exposed_cases": 3,
+  "combined_reserved_unread_cases": 3
+}

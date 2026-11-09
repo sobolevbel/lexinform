@@ -1,0 +1,12 @@
+{
+  "state_sha": "3cec8fa54d62fc4c1fbfdf6deced4e720a79c270",
+  "scheduled_runs": [
+    {"id": 42583553746, "consultation_reviews_enabled": false},
+    {"id": 42614072811, "consultation_reviews_enabled": false}
+  ],
+  "queued_digest_only_rows": 2,
+  "delivery_attempts": 0,
+  "digest_links": 0,
+  "content_bindings": 0,
+  "direct_consultation_cycle_observed": false
+}

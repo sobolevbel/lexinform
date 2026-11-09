@@ -1,0 +1,11 @@
+{
+  "exposed_holdout_count": 3,
+  "human_holdout_count": 0,
+  "queue_sha256": "dfb933090c83125f5c50e54eb2439eb526f53ec4d00acda3995c13cb50b1436f",
+  "receipt_sha256": {
+    "35839-receipt.json": "75d5c6c581e7e8978ba3bc0f8593aae707da4048eedc754677e4bc5d05f861d1",
+    "35996-receipt.json": "492c9c2961e351c3a329d13f4e520cbf946e75aee61aa215215a1bb6aa74fefc",
+    "36776-receipt.json": "2ac61962f4c9037b6feba270e32620265b972abf9a2542763ce5d369dbf6e3e1"
+  },
+  "review_sha256": "a1ff4dd7006075afb12ddbe6fa19f8be152fa6c922c99bdf5eb8dc5aaf6c5de4"
+}
