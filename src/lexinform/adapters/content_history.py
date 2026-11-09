@@ -2474,24 +2474,38 @@ def validate_content_history(connection: sqlite3.Connection) -> None:
             tables
         ):
             return
-        reader = ContentSourceRows(connection)
-        for row in _query(connection, "SELECT snapshot_id FROM content_snapshots"):
-            reader.get_content_snapshot(row["snapshot_id"])
-        for row in _query(connection, "SELECT * FROM content_versions"):
+        snapshot_kinds = ContentSourceRows(connection).validated_snapshot_kinds()
+        card_inventory = None
+        card_root_id = None
+        for row in _query(
+            connection,
+            """
+            SELECT v.*, parent.root_publication_id AS previous_root
+            FROM content_versions v
+            LEFT JOIN content_versions parent ON parent.content_id=v.previous_version_id
+            ORDER BY v.root_publication_id, v.rowid
+            """,
+        ):
             value = read_content_version(row)
-            for kind, identity in content_snapshot_refs(value):
-                snapshot = reader.get_content_snapshot(identity)
-                if snapshot is None or snapshot.kind != kind:
-                    raise ValueError("content_snapshot_unavailable")
-            if value.previous_version_id is not None:
-                previous_row = _query(
-                    connection,
-                    "SELECT * FROM content_versions WHERE content_id=?",
-                    (value.previous_version_id,),
-                ).fetchone()
-                previous = read_content_version(previous_row) if previous_row is not None else None
-                if previous is None or previous.root_publication_id != value.root_publication_id:
-                    raise ValueError("content_predecessor_unavailable")
+            if any(
+                snapshot_kinds.get(identity) != kind
+                for kind, identity in content_snapshot_refs(value)
+            ):
+                raise ValueError("content_snapshot_unavailable")
+            if (
+                value.previous_version_id is not None
+                and row["previous_root"] != value.root_publication_id
+            ):
+                raise ValueError("content_predecessor_unavailable")
+            if card_root_id != value.root_publication_id:
+                card_root_id = value.root_publication_id
+                card_inventory = None
+            if (
+                card_inventory is None
+                and value.card_context_profile is not None
+                and value.previous_version_id is not None
+            ):
+                card_inventory = read_card_content_inventory(connection, value.root_publication_id)
             verify_content_applications(connection, value)
             verify_direct_stage_content(connection, value, require_bound=True)
             verify_grouped_stage_content(connection, value, require_bound=True)
@@ -2500,17 +2514,14 @@ def validate_content_history(connection: sqlite3.Connection) -> None:
             verify_act_published_content(connection, value, require_bound=True)
             verify_original_delivery_content(connection, value, require_bound=True)
             verify_multipart_card_revision(connection, value, require_bound=True)
-            physical_identity = verify_card_content(connection, value, retained=True)
-            if value.change_snapshot_id is None and value.digest_profile is None:
-                bindings = _query(
-                    connection,
-                    "SELECT publication_id FROM publication_content WHERE content_id=?",
-                    (value.content_id,),
-                ).fetchall()
-                if physical_identity is not None and any(
-                    binding[0] != physical_identity for binding in bindings
-                ):
-                    raise ValueError("card_content_binding_mismatch")
+            physical_identity = verify_card_content(
+                connection, value, retained=True, inventory=card_inventory
+            )
+            if physical_identity is not None and any(
+                identity != physical_identity
+                for identity in _card_content_bindings(connection, value.content_id, card_inventory)
+            ):
+                raise ValueError("card_content_binding_mismatch")
         if "retired_card_roots" in tables:
             for row in _query(connection, "SELECT id FROM retired_card_roots"):
                 if _query(

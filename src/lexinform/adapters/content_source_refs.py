@@ -64,6 +64,12 @@ class ContentSourceRows(DocumentSourceRows):
             )
         }
 
+    def validated_snapshot_kinds(self) -> dict[str, str]:
+        return {
+            row["snapshot_id"]: _read_content_snapshot(row).kind
+            for row in self._query("SELECT * FROM content_snapshots")
+        }
+
     def get_computation_result(self, result_id: str) -> ComputationResult | None:
         row = self._query(
             "SELECT * FROM computation_results WHERE result_id = ?", (result_id,)
