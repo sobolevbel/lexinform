@@ -68,6 +68,56 @@ def refresh(world: World) -> None:
     world.container.tracking_service(dry_run=False).check_bill(world.bill("3039"))
 
 
+@pytest.mark.parametrize("lose_repair_tail", [False, True])
+def test_dismissed_continuation_allows_restoring_the_previous_card(
+    lose_repair_tail: bool,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    world = ready_world("off", long=lose_repair_tail)
+    world.run()
+    baseline = card(world)
+    analysis = world.bill("3039").analysis
+    assert analysis is not None, "the original card was published from a completed analysis"
+    change(world, "Новая сумма 400 PLN; старые заявления повторно не подавать. " * 220)
+    publish = world.publisher.publish_prepared
+
+    def lose_continuation(publication: Publication) -> PublishResult:
+        if publication.delivery is not None and publication.delivery.continuation_root:
+            raise DeliveryUncertainError("fixture uncertainty")
+        return publish(publication)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(world.publisher, "publish_prepared", lose_continuation)
+        refresh(world)
+    mixed, first_continuation, *_ = edition(world)
+    assert mixed.status is PublicationStatus.SENT
+    assert mixed.rendered_sha256 != baseline.rendered_sha256
+    assert first_continuation.status is PublicationStatus.UNKNOWN
+    assert card(world) == baseline
+
+    world.command(f"/delivery {first_continuation.id} dismiss checked absent")
+    commands = world.container.command_service(dry_run=False)
+    assert commands is not None, "the fixture enables operator commands"
+    assert commands.handle_pending(min_score=3, run_started_at=world.clock.now()).failed == 0
+    assert all(part.status is PublicationStatus.DISMISSED for part in edition(world)[1:])
+    world.repo.save_analysis(TERM, "3039", analysis)
+
+    with monkeypatch.context() as patch:
+        if lose_repair_tail:
+            patch.setattr(world.publisher, "publish_prepared", lose_continuation)
+        result = world.container.tracking_service(dry_run=False).check_bill(world.bill("3039"))
+
+    assert result.cards_refreshed == int(not lose_repair_tail)
+    repaired, *tails = edition(world)
+    assert repaired.id != mixed.id and repaired.message_id == mixed.message_id
+    assert repaired.status is PublicationStatus.SENT
+    assert repaired.rendered_sha256 == baseline.rendered_sha256
+    if lose_repair_tail:
+        assert tails[0].status is PublicationStatus.UNKNOWN
+    else:
+        assert not tails
+
+
 @pytest.mark.parametrize("mode", ["off", "shadow", "on"])
 @pytest.mark.parametrize("shape", ["single_many", "many_same", "many_grow", "many_shrink"])
 def test_every_multipart_edit_part_is_remote_before_api_and_final_receipt_alone_advances_card(

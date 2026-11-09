@@ -2,6 +2,7 @@
 
 import hashlib
 import sqlite3
+from collections.abc import Iterable
 from datetime import datetime
 from typing import Literal, NamedTuple
 
@@ -24,6 +25,7 @@ from lexinform.content_versions import (
     card_confirmation_matches,
     card_physical_matches,
     card_plan_matches,
+    card_revision_ref_parts,
     confirmed_content_version,
     content_delivery_mismatch,
     content_snapshot_refs,
@@ -529,6 +531,7 @@ def _verify_card_content(
     *,
     retained: bool,
     bound_physical_id: int | None = None,
+    inventory: CardContentInventory | None = None,
 ) -> tuple[int | None, dict[str, object] | None]:
     if (
         value.change_snapshot_id is not None
@@ -539,10 +542,11 @@ def _verify_card_content(
         or value.multipart_card_revision is not None
     ):
         return None, None
-    root_row = _query(
-        connection, "SELECT * FROM publications WHERE id=?", (value.root_publication_id,)
-    ).fetchone()
-    root = read_content_publication(root_row) if root_row is not None else None
+    root = (
+        inventory.publications.get(value.root_publication_id)
+        if inventory is not None
+        else _card_publication(connection, value.root_publication_id)
+    )
     reader = ContentSourceRows(connection)
     snapshots: dict[str, ContentSnapshot] = {}
     for kind, identity in content_snapshot_refs(value):
@@ -679,18 +683,17 @@ def _verify_card_content(
         "SELECT publication_id FROM publication_content WHERE content_id=?",
         (value.content_id,),
     ).fetchall()
+    bound_ids = {binding[0] for binding in bindings}
     missing = False
-    for binding in bindings:
-        identity = binding[0]
+    for identity in bound_ids:
         if (identity == value.root_publication_id) != (value.previous_version_id is None):
             raise ValueError("card_content_binding_scope")
-        physical_row = _query(
-            connection, "SELECT * FROM publications WHERE id=?", (identity,)
-        ).fetchone()
-        if physical_row is None:
+        physical = inventory.publications.get(identity) if inventory is not None else None
+        if physical is None:
+            physical = _card_publication(connection, identity)
+        if physical is None:
             missing = True
             continue
-        physical = read_content_publication(physical_row)
         if (
             not card_physical_matches(value, physical, root, semantic, previous_ids)
             or (marked_continuation and not _card_revision_time_matches(value, physical))
@@ -704,33 +707,32 @@ def _verify_card_content(
         if retained:
             return None, primary
         raise ValueError("card_content_root_missing")
-    assert root_row is not None, "the available typed root comes from its physical row"
+    candidates: Iterable[Publication]
     if bound_physical_id is not None:
-        if {binding[0] for binding in bindings} != {bound_physical_id}:
+        if bound_ids != {bound_physical_id}:
             return None, primary
-        rows = _query(
-            connection, "SELECT * FROM publications WHERE id=?", (bound_physical_id,)
-        ).fetchall()
+        candidate = _card_publication(connection, bound_physical_id)
+        candidates = (candidate,) if candidate is not None else ()
+    elif value.previous_version_id is None:
+        candidates = (root,)
+    elif inventory is not None:
+        candidates = (
+            candidate
+            for previous_id in previous_ids
+            for candidate in inventory.revisions.get(previous_id, ())
+        )
     else:
-        rows = (
-            [root_row]
-            if value.previous_version_id is None
-            else card_publication_rows(connection, value.root_publication_id)
+        candidates = map(
+            read_content_publication, card_publication_rows(connection, value.root_publication_id)
         )
     matches: list[Publication] = []
-    for row in rows:
-        physical = read_content_publication(row)
+    for physical in candidates:
         if not card_physical_matches(value, physical, root, semantic, previous_ids) or (
             marked_continuation and not _card_revision_time_matches(value, physical)
         ):
             continue
-        bound = _query(
-            connection,
-            "SELECT content_id FROM publication_content WHERE publication_id=?",
-            (physical.id,),
-        ).fetchone()
         if physical.delivery is None:
-            if bound is None or bound[0] != value.content_id:
+            if physical.id not in bound_ids:
                 continue
         elif content_delivery_mismatch(value, snapshots, physical.delivery) is not None:
             continue
@@ -2501,7 +2503,9 @@ def card_publication_rows(connection: sqlite3.Connection, root_id: int) -> list[
             CASE WHEN json_valid(p.delivery_json) THEN
               CAST(json_extract(p.delivery_json,'$.continuation_parent') AS INTEGER)=o.id OR
               CAST(json_extract(p.delivery_json,'$.continuation_root') AS INTEGER)=o.id END
-        ) SELECT * FROM publications WHERE id IN (SELECT id FROM operations) ORDER BY id
+        ) SELECT p.*, b.content_id AS bound_content_id FROM publications p
+          LEFT JOIN publication_content b ON b.publication_id=p.id
+          WHERE p.id IN (SELECT id FROM operations) ORDER BY p.id
     """,
             (
                 root_id,
@@ -2516,11 +2520,44 @@ def card_publication_rows(connection: sqlite3.Connection, root_id: int) -> list[
     )
 
 
+class CardContentInventory(NamedTuple):
+    publications: dict[int, Publication]
+    bindings: dict[int, str]
+    revisions: dict[int, list[Publication]]
+
+
+def read_card_content_inventory(
+    connection: sqlite3.Connection, root_id: int
+) -> CardContentInventory:
+    inventory = CardContentInventory({}, {}, {})
+    for row in card_publication_rows(connection, root_id):
+        identity = row["id"]
+        publication = read_content_publication(row)
+        inventory.publications[identity] = publication
+        if row["bound_content_id"] is not None:
+            inventory.bindings[identity] = row["bound_content_id"]
+        reference = card_revision_ref_parts(publication.ref)
+        if reference is not None and reference[0] == root_id:
+            inventory.revisions.setdefault(reference[1], []).append(publication)
+    return inventory
+
+
+def _card_publication(connection: sqlite3.Connection, identity: int) -> Publication | None:
+    row = _query(connection, "SELECT * FROM publications WHERE id=?", (identity,)).fetchone()
+    return read_content_publication(row) if row is not None else None
+
+
 def verify_card_content(
-    connection: sqlite3.Connection, value: ContentVersion, *, retained: bool = False
+    connection: sqlite3.Connection,
+    value: ContentVersion,
+    *,
+    retained: bool = False,
+    inventory: CardContentInventory | None = None,
 ) -> int | None:
     try:
-        physical_id, _ = _verify_card_content(connection, value, retained=retained)
+        physical_id, _ = _verify_card_content(
+            connection, value, retained=retained, inventory=inventory
+        )
         return physical_id
     except RecursionError as exc:
         raise ValueError("invalid_card_content_history") from exc

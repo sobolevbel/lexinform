@@ -255,6 +255,11 @@ def card_plan_matches(version: ContentVersion, plan: DeliveryPlan) -> bool:
     )
 
 
+def card_revision_ref_parts(ref: str | None) -> tuple[int, int] | None:
+    match = re.fullmatch(r"card/(\d+)/[0-9a-f]{64}-(\d+)/1", ref or "")
+    return (int(match[1]), int(match[2])) if match is not None else None
+
+
 def card_physical_matches(
     version: ContentVersion,
     publication: Publication,
@@ -283,13 +288,13 @@ def card_physical_matches(
             and plan.edit_message_id is None
             and plan.continuation_parent is None
         )
-    match = re.fullmatch(r"card/(\d+)/[0-9a-f]{64}-(\d+)/1", publication.ref or "")
+    reference = card_revision_ref_parts(publication.ref)
     return (
         publication.kind is PublicationKind.MESSAGE_PART
         and version.reason == "card_revision"
-        and match is not None
-        and int(match[1]) == version.root_publication_id
-        and int(match[2]) in previous_publications
+        and reference is not None
+        and reference[0] == version.root_publication_id
+        and reference[1] in previous_publications
         and plan.revision_of == version.root_publication_id
         and plan.edit_message_id is not None
         and (root is None or plan.edit_message_id == root.message_id)

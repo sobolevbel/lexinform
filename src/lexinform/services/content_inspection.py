@@ -23,17 +23,55 @@ from lexinform.models.content import (
     ContentHistoryPage,
     OriginalAmendmentInputStatus,
 )
-from lexinform.ports import BillRepository
+from lexinform.ports import BillRepository, CardContentHistory
 from lexinform.services.amendment_input_history import original_amendment_input
 
 
 def inspect_content(repo: BillRepository, publication: Publication) -> ContentHistoryView | None:
-    if publication.id is None:
+    history, _ = _read_inspection(repo, publication)
+    return history
+
+
+def confirmed_card_parent(
+    repo: BillRepository, owner: Publication, previous: Publication
+) -> ContentVersion | None:
+    history, card_history = _read_inspection(repo, owner)
+    if (
+        history is None
+        or history.integrity != "valid"
+        or history.current_id is None
+        or previous.id is None
+    ):
         return None
+    candidate = (
+        card_history.bindings.get(previous.id)
+        if card_history is not None
+        else repo.get_publication_content(previous.id)
+    )
+    return (
+        candidate if candidate is not None and candidate.content_id == history.current_id else None
+    )
+
+
+def _read_inspection(
+    repo: BillRepository, publication: Publication
+) -> tuple[ContentHistoryView | None, CardContentHistory | None]:
+    if publication.id is None:
+        return None, None
     try:
-        return _inspect(repo, publication)
+        selected = repo.get_publication_content(publication.id)
+        if selected is None:
+            selected = _grouped_member_content(repo, publication)
+        if selected is None:
+            return None, None
+        card_history = (
+            repo.read_card_content_history(selected.root_publication_id)
+            if selected.card_context_profile is not None
+            else None
+        )
+        return _inspect(repo, selected, card_history), card_history
     except ValueError:
-        return ContentHistoryView(integrity="unavailable")
+        return ContentHistoryView(integrity="unavailable"), None
 
 
 def _inspect_multipart_card(
@@ -70,20 +108,20 @@ def _inspect_multipart_card(
     )
 
 
-def _inspect(repo: BillRepository, publication: Publication) -> ContentHistoryView | None:
-    assert publication.id is not None, "inspect_content requires a persisted publication identity"
-    selected = repo.get_publication_content(publication.id)
-    if selected is None:
-        selected = _grouped_member_content(repo, publication)
-    if selected is None:
-        return None
+def _inspect(
+    repo: BillRepository, selected: ContentVersion, card_history: CardContentHistory | None
+) -> ContentHistoryView:
     original_evidence = selected.original_delivery_evidence
     if (
         selected.multipart_card_revision is not None
         or (original_evidence is not None and original_evidence.kind is PublicationKind.NEW_BILL)
         or selected.card_context_profile is not None
     ):
-        versions = repo.list_content_versions(selected.root_publication_id)
+        versions = (
+            card_history.versions
+            if card_history is not None
+            else repo.list_content_versions(selected.root_publication_id)
+        )
         if original_evidence is not None or any(
             version.multipart_card_revision is not None for version in versions
         ):
@@ -123,9 +161,14 @@ def _inspect(repo: BillRepository, publication: Publication) -> ContentHistoryVi
             current_id=selected.content_id if physical_confirmed else None,
         )
     root_id = selected.root_publication_id
-    versions = repo.list_content_versions(root_id)
-    root = repo.publication_by_id(root_id)
-    original = repo.get_publication_content(root_id)
+    if card_history is not None:
+        versions = card_history.versions
+        root = card_history.publications.get(root_id)
+        original = card_history.bindings.get(root_id)
+    else:
+        versions = repo.list_content_versions(root_id)
+        root = repo.publication_by_id(root_id)
+        original = repo.get_publication_content(root_id)
     inspected = ContentVersionSummary.from_version(selected)
     summaries = {inspected.content_id: inspected}
     if original is not None:
@@ -153,13 +196,21 @@ def _inspect(repo: BillRepository, publication: Publication) -> ContentHistoryVi
         if version.previous_version_id is not None and version.previous_version_id not in by_id:
             return base.model_copy(update={"integrity": "unavailable"})
     confirmed: set[str] = set()
-    inventory = repo.list_content_publications(root_id)
+    inventory = (
+        list(card_history.publications.values())
+        if card_history is not None
+        else repo.list_content_publications(root_id)
+    )
     bound_by_publication: dict[int, ContentVersion] = {}
     grouped_uncertain = False
     for physical in inventory:
         if physical.id is None:
             continue
-        bound = repo.get_publication_content(physical.id)
+        bound = (
+            card_history.bindings.get(physical.id)
+            if card_history is not None
+            else repo.get_publication_content(physical.id)
+        )
         if bound is None:
             continue
         bound_by_publication[physical.id] = bound
@@ -282,12 +333,16 @@ def inspect_content_page(
     repo: BillRepository, publication: Publication, *, page: int
 ) -> ContentHistoryPage:
     """Page immutable editorial references under the existing confirmation and integrity policy."""
-    history = inspect_content(repo, publication)
+    history, card_history = _read_inspection(repo, publication)
     unavailable = ContentHistoryPage(status="unavailable", page=page, history=history)
     if history is None or history.integrity != "valid" or history.root_publication_id is None:
         return unavailable
     try:
-        versions = repo.list_content_versions(history.root_publication_id)
+        versions = (
+            card_history.versions
+            if card_history is not None
+            else repo.list_content_versions(history.root_publication_id)
+        )
         if not 1 <= page <= len(versions):
             return ContentHistoryPage(
                 status="out_of_range",
@@ -297,7 +352,9 @@ def inspect_content_page(
             )
         version = versions[page - 1]
         physical = []
-        for item in repo.list_content_publications(history.root_publication_id):
+        for item in repo.list_content_publications(
+            history.root_publication_id, content_id=version.content_id
+        ):
             if item.id is None:
                 continue
             bound = repo.get_publication_content(item.id)

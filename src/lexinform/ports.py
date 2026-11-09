@@ -556,6 +556,13 @@ class GroupedEditClaim:
     html: str
 
 
+@dataclass(frozen=True)
+class CardContentHistory:
+    versions: list[ContentVersion]
+    publications: dict[int, Publication]
+    bindings: dict[int, ContentVersion]
+
+
 class Publisher(Protocol):
     """Where the messages go: Telegram in production, stdout in a dry run."""
 
@@ -957,6 +964,8 @@ class BillRepository(Protocol):
 
     def list_content_versions(self, root_publication_id: int) -> list[ContentVersion]: ...
 
+    def read_card_content_history(self, root_publication_id: int) -> CardContentHistory: ...
+
     def bind_publication_content(self, publication_id: int, content_id: str) -> None: ...
 
     def reserve_grouped_stage_revision(
@@ -977,6 +986,7 @@ class BillRepository(Protocol):
         base_content_id: str,
         approved_sha256: str,
         chat_id: int,
+        allow_rejected: bool = False,
     ) -> GroupedEditClaim | None: ...
 
     def grouped_stage_edit_matches(self, claim: GroupedEditClaim) -> bool: ...
@@ -987,7 +997,9 @@ class BillRepository(Protocol):
 
     def get_publication_content(self, publication_id: int) -> ContentVersion | None: ...
 
-    def list_content_publications(self, root_publication_id: int) -> list[Publication]: ...
+    def list_content_publications(
+        self, root_publication_id: int, *, content_id: str | None = None
+    ) -> list[Publication]: ...
 
     def save_artifact_metadata(self, artifact: ArtifactMetadata) -> None: ...
 
@@ -1404,6 +1416,10 @@ class BillRepository(Protocol):
     def card_aliases(self, channel_id: str, message_id: int) -> list[Publication]: ...
 
     def card_refresh_parts(self, card_id: int) -> list[Publication]: ...
+
+    def card_may_need_partial_repair(
+        self, channel_id: str, message_id: int, digest: str
+    ) -> bool: ...
 
     def set_card_digest(self, publication_id: int, digest: str) -> None: ...
 

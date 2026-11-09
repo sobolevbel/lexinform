@@ -13,7 +13,6 @@ from lexinform.models import (
 )
 from lexinform.ports import BillRepository, Clock, Publisher, SejmGateway, StateCheckpoint
 from lexinform.services.card_edits import edit_card
-from lexinform.services.publications import open_card_edit_ids
 from lexinform.services.sources import fetch_print
 from lexinform.services.tracking_result import TrackingResult
 
@@ -59,13 +58,7 @@ class CardRefresher:
             card = self._repo.get_publication(
                 bill.term, bill.number, PublicationKind.NEW_BILL, self._channel_id
             )
-            if card is None or card.status is not PublicationStatus.SENT or card.id is None:
-                continue
-            if open_card_edit_ids(self._repo, card):
-                continue
-            today = self._clock.now().astimezone(self._local_tz).date()
-            digest = self._publisher.card_digest(bill, today=today)
-            if digest == card.rendered_sha256 or card.message_id is None:
+            if card is None or card.status is not PublicationStatus.SENT:
                 continue
             try:
                 outcome = edit_card(
@@ -78,8 +71,6 @@ class CardRefresher:
                     channel_id=self._channel_id,
                     checkpoint=self._checkpoint,
                     local_tz=self._local_tz,
-                    digest=digest,
-                    today=today,
                     delivery_attempts=self._attempted,
                     load_print=partial(fetch_print, self._gateway, bill)
                     if bill.has_process

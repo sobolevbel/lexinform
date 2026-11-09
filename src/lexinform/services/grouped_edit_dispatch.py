@@ -18,6 +18,7 @@ def dispatch_reserved_grouped_edit(
     base_content_id: str,
     approved_sha256: str,
     chat_id: int,
+    allow_rejected: bool = False,
 ) -> PublicationStatus | None:
     """Dispatch an exact approved slot once through the required durable checkpoint."""
     claim = repo.claim_grouped_stage_edit(
@@ -26,6 +27,7 @@ def dispatch_reserved_grouped_edit(
         base_content_id=base_content_id,
         approved_sha256=approved_sha256,
         chat_id=chat_id,
+        allow_rejected=allow_rejected,
     )
     if claim is None:
         return None

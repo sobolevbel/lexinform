@@ -187,5 +187,6 @@ def approve_grouped_stage_date(
         base_content_id=base.content_id,
         approved_sha256=approved_sha256,
         chat_id=chat_id,
+        allow_rejected=True,
     )
     return GroupedStageDateApprovalResult(slot, status)

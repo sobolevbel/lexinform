@@ -7,7 +7,6 @@ from zoneinfo import ZoneInfo
 
 from lexinform.models import (
     Bill,
-    ContentVersion,
     DeliveryPlan,
     PrintInfo,
     Publication,
@@ -16,7 +15,7 @@ from lexinform.models import (
 )
 from lexinform.ports import BillRepository, Clock, Publisher, StateCheckpoint
 from lexinform.services.content_history import FORMATTER_VERSION, record_publication_content
-from lexinform.services.content_inspection import inspect_content
+from lexinform.services.content_inspection import confirmed_card_parent
 from lexinform.services.message_parts import continuation_snapshot, send_continuations
 from lexinform.services.multipart_card_history import record_multipart_card_revision
 from lexinform.services.publications import (
@@ -210,12 +209,22 @@ def edit_card(
         or owner.message_id != card.message_id
     ):
         return CardEditResult()
+    today = today or clock.now().astimezone(local_tz).date()
+    desired = digest if digest is not None else publisher.card_digest(bill, today=today)
+    if desired == owner.rendered_sha256 and not repo.card_may_need_partial_repair(
+        channel_id, owner.message_id, desired
+    ):
+        return CardEditResult()
     if open_card_edit_ids(repo, owner):
         return CardEditResult()
     assert owner.id is not None, "a stored delivered owner has its publication identity"
     aliases = repo.card_aliases(channel_id, owner.message_id)
     current = _physical_edition(repo, aliases)
     if not current:
+        return CardEditResult()
+    previous = current[0]
+    has_dismissed_part = any(part.status is PublicationStatus.DISMISSED for part in current)
+    if desired == (previous.rendered_sha256 if has_dismissed_part else owner.rendered_sha256):
         return CardEditResult()
     targets = _physical_targets(current)
     if (
@@ -225,26 +234,7 @@ def edit_card(
         or _active_edit(repo, channel_id, aliases, targets)
     ):
         return CardEditResult()
-    today = today or clock.now().astimezone(local_tz).date()
-    desired = digest if digest is not None else publisher.card_digest(bill, today=today)
-    if desired == owner.rendered_sha256:
-        return CardEditResult()
-    previous = current[0]
-    parent: ContentVersion | None = None
-    history = inspect_content(repo, owner)
-    if (
-        history is not None
-        and history.integrity == "valid"
-        and history.current_id is not None
-        and previous.id is not None
-    ):
-        candidate = repo.get_publication_content(previous.id)
-        if candidate is not None and candidate.content_id == history.current_id:
-            parent = candidate
-    if previous.rendered_sha256 == desired and any(
-        part.status is PublicationStatus.DISMISSED for part in current
-    ):
-        return CardEditResult()
+    parent = confirmed_card_parent(repo, owner, previous)
     if load_print is not None:
         print_info = load_print()
     texts = publisher.render_card_parts(bill, print_info, minimum=len(targets), today=today)
@@ -331,7 +321,13 @@ def edit_card(
     parts = send_continuations(repo, clock, publisher, root, attempted, checkpoint=checkpoint)
     latest = repo.publication_by_id(owner.id)
     return CardEditResult(
-        completed=latest is not None and latest.rendered_sha256 == desired,
+        completed=latest is not None
+        and latest.rendered_sha256 == desired
+        and all(
+            (part := repo.publication_by_id(identity)) is not None
+            and part.status is PublicationStatus.SENT
+            for identity in identities[1:]
+        ),
         new_messages=parts.sent,
         errors=tuple(parts.errors),
     )

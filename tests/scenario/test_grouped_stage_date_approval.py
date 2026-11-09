@@ -1,8 +1,10 @@
+from contextlib import closing
 from datetime import timedelta
 
+import httpx2 as httpx
 import pytest
 
-from lexinform.adapters.telegram import TelegramEditReceipt
+from lexinform.adapters.telegram import TelegramBotClient, TelegramEditReceipt
 from lexinform.errors import DeliveryUncertainError, StateCheckpointError
 from lexinform.models import PublicationStatus
 from lexinform.models.grouped_stage_date import GroupedStageDateCorrection
@@ -17,7 +19,9 @@ from tests.scenario.test_group_remote_checkpoints import flush, queued_world
 from tests.scenario.test_grouped_telegram_receipt import CHAT_ID, MESSAGE_ID, telegram_send
 
 
-@pytest.mark.parametrize("mode", ["sent", "unknown", "checkpoint", "unpinned", "queued"])
+@pytest.mark.parametrize(
+    "mode", ["sent", "unknown", "checkpoint", "unpinned", "queued", "rejected"]
+)
 def test_grouped_date_approval_checkpoints_exact_candidate(
     mode: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -61,8 +65,8 @@ def test_grouped_date_approval_checkpoints_exact_candidate(
 
     def edit(chat: int, message: int, html: str) -> VerifiedEditOutcome:
         calls.append((chat, message, html))
-        assert len(dumps) == 1
-        with saved_state(dumps[0]) as restored:
+        assert len(dumps) == 2 * len(calls) - 1
+        with saved_state(dumps[-1]) as restored:
             history = inspect_content(restored.repo, root)
             assert history is not None and history.current_id is None
             versions = restored.repo.list_content_versions(root_id)
@@ -71,6 +75,18 @@ def test_grouped_date_approval_checkpoints_exact_candidate(
             assert revision.rendered_text == html
         if mode == "unknown":
             raise DeliveryUncertainError("lost response")
+        if mode == "rejected" and len(calls) == 1:
+
+            def reject(request: httpx.Request) -> httpx.Response:
+                assert request.url.path.endswith("/editMessageText")
+                return httpx.Response(
+                    429, json={"ok": False, "error_code": 429, "description": "Too Many Requests"}
+                )
+
+            with closing(
+                TelegramBotClient("fixture", transport=httpx.MockTransport(reject))
+            ) as client:
+                return client.attempt_verified_edit(chat, message, html)
         return TelegramEditReceipt(chat, message)
 
     if mode == "unpinned":
@@ -164,6 +180,21 @@ def test_grouped_date_approval_checkpoints_exact_candidate(
             approve()
         assert not calls and len(dumps) == 1
         assert approve() is None
+        return
+    if mode == "rejected":
+        assert approve() is PublicationStatus.FAILED
+        assert len(calls) == 1
+        with saved_state(dumps[-1]) as restored:
+            history = inspect_content(restored.repo, root)
+            assert history is not None and history.current_id == original.content_id
+        assert approve() is PublicationStatus.SENT
+        assert approve() is None
+        assert calls == [(CHAT_ID, MESSAGE_ID, preview.html)] * 2
+        with saved_state(dumps[-1]) as restored:
+            versions = restored.repo.list_content_versions(root_id)
+            assert len(versions) == 2
+            history = inspect_content(restored.repo, root)
+            assert history is not None and history.current_id == versions[-1].content_id
         return
     assert approve() is (PublicationStatus.SENT if mode == "sent" else PublicationStatus.UNKNOWN)
     assert approve() is None

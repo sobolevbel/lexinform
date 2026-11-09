@@ -44,9 +44,11 @@ from lexinform.adapters.content_applications import (
     verify_content_applications,
 )
 from lexinform.adapters.content_history import (
+    CardContentInventory,
     card_primary_evidence_candidate,
     card_publication_rows,
     card_refresh_rows,
+    read_card_content_inventory,
     read_content_version,
     read_grouped_stage_telegram_target,
     recorded_command_matches,
@@ -314,7 +316,12 @@ from lexinform.models.source_catalog_attempts import SourceCatalogAttempt, Sourc
 from lexinform.models.source_omissions import SourceMetadataOmission
 from lexinform.models.wykaz import wykaz_number
 from lexinform.name_binding import bind_mnemonic
-from lexinform.ports import GroupedEditClaim, VerifiedEditOutcome, VerifiedEditRejection
+from lexinform.ports import (
+    CardContentHistory,
+    GroupedEditClaim,
+    VerifiedEditOutcome,
+    VerifiedEditRejection,
+)
 from lexinform.primary_projections import ProjectionOwner
 from lexinform.saved_records import CONTEXT_RESULT_TABLES
 from lexinform.sitting_delivery import sitting_root_plan
@@ -1219,6 +1226,7 @@ def _dump_version(script: str) -> int:
 
 
 log = logging.getLogger(__name__)
+_GROUPED_EDIT_REJECTED = "Telegram rejected the verified edit"
 
 
 class RclLetterUseRowError(ValueError):
@@ -2581,9 +2589,17 @@ class SqliteBillRepository:
         if row is None:
             return None
         version = read_content_version(row)
+        self._verify_retained_content_version(version)
+        return version
+
+    def _verify_retained_content_version(
+        self, version: ContentVersion, *, inventory: CardContentInventory | None = None
+    ) -> int | None:
         verify_content_source(self._conn, version)
         verify_content_applications(self._conn, version)
-        verify_card_content(self._conn, version, retained=True)
+        card_physical_id = verify_card_content(
+            self._conn, version, retained=True, inventory=inventory
+        )
         verify_direct_stage_content(self._conn, version)
         verify_grouped_stage_content(self._conn, version)
         verify_digest_content(self._conn, version)
@@ -2591,18 +2607,37 @@ class SqliteBillRepository:
         verify_act_published_content(self._conn, version)
         verify_original_delivery_content(self._conn, version)
         verify_multipart_card_revision(self._conn, version)
-        return version
+        return card_physical_id
 
     def list_content_versions(self, root_publication_id: int) -> list[ContentVersion]:
         versions: list[ContentVersion] = []
         for row in self._conn.execute(
-            "SELECT content_id FROM content_versions WHERE root_publication_id=? ORDER BY rowid",
+            "SELECT * FROM content_versions WHERE root_publication_id=? ORDER BY rowid",
             (root_publication_id,),
         ):
-            version = self.get_content_version(row["content_id"])
-            assert version is not None, "the selected content version exists in this snapshot"
+            version = read_content_version(row)
+            self._verify_retained_content_version(version)
             versions.append(version)
         return versions
+
+    def read_card_content_history(self, root_publication_id: int) -> CardContentHistory:
+        inventory = read_card_content_inventory(self._conn, root_publication_id)
+        versions = []
+        for row in self._conn.execute(
+            "SELECT * FROM content_versions WHERE root_publication_id=? ORDER BY rowid",
+            (root_publication_id,),
+        ):
+            version = read_content_version(row)
+            self._verify_retained_content_version(version, inventory=inventory)
+            versions.append(version)
+        by_id = {version.content_id: version for version in versions}
+        if not set(inventory.bindings.values()).issubset(by_id):
+            raise ValueError("card history contains a foreign or missing binding")
+        return CardContentHistory(
+            versions,
+            inventory.publications,
+            {identity: by_id[content_id] for identity, content_id in inventory.bindings.items()},
+        )
 
     def _validate_publication_content_binding(
         self, publication_id: int, content_id: str
@@ -2748,9 +2783,25 @@ class SqliteBillRepository:
                     evidence.revision.target_message_id,
                 ):
                     return None
-            if self._grouped_stage_edit_conflict(root, ref):
+            prior = self.get_publication(
+                root.term, root.number, PublicationKind.MESSAGE_PART, root.channel_id, ref=ref
+            )
+            retry_slot = None
+            if prior is not None:
+                if (
+                    expected_chat_id is None
+                    or prior.id is None
+                    or not self._definitely_rejected_grouped_edit(prior)
+                    or (saved := self.get_publication_content(prior.id)) is None
+                    or saved.content_id != version.content_id
+                ):
+                    return None
+                retry_slot = prior.id
+            if self._grouped_stage_edit_conflict(root, ref, excluding_slot=retry_slot):
                 return None
-            current = self._confirmed_grouped_stage_base(root)
+            current = self._confirmed_grouped_stage_base(
+                root, excluding_content_id=version.content_id if retry_slot is not None else None
+            )
             if (
                 current is None
                 or current.content_id != expected_content_id
@@ -2759,6 +2810,8 @@ class SqliteBillRepository:
                 != expected_base_sha256
             ):
                 return None
+            if retry_slot is not None:
+                return retry_slot
             bill = self.get_content_snapshot(version.bill_context_id)
             plan = grouped_stage_revision_plan(version, bill) if bill is not None else None
             if plan is None:
@@ -2787,6 +2840,14 @@ class SqliteBillRepository:
         lock = self._conn.execute("UPDATE publication_sequence SET last_id=last_id WHERE id=1")
         if lock.rowcount != 1:
             raise ValueError("grouped edit requires its publication sequence")
+
+    @staticmethod
+    def _definitely_rejected_grouped_edit(slot: Publication) -> bool:
+        return (
+            slot.status is PublicationStatus.FAILED
+            and slot.attempts > 0
+            and slot.error == _GROUPED_EDIT_REJECTED
+        )
 
     def _grouped_stage_edit_conflict(
         self, root: Publication, ref: str, *, excluding_slot: int | None = None
@@ -2821,8 +2882,9 @@ class SqliteBillRepository:
         base_content_id: str,
         approved_sha256: str,
         chat_id: int,
+        allow_rejected: bool = False,
     ) -> GroupedEditClaim | None:
-        """Claim one untouched slot only when its approval and pinned target still match."""
+        """Claim the exact approved slot, requiring explicit approval after a rejection."""
         if self._conn.in_transaction or type(chat_id) is not int or not -(2**52) < chat_id < 0:
             return None
         with self.atomic():
@@ -2831,8 +2893,10 @@ class SqliteBillRepository:
             if (
                 slot is None
                 or not is_grouped_stage_revision_slot(slot)
-                or slot.status is not PublicationStatus.QUEUED
-                or slot.attempts
+                or not (
+                    (slot.status is PublicationStatus.QUEUED and not slot.attempts)
+                    or (allow_rejected and self._definitely_rejected_grouped_edit(slot))
+                )
                 or slot.delivery is None
                 or (target := slot.delivery.edit_message_id) is None
                 or self.delivery_resolutions(publication_id)
@@ -2867,7 +2931,6 @@ class SqliteBillRepository:
     def _grouped_stage_edit_matches(self, claim: GroupedEditClaim, slot: Publication) -> bool:
         if (
             not is_grouped_stage_revision_slot(slot)
-            or slot.attempts
             or slot.delivery is None
             or slot.delivery.edit_message_id != claim.message_id
             or slot.delivery.rendered_text != claim.html
@@ -2921,7 +2984,7 @@ class SqliteBillRepository:
                     self.mark_publication(
                         claim.publication_id,
                         PublicationStatus.FAILED,
-                        error="Telegram rejected the verified edit",
+                        error=_GROUPED_EDIT_REJECTED,
                     )
                     return PublicationStatus.FAILED
                 if outcome is not None and (
@@ -3048,13 +3111,16 @@ class SqliteBillRepository:
 
     def get_publication_content(self, publication_id: int) -> ContentVersion | None:
         row = self._conn.execute(
-            "SELECT content_id FROM publication_content WHERE publication_id=?", (publication_id,)
+            "SELECT v.* FROM publication_content b LEFT JOIN content_versions v"
+            " ON v.content_id=b.content_id WHERE b.publication_id=?",
+            (publication_id,),
         ).fetchone()
         if row is None:
             return None
-        version = self.get_content_version(row["content_id"])
-        if version is None:
+        if row["content_id"] is None:
             raise ValueError("a publication content binding has lost its version")
+        version = read_content_version(row)
+        card_physical_id = self._verify_retained_content_version(version)
         if (
             version.direct_stage_evidence is not None
             and version.direct_stage_evidence.multipart is not None
@@ -3089,20 +3155,23 @@ class SqliteBillRepository:
             if edition is None or publication_id not in edition.bindings:
                 raise ValueError("multipart_card_binding_scope")
             return version
-        if version.change_snapshot_id is None:
-            physical_id = verify_card_content(self._conn, version, retained=True)
-            if physical_id is not None and physical_id != publication_id:
-                raise ValueError("card content binding differs from its physical operation")
+        if card_physical_id is not None and card_physical_id != publication_id:
+            raise ValueError("card content binding differs from its physical operation")
         return version
 
-    def list_content_publications(self, root_publication_id: int) -> list[Publication]:
-        if self._conn.execute(
-            "SELECT 1 FROM content_versions WHERE root_publication_id=? "
-            "AND change_snapshot_id IS NULL AND bill_snapshot_id IS NOT NULL "
-            "AND json_type(version_json, '$.act_published_evidence') IS NULL "
-            "AND json_type(version_json, '$.original_delivery_evidence') IS NULL",
-            (root_publication_id,),
-        ).fetchone():
+    def list_content_publications(
+        self, root_publication_id: int, *, content_id: str | None = None
+    ) -> list[Publication]:
+        if (
+            content_id is None
+            and self._conn.execute(
+                "SELECT 1 FROM content_versions WHERE root_publication_id=? "
+                "AND change_snapshot_id IS NULL AND bill_snapshot_id IS NOT NULL "
+                "AND json_type(version_json, '$.act_published_evidence') IS NULL "
+                "AND json_type(version_json, '$.original_delivery_evidence') IS NULL",
+                (root_publication_id,),
+            ).fetchone()
+        ):
             return [
                 self._row_to_publication(row)
                 for row in card_publication_rows(self._conn, root_publication_id)
@@ -3111,8 +3180,9 @@ class SqliteBillRepository:
             "SELECT p.* FROM publications p"
             " JOIN publication_content binding ON binding.publication_id=p.id"
             " JOIN content_versions version ON version.content_id=binding.content_id"
-            " WHERE version.root_publication_id=? ORDER BY p.id",
-            (root_publication_id,),
+            " WHERE version.root_publication_id=? AND (? IS NULL OR version.content_id=?)"
+            " ORDER BY p.id",
+            (root_publication_id, content_id, content_id),
         )
         return [self._row_to_publication(row) for row in rows]
 
@@ -6551,6 +6621,28 @@ class SqliteBillRepository:
 
     def card_refresh_parts(self, card_id: int) -> list[Publication]:
         return [self._row_to_publication(row) for row in card_refresh_rows(self._conn, card_id)]
+
+    def card_may_need_partial_repair(self, channel_id: str, message_id: int, digest: str) -> bool:
+        return (
+            self._conn.execute(
+                """
+            SELECT 1 FROM publications child JOIN publications root ON root.id=CASE
+                WHEN json_valid(child.delivery_json) THEN
+                    CAST(json_extract(child.delivery_json, '$.continuation_root') AS INTEGER) END
+            WHERE child.channel_id=? AND child.kind='message_part' AND child.status='dismissed'
+            AND root.channel_id=child.channel_id AND root.kind='message_part' AND root.status='sent'
+            AND root.ref GLOB 'card/*/*/1' AND root.message_id=? AND root.rendered_sha256 IS NOT ?
+            AND NOT EXISTS (
+                SELECT 1 FROM publications later
+                WHERE later.id>root.id AND later.channel_id=root.channel_id
+                AND later.message_id=root.message_id AND later.status='sent'
+                AND later.kind='message_part' AND later.ref GLOB 'card/*/*/1'
+            ) LIMIT 1
+            """,
+                (channel_id, message_id, digest),
+            ).fetchone()
+            is not None
+        )
 
     def set_card_digest(self, publication_id: int, digest: str) -> None:
         """Remember what the card said when it was last sent or edited."""

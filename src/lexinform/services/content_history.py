@@ -974,7 +974,9 @@ def _prepare_card_content(
             or root.status is not PublicationStatus.SENT
         ):
             return None
-        for physical in repo.list_content_publications(previous.root_publication_id):
+        for physical in repo.list_content_publications(
+            previous.root_publication_id, content_id=previous.content_id
+        ):
             if (
                 physical.id is not None
                 and physical.status is PublicationStatus.SENT
