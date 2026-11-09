@@ -1,0 +1,115 @@
+{
+  "part_0": {
+    "source_part_role": "bill",
+    "block_copy": {
+      "extraction_id": "extraction-v1:03111d2b8697fdca0dbb7c526fa9fb1b704e4fcde28fb1a247e2f861d2d119ce",
+      "physical_index": 2,
+      "witness_id": "block-copy-v1:9c6649973aa1dfae8fe1a32b9acdf96a96956ba600c5d8c431d6eac627e958cd",
+      "run_index": 0,
+      "block_id": "word-xml:word/document.xml:0/10",
+      "block_text_sha256": "66dfc8bea7c76fe973c6a2e5ba5c564578247e96786bdea1b063cd9a9e2a7ebb",
+      "block_span": [
+        0,
+        85
+      ],
+      "input_span": [
+        2195,
+        2280
+      ],
+      "source_span": [
+        2195,
+        2280
+      ],
+      "intersection": null
+    },
+    "word_paragraph": {
+      "xml_part": "word/document.xml",
+      "xml_sha256": "4d49af7474c004bb9eed3b7b04d0e1ce27c3124c405d837f0c91fae34b9d9832",
+      "manifest_sha256": "6735ada3ab8eaecee0fb2d2f3a22c2d60f4e679b85a3bdf9ad01c9d792052804",
+      "block_id": "word-xml:word/document.xml:0/10",
+      "block_sha256": "66dfc8bea7c76fe973c6a2e5ba5c564578247e96786bdea1b063cd9a9e2a7ebb",
+      "coordinates": "word-xml-plain-run-prefix-python-string",
+      "block_span": [
+        0,
+        85
+      ],
+      "selected_text_span": [
+        2195,
+        2280
+      ],
+      "raw_run_prefix_sha256": "66dfc8bea7c76fe973c6a2e5ba5c564578247e96786bdea1b063cd9a9e2a7ebb"
+    },
+    "scope": "validated technical block copy; no supported legal locator is inside this quote"
+  },
+  "wrong_block": "Word citation block or selected text coordinates differ from their pins",
+  "wrong_role": "Citation part must be the verified bill, normative annex or separate self-amendment",
+  "no_supported_legal_locator": "Word citation requires an exactly retained direct file or one archive member",
+  "wrong_retained_run": "Citation block witness is unavailable",
+  "part_3": {
+    "source_part_role": "self_amendment",
+    "block_copy": {
+      "extraction_id": "extraction-v1:dc026993d609e8430c7733dc33c24cd0356f262222f4bb7653057d9a39ccb670",
+      "physical_index": 0,
+      "witness_id": "block-copy-v1:f1a2cf0911d2fa21c6b8a10b2d0d896c255d91788518e879f7f2968d6e918dce",
+      "run_index": 7,
+      "block_id": "word-xml:word/document.xml:0/7",
+      "block_text_sha256": "850dc77d8222c44b04ef564177510efaa62e38deafcf0d74cbef9e8e33980d17",
+      "block_span": [
+        0,
+        25
+      ],
+      "input_span": [
+        429479,
+        429504
+      ],
+      "source_span": [
+        475,
+        500
+      ],
+      "intersection": null
+    },
+    "word_paragraph": {
+      "xml_part": "word/document.xml",
+      "xml_sha256": "ac97124d3a792ad17eee39f589aff274c06418e42c39f60da9fc8f349867901f",
+      "manifest_sha256": "c13cfc376257cc156398843cadad68e1c0d55eff63f9a34d17dbab1198eaa836",
+      "block_id": "word-xml:word/document.xml:0/7",
+      "block_sha256": "850dc77d8222c44b04ef564177510efaa62e38deafcf0d74cbef9e8e33980d17",
+      "coordinates": "word-xml-plain-run-prefix-python-string",
+      "block_span": [
+        0,
+        25
+      ],
+      "selected_text_span": [
+        475,
+        500
+      ],
+      "raw_run_prefix_sha256": "e7b57c658515cd957e632c89c24df4131e3d480ecc170d352217b7da9a304808"
+    }
+  },
+  "osr_helper_only": {
+    "extraction_id": "extraction-v1:16582cf3da4b2497b071d43a3a3cd713d0a0a4a45b4804be155d5d4364e4ab42",
+    "physical_index": 0,
+    "witness_id": "block-copy-v1:16ea1dcad38eae76ba3e8ea59cae9bbc594bdb6141ea6e4945231dc3ddff9b4b",
+    "run_index": 0,
+    "block_id": "word-xml:word/document.xml:0/0/2/1/1",
+    "block_text_sha256": "0e0cb80b98f58ce01757dc5683cb480e9c07c3154d324479288b4e2af539180c",
+    "block_span": [
+      0,
+      1
+    ],
+    "input_span": [
+      310319,
+      310320
+    ],
+    "source_span": [
+      0,
+      1
+    ],
+    "intersection": null
+  },
+  "wrong_osr_claim_scope": "Citation part must be the verified bill, normative annex or separate self-amendment",
+  "legacy_output_parity_part_0": true,
+  "legacy_missing_copy_part_0": "Citation has no single retained block copy",
+  "legacy_output_parity_part_3": true,
+  "legacy_missing_copy_part_3": "Citation has no single retained block copy"
+}

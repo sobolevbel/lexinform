@@ -1,0 +1,9 @@
+{
+  "cleaned_roundtrip": true,
+  "gzip_delta_bytes": 85,
+  "render_sha256": "e6fd6cc67af865f8665b849e3492c3950385818ec9a894eb35ef9fe1b383e1e3",
+  "request_sha256": "5bbe16bcaaa8428261fc4e9dacbedac8a2f97565d67b73811f2f1ee30b958be2",
+  "same_request_and_card_render": true,
+  "scope": "synthetic paid result and test delivery over pinned UD138 archive sources",
+  "sql_delta_bytes": 206
+}

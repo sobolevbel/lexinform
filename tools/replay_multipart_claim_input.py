@@ -30,6 +30,8 @@ from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.adapters.word_field_projection import project_word_paragraph_span
 from lexinform.models import BatchIntent, EvidenceCitation, ReviewDocument
 from lexinform.models.batch import AnalysisQuestion, BatchItemMeta
+from lexinform.models.block_input import BlockCopyWitness, PreparedBlockCopy
+from lexinform.models.extractions import ExtractionResult
 from lexinform.models.input_receipts import (
     LooseRclInputReceipt,
     MultipartTextInputReceipt,
@@ -347,6 +349,35 @@ def _intent(db: sqlite3.Connection, case: MultipartCitationCase) -> BatchIntent:
     )
 
 
+def _prepared_block_witness(
+    receipt: MultipartTextInputReceipt, copy: PreparedBlockCopy, extraction: ExtractionResult
+) -> BlockCopyWitness | None:
+    if isinstance(receipt, RclPairedArchiveInputReceipt):
+        companion = receipt.paired_block_companion
+        if companion is None:
+            return None
+        part = receipt.source_parts[copy.part_index]
+        if part.physical_index != copy.physical_index:
+            return None
+        amendment = copy.part_index == len(receipt.source_parts) - 1
+        if amendment or companion.base_bill_capture_id is not None:
+            if part.role != ("self_amendment" if amendment else "bill"):
+                return None
+            member = (
+                extraction.observed_member_block_copy
+                if amendment
+                else extraction.selected_bill_block_sample
+            )
+            if member is None or member.physical_index != copy.physical_index:
+                return None
+            return member.witness
+    summary = next(
+        (part for part in extraction.selected_parts if part.physical_index == copy.physical_index),
+        None,
+    )
+    return summary.block_copy_witness if summary is not None else None
+
+
 def verify_prepared_block_copy(
     db: sqlite3.Connection,
     receipt: MultipartTextInputReceipt,
@@ -357,7 +388,11 @@ def verify_prepared_block_copy(
     source_span: tuple[int, int],
     input_span: tuple[int, int],
 ) -> dict[str, object]:
-    companion = receipt.block_companion
+    companion = (
+        receipt.paired_block_companion
+        if isinstance(receipt, RclPairedArchiveInputReceipt)
+        else receipt.block_companion
+    )
     rows = companion.rows if companion is not None else ()
     start, end = input_span
     copies = [
@@ -372,17 +407,18 @@ def verify_prepared_block_copy(
     if saved is None:
         raise ValueError("Citation block extraction is unavailable")
     extraction = read_extraction_result(saved)
-    summary = next(
-        (part for part in extraction.selected_parts if part.physical_index == copy.physical_index),
-        None,
-    )
-    witness = summary.block_copy_witness if summary is not None else None
+    witness = _prepared_block_witness(receipt, copy, extraction)
     if (
         witness is None
         or witness.witness_id != copy.witness_id
         or copy.run_index >= len(witness.runs)
     ):
         raise ValueError("Citation block witness is unavailable")
+    if isinstance(receipt, RclPairedArchiveInputReceipt) and (
+        (witness.text_chars, witness.text_sha256)
+        != (len(source_text), digest(source_text.encode()))
+    ):
+        raise ValueError("Citation witness differs from the exact selected source")
     run = witness.runs[copy.run_index]
     segment = next(
         (
@@ -617,6 +653,13 @@ def _verify(
             physical = proof.get(key)
             if isinstance(physical, dict) and physical["block_id"] != block_copy["block_id"]:
                 raise ValueError("Physical citation and retained copy identify different blocks")
+        if (
+            isinstance(receipt, RclPairedArchiveInputReceipt)
+            and isinstance(paragraph := proof.get("word_paragraph"), dict)
+            and (paragraph["block_sha256"], paragraph["block_span"])
+            != (block_copy["block_text_sha256"], block_copy["block_span"])
+        ):
+            raise ValueError("Paired Word citation differs from its retained block coordinates")
         proof["block_copy"] = block_copy
     return proof, checked.status == "retained"
 

@@ -1,6 +1,6 @@
 """Join prospective text receipts to parents from the actual captured read only."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import cast
 
@@ -53,7 +53,7 @@ from lexinform.models.input_receipts import (
     input_text_sha256,
     primary_context_sha256,
 )
-from lexinform.models.physical_inventory import PhysicalRootOrder
+from lexinform.models.physical_inventory import PhysicalCapture, PhysicalRootOrder
 from lexinform.models.prepared_input import PreparedTextPart, PreparedTextSegment
 from lexinform.models.sejm import SejmProposalOrigin
 from lexinform.physical_observations import OrderedPhysicalObservation
@@ -163,14 +163,23 @@ def paired_archive_parent(
         or proof.base_sha256 == proof.proposal_sha256
     ):
         return None
-    extractions = {extraction.result_id for extraction in source.extractions}
+    return _exact_archive_parent(
+        amendment, {item.result_id for item in source.extractions}, observations
+    )
+
+
+def _exact_archive_parent(
+    part: DocumentPart,
+    extraction_ids: set[str],
+    observations: tuple[OrderedPhysicalObservation, ...],
+) -> PairedArchiveParent | None:
     parents: dict[tuple[str, int, int], PairedArchiveParent] = {}
     for entry in observations:
         packet = entry.observation.assembly
         if (
             not isinstance(packet, PhysicalAssemblyPacket)
-            or packet.capture.artifact_sha256 != proof.proposal_sha256
-            or packet.capture.extraction_id not in extractions
+            or packet.capture.artifact_sha256 != part.source_sha256
+            or packet.capture.extraction_id not in extraction_ids
         ):
             continue
         metadata = {item.metadata_id: item for item in packet.metadata}
@@ -191,8 +200,8 @@ def paired_archive_parent(
                 and ordinal is not None
                 and physical_slot == slot
                 and unit is not None
-                and unit.body_sha256 == amendment.sha256
-                and text_sha256 == amendment.text_sha256
+                and unit.body_sha256 == part.sha256
+                and text_sha256 == part.text_sha256
             ):
                 parents[(packet.capture.capture_id, slot, ordinal)] = PairedArchiveParent(
                     packet, slot, ordinal
@@ -814,14 +823,61 @@ def enrich_supplement_input_intent(
     return _enrich_input_intent(original, receipt)
 
 
+@dataclass(frozen=True)
+class PairedNormativeBase:
+    extraction: ExtractionResult
+    packet: PhysicalAssemblyPacket
+
+
+def paired_normative_base(
+    receipt: RclPairedArchiveInputReceipt,
+    source: DocumentSourceRead,
+    observations: tuple[OrderedPhysicalObservation, ...],
+) -> PairedNormativeBase | None:
+    proposal = source.rcl_proposal
+    if proposal is None or proposal.base_bill_sample is None:
+        return None
+    proof = proposal.trace.rcl_original_proposal
+    sample = proposal.base_bill_sample
+    bills = [part for part in source.selection.selection.parts if part.role == "bill"]
+    extraction = next(
+        (item for item in source.extractions if item.result_id == receipt.extraction_id), None
+    )
+    if proof is None or len(bills) != 1 or extraction is None:
+        return None
+    (bill,) = bills
+    if (bill.source_sha256, bill.sha256) != (proof.base_sha256, proof.base_member_sha256):
+        return None
+    exact = _exact_archive_parent(bill, {extraction.result_id}, observations)
+    if exact is None or exact.physical_index != sample.physical_index:
+        return None
+    try:
+        enriched = ExtractionResult.model_validate(
+            {**extraction.model_dump(), "selected_bill_block_sample": sample}
+        )
+    except ValueError:
+        return None
+    capture = exact.packet.capture
+    bound = PhysicalCapture.of(
+        artifact_sha256=capture.artifact_sha256,
+        recipe_id=capture.recipe_id,
+        inventory_id=capture.inventory_id,
+        execution_id=capture.execution_id,
+        extraction_id=enriched.result_id,
+    )
+    return PairedNormativeBase(enriched, replace(exact.packet, capture=bound))
+
+
 def with_paired_archive_block_companion(
     receipt: RclPairedArchiveInputReceipt,
     parent: PairedArchiveParent,
     source: DocumentSourceRead,
     text: str,
+    *,
+    normative: PairedNormativeBase | None = None,
 ) -> RclPairedArchiveInputReceipt:
     extractions = {item.result_id: item for item in source.extractions}
-    base = extractions.get(receipt.extraction_id)
+    base = extractions.get(receipt.extraction_id) if normative is None else normative.extraction
     amendment_id = parent.packet.capture.extraction_id
     amendment = extractions.get(amendment_id) if amendment_id is not None else None
     if base is None or amendment is None or amendment.observed_member_block_copy is None:
@@ -830,7 +886,13 @@ def with_paired_archive_block_companion(
     index = len(receipt.source_parts) - 1
     if observed.physical_index != receipt.amendment_part.physical_index:
         return receipt
-    by_slot = {item.physical_index: item.block_copy_witness for item in base.selected_parts}
+    if normative is None:
+        by_slot = {item.physical_index: item.block_copy_witness for item in base.selected_parts}
+    else:
+        sample = base.selected_bill_block_sample
+        if sample is None:
+            return receipt
+        by_slot = {sample.physical_index: sample.witness}
     base_rows = [
         row
         for part_index, part in enumerate(receipt.source_parts[:-1])
@@ -850,13 +912,20 @@ def with_paired_archive_block_companion(
     for length in range(min(32, max(len(base_rows), len(amendment_rows))), 0, -1):
         try:
             companion = PairedArchiveBlockCompanion(
+                base_bill_capture_id=normative.packet.capture.capture_id
+                if normative is not None
+                else None,
                 base=_block_prefix(base_rows, min(length, len(base_rows)), base_sha256),
                 amendment=_block_prefix(
                     amendment_rows, min(length, len(amendment_rows)), amendment_sha256
                 ),
             )
             return RclPairedArchiveInputReceipt.model_validate(
-                {**receipt.model_dump(), "paired_block_companion": companion}
+                {
+                    **receipt.model_dump(),
+                    "paired_block_companion": companion,
+                    "extraction_id": base.result_id,
+                }
             )
         except ValueError:
             continue

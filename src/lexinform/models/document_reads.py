@@ -11,7 +11,7 @@ from lexinform.models.candidate_trace import (
     CandidateDispositionTrace,
 )
 from lexinform.models.documents import DocumentSelection, PdfPageText
-from lexinform.models.extractions import ExtractionResult
+from lexinform.models.extractions import ExtractionResult, ObservedMemberBlockCopy
 from lexinform.word_formula_placement import WordFormulaSource
 
 
@@ -162,6 +162,7 @@ class RclProposalRead:
     trace: CandidateDispositionTrace
     original: ArtifactReadIdentity
     extraction: ExtractionResult
+    base_bill_sample: ObservedMemberBlockCopy | None = None
 
 
 @dataclass(frozen=True)
@@ -175,6 +176,9 @@ class LoadedFile:
     selection: DocumentSelection = DocumentSelection()
     candidate_trace: CandidateDispositionTrace | None = None
     rcl_proposal: RclProposalRead | None = field(default=None, compare=False, repr=False)
+    base_bill_sample: ObservedMemberBlockCopy | None = field(
+        default=None, compare=False, repr=False
+    )
     first_pdf_page: PdfPageText | None = field(default=None, compare=False, repr=False)
     complete_pdf_pages: int | None = field(default=None, compare=False, repr=False)
     word_formula_source: WordFormulaSource | None = field(default=None, compare=False, repr=False)

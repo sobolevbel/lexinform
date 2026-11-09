@@ -226,7 +226,8 @@ def card_primary_evidence_candidate(
                 'primary-loose-rcl-annex-text-v1',
                 'primary-loose-rcl-mixed-text-v1',
                 'primary-rcl-archive-package-text-v1',
-                'primary-rcl-archive-self-amendment-text-v1'
+                'primary-rcl-archive-self-amendment-text-v1',
+                'primary-rcl-paired-archive-text-v1'
               )
               AND o.observation_id=json_extract(
                 item.meta,'$.prepared_input_receipt.source_observation_id'

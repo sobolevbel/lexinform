@@ -1,0 +1,48 @@
+{
+  "consultation_full_natural_cycle_observed": false,
+  "consumed_legacy_items": {
+    "act_application": 5,
+    "consultation_review": 14,
+    "name": 25
+  },
+  "cycle_report_sha256": "5abf5db840a18a0928259e9f29fedae3709d4645805c966b58cc788bdacb718a",
+  "database_sha256": "d3518de7cdab83e3001e5af218bffdd2678494880c17e2e40a3eac7acbbd9e52",
+  "identical_census_except_database_sha256": true,
+  "immutable_computations": {
+    "amendments": 4,
+    "analysis": 8,
+    "reanalysis": 6,
+    "supplement": 1
+  },
+  "input_sql_sha256": "9e07e5737ba8a9741e7211f8b88fcd97ed3411d3a58a584f63e23e554edc9a4d",
+  "previous_snapshot_git_sha": "0e96a57da4b3a1194dce8513b9d3602455e69674",
+  "primary": {
+    "consumed_projection_unavailable": 4,
+    "exact_retained_cycle": 1,
+    "frozen_paid_reference_unavailable": 3,
+    "frozen_plan_unavailable": 27,
+    "frozen_render_context_unavailable": 13,
+    "prepared_receipt_unavailable": 1,
+    "publication_outside_direct_original_scope": 1,
+    "recorded_send_unavailable": 1
+  },
+  "qualification_scope": "Read-only census of copied state. J700 remains a separate synthetic answer and delivery control.",
+  "secondary_publications": [
+    {
+      "count": 1,
+      "kind": "act_application",
+      "status": "sent"
+    },
+    {
+      "count": 2,
+      "kind": "consultation_review",
+      "status": "queued"
+    },
+    {
+      "count": 2,
+      "kind": "joint_bill",
+      "status": "sent"
+    }
+  ],
+  "snapshot_git_sha": "eb968cd68c9fb7c07d7f7472c7c2487e9005925d"
+}

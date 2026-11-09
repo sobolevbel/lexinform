@@ -1,0 +1,56 @@
+{
+  "cases": {
+    "12/100000": {
+      "byte_identical": true
+    },
+    "12/1500000": {
+      "amendment_runs": 9,
+      "base_runs": 1,
+      "growth": {
+        "finalized": {
+          "gzip_bytes": 1718,
+          "sql_bytes": 14224
+        },
+        "queued": {
+          "gzip_bytes": 5839,
+          "sql_bytes": 39905
+        },
+        "submitted": {
+          "gzip_bytes": 1744,
+          "sql_bytes": 14224
+        }
+      },
+      "request_sha256": "5bbe16bcaaa8428261fc4e9dacbedac8a2f97565d67b73811f2f1ee30b958be2"
+    },
+    "14/1500000": {
+      "amendment_runs": 9,
+      "base_runs": 1,
+      "growth": {
+        "finalized": {
+          "gzip_bytes": 1717,
+          "sql_bytes": 14224
+        },
+        "queued": {
+          "gzip_bytes": 5838,
+          "sql_bytes": 39905
+        },
+        "submitted": {
+          "gzip_bytes": 1746,
+          "sql_bytes": 14224
+        }
+      },
+      "request_sha256": "5bbe16bcaaa8428261fc4e9dacbedac8a2f97565d67b73811f2f1ee30b958be2"
+    }
+  },
+  "inputs": {
+    "corpus/12389752.json": "796824f7d7072e35618c613b43fba8a2b0c580f57e507d20948bbc002853939d",
+    "documents/files/684251.zip": "4d2c1be3c8c1a48811e50f58c516b517f115965ab95bf6014756bef42dbb0843",
+    "documents/files/684485.zip": "8f1dd7f69eaf8741cc2646fea2a6b4f20d642ed205b2eab605bd3edce79375ab",
+    "sejm/term10/files/672__672-ustawa.docx": "ba4a93c5c4f3a8400f7dedc06783a8044ef3ce453319a816bd908f14e08705e8",
+    "sejm/term10/prints.json": "bee7005331e7256c240345efc491231e56c805319487ce6a1ce1381675044c72",
+    "sejm/term10/process_details.json.gz": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f"
+  },
+  "integrated_archive_policy_changes_physical_ids": true,
+  "request_text_and_selection_identical": true,
+  "trim_and_rollback_byte_identical": true
+}

@@ -115,6 +115,7 @@ from lexinform.models import (
     ReviewResultRecord,
     ReviewSource,
     ScannedDocument,
+    SelectionExtractionReference,
     Stage,
     SupplementContext,
     SupplementRecord,
@@ -217,6 +218,7 @@ from lexinform.services.document_history import (
 )
 from lexinform.services.documents import MIN_TEXT_CHARS, LoadedFile, TextLoader
 from lexinform.services.input_receipts import (
+    PairedNormativeBase,
     capture_loose_rcl_input_receipt,
     capture_primary_input_receipt,
     capture_rcl_archive_input_receipt,
@@ -226,6 +228,7 @@ from lexinform.services.input_receipts import (
     enrich_primary_input_intent,
     enrich_secondary_input_intent,
     paired_archive_parent,
+    paired_normative_base,
     senate_work_input_receipt,
     with_block_companion,
     with_paired_archive_block_companion,
@@ -4013,7 +4016,8 @@ class AnalysisService:
             return False
         selection, projection = prepared.paired_archive_input
         try:
-            parent = paired_archive_parent(source, self._loader.read_physical_observations())
+            observations = self._loader.read_physical_observations()
+            parent = paired_archive_parent(source, observations)
             if parent is None:
                 return False
             receipt = capture_rcl_archive_input_receipt(
@@ -4032,6 +4036,15 @@ class AnalysisService:
                 if isinstance(receipt, RclPairedArchiveInputReceipt) and isinstance(
                     question, AnalysisQuestion
                 ):
+                    normative = paired_normative_base(receipt, source, observations)
+                    if normative is not None:
+                        offered = with_paired_archive_block_companion(
+                            receipt, parent, source, question.ctx.text, normative=normative
+                        )
+                        if offered is not receipt and self._save_normative_archive_intent(
+                            intent, offered, normative, created_at=created_at
+                        ):
+                            return True
                     offered = with_paired_archive_block_companion(
                         receipt, parent, source, question.ctx.text
                     )
@@ -4050,6 +4063,35 @@ class AnalysisService:
                 self._repo.save_batch_intent(enriched)
         except ValueError:
             log.warning("Paired archive input receipt omitted (parents_or_mapping_unavailable)")
+            return False
+        return True
+
+    def _save_normative_archive_intent(
+        self,
+        intent: BatchIntent,
+        receipt: RclPairedArchiveInputReceipt,
+        base: PairedNormativeBase,
+        *,
+        created_at: datetime,
+    ) -> bool:
+        packet = base.packet
+        try:
+            with self._repo.atomic():
+                record_artifacts(self._repo, packet.artifacts, recorded_at=created_at)
+                self._repo.save_extraction_result(base.extraction, recorded_at=created_at)
+                self._repo.save_selection_extraction(
+                    SelectionExtractionReference(
+                        selection_id=receipt.source_selection_id,
+                        extraction_id=base.extraction.result_id,
+                        artifact_sha256=base.extraction.artifact_sha256,
+                    )
+                )
+                self._repo.save_physical_inventory(
+                    packet.metadata, (packet.capture,), recorded_at=created_at
+                )
+                self._repo.save_batch_intent(enrich_primary_input_intent(intent, receipt))
+        except ValueError:
+            log.warning("Paired normative block companion omitted (unavailable)")
             return False
         return True
 

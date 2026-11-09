@@ -116,7 +116,7 @@ from lexinform.models.candidate_trace import (
 )
 from lexinform.models.document_reads import DocumentPhysicalDiagnostics, RclProposalRead
 from lexinform.models.document_reads import LoadedFile as LoadedFile
-from lexinform.models.extractions import DocumentExtraction
+from lexinform.models.extractions import DocumentExtraction, ObservedMemberBlockCopy
 from lexinform.models.rcl import RclProject, rcl_num_key
 from lexinform.models.scan_input import MAX_SCAN_BYTES, MAX_SCAN_PAGES
 from lexinform.models.source_omissions import SourceOmissionOwner
@@ -482,7 +482,10 @@ class TextLoader:
         enrich_word_grid: Callable[[bytes, DocumentExtraction], DocumentExtraction] | None = None,
         enrich_odt_rows: Callable[[bytes, DocumentExtraction], DocumentExtraction] | None = None,
         verify_rcl_comment_table: Callable[[bytes, DocumentExtraction], bool] | None = None,
-        enrich_rcl_observed_blocks: Callable[[str, bytes, DocumentExtraction], DocumentExtraction]
+        enrich_rcl_observed_blocks: Callable[
+            [str, bytes, DocumentExtraction],
+            tuple[DocumentExtraction, ObservedMemberBlockCopy | None],
+        ]
         | None = None,
         physical_factory: Callable[[ObservationOrder], PhysicalObservationCollector] | None = None,
         sejm: SejmGateway | None = None,
@@ -1628,7 +1631,7 @@ class TextLoader:
             base,
             selection=selection,
             candidate_trace=trace,
-            rcl_proposal=RclProposalRead(enriched, read, extraction),
+            rcl_proposal=RclProposalRead(enriched, read, extraction, base.base_bill_sample),
         )
 
     def _select_document_once(
@@ -2366,6 +2369,7 @@ class TextLoader:
                 optional_archive_policy_capture() as capture,
                 self._physical_invocation(artifact) as invocation,
             ):
+                base_bill_sample = None
                 first_pdf_page = None
                 complete_pdf_pages = None
                 word_formula_source = None
@@ -2375,7 +2379,9 @@ class TextLoader:
                     observed = self._extractor.extract_document_with_provenance(data)
                     if self._enrich_rcl_observed_blocks is not None:
                         with suppress(Exception):
-                            observed = self._enrich_rcl_observed_blocks(url, data, observed)
+                            observed, base_bill_sample = self._enrich_rcl_observed_blocks(
+                                url, data, observed
+                            )
                     for enrich in self._native_enrichments:
                         with suppress(Exception):
                             observed = enrich(data, observed)
@@ -2458,6 +2464,7 @@ class TextLoader:
                     pages=pages,
                     sha256=digest,
                     selection=selection,
+                    base_bill_sample=base_bill_sample,
                     first_pdf_page=first_pdf_page,
                     complete_pdf_pages=complete_pdf_pages,
                     word_formula_source=word_formula_source,
