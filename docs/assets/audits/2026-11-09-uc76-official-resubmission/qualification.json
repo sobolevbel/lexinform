@@ -1,0 +1,131 @@
+{
+  "profile": "uc76_official_rcl_whole_proposal_resubmission_v1",
+  "cases": [
+    "12393550/12",
+    "12393550/14"
+  ],
+  "project": 12393550,
+  "wykaz": "UC76",
+  "rm": "RM-0610-151-25",
+  "stage": 13106000,
+  "input_sha256": {
+    "corpus/12393550.json": "8925a9c90155049d281a5cccbabb42a44357621f044f3038b6ac0cab5c9f9c10",
+    "documents/files/730644.zip": "d3703beb66836bb68ec247c06c2005e71cf4917aa79f7e9fc1fe7e849bfb7695",
+    "documents/files/730661.zip": "4725af91aba4607fd0bef43e82209bd083a59aebe56c54eee67f9648691a7f44",
+    "documents/files/734614.zip": "e025586a6442a027828ecc29068abbb981db0116f5700f831b90f639049faa13",
+    "documents/files/734607.pdf": "3bbb9809bb4ea136f5cbe5d4770de9b7e5dff3fc35f4bfb4f1d84baba92b6516"
+  },
+  "official_documents": {
+    "730644": {
+      "id": 730644,
+      "name": "Projekt ustawy o zmianie ustawy – Prawo o ruchu drogowym oraz niektórych innych ustaw (UC76), RM-0610-151-25.zip",
+      "url": "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument730644.zip",
+      "created": "2025-08-04",
+      "author": "Departament Koordynacji Procesu Legislacyjnego"
+    },
+    "730661": {
+      "id": 730661,
+      "name": "autopoprawka do projektu ustawy o zmianie ustawy – Prawo o ruchu drogowym oraz niektórych innych ustaw (UC76), RM-0610-151-25.zip",
+      "url": "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument730661.zip",
+      "created": "2025-08-04",
+      "author": "Departament Koordynacji Procesu Legislacyjnego"
+    },
+    "734607": {
+      "id": 734607,
+      "name": "pismo SRM.pdf",
+      "url": "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument734607.pdf",
+      "created": "2025-08-29",
+      "author": "Departament Koordynacji Procesu Legislacyjnego"
+    },
+    "734614": {
+      "id": 734614,
+      "name": "nowy tekst projektu ustawy o zmianie ustawy – Prawo o ruchu drogowym oraz niektórych innych ustaw (UC76), RM-0610-151-25.zip",
+      "url": "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument734614.zip",
+      "created": "2025-08-29",
+      "author": "Departament Koordynacji Procesu Legislacyjnego"
+    }
+  },
+  "earlier_stage_observation": {
+    "12393550/12": {
+      "primary_index": 0,
+      "older_edition_index": 1,
+      "amendment_alternative_index": 2,
+      "older_amendment_part_index": 0
+    },
+    "12393550/14": {
+      "primary_index": 0,
+      "older_edition_index": 1,
+      "amendment_alternative_index": 2,
+      "older_amendment_part_index": 0
+    }
+  },
+  "members": {
+    "bill": {
+      "path": "1. projekt ustawy UC76_II RM (8444516).docx",
+      "sha256": "537e9a75a90c14d4b792b8f0be4997abaeff13ff02d4621a95d4c068f73389a4"
+    },
+    "whole_proposal_transmittal": {
+      "path": "Pismo MI kierujace projekt ustawy UC76 do rozpatrzenia przez RM (8444524).pdf",
+      "sha256": "2c6657a09546ae1d8c9996f1ff880703dbb3f82922b65d6ffe94d00a83361067"
+    },
+    "secretary_corroboration": {
+      "url": "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument734607.pdf",
+      "sha256": "3bbb9809bb4ea136f5cbe5d4770de9b7e5dff3fc35f4bfb4f1d84baba92b6516"
+    }
+  },
+  "witnesses": {
+    "whole_revised_proposal": {
+      "page": 1,
+      "start": 458,
+      "end_exclusive": 834,
+      "page_text_sha256": "c93b96bfc54f2935d5aa2dbc13d86f2fce6376324533153195a1cd29c68cd63f",
+      "span_sha256": "1f6181fa0c315b3d1ab0c6b6eee0999cc1c4bdef51e774724d6119c3b2c5eb57"
+    },
+    "explicit_amendment_incorporation": {
+      "page": 1,
+      "start": 1503,
+      "end_exclusive": 1589,
+      "page_text_sha256": "c93b96bfc54f2935d5aa2dbc13d86f2fce6376324533153195a1cd29c68cd63f",
+      "span_sha256": "3ffccac5bc88a9655d3a54b7bbda05142229bf74c4dc0a4b29d55e45d79b3ea9"
+    },
+    "listed_attachment": {
+      "page": 3,
+      "start": 14,
+      "end_exclusive": 110,
+      "page_text_sha256": "8e88b7482fc8097ee615b76168e85d8cba1ede86b976fc1af157d8d590c92ea7",
+      "span_sha256": "3d6995e960d62916e105c1f46e0bd23b93711ffbc1693b97e2d5b93ad40d53a2"
+    },
+    "secretary_corroboration": {
+      "page": 1,
+      "start": 199,
+      "end_exclusive": 529,
+      "page_text_sha256": "2057d9e82748d3aa7daa3563ae4462e22d93c52a6df52332b72e5baf6a45374b",
+      "span_sha256": "b8dd4d5d99397ed71e808a78e63427c6653b82b47dd9cb93968eb86afda5e9ea"
+    }
+  },
+  "coordinates": "zero_based_unicode_offsets_in_native_pdf_page_text",
+  "pypdf_version": "6.17.0",
+  "selected_bill_text_sha256": "4f2ff70fbdaea9cbd73d3e7f5b7b14bfca9c323bbd8aca2d40215df7a1f06832",
+  "selected_package_roles": [
+    "bill",
+    "justification",
+    "osr"
+  ],
+  "scope": "corrected_full_proposal_transmitted_for_council_consideration",
+  "adoption": "unverified",
+  "unavailable_adoption_documents": {
+    "738161": {
+      "official_name": "rozstrzygnięcia - RM.pdf",
+      "official_date": "2025-09-19",
+      "official_url": "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106005/dokument738161.pdf",
+      "raw_corpus_availability": "missing"
+    },
+    "738162": {
+      "official_name": "II rozstrzygnięcia - RM.pdf",
+      "official_date": "2025-09-19",
+      "official_url": "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106005/dokument738162.pdf",
+      "raw_corpus_availability": "missing"
+    }
+  },
+  "sejm_referral_stage_document_count": 0
+}

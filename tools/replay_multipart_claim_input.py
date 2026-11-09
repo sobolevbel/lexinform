@@ -35,6 +35,7 @@ from lexinform.models.input_receipts import (
     MultipartTextInputReceipt,
     RclArchiveInputReceipt,
     RclArchiveSelfAmendmentInputReceipt,
+    RclPairedArchiveInputReceipt,
     SejmSelfAmendmentInputReceipt,
 )
 from lexinform.models.physical_inventory import Sha256
@@ -437,6 +438,7 @@ def _verify(
                 LooseRclInputReceipt,
                 RclArchiveInputReceipt,
                 RclArchiveSelfAmendmentInputReceipt,
+                RclPairedArchiveInputReceipt,
                 SejmSelfAmendmentInputReceipt,
             ),
         )
@@ -469,12 +471,20 @@ def _verify(
         max_member_bytes=_MAX_BYTES,
         max_part_chars=400_000,
     )
-    extracted = reader.extract_document(data)
+    member = None
+    if isinstance(receipt, RclPairedArchiveInputReceipt):
+        if len(part.members) != 1:
+            raise ValueError("Paired archive citation requires one exact selected member")
+        member = _bounded_zip_member(data, part.members[0])
+        if digest(member) != part.sha256:
+            raise ValueError("Paired archive member differs from the verified selection")
+    extracted = reader.extract_document(member if member is not None else data)
+    expected_members = () if member is not None else part.members
     candidates = [
-        member
-        for member in extracted.selection.parts
-        if (member.members, member.sha256, member.text_sha256)
-        == (part.members, part.sha256, part.text_sha256)
+        candidate
+        for candidate in extracted.selection.parts
+        if (candidate.members, candidate.sha256, candidate.text_sha256)
+        == (expected_members, part.sha256, part.text_sha256)
     ]
     if len(candidates) != 1:
         raise ValueError("The original body does not yield the exact selected source text")
@@ -524,6 +534,7 @@ def _verify(
     proof: dict[str, object] = {
         "profile": receipt.profile,
         **({"source_part_index": part_index} if part_index else {}),
+        **({"source_part_role": role} if isinstance(receipt, RclPairedArchiveInputReceipt) else {}),
         "request_sha256": case.request_sha256,
         "source_selection_id": receipt.source_selection_id,
         "source_observation_id": receipt.source_observation_id,
@@ -550,7 +561,8 @@ def _verify(
                 f"{proof_format} citation requires an exactly retained direct file"
                 " or one archive member"
             )
-        member = _bounded_zip_member(data, part.members[0]) if part.members else data
+        if member is None:
+            member = _bounded_zip_member(data, part.members[0]) if part.members else data
         if digest(member) != part.sha256:
             raise ValueError(
                 f"{proof_format} citation member bytes differ from the verified selection"

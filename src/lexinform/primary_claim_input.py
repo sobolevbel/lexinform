@@ -46,6 +46,7 @@ type MultipartCitationReceipt = (
     LooseRclInputReceipt
     | RclArchiveInputReceipt
     | RclArchiveSelfAmendmentInputReceipt
+    | RclPairedArchiveInputReceipt
     | SejmSelfAmendmentInputReceipt
 )
 
@@ -64,7 +65,7 @@ def multipart_claim_part_role(
     if isinstance(receipt, SejmSelfAmendmentInputReceipt) and index == 1:
         return "self_amendment"
     if (
-        isinstance(receipt, RclArchiveSelfAmendmentInputReceipt)
+        isinstance(receipt, (RclArchiveSelfAmendmentInputReceipt, RclPairedArchiveInputReceipt))
         and index == len(receipt.source_parts) - 1
     ):
         return "self_amendment"
@@ -157,8 +158,6 @@ def _validate_key_change_input(
     receipt = meta.prepared_input_receipt
     if receipt is None:
         return ClaimInputCheck(checked, "unknown", "receipt_missing")
-    if isinstance(receipt, RclPairedArchiveInputReceipt):
-        return ClaimInputCheck(checked, "unknown", "source_binding_unavailable")
     ctx = question.ctx
     if (
         frozen.request.number != ctx.number
@@ -186,6 +185,7 @@ def _validate_key_change_input(
             LooseRclInputReceipt,
             RclArchiveInputReceipt,
             RclArchiveSelfAmendmentInputReceipt,
+            RclPairedArchiveInputReceipt,
             SejmSelfAmendmentInputReceipt,
         ),
     ):
