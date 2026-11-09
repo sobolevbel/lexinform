@@ -1,7 +1,10 @@
 """Read primary references using stored owners, explicit links and primary receipts."""
 
+import json
 import sqlite3
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
+from dataclasses import dataclass
+from typing import NamedTuple
 
 from lexinform.json_storage import read_json
 from lexinform.models.computations import ComputationResult, ResultApplication
@@ -21,9 +24,134 @@ from lexinform.saved_records import (
 )
 
 
+class _ApplicationKey(NamedTuple):
+    result_id: str
+    term: int
+    number: str
+    phase: str
+    generation: int | None
+
+
+@dataclass(frozen=True)
+class _PrimaryReadScope:
+    results: dict[str, sqlite3.Row | None]
+    aliases: dict[ProjectionOwner, tuple[ProjectionOwner, ...]]
+    applications: dict[_ApplicationKey, sqlite3.Row | None]
+
+
+def _primary_reference(raw: object, *, ready: bool) -> str | None:
+    if not isinstance(raw, str) or ("modern_primary_ref" not in raw and "\\u" not in raw):
+        return None
+    try:
+        value = read_json(raw)
+    except ValueError, TypeError, RecursionError:
+        return None
+    if ready and isinstance(value, dict):
+        value = value.get("record")
+    ref = value.get("modern_primary_ref") if isinstance(value, dict) else None
+    return ref if isinstance(ref, str) else None
+
+
 class PrimaryProjectionReader:
     def __init__(self, connection: sqlite3.Connection) -> None:
         self.connection = connection
+        self._scope: _PrimaryReadScope | None = None
+
+    @classmethod
+    def for_bill_rows(
+        cls, connection: sqlite3.Connection, rows: Sequence[sqlite3.Row]
+    ) -> PrimaryProjectionReader:
+        reader = cls(connection)
+        refs: set[tuple[str, ProjectionOwner, bool]] = set()
+        for row in rows:
+            owner = ProjectionOwner(row["term"], row["number"])
+            for column, ready in (("analysis_json", False), ("ready_analysis_json", True)):
+                ref = _primary_reference(row[column], ready=ready)
+                if ref is not None:
+                    refs.add((ref, owner, ready))
+        if not refs:
+            return reader
+        results: dict[str, sqlite3.Row | None] = dict.fromkeys(ref for ref, _, _ in refs)
+        results.update(
+            (row["result_id"], row)
+            for row in reader._rows(
+                "SELECT * FROM computation_results"
+                " WHERE result_id IN (SELECT value FROM json_each(?))",
+                (json.dumps(list(results)),),
+            )
+        )
+        keys: set[_ApplicationKey] = set()
+        for ref, owner, ready in refs:
+            stored_result = results[ref]
+            if stored_result is None:
+                continue
+            generation = None
+            if ready:
+                try:
+                    generation = ComputationResult.model_validate_json(
+                        stored_result["result_json"]
+                    ).generation
+                except ValueError, TypeError, RecursionError:
+                    continue
+            keys.add(
+                _ApplicationKey(
+                    ref,
+                    owner.term,
+                    owner.number,
+                    "collection" if ready else "projection",
+                    generation,
+                )
+            )
+        aliases, applications = reader._bill_dependencies(keys)
+        reader._scope = _PrimaryReadScope(results, aliases, applications)
+        return reader
+
+    def _bill_dependencies(
+        self, keys: set[_ApplicationKey]
+    ) -> tuple[
+        dict[ProjectionOwner, tuple[ProjectionOwner, ...]],
+        dict[_ApplicationKey, sqlite3.Row | None],
+    ]:
+        aliases: dict[ProjectionOwner, tuple[ProjectionOwner, ...]] = {}
+        applications: dict[_ApplicationKey, sqlite3.Row | None] = {}
+        if not keys:
+            return aliases, applications
+        for row in self._rows(
+            """
+            WITH requested(ref, target_term, target_number, role, rev) AS (
+                SELECT json_extract(value,'$[0]'), json_extract(value,'$[1]'),
+                       json_extract(value,'$[2]'), json_extract(value,'$[3]'),
+                       json_extract(value,'$[4]') FROM json_each(?)
+            ), candidates AS (
+                SELECT requested.*, target_number AS candidate_number, 0 AS is_alias FROM requested
+                UNION ALL
+                SELECT requested.*, source.number, 1 FROM requested
+                CROSS JOIN bills target ON target.term=target_term AND target.number=target_number
+                CROSS JOIN bills source ON source.term=target.term
+                AND source.number=target.linked_number
+                AND source.linked_number=target.number AND source.status='linked'
+            )
+            SELECT candidates.*, receipt.* FROM candidates
+            LEFT JOIN result_applications receipt ON receipt.id = (
+                SELECT id FROM result_applications
+                WHERE result_id=ref AND term=target_term AND number=candidate_number
+                  AND phase=role AND generation IS NOT NULL
+                  AND (role='projection' OR generation=rev)
+                ORDER BY id LIMIT 1
+            )
+            """,
+            (json.dumps(list(keys)),),
+        ):
+            owner = ProjectionOwner(row["target_term"], row["target_number"])
+            aliases.setdefault(owner, ())
+            candidate = ProjectionOwner(owner.term, row["candidate_number"])
+            if row["is_alias"]:
+                aliases[owner] = (candidate,)
+            key = _ApplicationKey(
+                row["ref"], candidate.term, candidate.number, row["role"], row["rev"]
+            )
+            applications[key] = row if row["id"] is not None else None
+        return aliases, applications
 
     def _rows(self, sql: str, parameters: tuple[object, ...]) -> list[sqlite3.Row]:
         cursor = self.connection.cursor()
@@ -47,6 +175,8 @@ class PrimaryProjectionReader:
         return compact_primary_projection(raw, source, owner)
 
     def _aliases(self, owner: ProjectionOwner) -> tuple[ProjectionOwner, ...]:
+        if self._scope is not None and owner in self._scope.aliases:
+            return self._scope.aliases[owner]
         rows = self._rows(
             "SELECT source.term, source.number FROM bills target JOIN bills source"
             " ON source.term=target.term AND source.number=target.linked_number"
@@ -59,10 +189,13 @@ class PrimaryProjectionReader:
     def _source(
         self, result_id: str, owners: tuple[ProjectionOwner, ...], *, ready: bool
     ) -> PrimaryProjectionSource | None:
-        rows = self._rows("SELECT * FROM computation_results WHERE result_id=?", (result_id,))
-        if not rows:
+        if self._scope is not None and result_id in self._scope.results:
+            row = self._scope.results[result_id]
+        else:
+            rows = self._rows("SELECT * FROM computation_results WHERE result_id=?", (result_id,))
+            row = rows[0] if rows else None
+        if row is None:
             return None
-        row = rows[0]
         result = ComputationResult.model_validate_json(row["result_json"])
         expected = (
             result.result_id,
@@ -77,14 +210,15 @@ class PrimaryProjectionReader:
             raise PrimaryProjectionError("primary result columns differ from immutable identity")
         applications: list[ResultApplication] = []
         for owner in owners:
-            for stored in self._rows(
-                "SELECT * FROM result_applications WHERE result_id=? AND term=? AND number=?"
-                " AND phase=? AND generation IS NOT NULL"
-                + (" AND generation=?" if ready else "")
-                + " ORDER BY id LIMIT 1",
-                (result_id, owner.term, owner.number, "collection" if ready else "projection")
-                + ((result.generation,) if ready else ()),
-            ):
+            key = _ApplicationKey(
+                result_id,
+                owner.term,
+                owner.number,
+                "collection" if ready else "projection",
+                result.generation if ready else None,
+            )
+            stored = self._application_row(key)
+            if stored is not None:
                 item = ResultApplication.model_validate_json(stored["application_json"])
                 if (
                     item.result_id != result_id
@@ -96,6 +230,19 @@ class PrimaryProjectionReader:
                     raise PrimaryProjectionError("primary application columns differ from receipt")
                 applications.append(item)
         return PrimaryProjectionSource(row["result_json"], tuple(applications))
+
+    def _application_row(self, key: _ApplicationKey) -> sqlite3.Row | None:
+        if self._scope is not None and key in self._scope.applications:
+            return self._scope.applications[key]
+        ready = key.phase == "collection"
+        rows = self._rows(
+            "SELECT * FROM result_applications WHERE result_id=? AND term=? AND number=?"
+            " AND phase=? AND generation IS NOT NULL"
+            + (" AND generation=?" if ready else "")
+            + " ORDER BY id LIMIT 1",
+            key if ready else key[:4],
+        )
+        return rows[0] if rows else None
 
     def materialize(
         self,

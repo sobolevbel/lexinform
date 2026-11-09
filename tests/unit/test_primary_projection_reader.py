@@ -16,6 +16,9 @@ from lexinform.models import (
     BillStatus,
     LocatedText,
     ProcessDetail,
+    Publication,
+    PublicationKind,
+    PublicationStatus,
     ReadyAnalysis,
     ResultApplication,
 )
@@ -25,6 +28,21 @@ from tests.computations import retained_result
 from tests.primary_projections import reference
 
 NOW = datetime(2026, 10, 30, tzinfo=UTC)
+CHANNEL = "tracked"
+
+
+def publish_fixture(repo: SqliteBillRepository) -> None:
+    repo.create_publication(
+        Publication(
+            term=10,
+            number="3039",
+            kind=PublicationKind.NEW_BILL,
+            status=PublicationStatus.SENT,
+            channel_id=CHANNEL,
+            message_id=42,
+            created_at=NOW,
+        )
+    )
 
 
 def test_get_ready_memo_cost_restore_and_cleanup_read_the_same_public_projection(
@@ -195,6 +213,7 @@ def test_native_link_alias_with_source_receipt_allows_foreign_current_ref(
     source = "RPW/123"
     repo.upsert_summary(process_3039.model_copy(update={"number": source}), now=NOW)
     repo.upsert_summary(process_3039, now=NOW)
+    publish_fixture(repo)
     result = retained_result("analysis").model_copy(update={"number": source})
     assert isinstance(result.record, AnalysisRecord), "the source paid result is primary"
     repo.save_computation_result(result)
@@ -212,6 +231,17 @@ def test_native_link_alias_with_source_receipt_allows_foreign_current_ref(
     assert not repo.list_result_applications(10, "3039")
     repo.restore(repo.dump())
     assert repo.get(10, "3039") == target
+    assert repo.list_tracked(
+        CHANNEL, closed_grace_days=30, pending_decision_max_days=365, now=NOW
+    ) == [target]
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            "UPDATE result_applications SET application_json=json_set(application_json, "
+            "'$.number', 'foreign') WHERE number=?",
+            (source,),
+        )
+    with pytest.raises(PrimaryProjectionError, match="columns differ"):
+        repo.list_tracked(CHANNEL, closed_grace_days=30, pending_decision_max_days=365, now=NOW)
     repo.close()
 
 
@@ -248,6 +278,7 @@ def test_actual_ready_move_uses_collection_receipt_only_after_known_link(
     source = "RPW/123"
     repo.upsert_summary(process_3039.model_copy(update={"number": source}), now=NOW)
     repo.upsert_summary(process_3039, now=NOW)
+    publish_fixture(repo)
     result = retained_result("analysis").model_copy(update={"number": source})
     assert isinstance(result.record, AnalysisRecord), "the ready fixture retains a primary result"
     repo.save_computation_result(result)
@@ -288,6 +319,9 @@ def test_actual_ready_move_uses_collection_receipt_only_after_known_link(
     target = repo.get(10, "3039")
     assert target is not None and target.ready_analysis == ready
     assert target.analysis is None and not repo.list_result_applications(10, "3039")
+    assert repo.list_tracked(
+        CHANNEL, closed_grace_days=30, pending_decision_max_days=365, now=NOW
+    ) == [target]
     if compact:
         with sqlite3.connect(path) as connection:
             connection.execute("UPDATE bills SET analysis_generation=1 WHERE number='3039'")

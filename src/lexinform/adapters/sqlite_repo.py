@@ -11,7 +11,7 @@ import json
 import logging
 import sqlite3
 from collections.abc import Callable, Iterator, Sequence
-from contextlib import contextmanager, suppress
+from contextlib import closing, contextmanager, suppress
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -1355,7 +1355,13 @@ class SqliteBillRepository:
             self._conn.execute("PRAGMA journal_mode = WAL")
         self._in_txn = False
 
-    def _legacy_row(self, cursor: sqlite3.Cursor, row: tuple[object, ...]) -> sqlite3.Row:
+    def _legacy_row(
+        self,
+        cursor: sqlite3.Cursor,
+        row: tuple[object, ...],
+        *,
+        primary_reader: PrimaryProjectionReader | None = None,
+    ) -> sqlite3.Row:
         columns = cursor.description
         if columns is None or not any(
             column[0] in LEGACY_PROJECTION_COLUMNS and isinstance(value, str)
@@ -1369,7 +1375,7 @@ class SqliteBillRepository:
             if isinstance(term, int) and isinstance(number, str)
             else None
         )
-        reader = PrimaryProjectionReader(self._conn)
+        reader = primary_reader or PrimaryProjectionReader(self._conn)
         generation = values.get("analysis_generation")
         owner_unlinked = "linked_number" in values and values["linked_number"] is None
         materialized = tuple(
@@ -5486,8 +5492,16 @@ class SqliteBillRepository:
                     f"{WYKAZ_PREFIX}%",
                 ]
             )
-        rows = self._conn.execute(sql + " ORDER BY b.term, b.number", params).fetchall()
-        return [self._row_to_bill(r) for r in rows]
+        with self.atomic(), closing(self._conn.cursor()) as cursor:
+            cursor.row_factory = None
+            rows = cursor.execute(sql + " ORDER BY b.term, b.number", params).fetchall()
+            reader = PrimaryProjectionReader.for_bill_rows(
+                self._conn, [sqlite3.Row(cursor, row) for row in rows]
+            )
+            return [
+                self._row_to_bill(self._legacy_row(cursor, row, primary_reader=reader))
+                for row in rows
+            ]
 
     def save_authors(self, term: int, number: str, authors: BillAuthors) -> None:
         self._conn.execute(
