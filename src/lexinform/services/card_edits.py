@@ -163,7 +163,7 @@ def edit_card(
     clock: Clock,
     publisher: Publisher,
     bill: Bill,
-    card: Publication,
+    card: Publication | None,
     print_info: PrintInfo | None,
     *,
     channel_id: str,
@@ -174,18 +174,22 @@ def edit_card(
     load_print: Callable[[], PrintInfo | None] | None = None,
     delivery_attempts: set[int] | None = None,
 ) -> CardEditResult:
-    """Freeze every part before API; advance the card only after the final receipt."""
-    owner = repo.publication_by_id(card.id) if card.id is not None else None
+    """Freeze an edit of the latest card or the caller's explicit target before sending."""
+    if bill.analysis is None:
+        return CardEditResult()
+    if card is None:
+        owner = repo.get_publication(bill.term, bill.number, PublicationKind.NEW_BILL, channel_id)
+    else:
+        owner = repo.publication_by_id(card.id) if card.id is not None else None
     if (
-        bill.analysis is None
-        or owner is None
+        owner is None
         or owner.kind is not PublicationKind.NEW_BILL
         or owner.status is not PublicationStatus.SENT
         or owner.term != bill.term
         or owner.number != bill.number
         or owner.channel_id != channel_id
         or owner.message_id is None
-        or owner.message_id != card.message_id
+        or (card is not None and owner.message_id != card.message_id)
     ):
         return CardEditResult()
     today = today or clock.now().astimezone(local_tz).date()

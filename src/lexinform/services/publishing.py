@@ -610,8 +610,6 @@ class PublishingService:
         result: PublishingResult,
     ) -> None:
         """The successor keeps every physical predecessor target."""
-        if open_card_edit_ids(self._repo, card):
-            return
         saved = edit_card(
             self._repo,
             self._clock,

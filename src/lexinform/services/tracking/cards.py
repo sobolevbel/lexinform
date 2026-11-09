@@ -5,12 +5,7 @@ from functools import partial
 from zoneinfo import ZoneInfo
 
 from lexinform.errors import ServiceUnavailableError
-from lexinform.models import (
-    Bill,
-    BillStatus,
-    PublicationKind,
-    PublicationStatus,
-)
+from lexinform.models import Bill, BillStatus
 from lexinform.ports import BillRepository, Clock, Publisher, SejmGateway, StateCheckpoint
 from lexinform.services.card_edits import edit_card
 from lexinform.services.sources import fetch_print
@@ -55,18 +50,13 @@ class CardRefresher:
             bill = self._repo.get(stale.term, stale.number)
             if bill is None or bill.analysis is None or bill.status is BillStatus.LINKED:
                 continue
-            card = self._repo.get_publication(
-                bill.term, bill.number, PublicationKind.NEW_BILL, self._channel_id
-            )
-            if card is None or card.status is not PublicationStatus.SENT:
-                continue
             try:
                 outcome = edit_card(
                     self._repo,
                     self._clock,
                     self._publisher,
                     bill,
-                    card,
+                    None,
                     None,
                     channel_id=self._channel_id,
                     checkpoint=self._checkpoint,

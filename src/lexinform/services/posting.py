@@ -69,7 +69,6 @@ from lexinform.services.message_parts import continuation_ready, freeze_parts, s
 from lexinform.services.original_delivery_content import record_original_delivery_content
 from lexinform.services.publications import (
     card_revision_owner,
-    open_card_edit_ids,
     send_publication,
     send_publications,
 )
@@ -729,8 +728,6 @@ class Poster:
     ) -> bool:
         """Freeze the complete physical edition before editing a card in place."""
         if card.message_id is None or card.id is None:
-            return False
-        if open_card_edit_ids(self._repo, card):
             return False
         saved = edit_card(
             self._repo,
