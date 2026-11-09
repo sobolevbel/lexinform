@@ -120,6 +120,13 @@ Dismissal closes the slot without confirming the edited content. Both require th
 a publishing run and the durable Git checkpoint. A reserved slot that could not be claimed
 stays inert.
 
+After Telegram definitively rejects an edit, a new approval of the same frozen candidate can
+retry its slot. A different candidate for the same base requires
+`LEXINFORM_GROUPED_STAGE_CANDIDATE_REFS_ENABLED=true`, which preserves the rejected slot and
+writes a separate candidate-scoped reference. The flag defaults to false. Before enabling it,
+verify the release of reader commit `1721f7d7` or a descendant. Once a candidate-scoped reference
+is written, restore and rollback require that reader even if the flag is turned off again.
+
 `/delivery ID history [PAGE]` reads one retained version per page, in its stored history order.
 The response names the original and confirmed current version, predecessor, frozen snapshot
 references, rendered checksum and known source/result references. Physical publication IDs,

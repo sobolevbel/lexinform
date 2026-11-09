@@ -17,7 +17,10 @@ from tests.scenario.test_group_remote_checkpoints import flush, queued_world
 from tests.scenario.test_grouped_telegram_receipt import CHAT_ID, MESSAGE_ID, telegram_send
 
 
-@pytest.mark.parametrize("mode", ["disabled", "no-checkpoint", "missing-credentials", "active"])
+@pytest.mark.parametrize(
+    "mode",
+    ["disabled", "no-checkpoint", "missing-credentials", "active", "distinct-off", "distinct-on"],
+)
 def test_groupedit_operator_uses_recorded_exact_approval(
     mode: str, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -35,6 +38,7 @@ def test_groupedit_operator_uses_recorded_exact_approval(
     today = evidence.render_witness.today
     old, new = today - timedelta(days=4), today - timedelta(days=2)
     base_sha = hashlib.sha256(base.rendered_text.encode()).hexdigest()
+    distinct = mode in ("distinct-off", "distinct-on")
     args = (
         f"{root_id} {selected.publication_id} {selected.status_change_id}"
         f" {base.content_id} {base_sha} {old} {new}"
@@ -44,6 +48,7 @@ def test_groupedit_operator_uses_recorded_exact_approval(
         settings=world.container.settings.model_copy(
             update={
                 "grouped_stage_date_edits_enabled": mode != "disabled",
+                "grouped_stage_candidate_refs_enabled": mode == "distinct-on",
                 "telegram_bot_token": "fixture" if mode != "missing-credentials" else "",
             }
         ),
@@ -65,6 +70,16 @@ def test_groupedit_operator_uses_recorded_exact_approval(
             assert approve_text in restored.repo.dump()
             physical = restored.repo.list_content_publications(root_id)
             assert any(row.status is PublicationStatus.PENDING for row in physical)
+        if distinct and len(calls) == 1:
+            return httpx.Response(
+                429,
+                json={
+                    "ok": False,
+                    "error_code": 429,
+                    "description": "Too Many Requests",
+                    "parameters": {"retry_after": 0},
+                },
+            )
         return httpx.Response(
             200,
             json={"ok": True, "result": {"message_id": MESSAGE_ID, "chat": {"id": CHAT_ID}}},
@@ -77,7 +92,7 @@ def test_groupedit_operator_uses_recorded_exact_approval(
             return client
 
         monkeypatch.setattr(Container, "telegram_client", client_for)
-        if mode in ("active", "missing-credentials"):
+        if distinct or mode in ("active", "missing-credentials"):
             remote = connect(world, tmp_path)
         service = world.container.command_service(dry_run=False)
         assert service is not None, "the fake inbox is wired through the production container"
@@ -131,6 +146,51 @@ def test_groupedit_operator_uses_recorded_exact_approval(
         assert not calls
         approve_id = world.command(approve_text).update_id
         handle()
+        if distinct:
+            assert "is failed" in world.replier.replies[-1][1].note
+            (legacy,) = [
+                item
+                for item in world.repo.list_content_publications(root_id)
+                if item.status is PublicationStatus.FAILED
+            ]
+            assert legacy.id is not None, "the rejected immutable candidate was checkpointed"
+            assert legacy.ref is not None and len(legacy.ref.split("/")) == 4
+            alternative = args.rsplit(" ", 1)[0] + f" {new - timedelta(days=1)}"
+            world.command(f"/groupedit preview {alternative}")
+            handle()
+            preview = world.replier.replies[-1][1]
+            assert preview.status is OutcomeStatus.SHOWN
+            approve_text = preview.note.splitlines()[-1]
+            approve_id = world.command(approve_text).update_id
+            handle()
+
+            assert world.repo.publication_by_id(legacy.id) == legacy
+            if mode == "distinct-off":
+                assert len(calls) == 1
+                assert "approval refused" in world.replier.replies[-1][1].note
+                assert len(world.repo.list_content_versions(root_id)) == 2
+                return
+
+            assert len(calls) == 2 and calls[0]["text"] != calls[1]["text"]
+            assert world.replier.replies[-1][1].status is OutcomeStatus.DELIVERY
+            assert remote is not None, "operator approval uses the durable checkpoint"
+            with saved_state(git(remote, "show", "state:state.sql")) as restored:
+                original, rejected, replacement = restored.repo.list_content_versions(root_id)
+                assert (
+                    original == base
+                    and restored.repo.get_publication_content(legacy.id) == rejected
+                )
+                assert replacement.previous_version_id == base.content_id
+                (new_slot,) = [
+                    item
+                    for item in restored.repo.list_content_publications(root_id)
+                    if item.id != root_id and item.status is PublicationStatus.SENT
+                ]
+                assert new_slot.ref is not None
+                assert new_slot.ref.split("/")[3] == replacement.content_id.removeprefix(
+                    "content-v1:"
+                )
+            return
         assert world.replier.replies[-1][1].status is OutcomeStatus.DELIVERY
         (body,) = calls
         assert (body["chat_id"], body["message_id"]) == (CHAT_ID, MESSAGE_ID)

@@ -173,6 +173,10 @@ class Settings(BaseSettings):
         default=False,
         description="Enable operator preview and approval for supported grouped stage date edits.",
     )
+    grouped_stage_candidate_refs_enabled: bool = Field(
+        default=False,
+        description="Allow a different approved grouped date edit after definite rejection.",
+    )
 
     consultation_reviews_enabled: bool = Field(
         default=False,

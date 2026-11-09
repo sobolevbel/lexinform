@@ -689,6 +689,7 @@ class Container:
                 else None,
                 grouped_stage_editor=self._grouped_stage_editor(dry_run=dry_run),
                 grouped_stage_resolution_enabled=self._grouped_stage_checkpoint(dry_run=dry_run),
+                grouped_stage_candidate_refs_enabled=self.settings.grouped_stage_candidate_refs_enabled,
             ),
         )
 

@@ -129,6 +129,7 @@ def approve_grouped_stage_date(
     chat_id: int,
     message_id: int,
     enabled: bool = False,
+    candidate_refs_enabled: bool = False,
 ) -> GroupedStageDateApprovalResult | None:
     if not enabled or checkpoint is None or type(chat_id) is not int or type(message_id) is not int:
         return None
@@ -172,6 +173,7 @@ def approve_grouped_stage_date(
             expected_base_sha256=correction.expected_sha256,
             approved_sha256=approved_sha256,
             expected_chat_id=chat_id,
+            candidate_refs_enabled=candidate_refs_enabled,
         )
     except ValueError:
         return None

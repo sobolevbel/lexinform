@@ -2746,6 +2746,7 @@ class SqliteBillRepository:
         expected_base_sha256: str,
         approved_sha256: str,
         expected_chat_id: int | None = None,
+        candidate_refs_enabled: bool = False,
     ) -> int | None:
         """Reserve one approved inert edit against the confirmed shared target."""
         if expected_chat_id is not None and (
@@ -2793,10 +2794,33 @@ class SqliteBillRepository:
                     or prior.id is None
                     or not self._definitely_rejected_grouped_edit(prior)
                     or (saved := self.get_publication_content(prior.id)) is None
-                    or saved.content_id != version.content_id
                 ):
                     return None
-                retry_slot = prior.id
+                if saved.content_id == version.content_id:
+                    retry_slot = prior.id
+                else:
+                    scoped_ref = grouped_stage_revision_ref(version, candidate_scoped=True)
+                    assert scoped_ref is not None, "a grouped revision has a candidate ref"
+                    ref = scoped_ref
+                    same_candidate = self.get_publication(
+                        root.term,
+                        root.number,
+                        PublicationKind.MESSAGE_PART,
+                        root.channel_id,
+                        ref=ref,
+                    )
+                    if same_candidate is None:
+                        if not candidate_refs_enabled:
+                            return None
+                    elif (
+                        same_candidate.id is None
+                        or not self._definitely_rejected_grouped_edit(same_candidate)
+                        or (saved := self.get_publication_content(same_candidate.id)) is None
+                        or saved.content_id != version.content_id
+                    ):
+                        return None
+                    else:
+                        retry_slot = same_candidate.id
             if self._grouped_stage_edit_conflict(root, ref, excluding_slot=retry_slot):
                 return None
             current = self._confirmed_grouped_stage_base(

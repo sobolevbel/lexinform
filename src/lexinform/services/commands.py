@@ -193,6 +193,7 @@ class CommandService:
         grouped_stage_formatter: GroupedStageBulletRenderer | None = None,
         grouped_stage_editor: Callable[[int, int, str], VerifiedEditOutcome] | None = None,
         grouped_stage_resolution_enabled: bool = False,
+        grouped_stage_candidate_refs_enabled: bool = False,
     ) -> None:
         self._repo = repo
         self._inbox = inbox
@@ -214,6 +215,7 @@ class CommandService:
         self._grouped_stage_formatter = grouped_stage_formatter
         self._grouped_stage_editor = grouped_stage_editor
         self._grouped_stage_resolution_enabled = grouped_stage_resolution_enabled
+        self._grouped_stage_candidate_refs_enabled = grouped_stage_candidate_refs_enabled
 
     def handle_pending(
         self,
@@ -1225,6 +1227,7 @@ class CommandService:
             chat_id=approval.chat_id,
             message_id=approval.message_id,
             enabled=True,
+            candidate_refs_enabled=self._grouped_stage_candidate_refs_enabled,
         )
         if result is None:
             return CommandOutcome(status=OutcomeStatus.ERROR, note="grouped stage approval refused")

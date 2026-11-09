@@ -976,6 +976,7 @@ class BillRepository(Protocol):
         expected_base_sha256: str,
         approved_sha256: str,
         expected_chat_id: int | None = None,
+        candidate_refs_enabled: bool = False,
     ) -> int | None: ...
 
     def claim_grouped_stage_edit(
