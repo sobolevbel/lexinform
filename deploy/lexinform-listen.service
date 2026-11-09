@@ -10,7 +10,9 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-Type=simple
+Type=notify
+NotifyAccess=main
+TimeoutStartSec=85
 WorkingDirectory=/opt/lexinform
 # Secrets live in /opt/lexinform/.env (bot token, log channel id, GitHub repo and token).
 # The venv's entry point directly, not `uv run`: the wrapper would stay alive as the parent

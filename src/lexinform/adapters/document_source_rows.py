@@ -1,10 +1,17 @@
 """Read scoped document selection and observation identities from SQLite."""
 
 import sqlite3
-from datetime import datetime
+from datetime import UTC, datetime
 
 from lexinform.adapters.computation_history import read_computation_result
-from lexinform.models import ComputationResult, DocumentSelectionRecord, SourceObservation
+from lexinform.document_editions import candidate_edition
+from lexinform.models import (
+    ComputationResult,
+    DocumentEdition,
+    DocumentSelectionRecord,
+    SelectionEditionReference,
+    SourceObservation,
+)
 
 
 class DocumentSourceRows:
@@ -34,6 +41,36 @@ class DocumentSourceRows:
         ):
             raise ValueError("document selection columns differ from the recorded identity")
         return record
+
+    def get_document_edition(self, edition_id: str) -> DocumentEdition | None:
+        row = self._query(
+            "SELECT * FROM document_editions WHERE edition_id=?", (edition_id,)
+        ).fetchone()
+        return _document_edition(row) if row is not None else None
+
+    def get_selection_edition(self, selection_id: str) -> SelectionEditionReference | None:
+        row = self._query(
+            "SELECT * FROM selection_editions WHERE selection_id=?", (selection_id,)
+        ).fetchone()
+        return self._selection_edition(row) if row is not None else None
+
+    def _selection_edition(self, row: sqlite3.Row) -> SelectionEditionReference:
+        reference = SelectionEditionReference.model_validate(dict(row))
+        selection = self.get_document_selection(reference.selection_id)
+        edition = self.get_document_edition(reference.edition_id)
+        if (
+            selection is None
+            or edition is None
+            or candidate_edition(selection, recorded_at=edition.recorded_at) != edition
+        ):
+            raise ValueError("an edition link differs from its recorded selection membership")
+        return reference
+
+    def validate_editions(self) -> None:
+        for row in self._query("SELECT * FROM document_editions"):
+            _document_edition(row)
+        for row in self._query("SELECT * FROM selection_editions"):
+            self._selection_edition(row)
 
     def get_source_observation(self, observation_id: str) -> SourceObservation | None:
         row = self._query(
@@ -113,6 +150,16 @@ class DocumentSourceRows:
         if expected != tuple(row[key] for key in columns):
             raise ValueError("source observation columns differ from the recorded identity")
         return observation
+
+
+def _document_edition(row: sqlite3.Row) -> DocumentEdition:
+    edition = DocumentEdition.model_validate_json(row["edition_json"])
+    if (
+        edition.edition_id != row["edition_id"]
+        or edition.recorded_at.astimezone(UTC).isoformat() != row["recorded_at"]
+    ):
+        raise ValueError("edition columns differ from the immutable manifest")
+    return edition
 
 
 def validate_review_source_observations(connection: sqlite3.Connection) -> None:

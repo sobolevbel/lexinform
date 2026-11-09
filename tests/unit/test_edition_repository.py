@@ -125,6 +125,25 @@ def test_schema_56_restore_creates_empty_edition_tables_without_inferred_history
     assert repo.get_document_edition("edition-v1:" + "f" * 64) is None
 
 
+def test_restore_preserves_existing_state_if_an_edition_parent_is_missing(
+    repo: SqliteBillRepository,
+) -> None:
+    record = source_record()
+    edition = store(repo, record)
+    repo.save_selection_edition(record.selection_id, edition)
+    before = repo.dump()
+    truncated = "\n".join(
+        line
+        for line in before.splitlines()
+        if not line.startswith('INSERT INTO "document_editions"')
+    )
+
+    with pytest.raises(ValueError, match="recorded selection membership"):
+        repo.restore(truncated)
+
+    assert repo.dump() == before
+
+
 def test_source_doctor_checks_edition_membership_without_exposing_bodies(tmp_path: Path) -> None:
     path = tmp_path / "source.db"
     repo = SqliteBillRepository(path)
@@ -220,6 +239,13 @@ def test_a_foreign_but_existing_edition_cannot_replace_the_selection_membership(
         repo.get_selection_edition(first.selection_id)
     with pytest.raises(ValueError, match="membership"):
         repo.save_selection_edition(first.selection_id, first_edition)
+
+    with closing(SqliteBillRepository(Path(":memory:"))) as target:
+        target.migrate()
+        valid = target.dump()
+        with pytest.raises(ValueError, match="membership"):
+            target.restore(before)
+        assert target.dump() == valid
 
     assert repo.dump() == before
     repo.close()

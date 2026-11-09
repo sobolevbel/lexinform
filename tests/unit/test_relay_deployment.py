@@ -33,6 +33,7 @@ case "$1" in
     test -f "$FAKE_ROOT/active"
     ;;
   restart) touch "$FAKE_ROOT/active" ;;
+  show) printf '%s\\n' "${FAKE_UNIT_TYPE:-notify}" ;;
   is-enabled) test -f "$FAKE_ROOT/enabled" ;;
   enable) touch "$FAKE_ROOT/enabled" ;;
   daemon-reload|status) ;;
@@ -171,6 +172,10 @@ def assert_installed(deployment: Deployment, expected: str) -> None:
     assert not deployment.pending.exists()
     assert sum(event.startswith("uv sync --frozen --no-dev") for event in deployment.events) == 1
     assert "systemctl restart lexinform-listen" in deployment.events
+    assert deployment.events.index("systemctl show --property=Type --value lexinform-listen") < (
+        deployment.events.index("systemctl restart lexinform-listen")
+    )
+    assert "Type=notify\nNotifyAccess=main\n" in (deployment.units / UNITS[0]).read_text()
     assert deployment.events.count("sleep 5") == 9
 
 
@@ -267,6 +272,16 @@ def test_failed_reload_after_unit_copy_is_retried_despite_identical_unit_files(
     assert retried.returncode == 0, retried.stderr
     assert "systemctl daemon-reload" in deployment.events
     assert_installed(deployment, target)
+
+
+def test_deploy_cannot_report_readiness_from_a_liveness_only_service(
+    deployment: Deployment,
+) -> None:
+    result = deployment.run(FAKE_UNIT_TYPE="simple")
+
+    assert result.returncode != 0
+    assert "accepted first Telegram poll" not in result.stdout
+    assert not deployment.marker.exists() and deployment.pending.exists()
 
 
 def test_failed_same_head_unit_repair_cannot_reuse_a_previous_success_marker(

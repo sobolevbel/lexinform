@@ -22,6 +22,7 @@ class Proof(TypedDict):
     transition_from: str | None
     transition_to: str | None
     restart45: bool
+    telegram_poll: bool
     timer_enabled: bool
     skip_observed: bool
     complete: bool
@@ -229,6 +230,9 @@ def relay_proof(
         if re.fullmatch(r"[0-9a-f]{12} -> [0-9a-f]{12}", line)
     ]
     health = [i for i, line in enumerate(lines) if line == "lexinform-listen up 45 s after restart"]
+    readiness = [
+        i for i, line in enumerate(lines) if line == "lexinform-listen accepted first Telegram poll"
+    ]
     timers = [i for i, line in enumerate(lines) if line == "lexinform-batch-poll.timer enabled"]
     skipped = any(line.startswith(("skip:", "already at ")) for line in lines)
     proof: Proof = {
@@ -236,6 +240,7 @@ def relay_proof(
         "transition_from": transitions[0][1][0] if len(transitions) == 1 else None,
         "transition_to": transitions[0][1][1] if len(transitions) == 1 else None,
         "restart45": len(health) == 1,
+        "telegram_poll": len(readiness) == 1,
         "timer_enabled": len(timers) == 1,
         "skip_observed": skipped,
         "complete": False,
@@ -252,12 +257,17 @@ def relay_proof(
             and not skipped
         )
         if mode == "interrupted":
-            proof["complete"] = transition_valid and not health and not timers
+            proof["complete"] = (
+                transition_valid
+                and not health
+                and not timers
+                and (not readiness or (len(readiness) == 1 and transitions[0][0] < readiness[0]))
+            )
         else:
             proof["complete"] = (
                 transition_valid
-                and len(health) == len(timers) == 1
-                and transitions[0][0] < health[0] < timers[0]
+                and len(readiness) == len(health) == len(timers) == 1
+                and transitions[0][0] < readiness[0] < health[0] < timers[0]
             )
     return proof
 
@@ -375,7 +385,12 @@ def verify(target: str, *, previous: str | None = None, read: Read = gh_read) ->
                 report["proof"] = retry
                 recovered = True
         if not report["proof"]["complete"]:
-            raise EvidenceError("relay_transition_health_timer_unproven")
+            reason = (
+                "relay_telegram_readiness_unproven"
+                if report["proof"]["restart45"] and not report["proof"]["telegram_poll"]
+                else "relay_transition_health_timer_unproven"
+            )
+            raise EvidenceError(reason)
         main_object = object_at(read, "git/ref/heads/main").get("object")
         final_main = main_object.get("sha") if isinstance(main_object, dict) else None
         if not isinstance(final_main, str) or SHA.fullmatch(final_main) is None:

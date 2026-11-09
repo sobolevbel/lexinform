@@ -85,11 +85,16 @@ class CommandListener:
         if self._offset is not None and self._writer is not None:
             self._updates.get_updates(offset=self._offset, timeout=0)
 
-    def run_forever(self, *, stop: Callable[[], bool] = lambda: False) -> None:
+    def run_forever(
+        self,
+        *,
+        stop: Callable[[], bool] = lambda: False,
+        on_ready: Callable[[], None] | None = None,
+    ) -> None:
         log.info("listening for commands in %s", self._channel)
         while not stop():
             try:
-                self.poll_once()
+                self.poll_once(timeout=0 if on_ready is not None else None)
             except ServiceUnavailableError as exc:
                 self._back_off(exc.describe())
             except Exception as exc:
@@ -100,6 +105,9 @@ class CommandListener:
                     self._back_off("a command could not be filed")
                 else:
                     self._failures = 0
+                    if on_ready is not None:
+                        on_ready()
+                        on_ready = None
 
     def _back_off(self, reason: str) -> None:
         """Wait before the next poll, longer the longer the failures have been going on.

@@ -6,6 +6,7 @@ import sys
 from collections.abc import Callable
 from contextlib import closing
 from datetime import UTC, datetime, timedelta
+from functools import partial
 from html import escape
 from pathlib import Path
 from typing import Annotated
@@ -21,6 +22,7 @@ from lexinform.adapters.github_inbox import (
     GitHubUnavailableError,
 )
 from lexinform.adapters.state_snapshot import write_state_snapshot
+from lexinform.adapters.systemd import notify_ready
 from lexinform.adapters.telegram import TelegramBotClient, TelegramRunNotifier, send_and_retract
 from lexinform.adapters.telegram_format import MessageFormatter, format_document_reads
 from lexinform.concurrency import fan_out
@@ -837,7 +839,10 @@ def listen(
                 typer.echo(f"{post.update_id}: {post.text}")
             typer.echo(f"filed={filed}" + (" (dry run: nothing written)" if dry_run else ""))
         else:
-            listener.run_forever()
+            notify_socket = os.environ.get("NOTIFY_SOCKET") if not dry_run else None
+            listener.run_forever(
+                on_ready=partial(notify_ready, notify_socket) if notify_socket else None
+            )
     finally:
         if c is not None:
             c.close()

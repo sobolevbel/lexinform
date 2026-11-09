@@ -68,12 +68,12 @@ else
   : > "$pending_file"
   export UV_CONCURRENT_DOWNLOADS=1 UV_CONCURRENT_BUILDS=1 UV_CONCURRENT_INSTALLS=1
   "$UV" sync --frozen --no-dev -q
+  [ "$(systemctl show --property=Type --value "$SERVICE")" = notify ] \
+    || { echo "$SERVICE does not have a readiness-enabled unit" >&2; exit 1; }
   systemctl restart "$SERVICE"
+  echo "$SERVICE accepted first Telegram poll"
 
-  # Three seconds only proved that systemd had started something: a relay that dies on its first
-  # Telegram call (a revoked token, an .env that lost a line) reported a clean deploy and then
-  # restarted for ever. A poll is 50 s, so a relay still up after 45 has opened its connection and
-  # read from it; `is-active` alone is the answer for a unit that is still starting.
+  # The notify startup proves the first poll; these checks detect immediate subsequent exits.
   for _ in $(seq 9); do
     sleep 5
     systemctl is-active --quiet "$SERVICE" || { systemctl status "$SERVICE" --no-pager -l; exit 1; }

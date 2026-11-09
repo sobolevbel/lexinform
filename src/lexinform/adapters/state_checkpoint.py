@@ -2,12 +2,15 @@
 
 import json
 import logging
+import os
 import subprocess
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager, suppress
 from dataclasses import dataclass, field
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from time import monotonic
+from uuid import uuid4
 
 from lexinform.adapters.state_snapshot import MANIFEST_NAME, write_state_snapshot
 from lexinform.errors import StateCheckpointError
@@ -15,6 +18,45 @@ from lexinform.log_context import log_extra
 from lexinform.models import LlmBatch
 
 logger = logging.getLogger(__name__)
+
+_INTENT_FILE = "lexinform-state-checkpoint"
+_TOKEN_TRAILER = "Lexinform-Checkpoint: "
+
+
+@dataclass(frozen=True)
+class _CheckpointIntent:
+    baseline: str | None
+    branch: str
+    snapshot: str
+    token: str
+
+    @classmethod
+    def read(cls, path: Path) -> _CheckpointIntent | None:
+        try:
+            data = json.loads(path.read_text())
+        except FileNotFoundError:
+            return None
+        except (OSError, ValueError) as exc:
+            raise StateCheckpointError("state checkpoint failed: unreadable local intent") from exc
+        if not isinstance(data, list) or len(data) != 4:
+            raise StateCheckpointError("state checkpoint failed: invalid local intent")
+        baseline, branch, snapshot, token = data
+        if (baseline is not None and not isinstance(baseline, str)) or not all(
+            isinstance(value, str) for value in (branch, snapshot, token)
+        ):
+            raise StateCheckpointError("state checkpoint failed: invalid local intent")
+        return cls(baseline, branch, snapshot, token)
+
+    def write(self, path: Path) -> None:
+        try:
+            with TemporaryDirectory(dir=path.parent) as directory:
+                temp = Path(directory) / "intent"
+                temp.write_text(json.dumps((self.baseline, self.branch, self.snapshot, self.token)))
+                os.link(temp, path)
+        except OSError as exc:
+            raise StateCheckpointError(
+                "state checkpoint failed: could not record local intent"
+            ) from exc
 
 
 @dataclass
@@ -85,8 +127,14 @@ class GitStateCheckpoint:
     def _checkpoint(self, metrics: _CheckpointMetrics) -> None:
         with metrics.measure("preflight"):
             self._git("check-ref-format", "--branch", self._branch)
-            self._git("rev-parse", "--git-dir")
+            intent_path = Path(
+                self._git("rev-parse", "--path-format=absolute", "--git-path", _INTENT_FILE).strip()
+            )
             head = self._head()
+            intent = _CheckpointIntent.read(intent_path)
+            if intent is not None:
+                self._resume(intent, head, metrics)
+                self._clear_intent(intent_path)
             if not self._initialized:
                 self._expected = head
                 self._initialized = True
@@ -114,6 +162,10 @@ class GitStateCheckpoint:
             changed = self._run("diff", "--cached", "--quiet", "--", *names, allowed=(0, 1))
             metrics.changed = bool(changed.returncode)
             if changed.returncode:
+                intent = _CheckpointIntent(
+                    self._expected, self._branch, self._path.name, uuid4().hex
+                )
+                intent.write(intent_path)
                 self._git(
                     "-c",
                     "user.name=github-actions[bot]",
@@ -123,26 +175,77 @@ class GitStateCheckpoint:
                     "--only",
                     "-m",
                     self._message,
+                    "-m",
+                    _TOKEN_TRAILER + intent.token,
                     "--",
                     *names,
                 )
             prepared = self._head()
             if prepared is None:
                 raise StateCheckpointError("state checkpoint failed: snapshot has no commit")
-        target = f"refs/heads/{self._branch}"
         with metrics.measure("push"):
-            try:
-                self._git(
-                    "push",
-                    f"--force-with-lease={target}:{self._expected or ''}",
-                    "origin",
-                    f"{prepared}:{target}",
-                )
-            except StateCheckpointError:
-                if self._remote_head() != prepared:
-                    raise
-                metrics.reconciled_push = True
+            self._push(prepared, self._expected, metrics)
+            if changed.returncode:
+                self._clear_intent(intent_path)
         self._expected = prepared
+
+    def _resume(
+        self, intent: _CheckpointIntent, head: str | None, metrics: _CheckpointMetrics
+    ) -> None:
+        if (intent.branch, intent.snapshot) != (self._branch, self._path.name) or (
+            self._initialized and intent.baseline != self._expected
+        ):
+            raise StateCheckpointError(
+                "state checkpoint failed: local intent belongs to another baseline"
+            )
+        remote = self._remote_head()
+        if head == intent.baseline:
+            if remote != head:
+                raise StateCheckpointError("state checkpoint failed: remote baseline changed")
+            return
+        if head is None:
+            raise StateCheckpointError("state checkpoint failed: local baseline changed")
+        parent, _, body = self._git("show", "-s", "--format=%P%n%B", head).partition("\n")
+        if parent != (intent.baseline or "") or not body.rstrip().endswith(
+            "\n" + _TOKEN_TRAILER + intent.token
+        ):
+            raise StateCheckpointError("state checkpoint failed: local baseline changed")
+        paths = self._git("diff-tree", "--root", "--no-commit-id", "--name-only", "-r", "-z", head)
+        changed = set(paths.rstrip("\0").split("\0"))
+        if not changed <= {intent.snapshot, MANIFEST_NAME}:
+            raise StateCheckpointError(
+                "state checkpoint failed: local intent has unrelated changes"
+            )
+        if remote == intent.baseline:
+            with metrics.measure("push"):
+                self._push(head, intent.baseline, metrics)
+        elif remote != head:
+            raise StateCheckpointError("state checkpoint failed: remote baseline changed")
+        metrics.reconciled_push = True
+        self._expected = head
+
+    @staticmethod
+    def _clear_intent(path: Path) -> None:
+        try:
+            path.unlink()
+        except OSError as exc:
+            raise StateCheckpointError(
+                "state checkpoint failed: could not clear local intent"
+            ) from exc
+
+    def _push(self, prepared: str, baseline: str | None, metrics: _CheckpointMetrics) -> None:
+        target = f"refs/heads/{self._branch}"
+        try:
+            self._git(
+                "push",
+                f"--force-with-lease={target}:{baseline or ''}",
+                "origin",
+                f"{prepared}:{target}",
+            )
+        except StateCheckpointError:
+            if self._remote_head() != prepared:
+                raise
+            metrics.reconciled_push = True
 
     def _head(self) -> str | None:
         result = self._run("rev-parse", "--verify", "--quiet", "HEAD", allowed=(0, 1))

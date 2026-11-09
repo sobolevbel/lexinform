@@ -1452,6 +1452,7 @@ class SqliteBillRepository:
             _validate_rcl_letter_uses(scratch)
             validate_senate_inspections(scratch)
             validate_physical_inventory(scratch)
+            DocumentSourceRows(scratch).validate_editions()
             validate_source_omissions(scratch)
             validate_catalog_attempts(scratch)
             validate_input_snapshots(scratch)
@@ -2215,35 +2216,10 @@ class SqliteBillRepository:
                 raise ValueError("an immutable selection edition cannot be rebound")
 
     def get_document_edition(self, edition_id: str) -> DocumentEdition | None:
-        row = self._conn.execute(
-            "SELECT * FROM document_editions WHERE edition_id=?", (edition_id,)
-        ).fetchone()
-        if row is None:
-            return None
-        edition = DocumentEdition.model_validate_json(row["edition_json"])
-        if (
-            edition.edition_id != row["edition_id"]
-            or _utc_iso(edition.recorded_at) != row["recorded_at"]
-        ):
-            raise ValueError("edition columns differ from the immutable manifest")
-        return edition
+        return DocumentSourceRows(self._conn).get_document_edition(edition_id)
 
     def get_selection_edition(self, selection_id: str) -> SelectionEditionReference | None:
-        row = self._conn.execute(
-            "SELECT * FROM selection_editions WHERE selection_id=?", (selection_id,)
-        ).fetchone()
-        if row is None:
-            return None
-        reference = SelectionEditionReference.model_validate(dict(row))
-        selection = self.get_document_selection(reference.selection_id)
-        edition = self.get_document_edition(reference.edition_id)
-        if (
-            selection is None
-            or edition is None
-            or candidate_edition(selection, recorded_at=edition.recorded_at) != edition
-        ):
-            raise ValueError("an edition link differs from its recorded selection membership")
-        return reference
+        return DocumentSourceRows(self._conn).get_selection_edition(selection_id)
 
     def get_document_selection(self, selection_id: str) -> DocumentSelectionRecord | None:
         return ContentSourceRows(self._conn).get_document_selection(selection_id)

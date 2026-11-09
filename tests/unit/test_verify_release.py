@@ -14,6 +14,7 @@ JOB = 122805151925
 PROOF = (
     f"2026-10-28T12:05:58.2118724Z   COMMIT: {TARGET}\n"
     "2026-10-28T12:06:01.6968121Z 7287059ab139 -> 563b3e805db0\n"
+    "2026-10-28T12:06:02.0000000Z lexinform-listen accepted first Telegram poll\n"
     "2026-10-28T12:06:47.0363978Z lexinform-listen up 45 s after restart\n"
     "2026-10-28T12:06:47.4812543Z lexinform-batch-poll.timer enabled\n"
 )
@@ -91,6 +92,7 @@ def test_current_known_valid_automatic_deploy_has_one_canonical_report() -> None
     assert report["status"] == "verified"
     assert report["target_sha"] == report["observed_main_sha"] == TARGET
     assert report["proof"]["complete"]
+    assert report["proof"]["telegram_poll"]
     assert report["ci"] is not None, "the verified report requires an exact successful CI"
     assert report["deploy"] is not None, "the verified report requires an exact automatic deploy"
     assert report["ci"]["id"] == CI and report["deploy"]["id"] == DEPLOY
@@ -105,6 +107,17 @@ def test_current_known_valid_automatic_deploy_has_one_canonical_report() -> None
         "proof",
     }
     assert not {"verified", "head_sha", "automatic_deploy"} & report.keys()
+
+
+def test_historical_liveness_does_not_prove_telegram_readiness() -> None:
+    github = GitHub()
+    github.log = "\n".join(line for line in PROOF.splitlines() if "accepted first" not in line)
+
+    report = verify(TARGET, previous=PREVIOUS, read=github.read)
+
+    assert report["status"] == "unproven"
+    assert report["reason"] == "relay_telegram_readiness_unproven"
+    assert report["proof"]["restart45"] and not report["proof"]["telegram_poll"]
 
 
 @pytest.mark.parametrize("incident", [40659234925, 40659847080])
@@ -550,7 +563,16 @@ def test_completed_workflow_without_conclusion_is_pending_metadata(phase: str) -
 
 
 @pytest.mark.parametrize(
-    "control", ["verified", "missing_previous", "wrong_previous", "wrong_target", "skip", "third"]
+    "control",
+    [
+        "verified",
+        "ready_then_failed",
+        "missing_previous",
+        "wrong_previous",
+        "wrong_target",
+        "skip",
+        "third",
+    ],
 )
 def test_retry_requires_prior_failed_transition_and_exact_successful_restart(control: str) -> None:
     github = GitHub()
@@ -572,13 +594,13 @@ def test_retry_requires_prior_failed_transition_and_exact_successful_restart(con
         if endpoint == f"actions/runs/{DEPLOY}/attempts/1/jobs?per_page=100":
             return json.dumps({"total_count": 1, "jobs": [first_job]})
         if endpoint == f"actions/jobs/{JOB + 1}/logs":
-            return "\n".join(PROOF.splitlines()[:2])
+            return "\n".join(PROOF.splitlines()[: 3 if control == "ready_then_failed" else 2])
         return github.read(endpoint)
 
     previous = {"missing_previous": None, "wrong_previous": "a" * 40}.get(control, PREVIOUS)
     report = verify(TARGET, previous=previous, read=read)
 
-    if control == "verified":
+    if control in {"verified", "ready_then_failed"}:
         assert report["status"] == "verified"
         assert report["reason"] == "exact_release_retry_confirmed"
         assert report["proof"]["transition_from"] == PREVIOUS[:12]

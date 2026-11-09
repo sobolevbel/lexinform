@@ -1,9 +1,12 @@
 """The relay: which posts become inbox files, what is acknowledged, what is confirmed."""
 
+import socket
 from collections.abc import Callable
+from pathlib import Path
 
 import pytest
 
+from lexinform.adapters.systemd import notify_ready
 from lexinform.errors import ServiceUnavailableError
 from lexinform.services.listener import CommandListener
 from tests.fakes import (
@@ -180,6 +183,33 @@ def test_run_forever_survives_an_outage_and_stops_when_told() -> None:
 
     assert len(updates.offsets) == 3  # three polls, each an outage, none fatal
     assert slept == [15.0, 30.0, 60.0]
+
+
+def test_relay_signals_readiness_once_after_a_successful_poll(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    updates = FakeUpdates([channel_post(1, "/analyze 3039")], outage=True)
+    writer = FakeInboxWriter()
+    checks = iter(range(5))
+    sent: list[bytes] = []
+    with socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as receiver:
+        receiver.bind("notify.sock")
+        receiver.settimeout(0.2)
+
+        def recover(_: float) -> None:
+            assert not sent, "the initial failed poll cannot signal readiness"
+            updates.outage = False
+
+        def ready() -> None:
+            assert len(writer.filed) == 1, "the successful poll first files the received command"
+            notify_ready("notify.sock")
+            sent.append(receiver.recv(128))
+
+        listener = CommandListener(updates, writer, None, channel_id=CHANNEL, sleep=recover)
+        listener.run_forever(stop=lambda: next(checks) >= 4, on_ready=ready)
+
+    assert sent == [b"READY=1"]
 
 
 def test_run_forever_waits_when_a_command_cannot_be_filed_at_all() -> None:

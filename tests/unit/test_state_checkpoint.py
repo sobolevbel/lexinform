@@ -96,6 +96,10 @@ def test_compare_and_swap_rejects_a_race_between_remote_check_and_push(tmp_path:
     with pytest.raises(StateCheckpointError, match="git push"):
         checkpoint()
 
+    fresh = GitStateCheckpoint(lambda: "-- newer\n", local / "state.sql", "state", lambda: [])
+    with pytest.raises(StateCheckpointError, match="remote baseline changed"):
+        fresh()
+
     assert git(remote, "rev-parse", "state") == foreign
     assert git(remote, "show", "state:state.sql") == "-- rival"
 
@@ -152,12 +156,84 @@ def test_rejected_snapshot_is_preserved_locally_without_changing_the_remote(tmp_
 
     with pytest.raises(StateCheckpointError, match="git push"):
         checkpoint()
-    with pytest.raises(StateCheckpointError, match="local baseline changed"):
+    with pytest.raises(StateCheckpointError, match="git push"):
         checkpoint()
 
     assert git(remote, "rev-parse", "state") == baseline
     assert git(local, "rev-parse", "HEAD") != baseline
     assert (local / "state.sql").read_text() == "-- unsaved\n"
+
+
+@pytest.mark.parametrize("fresh_writer", [False, True])
+def test_retry_pushes_the_owned_snapshot_before_preparing_new_state(
+    tmp_path: Path, fresh_writer: bool
+) -> None:
+    remote, local, _ = state_writer(tmp_path)
+    hook = local / ".git" / "hooks" / "pre-push"
+    hook.write_text('#!/bin/sh\nrm "$0"\nexit 1\n')
+    hook.chmod(0o755)
+    payload = "-- known receipt\n"
+    checkpoint = GitStateCheckpoint(lambda: payload, local / "state.sql", "state", lambda: [])
+    with pytest.raises(StateCheckpointError, match="git push"):
+        checkpoint()
+    prepared = git(local, "rev-parse", "HEAD")
+    payload = "-- later work\n"
+    if fresh_writer:
+        checkpoint = GitStateCheckpoint(lambda: payload, local / "state.sql", "state", lambda: [])
+
+    checkpoint()
+
+    assert git(remote, "rev-parse", "state^") == prepared
+    assert git(remote, "show", f"{prepared}:state.sql") == "-- known receipt"
+    assert git(remote, "show", "state:state.sql") == "-- later work"
+
+
+def test_fresh_writer_refuses_a_foreign_local_commit_after_preparing_state(tmp_path: Path) -> None:
+    remote, local, _ = state_writer(tmp_path)
+    baseline = git(local, "rev-parse", "HEAD")
+    hook = local / ".git" / "hooks" / "pre-commit"
+    hook.write_text('#!/bin/sh\nrm "$0"\nexit 1\n')
+    hook.chmod(0o755)
+    checkpoint = GitStateCheckpoint(
+        lambda: "-- never committed\n", local / "state.sql", "state", lambda: []
+    )
+    with pytest.raises(StateCheckpointError, match="git -c"):
+        checkpoint()
+    git(
+        local,
+        "-c",
+        "user.name=Foreign",
+        "-c",
+        "user.email=foreign@example.test",
+        "commit",
+        "-m",
+        "state: durable checkpoint",
+    )
+    fresh = GitStateCheckpoint(lambda: "-- newer\n", local / "state.sql", "state", lambda: [])
+
+    with pytest.raises(StateCheckpointError, match="local baseline changed"):
+        fresh()
+
+    assert git(remote, "rev-parse", "state") == baseline
+
+
+def test_fresh_writer_recognizes_snapshot_pushed_before_local_confirmation(tmp_path: Path) -> None:
+    remote, local, _ = state_writer(tmp_path)
+    hook = local / ".git" / "hooks" / "pre-push"
+    hook.write_text('#!/bin/sh\nrm "$0"\nexit 1\n')
+    hook.chmod(0o755)
+    checkpoint = GitStateCheckpoint(
+        lambda: "-- known receipt\n", local / "state.sql", "state", lambda: []
+    )
+    with pytest.raises(StateCheckpointError, match="git push"):
+        checkpoint()
+    prepared = git(local, "rev-parse", "HEAD")
+    git(local, "push", "origin", "HEAD:refs/heads/state")
+
+    GitStateCheckpoint(lambda: "-- known receipt\n", local / "state.sql", "state", lambda: [])()
+
+    assert git(remote, "rev-parse", "state") == prepared
+    assert not (local / ".git/lexinform-state-checkpoint").exists()
 
 
 def test_snapshot_does_not_commit_unrelated_staged_files(tmp_path: Path) -> None:
