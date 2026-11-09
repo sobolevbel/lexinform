@@ -11,7 +11,7 @@ from typing import Any
 
 from lexinform.adapters.amendment_inputs import amendment_input_issues
 from lexinform.adapters.computation_history import parse_computation_result
-from lexinform.adapters.content_source_refs import validate_projected_application
+from lexinform.adapters.content_source_refs import is_primary_projection_result
 from lexinform.adapters.input_receipts import input_snapshot_checks
 from lexinform.adapters.primary_projections import primary_projection_issues
 from lexinform.adapters.review_memos import review_memo_issues
@@ -51,6 +51,7 @@ class ResultIdentity:
     request_sha256: str | None
     input_binding_known: bool
     columns_match: bool
+    primary_projection: bool
 
 
 @dataclass
@@ -88,7 +89,17 @@ class ComputationAudit:
         self.findings.append({"code": code, "ref": ref, "level": level})
 
     def computations(self, connection: sqlite3.Connection) -> None:
-        for row in connection.execute("SELECT * FROM computation_results ORDER BY result_id"):
+        for row in connection.execute(
+            """
+            SELECT r.*, i.call_kind AS item_kind, i.term AS item_term, i.number AS item_number,
+                i.meta_json AS item_meta, i.consumed_at AS item_consumed_at,
+                b.provider AS item_provider
+            FROM computation_results r
+            LEFT JOIN llm_batch_items i ON i.batch_id=r.batch_id AND i.custom_id=r.custom_id
+            LEFT JOIN llm_batches b ON b.batch_id=i.batch_id
+            ORDER BY r.result_id
+            """
+        ):
             ref = f"computation_results/{row['result_id']}"
             self.counts["result_rows"] += 1
             try:
@@ -116,9 +127,10 @@ class ComputationAudit:
                 result.request_sha256,
                 result.input_binding is not None,
                 columns_match,
+                columns_match and is_primary_projection_result(result),
             )
             if columns_match and result.validation == "validated":
-                self.retained_scan(connection, result, ref)
+                self.retained_scan(row, result, ref)
             self.counts[f"result_{result.validation}"] += 1
             self.counts[f"purpose_{result.purpose}"] += 1
             self.counts[
@@ -128,9 +140,7 @@ class ComputationAudit:
                 "request_sha_known" if result.request_sha256 else "request_sha_unknown"
             ] += 1
 
-    def retained_scan(
-        self, connection: sqlite3.Connection, result: ComputationResult, ref: str
-    ) -> None:
+    def retained_scan(self, item: sqlite3.Row, result: ComputationResult, ref: str) -> None:
         record = result.record
         if isinstance(record, AnalysisRecord):
             scan = record.selection.scan_input
@@ -139,18 +149,12 @@ class ComputationAudit:
         else:
             return
 
-        item = connection.execute(
-            """SELECT i.call_kind, i.term, i.number, i.meta_json, i.consumed_at, b.provider
-               FROM llm_batch_items i LEFT JOIN llm_batches b ON b.batch_id = i.batch_id
-               WHERE i.batch_id = ? AND i.custom_id = ?""",
-            (result.batch_id, result.custom_id),
-        ).fetchone()
-        if item is None or item["provider"] is None:
+        if item["item_provider"] is None:
             if scan is not None:
                 self.counts["retained_scan_unverified"] += 1
             return
         try:
-            meta = batch_item_meta(item["call_kind"], item["meta_json"])
+            meta = batch_item_meta(item["item_kind"], item["item_meta"])
         except ValueError:
             if scan is not None:
                 self.issue("invalid_retained_scan_item_metadata", ref)
@@ -160,7 +164,9 @@ class ComputationAudit:
         )
         if scan is None and submitted is None:
             return
-        if tuple(item[key] for key in ("provider", "call_kind", "term", "number")) != (
+        if tuple(
+            item[key] for key in ("item_provider", "item_kind", "item_term", "item_number")
+        ) != (
             result.provider,
             result.purpose,
             result.term,
@@ -185,7 +191,7 @@ class ComputationAudit:
             or submitted is None
             or manifest is None
             or not result.request_sha256
-            or not item["consumed_at"]
+            or not item["item_consumed_at"]
         ):
             self.counts["retained_scan_unverified"] += 1
             if scan is None:
@@ -230,11 +236,13 @@ class ComputationAudit:
                 application.outcome == "failed" and result.has_record
             ):
                 self.issue("collection_result_mismatch", ref)
-            if result is not None and result.has_record:
-                try:
-                    validate_projected_application(connection, application)
-                except ValueError:
-                    self.issue("invalid_primary_projection_witness", ref)
+            if (
+                result is not None
+                and result.has_record
+                and application.projected_generation is not None
+                and not result.primary_projection
+            ):
+                self.issue("invalid_primary_projection_witness", ref)
             if census is not None:
                 if (
                     result is None

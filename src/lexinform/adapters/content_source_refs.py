@@ -234,7 +234,11 @@ def validate_projected_application(
     row = cursor.execute(
         "SELECT * FROM computation_results WHERE result_id=?", (application.result_id,)
     ).fetchone()
-    if row is None:
+    _validate_projected_result_row(row)
+
+
+def _validate_projected_result_row(row: sqlite3.Row | None) -> None:
+    if row is None or row["result_id"] is None:
         raise ValueError("a projected generation requires its retained primary result")
     result = parse_computation_result(row["result_json"])
     if (
@@ -248,20 +252,29 @@ def validate_projected_application(
         row[key] for key in ("result_id", "provider", "batch_id", "custom_id", "term", "number")
     ):
         raise ValueError("projected primary result columns disagree with its identity")
-    if (
-        result.purpose not in ("analysis", "reanalysis")
-        or result.validation != "validated"
-        or not isinstance(result.record, AnalysisRecord)
-    ):
+    if not is_primary_projection_result(result):
         raise ValueError("only a validated primary projection carries its resulting generation")
+
+
+def is_primary_projection_result(result: ComputationResult) -> bool:
+    return (
+        result.purpose in ("analysis", "reanalysis")
+        and result.validation == "validated"
+        and isinstance(result.record, AnalysisRecord)
+    )
 
 
 def validate_projected_applications(connection: sqlite3.Connection) -> None:
     cursor = connection.cursor()
     cursor.row_factory = sqlite3.Row
     for row in cursor.execute(
-        "SELECT * FROM result_applications"
-        " WHERE json_extract(application_json,'$.projected_generation') IS NOT NULL"
+        """
+        SELECT r.*, a.application_json, a.result_id AS application_result,
+               a.term AS application_term, a.number AS application_number,
+               a.generation AS application_generation, a.phase AS application_phase
+        FROM result_applications a LEFT JOIN computation_results r ON r.result_id=a.result_id
+        WHERE json_extract(a.application_json,'$.projected_generation') IS NOT NULL
+        """
     ):
         application = ResultApplication.model_validate_json(row["application_json"])
         if (
@@ -270,6 +283,8 @@ def validate_projected_applications(connection: sqlite3.Connection) -> None:
             application.number,
             application.generation,
             application.phase,
-        ) != tuple(row[key] for key in ("result_id", "term", "number", "generation", "phase")):
+        ) != tuple(
+            row["application_" + key] for key in ("result", "term", "number", "generation", "phase")
+        ):
             raise ValueError("projected application columns disagree with its immutable identity")
-        validate_projected_application(connection, application)
+        _validate_projected_result_row(row)
