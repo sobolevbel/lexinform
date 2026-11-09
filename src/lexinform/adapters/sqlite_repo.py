@@ -3377,30 +3377,26 @@ class SqliteBillRepository:
         recorded_at: datetime,
     ) -> None:
         stamp = physical_recorded_at(recorded_at)
-        first_times: dict[str, datetime] = {}
-        existing_reader = PhysicalInventoryReader(self._conn)
-        for item in metadata:
-            row = self._conn.execute(
-                "SELECT 1 FROM physical_metadata WHERE metadata_id=?", (item.metadata_id,)
-            ).fetchone()
-            first = existing_reader.read(item.metadata_id).recorded_at if row else recorded_at
-            assert first is not None, "the physical reader guarantees persisted recording times"
-            first_times[item.metadata_id] = first
-        records = tuple(
-            PhysicalMetadata.model_validate_json(
-                item.model_copy(
-                    update={"recorded_at": first_times[item.metadata_id]}
-                ).model_dump_json()
-            )
-            for item in metadata
-        )
-        receipts = tuple(
-            PhysicalCapture.model_validate_json(
-                item.model_copy(update={"recorded_at": recorded_at}).model_dump_json()
-            )
-            for item in captures
-        )
         with self.atomic():
+            reader = PhysicalInventoryReader(self._conn)
+            records: list[PhysicalMetadata] = []
+            for item in metadata:
+                saved = reader.read_optional(item.metadata_id)
+                first = saved.recorded_at if saved is not None else recorded_at
+                assert first is not None, "the physical reader guarantees persisted recording times"
+                record = PhysicalMetadata.model_validate_json(
+                    item.model_copy(update={"recorded_at": first}).model_dump_json()
+                )
+                if saved is None:
+                    records.append(record)
+                elif saved != record:
+                    raise ValueError("immutable physical metadata cannot be replaced")
+            receipts = tuple(
+                PhysicalCapture.model_validate_json(
+                    item.model_copy(update={"recorded_at": recorded_at}).model_dump_json()
+                )
+                for item in captures
+            )
             for record in records:
                 self._conn.execute(
                     "INSERT INTO physical_metadata VALUES (?,?,?,?,?,?,?) ON CONFLICT DO NOTHING",
@@ -3414,7 +3410,6 @@ class SqliteBillRepository:
                         record.model_dump_json(),
                     ),
                 )
-            reader = PhysicalInventoryReader(self._conn)
             for record in records:
                 saved = reader.read(record.metadata_id)
                 if saved.model_dump(exclude={"recorded_at"}) != record.model_dump(
@@ -3422,27 +3417,28 @@ class SqliteBillRepository:
                 ):
                     raise ValueError("immutable physical metadata cannot be replaced")
             for capture in receipts:
-                existing = self._conn.execute(
-                    "SELECT 1 FROM physical_captures WHERE capture_id=?", (capture.capture_id,)
-                ).fetchone()
-                if existing is None:
-                    reader.verify_capture(capture)
-                self._conn.execute(
-                    "INSERT INTO physical_captures VALUES (?,?,?,?,?,?,?,?) ON CONFLICT DO NOTHING",
-                    (
-                        capture.capture_id,
-                        capture.artifact_sha256,
-                        capture.recipe_id,
-                        capture.inventory_id,
-                        capture.execution_id,
-                        capture.extraction_id,
-                        stamp,
-                        capture.model_dump_json(),
-                    ),
-                )
                 row = self._conn.execute(
                     "SELECT * FROM physical_captures WHERE capture_id=?", (capture.capture_id,)
                 ).fetchone()
+                if row is None:
+                    reader.verify_capture(capture)
+                    self._conn.execute(
+                        "INSERT INTO physical_captures VALUES (?,?,?,?,?,?,?,?)"
+                        " ON CONFLICT DO NOTHING",
+                        (
+                            capture.capture_id,
+                            capture.artifact_sha256,
+                            capture.recipe_id,
+                            capture.inventory_id,
+                            capture.execution_id,
+                            capture.extraction_id,
+                            stamp,
+                            capture.model_dump_json(),
+                        ),
+                    )
+                    row = self._conn.execute(
+                        "SELECT * FROM physical_captures WHERE capture_id=?", (capture.capture_id,)
+                    ).fetchone()
                 if row is None:
                     raise ValueError(
                         "physical capture conflicts with a different immutable identity"
@@ -3457,14 +3453,10 @@ class SqliteBillRepository:
         self.save_physical_inventory((metadata,), recorded_at=recorded_at)
 
     def get_physical_metadata(self, metadata_id: str) -> PhysicalMetadata | None:
-        if (
-            self._conn.execute(
-                "SELECT 1 FROM physical_metadata WHERE metadata_id=?", (metadata_id,)
-            ).fetchone()
-            is None
-        ):
-            return None
-        return PhysicalInventoryReader(self._conn).read(metadata_id)
+        row = self._conn.execute(
+            "SELECT * FROM physical_metadata WHERE metadata_id=?", (metadata_id,)
+        ).fetchone()
+        return PhysicalInventoryReader(self._conn).read_row(row) if row is not None else None
 
     def save_physical_capture(self, capture: PhysicalCapture, *, recorded_at: datetime) -> None:
         self.save_physical_inventory(captures=(capture,), recorded_at=recorded_at)
@@ -3478,10 +3470,13 @@ class SqliteBillRepository:
     def iter_physical_captures(
         self, artifact_sha256: str | None = None
     ) -> Iterator[PhysicalCapture]:
-        rows = self._conn.execute(
-            "SELECT * FROM physical_captures WHERE (? IS NULL OR artifact_sha256=?)"
-            " ORDER BY capture_id",
-            (artifact_sha256, artifact_sha256),
+        rows = (
+            self._conn.execute("SELECT * FROM physical_captures ORDER BY capture_id")
+            if artifact_sha256 is None
+            else self._conn.execute(
+                "SELECT * FROM physical_captures WHERE artifact_sha256=? ORDER BY capture_id",
+                (artifact_sha256,),
+            )
         )
         reader = PhysicalInventoryReader(self._conn)
         for row in rows:
@@ -3670,7 +3665,11 @@ class SqliteBillRepository:
             " VALUES (?, ?) ON CONFLICT DO NOTHING",
             (reference.selection_id, reference.extraction_id),
         )
-        if reference not in self.list_selection_extractions(reference.selection_id):
+        saved = self._conn.execute(
+            "SELECT 1 FROM selection_extractions WHERE selection_id=? AND extraction_id=?",
+            (reference.selection_id, reference.extraction_id),
+        ).fetchone()
+        if saved is None:
             raise ValueError("an immutable extraction link cannot be rebound")
         log.debug(
             "local selection extraction binding",

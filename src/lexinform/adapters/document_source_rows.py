@@ -13,6 +13,13 @@ from lexinform.models import (
     SourceObservation,
 )
 
+_SELECTION_EDITION_QUERY = (
+    "SELECT link.selection_id, link.edition_id, s.question, s.policy_version, s.state,"
+    " s.record_json, e.recorded_at, e.edition_json FROM selection_editions AS link"
+    " LEFT JOIN document_selections AS s ON s.selection_id=link.selection_id"
+    " LEFT JOIN document_editions AS e ON e.edition_id=link.edition_id"
+)
+
 
 class DocumentSourceRows:
     def __init__(self, connection: sqlite3.Connection) -> None:
@@ -29,18 +36,7 @@ class DocumentSourceRows:
         ).fetchone()
         if row is None:
             return None
-        record = DocumentSelectionRecord.model_validate_json(row["record_json"])
-        expected = (
-            record.selection_id,
-            record.selection.question,
-            record.selection.policy_version,
-            record.selection.state,
-        )
-        if expected != tuple(
-            row[key] for key in ("selection_id", "question", "policy_version", "state")
-        ):
-            raise ValueError("document selection columns differ from the recorded identity")
-        return record
+        return _document_selection(row)
 
     def get_document_edition(self, edition_id: str) -> DocumentEdition | None:
         row = self._query(
@@ -50,26 +46,26 @@ class DocumentSourceRows:
 
     def get_selection_edition(self, selection_id: str) -> SelectionEditionReference | None:
         row = self._query(
-            "SELECT * FROM selection_editions WHERE selection_id=?", (selection_id,)
+            _SELECTION_EDITION_QUERY + " WHERE link.selection_id=?", (selection_id,)
         ).fetchone()
         return self._selection_edition(row) if row is not None else None
 
     def _selection_edition(self, row: sqlite3.Row) -> SelectionEditionReference:
-        reference = SelectionEditionReference.model_validate(dict(row))
-        selection = self.get_document_selection(reference.selection_id)
-        edition = self.get_document_edition(reference.edition_id)
-        if (
-            selection is None
-            or edition is None
-            or candidate_edition(selection, recorded_at=edition.recorded_at) != edition
-        ):
+        reference = SelectionEditionReference(
+            selection_id=row["selection_id"], edition_id=row["edition_id"]
+        )
+        if row["record_json"] is None or row["edition_json"] is None:
+            raise ValueError("an edition link differs from its recorded selection membership")
+        selection = _document_selection(row)
+        edition = _document_edition(row)
+        if candidate_edition(selection, recorded_at=edition.recorded_at) != edition:
             raise ValueError("an edition link differs from its recorded selection membership")
         return reference
 
     def validate_editions(self) -> None:
         for row in self._query("SELECT * FROM document_editions"):
             _document_edition(row)
-        for row in self._query("SELECT * FROM selection_editions"):
+        for row in self._query(_SELECTION_EDITION_QUERY):
             self._selection_edition(row)
 
     def get_source_observation(self, observation_id: str) -> SourceObservation | None:
@@ -150,6 +146,21 @@ class DocumentSourceRows:
         if expected != tuple(row[key] for key in columns):
             raise ValueError("source observation columns differ from the recorded identity")
         return observation
+
+
+def _document_selection(row: sqlite3.Row) -> DocumentSelectionRecord:
+    record = DocumentSelectionRecord.model_validate_json(row["record_json"])
+    expected = (
+        record.selection_id,
+        record.selection.question,
+        record.selection.policy_version,
+        record.selection.state,
+    )
+    if expected != tuple(
+        row[key] for key in ("selection_id", "question", "policy_version", "state")
+    ):
+        raise ValueError("document selection columns differ from the recorded identity")
+    return record
 
 
 def _document_edition(row: sqlite3.Row) -> DocumentEdition:

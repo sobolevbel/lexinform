@@ -2,7 +2,7 @@
 
 import datetime as dt
 import sqlite3
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from typing import Literal
 
 from lexinform.models.artifacts import ArtifactMetadata
@@ -231,6 +231,7 @@ class PhysicalInventoryReader:
         self.connection = connection
         self.records: dict[str, PhysicalMetadata] = {}
         self.validated: set[str] = set()
+        self._artifact_rows: dict[str, sqlite3.Row | None] = {}
         expected: dict[str, str] = {}
         for statement in PHYSICAL_INVENTORY_MIGRATION.split(";"):
             tokens = statement.split()
@@ -261,19 +262,35 @@ class PhysicalInventoryReader:
                 continue
             if identity in active:
                 raise PhysicalInventoryRowError("physical_reference_cycle")
-            if identity not in self.records:
-                row = self.connection.execute(
-                    "SELECT * FROM physical_metadata WHERE metadata_id=?", (identity,)
-                ).fetchone()
-                if row is None:
-                    raise PhysicalInventoryRowError("physical_reference_missing")
-                self.records[identity] = _metadata_row(row)
+            if self._load_metadata(identity) is None:
+                raise PhysicalInventoryRowError("physical_reference_missing")
             active.add(identity)
             stack.append((identity, True))
             stack.extend(
                 (ref, False) for ref in reversed(physical_references(self.records[identity]))
             )
         return self.records[metadata_id]
+
+    def _load_metadata(self, metadata_id: str) -> PhysicalMetadata | None:
+        if metadata_id in self.records:
+            return self.records[metadata_id]
+        row = self.connection.execute(
+            "SELECT * FROM physical_metadata WHERE metadata_id=?", (metadata_id,)
+        ).fetchone()
+        if row is None:
+            return None
+        record = _metadata_row(row)
+        self.records[metadata_id] = record
+        return record
+
+    def read_optional(self, metadata_id: str) -> PhysicalMetadata | None:
+        return self.read(metadata_id) if self._load_metadata(metadata_id) is not None else None
+
+    def read_row(self, row: sqlite3.Row) -> PhysicalMetadata:
+        metadata_id = row["metadata_id"]
+        if metadata_id not in self.records:
+            self.records[metadata_id] = _metadata_row(row)
+        return self.read(metadata_id)
 
     def typed(self, metadata_id: str, kind: MetadataKind) -> PhysicalMetadata:
         record = self.records[metadata_id]
@@ -293,10 +310,27 @@ class PhysicalInventoryReader:
             raise PhysicalInventoryRowError("physical_reference_kind")
         return record, record.metadata
 
+    def _load_artifacts(self, identities: Iterable[str]) -> None:
+        missing = tuple(
+            dict.fromkeys(
+                identity for identity in identities if identity not in self._artifact_rows
+            )
+        )
+        for start in range(0, len(missing), 128):
+            batch = missing[start : start + 128]
+            placeholders = ",".join("?" for _ in batch)
+            rows = {
+                row["sha256"]: row
+                for row in self.connection.execute(
+                    f"SELECT * FROM artifacts WHERE sha256 IN ({placeholders})", batch
+                )
+            }
+            self._artifact_rows.update((identity, rows.get(identity)) for identity in batch)
+
     def _known_body_size(self, identity: str) -> int | None:
-        artifact = self.connection.execute(
-            "SELECT * FROM artifacts WHERE sha256=?", (identity,)
-        ).fetchone()
+        if identity not in self._artifact_rows:
+            self._load_artifacts((identity,))
+        artifact = self._artifact_rows[identity]
         if artifact is None:
             return None
         try:
@@ -334,6 +368,9 @@ class PhysicalInventoryReader:
                     "rows", len(header.metadata.rows)
                 ):
                     raise ValueError("graph edges must retain the observed header universe")
+                self._load_artifacts(
+                    (payload.body_sha, *(body for body, _ in payload.edges if body is not None))
+                )
                 known_size = self._known_body_size(payload.body_sha)
                 if (
                     known_size is not None
@@ -502,27 +539,12 @@ class PhysicalInventoryReader:
             record.artifact_sha256,
         ):
             raise PhysicalInventoryRowError("physical_capture_owner_mismatch")
-        artifact = self.connection.execute(
-            "SELECT * FROM artifacts WHERE sha256=?", (record.artifact_sha256,)
-        ).fetchone()
-        if artifact is None:
+        byte_size = self._known_body_size(record.artifact_sha256)
+        if byte_size is None:
             raise PhysicalInventoryRowError("physical_capture_artifact_missing")
-        try:
-            if not isinstance(artifact["byte_size"], int):
-                raise ValueError("physical artifact parents require an integer byte size")
-            parent_artifact = ArtifactMetadata(
-                sha256=artifact["sha256"],
-                byte_size=artifact["byte_size"],
-                recorded_at=dt.datetime.fromisoformat(artifact["recorded_at"]),
-            )
-        except (ValueError, TypeError) as exc:
-            raise PhysicalInventoryRowError("physical_capture_artifact_invalid") from exc
         if isinstance(inventory.metadata, PhysicalGraph) and inventory.metadata.header is not None:
             header = self.typed(inventory.metadata.header, "headers").metadata
-            if (
-                isinstance(header, PhysicalHeaders)
-                and header.central_directory_span[1] > parent_artifact.byte_size
-            ):
+            if isinstance(header, PhysicalHeaders) and header.central_directory_span[1] > byte_size:
                 raise PhysicalInventoryRowError("physical_capture_owner_mismatch")
         if isinstance(execution.metadata, PhysicalRootOrder) and execution.metadata.contexts:
             unit = self._unit(execution.metadata.contexts[0][3])[1]
@@ -573,7 +595,7 @@ def physical_inventory_issues(connection: sqlite3.Connection) -> Iterator[tuple[
         return
     for row in connection.execute("SELECT * FROM physical_metadata ORDER BY metadata_id"):
         try:
-            reader.read(row["metadata_id"])
+            reader.read_row(row)
         except PhysicalInventoryRowError as exc:
             yield exc.code, "physical_metadata/" + row["metadata_id"]
     for row in connection.execute("SELECT * FROM physical_captures ORDER BY capture_id"):
