@@ -11,6 +11,7 @@ from lexinform.document_candidates import (
     select_candidate_versions,
     select_document_parts,
 )
+from lexinform.document_selection import ARCHIVE_EDITION_DIRECTORY_POLICY_VERSION
 from lexinform.document_versions import comparable_versions, compare_version_decision
 from lexinform.models import (
     DocumentPart,
@@ -124,6 +125,112 @@ def test_equal_archive_bill_bodies_do_not_hide_distinct_annexes(amount: str, sta
     assert len(result.selection.parts) == (4 if state == "ambiguous" else 2)
     assert ("draft_version_conflict" in result.selection.limitations) == (state == "ambiguous")
     assert bool(result.text) == (state != "ambiguous")
+
+
+@pytest.mark.parametrize("other_amount", [200, 300])
+def test_archive_editions_in_sibling_directories_keep_their_own_annexes(
+    other_amount: int,
+) -> None:
+    body = docx(BILL)
+    package = archive(
+        {
+            "a/projekt.docx": body,
+            "a/annexes/annex.docx": docx("Załącznik do ustawy\nWykaz\n200 zł"),
+            "a/uzasadnienie-z.docx": docx("UZASADNIENIE\nWłasne"),
+            "b/projekt.docx": body,
+            "b/annexes/annex.docx": docx(f"Załącznik do ustawy\nWykaz\n{other_amount} zł"),
+            "b/uzasadnienie-a.docx": docx("UZASADNIENIE\nObce"),
+        }
+    )
+
+    result = select_document_parts(extractor().extract_parts(package), max_part_chars=None)
+
+    if other_amount != 200:
+        assert result.selection.state == "ambiguous" and not result.text
+        assert "draft_version_conflict" in result.selection.limitations
+        assert sum(part.role == "normative_annex" for part in result.selection.parts) == 2
+    else:
+        assert result.selection.state == "unverified" and result.text
+        assert [part.members[-1] for part in result.selection.parts] == [
+            "a/projekt.docx",
+            "a/annexes/annex.docx",
+            "a/uzasadnienie-z.docx",
+        ]
+
+
+def test_archive_edition_annex_stays_before_embedded_justification() -> None:
+    body = WHOLE_ACT.replace(f"{PAGE_BREAK}UZASADNIENIE", f"{PAGE_BREAK}\nUZASADNIENIE")
+    annex = "Załącznik do ustawy\nWykaz\n200 zł"
+    physical = ExtractedParts(
+        input_sha256="a" * 64,
+        parts=(
+            DocumentPart(text=body, members=("a/projekt.pdf",)),
+            DocumentPart(text=annex, members=("a/annex.pdf",)),
+            DocumentPart(text=body, members=("b/projekt.pdf",)),
+            DocumentPart(text=annex, members=("b/annex.pdf",)),
+        ),
+    )
+
+    result = select_document_parts(physical, max_part_chars=None)
+
+    assert result.text.index("Wykaz") < result.text.index("UZASADNIENIE")
+
+
+def test_single_archive_edition_keeps_annex_in_separate_directory() -> None:
+    package = archive(
+        {
+            "draft/projekt.docx": docx(BILL),
+            "annexes/annex.docx": docx("Załącznik do ustawy\nWykaz\n200 zł"),
+        }
+    )
+
+    result = select_document_parts(extractor().extract_parts(package), max_part_chars=None)
+
+    assert [part.members[-1] for part in result.selection.parts] == [
+        "draft/projekt.docx",
+        "annexes/annex.docx",
+    ]
+
+
+def test_shared_root_annex_between_sibling_editions_keeps_selection_ambiguous() -> None:
+    package = archive(
+        {
+            "a/projekt.docx": docx(BILL),
+            "b/projekt.docx": docx(BILL),
+            "annex.docx": docx("Załącznik do ustawy\nWykaz\n200 zł"),
+        }
+    )
+    url = "https://api.test/project.zip"
+    gateway = FakeSejmGateway(files={url: package})
+    loader = TextLoader({"api.test": gateway.download}, extractor(), max_bytes=len(package))
+
+    _, result = loader.select_document(TextDocument(url=url, kind="rcl", compare_versions=True))
+
+    assert result.selection.state == "ambiguous" and not result.text
+    assert result.selection.policy_version == ARCHIVE_EDITION_DIRECTORY_POLICY_VERSION
+    assert "draft_version_conflict" in result.selection.limitations
+    assert [
+        part.members[-1] for part in result.selection.parts if part.role == "normative_annex"
+    ] == [
+        "annex.docx",
+    ]
+
+
+def test_root_and_nested_draft_use_the_closest_edition_directory() -> None:
+    package = archive(
+        {
+            "projekt.docx": docx(BILL),
+            "annex.docx": docx("Załącznik do ustawy\nWykaz\n200 zł"),
+            "later/projekt.docx": docx(BILL),
+            "later/appendices/annex.docx": docx("Załącznik do ustawy\nWykaz\n300 zł"),
+        }
+    )
+
+    result = select_document_parts(extractor().extract_parts(package), max_part_chars=None)
+
+    assert result.selection.state == "ambiguous" and not result.text
+    assert "draft_version_conflict" in result.selection.limitations
+    assert len(result.selection.parts) == 4
 
 
 def test_file_selection_keeps_input_indices_after_non_bill_candidates() -> None:

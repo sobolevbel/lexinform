@@ -65,6 +65,7 @@ def review_admission(
     oversize: bool,
     role: ReviewRole,
     expected_digest: str | None = None,
+    verified_exclusions: tuple[str, ...] = (),
 ) -> ReviewAdmission:
     if expected_digest is not None and text_digest(text) != expected_digest:
         return "digest_mismatch"
@@ -74,7 +75,7 @@ def review_admission(
         bool(text.strip())
         and not oversize
         and carries_the_document(text, min_chars=min_chars, pages=pages)
-        and not selection.rejected
+        and all(reason in verified_exclusions for reason in selection.rejected)
         and not selection.has_pdf_page_failure
         and selection.state not in ("ambiguous", "unsupported")
     ):

@@ -14,7 +14,7 @@ import logging
 import threading
 import time
 from collections import Counter
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from contextlib import AbstractContextManager, contextmanager, suppress
 from contextvars import ContextVar, Token
 from dataclasses import dataclass, field, replace
@@ -114,7 +114,11 @@ from lexinform.models.candidate_trace import (
     composed_support_sha256,
     version_part_gap_url,
 )
-from lexinform.models.document_reads import DocumentPhysicalDiagnostics, RclProposalRead
+from lexinform.models.document_reads import (
+    DocumentPhysicalDiagnostics,
+    RclProposalRead,
+    comment_table_exclusion_note,
+)
 from lexinform.models.document_reads import LoadedFile as LoadedFile
 from lexinform.models.extractions import DocumentExtraction, ObservedMemberBlockCopy
 from lexinform.models.rcl import RclProject, rcl_num_key
@@ -198,6 +202,28 @@ _ARCHIVE_READ_SINK: ContextVar[
 
 
 @dataclass
+class _CommentTableExclusions:
+    observed: bool = False
+    reads: dict[str, ArtifactReadIdentity] = field(default_factory=dict)
+
+    def apply(self, file: LoadedFile) -> LoadedFile:
+        if not self.observed:
+            return file
+        reads = tuple(self.reads[key] for key in sorted(self.reads))
+        notes = tuple(map(comment_table_exclusion_note, reads))
+        return replace(
+            file,
+            selection=file.selection.model_copy(
+                update={
+                    "policy_version": RCL_COMMENT_TABLE_AMENDMENT_POLICY_VERSION,
+                    "rejected": (*file.selection.rejected, *notes),
+                }
+            ),
+            excluded_amendment_reads=reads,
+        )
+
+
+@dataclass
 class _CompositionCapture:
     required: RequiredPartCapture
     normative_gap: NormativeAnnexGap | None = None
@@ -206,7 +232,9 @@ class _CompositionCapture:
     )
     required_gap: RequiredPartGap | None = None
     amendment_gap: AmendmentPartGap | None = None
-    comment_table_exclusions: dict[str, ArtifactReadIdentity] = field(default_factory=dict)
+    comment_table_exclusions: _CommentTableExclusions = field(
+        default_factory=_CommentTableExclusions
+    )
     version_part_gaps: list[RequiredPartGap | AmendmentPartGap | NormativeAnnexGap] = field(
         default_factory=list
     )
@@ -509,6 +537,7 @@ class TextLoader:
         self._seen_bodies: dict[str, int] = {}
         self._known_bodies: dict[str, int] = {}
         self._known_reads: dict[str, ArtifactReadIdentity] = {}
+        self._extraction_ids: dict[tuple[str, str], str] = {}
         self._extractions: dict[str, ExtractionResult] = {}
         self._download_diagnostics = DocumentDownloadRecorder()
         self._metadata_url_omissions = MetadataUrlOmissionCollector()
@@ -743,10 +772,12 @@ class TextLoader:
     def extractions_for_selection(
         self, selection: DocumentSelection
     ) -> tuple[ExtractionResult, ...]:
-        sources = {part.source_sha256 for part in (*selection.parts, *selection.observed_parts)}
+        sources = {
+            (part.url, part.source_sha256) for part in (*selection.parts, *selection.observed_parts)
+        }
         with self._lock:
-            return tuple(
-                self._extractions[sha] for sha in sorted(sources) if sha in self._extractions
+            return self._ordered_extractions(
+                self._extraction_ids[source] for source in sources if source in self._extraction_ids
             )
 
     def read_artifacts(self) -> tuple[ArtifactIdentity, ...]:
@@ -765,11 +796,19 @@ class TextLoader:
     def read_extraction_results(self) -> tuple[ExtractionResult, ...]:
         """Known URL-free results share the retained body inventory's cache-origin scope."""
         with self._lock:
-            return tuple(
-                self._extractions[sha]
-                for sha in sorted(self._extractions)
-                if sha in self._known_bodies
+            return self._ordered_extractions(
+                result_id
+                for result_id, result in self._extractions.items()
+                if result.artifact_sha256 in self._known_bodies
             )
+
+    def _ordered_extractions(self, result_ids: Iterable[str]) -> tuple[ExtractionResult, ...]:
+        return tuple(
+            self._extractions[result_id]
+            for result_id in sorted(
+                set(result_ids), key=lambda key: (self._extractions[key].artifact_sha256, key)
+            )
+        )
 
     def file_origins(
         self, url: str, loaded: LoadedFile
@@ -789,7 +828,8 @@ class TextLoader:
                 ),
                 None,
             )
-            return artifact, read, self._extractions.get(loaded.sha256)
+            result_id = self._extraction_ids.get((url, loaded.sha256))
+            return artifact, read, self._extractions[result_id] if result_id is not None else None
 
     def reads_for_selection(self, selection: DocumentSelection) -> tuple[ArtifactReadIdentity, ...]:
         sources = {
@@ -920,18 +960,9 @@ class TextLoader:
             with suppress(Exception):
                 enriched = _trace_with_archive_evidence(trace, evidence)
                 defer_archive_trace = partial(self._defer_archive_trace, trace.trace_id, enriched)
-        recorded_selection = file.selection
-        if file.excluded_amendment_reads:
-            exclusion_notes = tuple(
-                f"{read.requested_url}: excluded ministerial comments package ({read.sha256})"
-                for read in file.excluded_amendment_reads
-            )
-            recorded_selection = recorded_selection.model_copy(
-                update={"rejected": (*recorded_selection.rejected, *exclusion_notes)}
-            )
         return DocumentSourceRead(
             source_document,
-            DocumentSelectionRecord.from_selection(recorded_selection),
+            DocumentSelectionRecord.from_selection(file.selection),
             physical.artifacts,
             reads=tuple(
                 dict.fromkeys(
@@ -1205,21 +1236,20 @@ class TextLoader:
                     )
             bundle = admission.bundle
         bundle = finish_normative(bundle)
+        exclusions = attempt[0].comment_table_exclusions if attempt else _CommentTableExclusions()
         for position, url in enumerate(document.amendment_urls):
             file = self._read_composed_part(document, address, "amendment", position, url)
             if (
-                attempt is not None
-                and document.kind == "rcl"
+                document.kind == "rcl"
                 and file.ministerial_comment_table_bundle
                 and urlparse(url).path.casefold().endswith(".zip")
             ):
-                _, read, _ = self.file_origins(url, file)
-                exclusions = attempt[0].comment_table_exclusions
-                if read is not None and (
-                    read.read_id in exclusions or len(exclusions) < MAX_COMMENT_TABLE_EXCLUSIONS
-                ):
-                    exclusions[read.read_id] = read
-                    continue
+                exclusions.observed = True
+                if len(exclusions.reads) < MAX_COMMENT_TABLE_EXCLUSIONS:
+                    _, read, _ = self.file_origins(url, file)
+                    if read is not None:
+                        exclusions.reads[read.read_id] = read
+                continue
             amended = amendment_part(bundle, url, file, rcl=document.kind == "rcl")
             if isinstance(amended, RequiredPartFailure):
                 if attempt is not None:
@@ -1232,7 +1262,7 @@ class TextLoader:
                             reason=amended.reason,
                             file_sha256=None if file.oversize else file.sha256,
                         )
-                return amended.blocked
+                return amended.blocked if attempt else exclusions.apply(amended.blocked)
             bundle = amended
         for position, url in enumerate(document.extra_urls):
             try:
@@ -1276,7 +1306,8 @@ class TextLoader:
                     len(bundle.evidence) :
                 ]
             bundle = composed
-        return finish_bundle(bundle, document)
+        loaded = finish_bundle(bundle, document)
+        return loaded if attempt else exclusions.apply(loaded)
 
     def _read_composed_part(
         self,
@@ -1810,22 +1841,17 @@ class TextLoader:
             candidate.amendment_urls for candidate in (document, *document.alternatives)
         ):
             policy_version = RCL_AMENDMENT_ARCHIVE_POLICY_VERSION
-        comment_reads = (
-            tuple(
-                sorted(composition.comment_table_exclusions.values(), key=lambda read: read.read_id)
-            )
-            if composition is not None
-            else ()
-        )
-        if comment_reads:
-            policy_version = RCL_COMMENT_TABLE_AMENDMENT_POLICY_VERSION
-        return selected, replace(
+        loaded = replace(
             loaded,
             archive_version_evidence=archive_version_evidence,
-            selection=loaded.selection.model_copy(update={"policy_version": policy_version}),
+            selection=loaded.selection.model_copy(
+                update={"policy_version": loaded.selection.policy_version or policy_version}
+            ),
             candidate_trace=trace,
-            excluded_amendment_reads=comment_reads,
         )
+        return selected, composition.comment_table_exclusions.apply(
+            loaded
+        ) if composition else loaded
 
     @contextmanager
     def _composition_capture_scope(self) -> Iterator[_CompositionCapture | None]:
@@ -2108,6 +2134,14 @@ class TextLoader:
             )
             selection = DocumentSelection(
                 state="ambiguous",
+                policy_version=next(
+                    (
+                        conflict.policy_version
+                        for conflict in conflicts.values()
+                        if conflict.policy_version
+                    ),
+                    None,
+                ),
                 limitations=("draft_version_conflict",),
                 parts=tuple(part for conflict in conflicts.values() for part in conflict.parts),
                 observed_parts=tuple(part for parts in observed.values() for part in parts),
@@ -2143,6 +2177,14 @@ class TextLoader:
             )
             selection = DocumentSelection(
                 state="waiting",
+                policy_version=next(
+                    (
+                        failed.policy_version
+                        for failed in incomplete.values()
+                        if failed.policy_version
+                    ),
+                    None,
+                ),
                 parts=tuple(part for failed in incomplete.values() for part in failed.parts),
                 observed_parts=tuple(part for parts in observed.values() for part in parts),
                 rejected=(
@@ -2409,8 +2451,10 @@ class TextLoader:
                     ):
                         with suppress(Exception):
                             comment_table_bundle = self._verify_rcl_comment_table(data, observed)
+                    result_id = observed.result.result_id
                     with self._lock:
-                        self._extractions[observed.result.artifact_sha256] = observed.result
+                        self._extraction_ids[url, observed.result.artifact_sha256] = result_id
+                        self._extractions.setdefault(result_id, observed.result)
                     if invocation is not None:
                         try:
                             invocation.bind_extraction(observed.result)

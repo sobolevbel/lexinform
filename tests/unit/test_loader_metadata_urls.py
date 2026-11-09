@@ -1,20 +1,56 @@
 import datetime as dt
 import hashlib
+from functools import partial
 
 import pytest
 
+from lexinform.adapters.document_text import DocxTextExtractor
+from lexinform.adapters.rcl_observed_word_source import enrich_rcl_observed_word_source
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.errors import AttachmentTooLargeError
 from lexinform.models import ArtifactReadIdentity
 from lexinform.services.document_read_reporting import CliDocumentReadReporter
 from lexinform.services.documents import TextLoader
 from tests.fakes import FakeSejmGateway, FakeTextExtractor, FixedClock
-from tests.unit.test_physical_extraction import docx, extractor
+from tests.unit.test_physical_extraction import archive, docx, extractor
+from tests.unit.test_rcl_amendments import TARGET, member
 
 URL = "https://source.test/draft.docx"
 UNSAFE = URL + "?token=PRIVATE"
 BODY = b"complete body"
 TEXT = "USTAWA Art. 1. Cudzoziemiec sklada wniosek. " * 30
+
+
+@pytest.mark.parametrize("archive_first", [True, False])
+def test_extraction_provenance_stays_with_the_exact_requested_url(archive_first: bool) -> None:
+    zip_url, alias = "https://source.test/proposal.zip", "https://source.test/proposal"
+    data = archive({"autopoprawka.docx": docx(member(f"{TARGET} (druk nr 764)").text)})
+    gateway = FakeSejmGateway(files=dict.fromkeys((zip_url, alias), data))
+    loader = TextLoader(
+        {"source.test": gateway.download},
+        extractor(),
+        max_bytes=len(data),
+        enrich_rcl_observed_blocks=partial(
+            enrich_rcl_observed_word_source, "source.test", DocxTextExtractor()
+        ),
+    )
+    first, second = (zip_url, alias) if archive_first else (alias, zip_url)
+
+    original = loader.read(first)
+    expected = loader.file_origins(first, original)[2]
+    other = loader.read(second)
+    result = loader.file_origins(second, other)[2]
+
+    assert expected is not None and result is not None
+    assert expected.artifact_sha256 == result.artifact_sha256
+    assert (expected.observed_member_block_copy is not None) == archive_first
+    assert (result.observed_member_block_copy is not None) != archive_first
+    assert loader.file_origins(first, original)[2] == expected
+    assert loader.extractions_for_selection(original.selection) == (expected,)
+    assert {entry.result_id for entry in loader.read_extraction_results()} == {
+        expected.result_id,
+        result.result_id,
+    }
 
 
 @pytest.mark.parametrize("url", [URL, UNSAFE])

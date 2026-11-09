@@ -147,6 +147,7 @@ from lexinform.models.batch import (
 )
 from lexinform.models.candidate_trace import CandidateDispositionTrace
 from lexinform.models.computations import CollectionReason, ComputationRecord
+from lexinform.models.document_reads import comment_table_exclusion_note
 from lexinform.models.documents import SenateAmendmentInputWitness
 from lexinform.models.input_receipts import (
     MultipartTextInputReceipt,
@@ -2227,6 +2228,9 @@ class AnalysisService:
             oversize=file.oversize,
             role=source.role,
             expected_digest=source.expected_digest,
+            verified_exclusions=tuple(
+                map(comment_table_exclusion_note, file.excluded_amendment_reads)
+            ),
         )
         if admission in ("digest_mismatch", "role_mismatch"):
             return None

@@ -165,6 +165,10 @@ class RclProposalRead:
     base_bill_sample: ObservedMemberBlockCopy | None = None
 
 
+def comment_table_exclusion_note(read: ArtifactReadIdentity) -> str:
+    return f"{read.requested_url}: excluded ministerial comments package ({read.sha256})"
+
+
 @dataclass(frozen=True)
 class LoadedFile:
     """A downloaded file's existing text, scan and physical-selection snapshot."""

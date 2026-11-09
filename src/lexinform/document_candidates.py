@@ -12,10 +12,13 @@ from lexinform.archive_policy_capture import (
     ArchiveVersionGroup,
     PolicyOutcome,
 )
+from lexinform.document_selection import ARCHIVE_EDITION_DIRECTORY_POLICY_VERSION
 from lexinform.document_versions import (
     VersionComparison,
     compare_version_decision,
+    join_normative_parts,
     normative_annex_key,
+    normative_insertion_offset,
     regulation_support,
 )
 from lexinform.models.candidate_observation import CandidateObservation
@@ -44,6 +47,8 @@ _ROLE_OF_KIND: dict[Kind, TextRole] = {
 }
 
 _NOT_THE_BILL = APPENDIX_KINDS | {"letter"}
+type _ArchiveOccurrence = tuple[tuple[int, ...], tuple[str, ...]]
+type _ArchiveFamily = tuple[_ArchiveOccurrence, str]
 
 _ARCHIVE_RESPONSE_HEADING = re.compile(
     r"\A\s*Odniesienie\s+się\s+przez\s+Ministerstwo\s+[^\f]{1,180}?"
@@ -242,6 +247,7 @@ def _select_parts(
     version_choice: ArchiveVersionChoice | None = None
     conflict_slots: tuple[int, ...] = ()
     version_group: ArchiveVersionGroup | None = None
+    partitioned_editions = False
 
     def note(index: int, outcome: PolicyOutcome, reason: ArchiveMemberPolicyReason) -> None:
         if decision_sink is not None:
@@ -269,6 +275,14 @@ def _select_parts(
                     )
             except Exception:
                 pass
+        if partitioned_editions:
+            return result.model_copy(
+                update={
+                    "selection": result.selection.model_copy(
+                        update={"policy_version": ARCHIVE_EDITION_DIRECTORY_POLICY_VERSION}
+                    )
+                }
+            )
         return result
 
     physical = tuple(
@@ -375,23 +389,37 @@ def _select_parts(
     confirmed = [peers[index] for index in bill_indices]
     comparison_peers = confirmed or [(main_index, main)]
 
-    def archive_parent(
-        members: tuple[str, ...], ordinals: tuple[int, ...]
-    ) -> tuple[tuple[int, ...], tuple[str, ...]]:
+    def archive_parent(members: tuple[str, ...], ordinals: tuple[int, ...]) -> _ArchiveOccurrence:
         return ordinals[:-1] if part_archive_ordinals else (), members[:-1]
 
-    def comparison_family(
-        members: tuple[str, ...], ordinals: tuple[int, ...]
-    ) -> tuple[tuple[int, ...], tuple[str, ...], str]:
-        return (*archive_parent(members, ordinals), members[-1].rpartition("/")[0])
+    def comparison_family(members: tuple[str, ...], ordinals: tuple[int, ...]) -> _ArchiveFamily:
+        return archive_parent(members, ordinals), members[-1].rpartition("/")[0]
 
-    def part_parent(index: int, part: DocumentPart) -> tuple[tuple[int, ...], tuple[str, ...]]:
-        return archive_parent(part.members, physical[index].archive_ordinals)
-
-    def part_family(index: int, part: DocumentPart) -> tuple[tuple[int, ...], tuple[str, ...], str]:
-        return (*part_parent(index, part), part.members[-1].rpartition("/")[0])
+    def part_family(index: int, part: DocumentPart) -> _ArchiveFamily:
+        return comparison_family(part.members, physical[index].archive_ordinals)
 
     comparison_families = {part_family(index, part) for index, part in comparison_peers}
+    edition_directories: dict[_ArchiveOccurrence, set[str]] = {}
+    for occurrence, directory in comparison_families:
+        edition_directories.setdefault(occurrence, set()).add(directory)
+    partitioned_editions = any(len(directories) > 1 for directories in edition_directories.values())
+
+    def edition_family(index: int, part: DocumentPart) -> _ArchiveFamily:
+        occurrence, directory = part_family(index, part)
+        roots = edition_directories.get(occurrence, set())
+        if len(roots) < 2:
+            return occurrence, ""
+        owner = max(
+            (
+                root
+                for root in roots
+                if not root or directory == root or directory.startswith(f"{root}/")
+            ),
+            key=len,
+            default=directory,
+        )
+        return occurrence, owner
+
     incomplete_peers = tuple(
         (index, part)
         for index, part in incomplete_named_bills
@@ -442,25 +470,36 @@ def _select_parts(
             )
         )
     if len(confirmed) > 1:
-        annex_keys: dict[tuple[tuple[int, ...], tuple[str, ...]], list[tuple[int, str]]] = {}
+        annex_keys: dict[_ArchiveFamily, list[tuple[int, str]]] = {}
+        annex_families = {index: edition_family(index, part) for index, part in annexes}
         for index, part in annexes:
-            annex_keys.setdefault(part_parent(index, part), []).append(
-                normative_annex_key(part.text)
-            )
+            annex_keys.setdefault(annex_families[index], []).append(normative_annex_key(part.text))
         editions = CandidateSet(
             tuple(
                 replace(
                     candidate,
-                    annex_identities=tuple(sorted(annex_keys.get(part_parent(*peer), ()))),
+                    annex_identities=tuple(sorted(annex_keys.get(edition_family(*peer), ()))),
                 )
                 for candidate, peer in zip(peer_set.entries, peers, strict=True)
             )
         )
         comparison, annex_conflict = editions.compare_editions(bill_indices)
         indices = comparison.matching_indices
-        compared_parents = {part_parent(*confirmed[index]) for index in indices}
+        compared_families = {edition_family(*confirmed[index]) for index in indices}
+        compared_archives = {occurrence for occurrence, _ in compared_families}
+        unassigned_annexes = {
+            index
+            for index, (occurrence, directory) in annex_families.items()
+            if occurrence in compared_archives
+            and len(edition_directories[occurrence]) > 1
+            and directory not in edition_directories[occurrence]
+        }
         group_minimum = 2 if annex_conflict else 3
-        if decision_sink is not None and group_minimum <= len(confirmed) <= 32:
+        if (
+            decision_sink is not None
+            and not unassigned_annexes
+            and group_minimum <= len(confirmed) <= 32
+        ):
             candidate_slots = tuple(index for index, _ in confirmed)
             version_group = ArchiveVersionGroup(
                 candidate_slots=candidate_slots,
@@ -478,7 +517,7 @@ def _select_parts(
                 if indices
                 else "text_conflict",
             )
-        if not indices or annex_conflict:
+        if not indices or annex_conflict or unassigned_annexes:
             if not indices and decision_sink is not None and len(confirmed) == 2:
                 conflict_slots = (confirmed[0][0], confirmed[1][0])
             for index, _ in (*annexes, *supporting):
@@ -490,16 +529,26 @@ def _select_parts(
                     selection=DocumentSelection(
                         observed_parts=tuple(parts),
                         state="ambiguous",
-                        limitations=("draft_version_conflict",) if annex_conflict else (),
+                        limitations=("draft_version_conflict",)
+                        if annex_conflict or unassigned_annexes
+                        else (),
                         parts=(
                             *(part for _, part in confirmed),
                             *(
                                 part
                                 for index, part in annexes
-                                if annex_conflict and part_parent(index, part) in compared_parents
+                                if index in unassigned_annexes
+                                or (annex_conflict and annex_families[index] in compared_families)
                             ),
                         ),
-                        rejected=tuple(rejected),
+                        rejected=(
+                            *rejected,
+                            *(
+                                ("Archive annex cannot be assigned to a draft directory",)
+                                if unassigned_annexes
+                                else ()
+                            ),
+                        ),
                     )
                 )
             )
@@ -514,13 +563,13 @@ def _select_parts(
                 selected_first=winner == 0,
                 date_filter=(dates[0], dates[1]) if dates is not None else None,
             )
-    family = part_parent(main_index, main)
+    family = edition_family(main_index, main)
     for index, _ in (*annexes, *supporting):
         note(index, "policy_excluded", "family_exclusion")
     kept = [main]
     note(main_index, "selected", "selected_main")
     kept_annexes = sorted(
-        ((index, p) for index, p in annexes if part_parent(index, p) == family),
+        ((index, p) for index, p in annexes if edition_family(index, p) == family),
         key=lambda item: normative_annex_key(item[1].text),
     )
     for index, p in kept_annexes:
@@ -530,7 +579,7 @@ def _select_parts(
         matches = [
             (index, p)
             for index, p in supporting
-            if p.role == role and part_parent(index, p) == family
+            if p.role == role and edition_family(index, p) == family
         ]
         for index, _ in matches:
             note(index, "policy_excluded", "rank_preference")
@@ -545,9 +594,17 @@ def _select_parts(
             kept.append(p)
             note(index, "selected", "selected_support")
     losses = tuple(rejected)
+    text = PAGE_BREAK.join(part.text for part in kept)
+    if (
+        len(edition_directories[family[0]]) > 1
+        and kept_annexes
+        and normative_insertion_offset(main.text) < len(main.text)
+    ):
+        normative = join_normative_parts(main.text, [part.text for _, part in kept_annexes])
+        text = PAGE_BREAK.join((normative, *(part.text for part in kept[1 + len(kept_annexes) :])))
     return finish(
         ExtractedDocument(
-            text=PAGE_BREAK.join(p.text for p in kept),
+            text=text,
             selection=DocumentSelection(
                 observed_parts=tuple(parts),
                 parts=tuple(kept),
