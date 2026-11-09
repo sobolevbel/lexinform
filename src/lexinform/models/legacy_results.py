@@ -2,11 +2,13 @@
 
 import hashlib
 from datetime import datetime
-from typing import Self, cast
+from typing import Literal, Self, cast
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
 from lexinform.json_storage import canonical_json, read_json
+
+MAX_LEGACY_BATCH_TEXT_BYTES = 1_048_576
 
 LEGACY_ANSWER_FIELDS = frozenset(
     {"analysis", "amendments", "digest", "comparison", "proposal", "review"}
@@ -32,6 +34,23 @@ def has_legacy_marker(value: JsonValue) -> bool:
     return isinstance(value, list) and any(has_legacy_marker(child) for child in value)
 
 
+class LegacyBatchTextValue(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    profile: Literal["legacy-batch-text-v1"] = "legacy-batch-text-v1"
+    text: str = Field(min_length=1)
+    text_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    @model_validator(mode="after")
+    def exact_text(self) -> Self:
+        data = self.text.encode()
+        if len(data) > MAX_LEGACY_BATCH_TEXT_BYTES:
+            raise ValueError("a legacy batch text exceeds its UTF-8 byte limit")
+        if hashlib.sha256(data).hexdigest() != self.text_sha256:
+            raise ValueError("a legacy batch text checksum must match the exact stored text")
+        return self
+
+
 class LegacyResultValue(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -41,9 +60,21 @@ class LegacyResultValue(BaseModel):
     def value_id(self) -> str:
         return "legacy-value-v1:" + hashlib.sha256(self.value_json.encode()).hexdigest()
 
+    @property
+    def batch_text(self) -> LegacyBatchTextValue | None:
+        value = legacy_json(self.value_json)
+        if isinstance(value, dict) and value.get("profile") == "legacy-batch-text-v1":
+            return LegacyBatchTextValue.model_validate(value)
+        return None
+
     @model_validator(mode="after")
     def exact_record(self) -> Self:
         value = legacy_json(self.value_json)
+        if isinstance(value, dict) and value.get("profile") == "legacy-batch-text-v1":
+            LegacyBatchTextValue.model_validate(value)
+            if canonical_legacy_json(value) != self.value_json:
+                raise ValueError("a legacy value must use canonical exact JSON")
+            return self
         if (
             not isinstance(value, dict)
             or not {"model", "prompt_version", "created_at"} <= value.keys()

@@ -1,5 +1,6 @@
 """Read and validate the existing immutable legacy archive without new historical inference."""
 
+import re
 import sqlite3
 from contextlib import closing
 
@@ -10,6 +11,7 @@ from lexinform.legacy_results import (
     read_legacy_json,
 )
 from lexinform.models import LegacyResultImport, LegacyResultOccurrence, LegacyResultValue
+from lexinform.models.legacy_results import LegacyBatchTextValue, legacy_json
 
 
 def read_legacy_result(connection: sqlite3.Connection, value_id: str) -> LegacyResultValue | None:
@@ -30,6 +32,44 @@ def read_legacy_result(connection: sqlite3.Connection, value_id: str) -> LegacyR
     if value.value_id != value_id:
         raise ValueError("immutable legacy value checksum mismatch")
     return value
+
+
+def _validate_batch_text_occurrence(
+    connection: sqlite3.Connection, occurrence: LegacyResultOccurrence, body: LegacyBatchTextValue
+) -> None:
+    key = legacy_json(occurrence.source_key_json)
+    if (
+        (occurrence.source_table, occurrence.source_column, occurrence.source_path)
+        != ("llm_batch_items", "meta_json", "/text")
+        or not isinstance(key, list)
+        or len(key) != 2
+        or any(not isinstance(part, str) or not part for part in key)
+        or occurrence.container_term is None
+        or not occurrence.container_number
+        or occurrence.purpose not in ("analysis", "reanalysis")
+    ):
+        raise ValueError("legacy batch text requires its exact source occurrence")
+    saved = connection.execute(
+        "SELECT term, number, call_kind, consumed_at, meta_json"
+        " FROM llm_batch_items WHERE batch_id=? AND custom_id=?",
+        key,
+    ).fetchone()
+    if saved is None:
+        return
+    if (
+        tuple(saved[:3])
+        != (occurrence.container_term, occurrence.container_number, occurrence.purpose)
+        or not saved[3]
+    ):
+        raise ValueError("legacy batch text differs from its consumed batch owner")
+    meta = legacy_json(saved[4])
+    if not isinstance(meta, dict) or ("text" in meta and meta["text"] != body.text):
+        raise ValueError("legacy batch text differs from its source column")
+    request_sha256 = meta.get("request_sha256")
+    if request_sha256 is not None and (
+        not isinstance(request_sha256, str) or re.fullmatch(r"[a-f0-9]{64}", request_sha256) is None
+    ):
+        raise ValueError("invalid observed legacy batch request checksum")
 
 
 def validate_legacy_import(connection: sqlite3.Connection) -> None:
@@ -85,6 +125,14 @@ def validate_legacy_import(connection: sqlite3.Connection) -> None:
     )
     if manifest_sha != imported.manifest_sha256:
         raise ValueError("legacy result import manifest checksum mismatch")
+    batch_texts = {
+        value.value_id: body for value in imported.values if (body := value.batch_text) is not None
+    }
+    if batch_texts and imported.source_sha256 is None:
+        raise ValueError("legacy batch text requires a pinned import snapshot")
+    for occurrence in imported.occurrences:
+        if (body := batch_texts.get(occurrence.value_id)) is not None:
+            _validate_batch_text_occurrence(connection, occurrence, body)
 
 
 def validate_legacy_projections(connection: sqlite3.Connection) -> None:

@@ -1,0 +1,17 @@
+{
+  "manually_prepared_reader_control": {
+    "bytes": 183091,
+    "observed_request_sha256": "d8853139629fb84f6d567e8e7857ab9b3135d81a824d453a423ef9b0802554a6",
+    "restore_byte_identical": true,
+    "source_sha256": "4a578b65e6ee91abe0d8d62ff6dc8c8f02a0db8b6cd0e23cd9b1f4da1276e7e9",
+    "text_occurrences_after_cleanup": 1,
+    "text_sha256": "42ba1f9d959483b59b4213589788cd33c6b984cf0136c657127234cf64bac7c9",
+    "value_id": "legacy-value-v1:e44791251406113d3a09575c7cca5fee08aefca649c2f32483343126ce55003d"
+  },
+  "max_body_utf8_bytes": 1048576,
+  "normal_legacy_writer_unchanged": true,
+  "previous_reader_rejects_new_dump_atomically": true,
+  "reference_profile": "legacy-batch-text-v1",
+  "source_git_sha": "ca2353d112",
+  "source_raw_dump_sha256": "7b78e09bd146db7ce66233e05e8d54f64037c34aa83fbfbdb0748b6c35de15db"
+}

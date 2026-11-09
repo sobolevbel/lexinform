@@ -102,6 +102,8 @@ def _original(identifier: JsonValue, read: LegacyValueReader) -> dict[str, JsonV
         raise ValueError("missing immutable legacy value")
     if record.value_id != identifier:
         raise ValueError("immutable legacy value checksum mismatch")
+    if record.batch_text is not None:
+        raise ValueError("legacy batch text cannot hydrate an answer projection")
     value = legacy_json(record.value_json)
     assert isinstance(value, dict), "LegacyResultValue validates an exact saved record object"
     return value

@@ -1,0 +1,19 @@
+{
+  "diagnostic_j584_reports_byte_identical": true,
+  "diagnostic_report_sha256": "e0411baaebc5778278e024de670deb13a03c5f00650b52f28818892faf782cf2",
+  "lifecycle_test": "tests/scenario/test_commission_review_content_reader.py",
+  "new_reader_restores_new_delivered_and_cleaned_dumps_byte_identically": true,
+  "previous_reader_rejects_new_delivered_and_cleaned_dumps_atomically": true,
+  "stored_state_restore_parity": {
+    "content_versions": 7,
+    "input_sha256": "e62998d4f72b6ae530f9fc46366dbc48269cd2edb3911b36e9dfd64ebcd6ab10",
+    "restored_sha256": "2300a8cca745603f386422cfe2556a086d25b8e58611752b7bf78c6fdb6f1dd1",
+    "review_publications_by_kind": [
+      [
+        "consultation_review",
+        2
+      ]
+    ]
+  },
+  "stored_state_sha": "b0cceff5e150039363f10e1405311c4d7bfe4af9"
+}

@@ -63,12 +63,21 @@ class OriginalDeliveryEvidence(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
 
+    commission_review_application_id: int | None = Field(
+        default=None, gt=0, lt=2**63, strict=True, exclude_if=lambda value: value is None
+    )
+
     @model_validator(mode="after")
     def topology(self) -> Self:
         if (self.kind is PublicationKind.JOINT_BILL) != (self.joint_primary is not None) or (
             self.kind in ORIGINAL_CARD_KINDS
         ) != (self.bill_context == "editorial-card-original-v1"):
             raise ValueError("original publication and semantic context differ")
+        if (
+            self.commission_review_application_id is not None
+            and self.kind is not PublicationKind.COMMISSION_REVIEW
+        ):
+            raise ValueError("commission review application requires its own notice")
         return self
 
 
