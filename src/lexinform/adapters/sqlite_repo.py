@@ -2614,21 +2614,46 @@ class SqliteBillRepository:
         return version
 
     def _verify_retained_content_version(
-        self, version: ContentVersion, *, inventory: CardContentInventory | None = None
-    ) -> int | None:
+        self,
+        version: ContentVersion,
+        *,
+        inventory: CardContentInventory | None = None,
+        publication_id: int | None = None,
+    ) -> None:
         verify_content_source(self._conn, version)
         verify_content_applications(self._conn, version)
-        card_physical_id = verify_card_content(
-            self._conn, version, retained=True, inventory=inventory
+        card = verify_card_content(self._conn, version, retained=True, inventory=inventory)
+        require_bound = publication_id is not None
+        stage = verify_direct_stage_content(self._conn, version, require_bound=require_bound)
+        verify_grouped_stage_content(self._conn, version, require_bound=require_bound)
+        verify_digest_content(self._conn, version, require_bound=require_bound)
+        sitting = verify_sitting_content(self._conn, version, require_bound=require_bound)
+        verify_act_published_content(self._conn, version, require_bound=require_bound)
+        original = verify_original_delivery_content(
+            self._conn, version, require_bound=require_bound
         )
-        verify_direct_stage_content(self._conn, version)
-        verify_grouped_stage_content(self._conn, version)
-        verify_digest_content(self._conn, version)
-        verify_sitting_content(self._conn, version)
-        verify_act_published_content(self._conn, version)
-        verify_original_delivery_content(self._conn, version)
-        verify_multipart_card_revision(self._conn, version)
-        return card_physical_id
+        edition = verify_multipart_card_revision(self._conn, version, require_bound=require_bound)
+        if publication_id is None:
+            return
+        if (
+            stage is not None
+            and publication_id not in stage.bindings
+            or stage is None
+            and (
+                version.direct_stage_evidence is not None
+                or (version.grouped_stage_evidence is not None and version.reason == "original")
+            )
+            and version.root_publication_id != publication_id
+        ):
+            raise ValueError("direct_stage_binding_scope")
+        if sitting is not None and publication_id not in sitting.bindings:
+            raise ValueError("sitting_history_binding_scope")
+        if original is not None and publication_id not in original.bindings:
+            raise ValueError("original_delivery_binding_scope")
+        if edition is not None and publication_id not in edition.bindings:
+            raise ValueError("multipart_card_binding_scope")
+        if card is not None and card != publication_id:
+            raise ValueError("card content binding differs from its physical operation")
 
     def list_content_versions(self, root_publication_id: int) -> list[ContentVersion]:
         versions: list[ContentVersion] = []
@@ -3193,44 +3218,18 @@ class SqliteBillRepository:
         if row["content_id"] is None:
             raise ValueError("a publication content binding has lost its version")
         version = read_content_version(row)
-        card_physical_id = self._verify_retained_content_version(version)
-        if (
-            version.direct_stage_evidence is not None
-            and version.direct_stage_evidence.multipart is not None
-        ):
-            stage = verify_direct_stage_content(self._conn, version, require_bound=True)
-            if stage is None or publication_id not in stage.bindings:
-                raise ValueError("direct_stage_binding_scope")
-            return version
-        if (
-            version.direct_stage_evidence is not None
-            or (version.grouped_stage_evidence is not None and version.reason == "original")
-        ) and version.root_publication_id != publication_id:
-            raise ValueError("direct_stage_binding_scope")
-        if version.digest_profile is not None:
-            verify_digest_content(self._conn, version, require_bound=True)
-            return version
-        if version.sitting_profile is not None:
-            plan = verify_sitting_content(self._conn, version, require_bound=True)
-            if plan is None or publication_id not in plan.bindings:
-                raise ValueError("sitting_history_binding_scope")
-            return version
-        if version.act_published_evidence is not None:
-            verify_act_published_content(self._conn, version, require_bound=True)
-            return version
-        if version.original_delivery_evidence is not None:
-            original = verify_original_delivery_content(self._conn, version, require_bound=True)
-            if original is None or publication_id not in original.bindings:
-                raise ValueError("original_delivery_binding_scope")
-            return version
-        if version.multipart_card_revision is not None:
-            edition = verify_multipart_card_revision(self._conn, version, require_bound=True)
-            if edition is None or publication_id not in edition.bindings:
-                raise ValueError("multipart_card_binding_scope")
-            return version
-        if card_physical_id is not None and card_physical_id != publication_id:
-            raise ValueError("card content binding differs from its physical operation")
+        self._verify_retained_content_version(version, publication_id=publication_id)
         return version
+
+    def verified_content_publications(self, version: ContentVersion) -> list[Publication]:
+        publications = self.list_content_publications(
+            version.root_publication_id, content_id=version.content_id
+        )
+        if publications:
+            identity = publications[0].id
+            assert identity is not None, "a content binding names a stored publication"
+            self._verify_retained_content_version(version, publication_id=identity)
+        return publications
 
     def list_content_publications(
         self, root_publication_id: int, *, content_id: str | None = None

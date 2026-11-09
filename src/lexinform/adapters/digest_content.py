@@ -29,8 +29,9 @@ def _rendered_parts(
     reader: ContentSourceRows, plan: DigestRenderedPlan
 ) -> tuple[DigestRenderedPart, ...]:
     parts = []
+    snapshots = reader.get_content_snapshots({ref.snapshot_id for ref in plan.parts})
     for ref in plan.parts:
-        snapshot = reader.get_content_snapshot(ref.snapshot_id)
+        snapshot = snapshots.get(ref.snapshot_id)
         if snapshot is None or snapshot.kind != "plan":
             raise ValueError("digest_rendered_part_snapshot_missing")
         part = DigestRenderedPart.model_validate_json(snapshot.payload_json)

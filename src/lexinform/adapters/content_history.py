@@ -1,6 +1,7 @@
 """Read known card-history rows without turning missing physical evidence into confirmation."""
 
 import hashlib
+import json
 import sqlite3
 from collections.abc import Iterable
 from datetime import datetime
@@ -153,6 +154,19 @@ def read_content_publication(row: sqlite3.Row) -> Publication:
             else None,
         }
     )
+
+
+def _content_publications(
+    connection: sqlite3.Connection, identities: Iterable[int]
+) -> dict[int, Publication]:
+    return {
+        row["id"]: read_content_publication(row)
+        for row in _query(
+            connection,
+            "SELECT p.* FROM publications p WHERE p.id IN (SELECT value FROM json_each(?))",
+            (json.dumps(tuple(identities)),),
+        )
+    }
 
 
 def _card_scan_evidence_candidate(
@@ -905,30 +919,21 @@ class StageAnchorReceipt(NamedTuple):
     retired: bool = False
 
 
-def _stage_anchor(
-    connection: sqlite3.Connection, identity: int, *, allow_retired: bool = True
-) -> StageAnchorReceipt | None:
-    live = _query(connection, "SELECT * FROM publications WHERE id=?", (identity,)).fetchone()
-    if live is not None:
-        anchor = read_content_publication(live)
-        if (
-            anchor.kind is not PublicationKind.NEW_BILL
-            or anchor.status is not PublicationStatus.SENT
-            or anchor.message_id is None
-            or anchor.message_id <= 0
-            or anchor.sent_at is None
-        ):
-            return None
-        return StageAnchorReceipt(
-            anchor.term, anchor.number, anchor.channel_id, anchor.message_id, anchor.sent_at
-        )
-    if not allow_retired:
+def _live_stage_anchor(anchor: Publication) -> StageAnchorReceipt | None:
+    if (
+        anchor.kind is not PublicationKind.NEW_BILL
+        or anchor.status is not PublicationStatus.SENT
+        or anchor.message_id is None
+        or anchor.message_id <= 0
+        or anchor.sent_at is None
+    ):
         return None
-    archived = _query(
-        connection, "SELECT * FROM retired_stage_anchors WHERE id=?", (identity,)
-    ).fetchone()
-    if archived is None:
-        return None
+    return StageAnchorReceipt(
+        anchor.term, anchor.number, anchor.channel_id, anchor.message_id, anchor.sent_at
+    )
+
+
+def _retired_stage_anchor(archived: sqlite3.Row) -> StageAnchorReceipt | None:
     sent_at = datetime.fromisoformat(archived["sent_at"])
     if sent_at.tzinfo is None or archived["message_id"] <= 0:
         return None
@@ -942,6 +947,38 @@ def _stage_anchor(
     )
 
 
+def _stage_anchor(
+    connection: sqlite3.Connection, identity: int, *, allow_retired: bool = True
+) -> StageAnchorReceipt | None:
+    live = _query(connection, "SELECT * FROM publications WHERE id=?", (identity,)).fetchone()
+    if live is not None:
+        return _live_stage_anchor(read_content_publication(live))
+    if not allow_retired:
+        return None
+    archived = _query(
+        connection, "SELECT * FROM retired_stage_anchors WHERE id=?", (identity,)
+    ).fetchone()
+    return _retired_stage_anchor(archived) if archived is not None else None
+
+
+def _stage_anchors(
+    connection: sqlite3.Connection, identities: set[int]
+) -> dict[int, StageAnchorReceipt | None]:
+    live = _content_publications(connection, sorted(identities))
+    anchors = {identity: _live_stage_anchor(publication) for identity, publication in live.items()}
+    missing = identities - live.keys()
+    if missing:
+        anchors.update(
+            (row["id"], _retired_stage_anchor(row))
+            for row in _query(
+                connection,
+                "SELECT * FROM retired_stage_anchors WHERE id IN (SELECT value FROM json_each(?))",
+                (json.dumps(sorted(missing)),),
+            )
+        )
+    return anchors
+
+
 def verify_direct_stage_content(
     connection: sqlite3.Connection, version: ContentVersion, *, require_bound: bool = False
 ) -> OriginalDeliveryPlan | None:
@@ -949,7 +986,10 @@ def verify_direct_stage_content(
     if evidence is None:
         return None
     root_row = _query(
-        connection, "SELECT * FROM publications WHERE id=?", (version.root_publication_id,)
+        connection,
+        "SELECT p.*, EXISTS(SELECT 1 FROM digest_event_links l"
+        " WHERE l.source_publication_id=p.id) AS digest_owned FROM publications p WHERE id=?",
+        (version.root_publication_id,),
     ).fetchone()
     anchor = _stage_anchor(connection, evidence.anchor_publication_id)
     event = _query(
@@ -964,12 +1004,7 @@ def verify_direct_stage_content(
         or anchor.sent_at > root.created_at
         or (anchor.number, anchor.channel_id) != (root.number, root.channel_id)
         or (anchor.term != root.term and not anchor.retired)
-        or _query(
-            connection,
-            "SELECT 1 FROM digest_event_links WHERE source_publication_id=?",
-            (root.id,),
-        ).fetchone()
-        is not None
+        or root_row["digest_owned"]
     ):
         raise ValueError("direct_stage_publication_scope")
     bindings = _query(
@@ -983,13 +1018,15 @@ def verify_direct_stage_content(
         and [binding[0] for binding in bindings] != [root.id]
     ):
         raise ValueError("direct_stage_binding_scope")
-    reader = ContentSourceRows(connection)
-    snapshots: dict[str, ContentSnapshot] = {}
-    for kind, identity in content_snapshot_refs(version):
-        snapshot = reader.get_content_snapshot(identity)
-        if snapshot is None or snapshot.kind != kind:
-            raise ValueError("direct_stage_snapshot_missing")
-        snapshots[identity] = snapshot
+    references = content_snapshot_refs(version)
+    snapshots = ContentSourceRows(connection).get_content_snapshots(
+        {identity for _, identity in references}
+    )
+    if any(
+        identity not in snapshots or snapshots[identity].kind != kind
+        for kind, identity in references
+    ):
+        raise ValueError("direct_stage_snapshot_missing")
     if sum(len(s.payload_json.encode()) for s in snapshots.values()) + len(
         (version.rendered_text or "").encode()
     ) > (
@@ -1193,11 +1230,12 @@ def _verify_direct_stage_parts(
     message_ids: set[int] = (
         {physical.root.reply_to} if physical.root.reply_to is not None else set()
     )
+    publications = _content_publications(connection, physical.bindings[1:])
+    publications[physical.bindings[0]] = root
     for index, part in enumerate(physical.parts, 1):
-        row = _query(connection, "SELECT * FROM publications WHERE id=?", (part.id,)).fetchone()
-        if row is None:
+        publication = publications.get(part.id)
+        if publication is None:
             raise ValueError("direct_stage_part_missing")
-        publication = read_content_publication(row)
         retained = publication.delivery
         sent = (
             publication.status is PublicationStatus.SENT
@@ -1242,14 +1280,33 @@ def verify_grouped_stage_content(
         return None
     if evidence.revision is not None:
         return _verify_grouped_stage_revision(connection, version, require_bound=require_bound)
+    return _verify_grouped_stage_original(connection, version, require_bound=require_bound).root.id
+
+
+class _VerifiedGroupedOriginal(NamedTuple):
+    root: Publication
+    snapshots: dict[str, ContentSnapshot]
+    bound: bool
+
+
+def _verify_grouped_stage_original(
+    connection: sqlite3.Connection, version: ContentVersion, *, require_bound: bool
+) -> _VerifiedGroupedOriginal:
+    evidence = version.grouped_stage_evidence
+    assert evidence is not None and evidence.revision is None, (
+        "the caller selected a group original"
+    )
     ref = f"updates/{version.root_publication_id}"
     ids = tuple(member.publication_id for member in evidence.members)
     selected = _query(
         connection,
-        "SELECT * FROM publications WHERE ref=? AND kind='status_update' LIMIT ?",
+        "SELECT p.*, EXISTS(SELECT 1 FROM digest_event_links l"
+        " WHERE l.source_publication_id=p.id) AS digest_owned"
+        " FROM publications p WHERE ref=? AND kind='status_update' LIMIT ?",
         (ref, len(ids) + 1),
     ).fetchall()
     by_id = {row["id"]: read_content_publication(row) for row in selected}
+    digest_owned = {row["id"] for row in selected if row["digest_owned"]}
     if set(by_id) != set(ids):
         raise ValueError("grouped_stage_membership")
     text = version.rendered_text or ""
@@ -1299,13 +1356,15 @@ def verify_grouped_stage_content(
         root.id
     ]:
         raise ValueError("grouped_stage_binding_scope")
-    reader = ContentSourceRows(connection)
-    snapshots: dict[str, ContentSnapshot] = {}
-    for kind, identity in content_snapshot_refs(version):
-        snapshot = reader.get_content_snapshot(identity)
-        if snapshot is None or snapshot.kind != kind:
-            raise ValueError("grouped_stage_snapshot_missing")
-        snapshots[identity] = snapshot
+    references = content_snapshot_refs(version)
+    snapshots = ContentSourceRows(connection).get_content_snapshots(
+        {identity for _, identity in references}
+    )
+    if any(
+        identity not in snapshots or snapshots[identity].kind != kind
+        for kind, identity in references
+    ):
+        raise ValueError("grouped_stage_snapshot_missing")
     if sum(len(snapshot.payload_json.encode()) for snapshot in snapshots.values()) + len(
         (version.rendered_text or "").encode()
     ) > grouped_stage_content_budget(len(ids)):
@@ -1349,12 +1408,21 @@ def verify_grouped_stage_content(
         )
     ):
         raise ValueError("grouped_stage_frozen_plan")
+    anchors = _stage_anchors(
+        connection, {member.anchor_publication_id for member in evidence.members}
+    )
+    events = {
+        row["id"]: row
+        for row in _query(
+            connection,
+            "SELECT * FROM status_changes WHERE id IN (SELECT value FROM json_each(?))",
+            (json.dumps([member.status_change_id for member in evidence.members]),),
+        )
+    }
     for index, member in enumerate(evidence.members):
         publication = by_id[member.publication_id]
-        anchor = _stage_anchor(connection, member.anchor_publication_id)
-        event = _query(
-            connection, "SELECT * FROM status_changes WHERE id=?", (member.status_change_id,)
-        ).fetchone()
+        anchor = anchors.get(member.anchor_publication_id)
+        event = events.get(member.status_change_id)
         if anchor is None or event is None:
             raise ValueError("grouped_stage_parent_missing")
         if (
@@ -1363,12 +1431,7 @@ def verify_grouped_stage_content(
             or anchor.sent_at > publication.created_at
             or (anchor.term, anchor.number, anchor.channel_id)
             != (publication.term, publication.number, publication.channel_id)
-            or _query(
-                connection,
-                "SELECT 1 FROM digest_event_links WHERE source_publication_id=?",
-                (publication.id,),
-            ).fetchone()
-            is not None
+            or publication.id in digest_owned
         ):
             raise ValueError("grouped_stage_publication_scope")
         bill = snapshots[member.bill_snapshot_id]
@@ -1406,7 +1469,7 @@ def verify_grouped_stage_content(
             ):
                 raise ValueError("grouped_stage_frozen_member")
 
-    return root.id
+    return _VerifiedGroupedOriginal(root, snapshots, bool(bindings))
 
 
 def read_grouped_stage_telegram_target(
@@ -1415,17 +1478,9 @@ def read_grouped_stage_telegram_target(
     evidence = version.grouped_stage_evidence
     if evidence is None or len(evidence.members) != 2 or evidence.revision is not None:
         return None
-    root_id = verify_grouped_stage_content(connection, version, require_bound=True)
-    row = _query(
-        connection,
-        "SELECT p.* FROM publications p JOIN publication_content c ON c.publication_id=p.id"
-        " WHERE p.id=? AND c.content_id=?",
-        (root_id, version.content_id),
-    ).fetchone()
-    if row is None:
-        return None
-    root = read_content_publication(row)
-    if root.telegram_chat_id is None or root.message_id is None:
+    original = _verify_grouped_stage_original(connection, version, require_bound=True)
+    root = original.root
+    if not original.bound or root.telegram_chat_id is None or root.message_id is None:
         return None
     return root.telegram_chat_id, root.message_id
 
@@ -1442,25 +1497,25 @@ def _verify_grouped_stage_revision(
         " WHERE p.publication_id=?",
         (version.root_publication_id,),
     ).fetchone()
-    parent_row = _query(
-        connection,
-        "SELECT * FROM content_versions WHERE content_id=?",
-        (version.previous_version_id,),
-    ).fetchone()
-    root_row = _query(
-        connection, "SELECT * FROM publications WHERE id=?", (version.root_publication_id,)
-    ).fetchone()
-    if original_row is None or parent_row is None or root_row is None:
+    if original_row is None:
         raise ValueError("grouped_revision_missing_parent")
-    original, previous = read_content_version(original_row), read_content_version(parent_row)
-    root = read_content_publication(root_row)
+    original = read_content_version(original_row)
+    if original.content_id == version.previous_version_id:
+        previous = original
+    else:
+        parent_row = _query(
+            connection,
+            "SELECT * FROM content_versions WHERE content_id=?",
+            (version.previous_version_id,),
+        ).fetchone()
+        if parent_row is None:
+            raise ValueError("grouped_revision_missing_parent")
+        previous = read_content_version(parent_row)
     if (
         original.reason != "original"
         or original.root_publication_id != version.root_publication_id
         or original.grouped_stage_evidence is None
         or original.grouped_stage_evidence.members != evidence.members
-        or root.status is not PublicationStatus.SENT
-        or root.message_id != evidence.revision.target_message_id
         or previous.root_publication_id != version.root_publication_id
         or previous.grouped_stage_evidence is None
         or previous.grouped_stage_evidence.members != evidence.members
@@ -1474,19 +1529,16 @@ def _verify_grouped_stage_revision(
         or content_snapshot_refs(version) != content_snapshot_refs(original)
     ):
         raise ValueError("grouped_revision_parent_scope")
-    verify_grouped_stage_content(connection, original)
-    reader = ContentSourceRows(connection)
-    snapshots = {
-        identity: reader.get_content_snapshot(identity)
-        for _, identity in content_snapshot_refs(version)
-    }
-    bill = snapshots[version.bill_context_id]
-    if bill is None or (
-        sum(
-            len(snapshot.payload_json.encode())
-            for snapshot in snapshots.values()
-            if snapshot is not None
-        )
+    frozen = _verify_grouped_stage_original(connection, original, require_bound=False)
+    root = frozen.root
+    if (
+        root.status is not PublicationStatus.SENT
+        or root.message_id != evidence.revision.target_message_id
+    ):
+        raise ValueError("grouped_revision_parent_scope")
+    bill = frozen.snapshots[version.bill_context_id]
+    if (
+        sum(len(snapshot.payload_json.encode()) for snapshot in frozen.snapshots.values())
         + len(version.rendered_text.encode())
         > MAX_GROUPED_STAGE_CONTENT_BYTES
     ):
@@ -1657,12 +1709,10 @@ def verify_sitting_content(
         ).fetchall()
         if {binding[0] for binding in bindings} != set(plan.bindings):
             raise ValueError("sitting_history_binding_mismatch")
-    publications = {}
-    for identity in plan.bindings:
-        row = _query(connection, "SELECT * FROM publications WHERE id=?", (identity,)).fetchone()
-        if row is None:
-            raise ValueError("sitting_history_publication_missing")
-        publication = read_content_publication(row)
+    publications = _content_publications(connection, plan.bindings)
+    if publications.keys() != set(plan.bindings):
+        raise ValueError("sitting_history_publication_missing")
+    for publication in publications.values():
         if publication.channel_id != plan.channel_id:
             raise ValueError("sitting_history_channel_mismatch")
         if publication.status is PublicationStatus.SENT and (
@@ -1671,10 +1721,10 @@ def verify_sitting_content(
             raise ValueError("sitting_history_receipt_missing")
         if publication.delivery is None and publication.status is not PublicationStatus.SENT:
             raise ValueError("sitting_history_active_plan_missing")
-        publications[identity] = publication
     if publications[version.root_publication_id].created_at != version.recorded_at:
         raise ValueError("sitting_history_recorded_at_mismatch")
     bill_sizes: dict[str, int] = {}
+    bills = reader.get_content_snapshots({member.bill_snapshot_id for member in plan.members})
     for member in plan.members:
         publication = publications[member.id]
         if (publication.term, publication.number, publication.kind.value, publication.ref) != (
@@ -1684,7 +1734,7 @@ def verify_sitting_content(
             member.ref,
         ):
             raise ValueError("sitting_history_member_mismatch")
-        bill = reader.get_content_snapshot(member.bill_snapshot_id)
+        bill = bills.get(member.bill_snapshot_id)
         if bill is None or bill.kind != "bill":
             raise ValueError("sitting_history_bill_missing")
         bill_sizes[bill.snapshot_id] = len(bill.payload_json.encode())
@@ -1931,9 +1981,11 @@ def _verify_original_delivery_content(
     evidence = version.original_delivery_evidence
     if evidence is None:
         return None, None
-    reader = ContentSourceRows(connection)
-    bill_snapshot = reader.get_content_snapshot(version.bill_context_id)
-    snapshot = reader.get_content_snapshot(version.plan_snapshot_id)
+    snapshots = ContentSourceRows(connection).get_content_snapshots(
+        {identity for _, identity in content_snapshot_refs(version)}
+    )
+    bill_snapshot = snapshots.get(version.bill_context_id)
+    snapshot = snapshots.get(version.plan_snapshot_id)
     if (
         bill_snapshot is None
         or bill_snapshot.kind != "bill"
@@ -1978,7 +2030,7 @@ def _verify_original_delivery_content(
     primary_context = None
     joint = evidence.joint_primary
     if joint is not None:
-        primary_snapshot = reader.get_content_snapshot(joint.bill_snapshot_id)
+        primary_snapshot = snapshots.get(joint.bill_snapshot_id)
         primary = _stage_anchor(connection, joint.publication_id, allow_retired=False)
         if primary is None and (
             require_bound
@@ -2016,20 +2068,18 @@ def _verify_original_delivery_content(
     primary_cycle = None
     parent: Publication | None = None
     retired_root = False
+    publications = _content_publications(connection, plan.bindings)
     for index, part in enumerate(plan.parts, 1):
-        row = _query(connection, "SELECT * FROM publications WHERE id=?", (part.id,)).fetchone()
-        publication = (
-            read_content_publication(row)
-            if row is not None
-            else _retired_card_root(connection, part.id)
-            if parent is None
+        publication = publications.get(part.id)
+        if (
+            publication is None
+            and parent is None
             and evidence.kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL)
-            else None
-        )
+        ):
+            publication = _retired_card_root(connection, part.id)
+            retired_root = publication is not None
         if publication is None:
             raise ValueError("original_delivery_part_missing")
-        if parent is None:
-            retired_root = row is None
         retained = publication.delivery
         if (
             publication.channel_id != evidence.channel_id
@@ -2155,10 +2205,7 @@ def _verify_original_delivery_child(
         raise ValueError("original_delivery_parent_receipt")
 
 
-def _multipart_card_plan(
-    connection: sqlite3.Connection, version: ContentVersion
-) -> MultipartCardPlan:
-    snapshot = ContentSourceRows(connection).get_content_snapshot(version.plan_snapshot_id)
+def _multipart_card_plan(snapshot: ContentSnapshot | None) -> MultipartCardPlan:
     if snapshot is None or snapshot.kind != "plan":
         raise ValueError("multipart_card_plan_missing")
     if len(snapshot.payload_json.encode()) > MAX_MULTIPART_CARD_BYTES:
@@ -2177,16 +2224,11 @@ def _edition_bindings(connection: sqlite3.Connection, content_id: str) -> set[in
     }
 
 
-def _edition_publication(
-    connection: sqlite3.Connection, identity: int, *, retired_root: bool = False
-) -> Publication:
-    row = _query(connection, "SELECT * FROM publications WHERE id=?", (identity,)).fetchone()
-    if row is None:
-        retired = _retired_card_root(connection, identity) if retired_root else None
-        if retired is not None:
-            return retired
+def _edition_publication(publications: dict[int, Publication], identity: int) -> Publication:
+    publication = publications.get(identity)
+    if publication is None:
         raise ValueError("multipart_card_publication_missing")
-    return read_content_publication(row)
+    return publication
 
 
 def verify_multipart_card_revision(
@@ -2194,14 +2236,20 @@ def verify_multipart_card_revision(
 ) -> MultipartCardPlan | None:
     if version.multipart_card_revision is None:
         return None
-    plan = _multipart_card_plan(connection, version)
-    owner = _edition_publication(connection, version.root_publication_id, retired_root=True)
-    retired = (
-        _query(
-            connection, "SELECT 1 FROM publications WHERE id=?", (version.root_publication_id,)
-        ).fetchone()
-        is None
+    reader = ContentSourceRows(connection)
+    snapshots = reader.get_content_snapshots({version.bill_context_id, version.plan_snapshot_id})
+    snapshot = snapshots.get(version.plan_snapshot_id)
+    plan = _multipart_card_plan(snapshot)
+    root_id = version.root_publication_id
+    publications = _content_publications(
+        connection, {root_id, *plan.predecessor_slots, *plan.bindings}
     )
+    retired = root_id not in publications
+    if retired:
+        archived = _retired_card_root(connection, root_id)
+        if archived is not None:
+            publications[root_id] = archived
+    owner = _edition_publication(publications, root_id)
     if (
         owner.kind is not PublicationKind.NEW_BILL
         or owner.status is not PublicationStatus.SENT
@@ -2223,7 +2271,9 @@ def verify_multipart_card_revision(
     if previous.root_publication_id != version.root_publication_id:
         raise ValueError("multipart_card_predecessor_owner")
     if previous.multipart_card_revision is not None:
-        expected = _multipart_card_plan(connection, previous).bindings
+        expected = _multipart_card_plan(
+            reader.get_content_snapshot(previous.plan_snapshot_id)
+        ).bindings
     elif previous.original_delivery_evidence is not None:
         original = verify_original_delivery_content(connection, previous, require_bound=True)
         if (
@@ -2247,10 +2297,7 @@ def verify_multipart_card_revision(
         connection, previous.content_id
     ) != set(expected):
         raise ValueError("multipart_card_predecessor_binding")
-    predecessors = [
-        _edition_publication(connection, identity, retired_root=identity == owner.id)
-        for identity in expected
-    ]
+    predecessors = [_edition_publication(publications, identity) for identity in expected]
     targets = tuple(row.message_id for row in predecessors)
     if (
         any(row.status is not PublicationStatus.SENT for row in predecessors)
@@ -2260,9 +2307,7 @@ def verify_multipart_card_revision(
         or targets != tuple(slot.edit_message_id for slot in plan.slots[: len(targets)])
     ):
         raise ValueError("multipart_card_predecessor_receipts")
-    reader = ContentSourceRows(connection)
-    bill = reader.get_content_snapshot(version.bill_context_id)
-    snapshot = reader.get_content_snapshot(version.plan_snapshot_id)
+    bill = snapshots.get(version.bill_context_id)
     if (
         bill is None
         or snapshot is None
@@ -2281,7 +2326,7 @@ def verify_multipart_card_revision(
     compact = card_bill_snapshot(context.payload_json)
     parent = owner
     for index, slot in enumerate(plan.slots, 1):
-        row = _edition_publication(connection, slot.id)
+        row = _edition_publication(publications, slot.id)
         attempted = row.status in (
             PublicationStatus.SENT,
             PublicationStatus.PENDING,
@@ -2341,7 +2386,12 @@ def verify_multipart_card_revision(
     if version.card_primary_evidence is not None:
         try:
             _verify_multipart_card_primary_evidence(
-                connection, version, previous, predecessors, semantic, plan.slots[0].id
+                connection,
+                version,
+                previous,
+                predecessors,
+                semantic,
+                _edition_publication(publications, plan.slots[0].id),
             )
         except CardPrimaryEvidenceError:
             raise
@@ -2356,7 +2406,7 @@ def _verify_multipart_card_primary_evidence(
     previous: ContentVersion,
     predecessors: list[Publication],
     semantic: Bill,
-    first_slot: int,
+    first_slot: Publication,
 ) -> None:
     reference = version.card_primary_evidence
     assert reference is not None, "the multipart verifier only requests explicitly recorded proof"
@@ -2407,7 +2457,7 @@ def _verify_multipart_card_primary_evidence(
         reference,
         version,
         semantic,
-        _edition_publication(connection, first_slot),
+        first_slot,
         revision_analysis_sha256=reference.revision_analysis_sha256,
         projection_after=None if same_paid else max(timestamps),
         compact_revision=True,
@@ -2718,7 +2768,8 @@ def read_bound_multipart_primary_cycle(
     plan, primary = _verify_original_delivery_content(connection, version, require_bound=True)
     if plan is None or primary is None:
         raise ValueError("multipart_primary_evidence_unavailable")
-    root = _edition_publication(connection, publication_id)
+    publications = _content_publications(connection, plan.bindings)
+    root = _edition_publication(publications, publication_id)
     if root.status is not PublicationStatus.SENT or root.message_id is None:
         return True, None
     aliases = _query(
@@ -2732,7 +2783,7 @@ def read_bound_multipart_primary_cycle(
     message_ids: set[int] = set()
     previous = version.recorded_at
     for index, part in enumerate(plan.parts, 1):
-        physical = _edition_publication(connection, part.id)
+        physical = _edition_publication(publications, part.id)
         sent_at = physical.sent_at
         if physical.status is not PublicationStatus.SENT or sent_at is None:
             return True, None

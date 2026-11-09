@@ -353,16 +353,7 @@ def inspect_content_page(
                 history=history,
             )
         version = versions[page - 1]
-        physical = []
-        for item in repo.list_content_publications(
-            history.root_publication_id, content_id=version.content_id
-        ):
-            if item.id is None:
-                continue
-            bound = repo.get_publication_content(item.id)
-            if bound is not None and bound.content_id == version.content_id:
-                physical.append(item)
-        physical.sort(key=lambda item: item.id or 0)
+        physical = repo.verified_content_publications(version)
         deliveries: list[ContentDeliverySummary] = []
         for item in physical[:3]:
             assert item.id is not None, "the bound publication inventory supplies persisted IDs"
