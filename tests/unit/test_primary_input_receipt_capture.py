@@ -1,6 +1,7 @@
 import hashlib
 from dataclasses import replace
 from typing import Literal
+from unittest.mock import patch
 
 import pytest
 
@@ -22,6 +23,9 @@ from lexinform.services.input_receipts import (
     capture_loose_rcl_input_receipt,
     capture_primary_input_receipt,
     enrich_primary_input_intent,
+    prepare_paired_archive_input_receipt,
+    prepare_primary_input_receipt,
+    with_block_companion,
 )
 from lexinform.text_projection import SourcePiece, project_pieces
 from tests.unit.test_input_receipts import NOW, SOURCE, meta, request
@@ -120,6 +124,18 @@ def test_mixed_loose_capture_requires_its_actual_shape_and_every_parent() -> Non
     assert receipt.profile == "primary-loose-rcl-mixed-text-v1"
     assert tuple(part.role for part in receipt.source_parts) == roles
     assert receipt.source_selection_id == source.selection.selection_id
+    prepared = prepare_primary_input_receipt(
+        frozen,
+        selection,
+        projection,
+        source,
+        rcl_projection="annexes_and_amendments",
+        now=lambda: pytest.fail("the loose RCL route does not need the clock"),
+    )
+    assert prepared.receipt == with_block_companion(
+        receipt, source, projection.text, selection=selection
+    )
+    assert prepared.diagnostic is None and prepared.paired_archive_input is None
     assert capture_loose_rcl_input_receipt(frozen, selection, projection, source) is None
     incomplete = replace(source, extractions=source.extractions[:-1])
     assert (
@@ -195,6 +211,39 @@ def test_unsupported_request_profiles_do_not_claim_a_text_receipt(profile: str) 
             ctx = ctx.model_copy(update={"text_source": "scan"})
         frozen = frozen.model_copy(update={"question": AnalysisQuestion(kind=kind, ctx=ctx)})
     assert capture_primary_input_receipt(frozen, selected, None, source) is None
+    prepared = prepare_primary_input_receipt(
+        frozen, selected, None, source, rcl_projection=None, now=lambda: NOW
+    )
+    assert prepared.receipt is None and prepared.paired_archive_input is None
+    assert prepared.diagnostic == "profile_or_proof_unavailable"
+
+
+def test_optional_block_capture_failure_preserves_the_exact_receipt() -> None:
+    selected, source = captured()
+    frozen = request(selected.parts[0].text)
+    original = capture_primary_input_receipt(frozen, selected, None, source)
+
+    with patch(
+        "lexinform.services.input_receipts.with_block_companion",
+        side_effect=ValueError("optional proof unavailable"),
+    ):
+        prepared = prepare_primary_input_receipt(
+            frozen, selected, None, source, rcl_projection=None, now=lambda: NOW
+        )
+
+    assert original is not None, "the single native text source can supply a base receipt"
+    assert prepared.receipt == original
+    assert prepared.diagnostic == "capture_failed"
+
+
+def test_paired_capture_reports_unavailable_parent_before_mapping() -> None:
+    selected, source = captured()
+    text = selected.parts[0].text
+    projection = project_pieces(text, (SourcePiece(text, 0),))
+    assert (
+        prepare_paired_archive_input_receipt(request(text), selected, projection, source, ())
+        == "parents_unavailable"
+    )
 
 
 def test_optional_enrichment_keeps_original_intent_payload_binding_and_cost() -> None:

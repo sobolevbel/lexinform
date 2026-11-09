@@ -157,7 +157,6 @@ from lexinform.models.input_receipts import (
 )
 from lexinform.models.sejm import (
     SejmCommitteeDraftOrigin,
-    SejmProposalOrigin,
     SejmRepresentationOrigin,
     SejmSourceOrigin,
 )
@@ -221,20 +220,15 @@ from lexinform.services.document_history import (
 from lexinform.services.documents import MIN_TEXT_CHARS, LoadedFile, TextLoader
 from lexinform.services.input_receipts import (
     PairedNormativeBase,
-    capture_loose_rcl_input_receipt,
-    capture_primary_input_receipt,
-    capture_rcl_archive_input_receipt,
+    RclInputProjection,
     capture_secondary_input_receipt,
-    capture_sejm_self_amendment_input_receipt,
     capture_senate_work_input_witness,
     enrich_primary_input_intent,
     enrich_secondary_input_intent,
-    paired_archive_parent,
-    paired_fitted_base,
-    paired_normative_base,
+    paired_archive_companions,
+    prepare_paired_archive_input_receipt,
+    prepare_primary_input_receipt,
     senate_work_input_receipt,
-    with_block_companion,
-    with_paired_archive_block_companion,
 )
 from lexinform.services.joint import primary_of, revive_prefilter_skips
 from lexinform.services.revision_applications import AmendmentRevisionApplications
@@ -446,7 +440,7 @@ class _Loaded:
     source_read: SourceReadCapture | None = None
     first_pdf_page: str | None = None
     representation_probe: tuple[CandidateDispositionTrace, str] | None = None
-    rcl_projection: Literal["annexes", "annexes_and_amendments"] | None = None
+    rcl_projection: RclInputProjection | None = None
 
     word_formula_source: WordFormulaSource | None = None
 
@@ -3454,40 +3448,15 @@ class AnalysisService:
                     model=self._options.overflow_model if overflow else "",
                 )
             )
-            receipt: PrimaryInputReceipt | MultipartTextInputReceipt | None = None
-            try:
-                if loaded.rcl_projection is None:
-                    if isinstance(loaded.source_read, DocumentSourceRead) and isinstance(
-                        loaded.source_read.sejm_origin, SejmProposalOrigin
-                    ):
-                        receipt = capture_sejm_self_amendment_input_receipt(
-                            request,
-                            loaded.selection,
-                            fitted.projection,
-                            loaded.source_read,
-                            recorded_at=self._clock.now(),
-                        )
-                    if receipt is None:
-                        receipt = capture_rcl_archive_input_receipt(
-                            request, loaded.selection, fitted.projection, loaded.source_read
-                        )
-                    if receipt is None:
-                        receipt = capture_primary_input_receipt(
-                            request, loaded.selection, fitted.projection, loaded.source_read
-                        )
-                else:
-                    receipt = capture_loose_rcl_input_receipt(
-                        request,
-                        loaded.selection,
-                        fitted.projection,
-                        loaded.source_read,
-                        with_amendments=loaded.rcl_projection == "annexes_and_amendments",
-                    )
-                if receipt is not None:
-                    receipt = with_block_companion(
-                        receipt, loaded.source_read, ctx.text, selection=loaded.selection
-                    )
-            except Exception:
+            capture = prepare_primary_input_receipt(
+                request,
+                loaded.selection,
+                fitted.projection,
+                loaded.source_read,
+                rcl_projection=loaded.rcl_projection,
+                now=self._clock.now,
+            )
+            if capture.diagnostic == "capture_failed":
                 with suppress(Exception):
                     log.warning("Prepared input receipt omitted (capture_failed)")
             return _Prepared(
@@ -3503,13 +3472,8 @@ class AnalysisService:
                     self._options.overflow_provider if overflow else self._options.batch_provider
                 ),
                 batch_request=request,
-                input_receipt=receipt,
-                paired_archive_input=(loaded.selection, fitted.projection)
-                if receipt is None
-                and fitted.projection is not None
-                and isinstance(loaded.source_read, DocumentSourceRead)
-                and loaded.source_read.rcl_proposal is not None
-                else None,
+                input_receipt=capture.receipt,
+                paired_archive_input=capture.paired_archive_input,
                 batch_meta=BatchItemMeta(
                     overflow=overflow,
                     input_chars=len(ctx.text),
@@ -4023,72 +3987,45 @@ class AnalysisService:
         selection, projection = prepared.paired_archive_input
         try:
             observations = self._loader.read_physical_observations()
-            parent = paired_archive_parent(source, observations)
-            if parent is None:
-                return False
-            receipt = capture_rcl_archive_input_receipt(
-                intent.request, selection, projection, source, paired=parent
+            capture = prepare_paired_archive_input_receipt(
+                intent.request, selection, projection, source, observations
             )
-            fitted_base = None
-            question = intent.request.question
-            if (
-                receipt is None
-                and isinstance(question, AnalysisQuestion)
-                and question.ctx.truncated
-            ):
-                fitted_base = paired_fitted_base(source, observations)
-                if fitted_base is not None:
-                    receipt = capture_rcl_archive_input_receipt(
-                        intent.request,
-                        selection,
-                        projection,
-                        source,
-                        paired=parent,
-                        fitted_base=fitted_base,
-                    )
-            if receipt is None:
+            if isinstance(capture, str):
+                with suppress(Exception):
+                    log.debug("Paired archive input receipt omitted (%s)", capture)
                 return False
-            enriched = enrich_primary_input_intent(intent, receipt)
-            packet = parent.packet
+            enriched = enrich_primary_input_intent(intent, capture.receipt)
+            packet = capture.parent.packet
             with self._repo.atomic():
                 record_artifacts(self._repo, packet.artifacts, recorded_at=created_at)
                 self._repo.save_physical_inventory(
                     packet.metadata, (packet.capture,), recorded_at=created_at
                 )
-                if fitted_base is not None:
+                if (fitted_base := capture.fitted_base) is not None:
                     record_artifacts(self._repo, fitted_base.artifacts, recorded_at=created_at)
                     self._repo.save_physical_inventory(
                         fitted_base.metadata, (fitted_base.capture,), recorded_at=created_at
                     )
-                    self._repo.save_batch_intent(enriched)
-                    return True
-                if isinstance(receipt, RclPairedArchiveInputReceipt) and isinstance(
-                    question, AnalysisQuestion
+                for offered, normative in paired_archive_companions(
+                    capture, intent.request, source, observations
                 ):
-                    normative = paired_normative_base(receipt, source, observations)
                     if normative is not None:
-                        offered = with_paired_archive_block_companion(
-                            receipt, parent, source, question.ctx.text, normative=normative
-                        )
-                        if offered is not receipt and self._save_normative_archive_intent(
+                        if self._save_normative_archive_intent(
                             intent, offered, normative, created_at=created_at
                         ):
                             return True
-                    offered = with_paired_archive_block_companion(
-                        receipt, parent, source, question.ctx.text
-                    )
-                    if offered is not receipt:
-                        try:
-                            with self._repo.atomic():
-                                self._repo.save_batch_intent(
-                                    enrich_primary_input_intent(intent, offered)
-                                )
-                        except ValueError:
-                            log.warning(
-                                "Paired block companion omitted (parents_or_mapping_unavailable)"
+                        continue
+                    try:
+                        with self._repo.atomic():
+                            self._repo.save_batch_intent(
+                                enrich_primary_input_intent(intent, offered)
                             )
-                        else:
-                            return True
+                    except ValueError:
+                        log.warning(
+                            "Paired block companion omitted (parents_or_mapping_unavailable)"
+                        )
+                    else:
+                        return True
                 self._repo.save_batch_intent(enriched)
         except ValueError:
             log.warning("Paired archive input receipt omitted (parents_or_mapping_unavailable)")
@@ -4415,7 +4352,7 @@ class AnalysisService:
         )
         budgeted = self._budget.apply(combined, self._keywords.spans(combined))
         projection = None
-        rcl_projection: Literal["annexes", "annexes_and_amendments"] | None = None
+        rcl_projection: RclInputProjection | None = None
         if amendments and trimmed.projection is not None and budgeted.projection is not None:
             amended = amended_input_projection(
                 file.selection, trimmed.projection, combined, assembly=archive_assembly

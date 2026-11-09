@@ -1,8 +1,9 @@
 """Join prospective text receipts to parents from the actual captured read only."""
 
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, replace
 from datetime import datetime
-from typing import cast
+from typing import Literal, cast
 
 from lexinform.document_editions import candidate_edition
 from lexinform.input_receipts import (
@@ -66,6 +67,8 @@ from lexinform.services.document_history import (
     prove_sejm_proposal,
 )
 from lexinform.text_projection import TextProjection
+
+type RclInputProjection = Literal["annexes", "annexes_and_amendments"]
 
 
 def _body(part: DocumentPart, source: SourceReadCapture | None) -> ArtifactIdentity | None:
@@ -585,6 +588,123 @@ def capture_sejm_self_amendment_input_receipt(
         full_map_sha256=input_map_sha256(prepared.segments),
         segments=prepared.segments,
     )
+
+
+@dataclass(frozen=True)
+class PrimaryReceiptPreparation:
+    receipt: PrimaryInputReceipt | MultipartTextInputReceipt | None
+    paired_archive_input: tuple[DocumentSelection, TextProjection] | None
+    diagnostic: Literal["profile_or_proof_unavailable", "capture_failed"] | None
+
+
+def prepare_primary_input_receipt(
+    request: BatchRequest,
+    selection: DocumentSelection,
+    projection: TextProjection | None,
+    source: SourceReadCapture | None,
+    *,
+    rcl_projection: RclInputProjection | None,
+    now: Callable[[], datetime],
+) -> PrimaryReceiptPreparation:
+    """Choose a prospective receipt or defer a paired archive until its parents are available."""
+    receipt: PrimaryInputReceipt | MultipartTextInputReceipt | None = None
+    unavailable: Literal["profile_or_proof_unavailable", "capture_failed"] | None = None
+    try:
+        if rcl_projection is None:
+            if isinstance(source, DocumentSourceRead) and isinstance(
+                source.sejm_origin, SejmProposalOrigin
+            ):
+                receipt = capture_sejm_self_amendment_input_receipt(
+                    request, selection, projection, source, recorded_at=now()
+                )
+            if receipt is None:
+                receipt = capture_rcl_archive_input_receipt(request, selection, projection, source)
+            if receipt is None:
+                receipt = capture_primary_input_receipt(request, selection, projection, source)
+        else:
+            receipt = capture_loose_rcl_input_receipt(
+                request,
+                selection,
+                projection,
+                source,
+                with_amendments=rcl_projection == "annexes_and_amendments",
+            )
+        if receipt is not None:
+            assert isinstance(request.question, AnalysisQuestion), (
+                "primary receipt capture requires a primary question"
+            )
+            receipt = with_block_companion(
+                receipt, source, request.question.ctx.text, selection=selection
+            )
+    except Exception:
+        unavailable = "capture_failed"
+    if receipt is not None:
+        return PrimaryReceiptPreparation(receipt, None, unavailable)
+    if (
+        projection is not None
+        and isinstance(source, DocumentSourceRead)
+        and source.rcl_proposal is not None
+    ):
+        return PrimaryReceiptPreparation(None, (selection, projection), unavailable)
+    return PrimaryReceiptPreparation(None, None, unavailable or "profile_or_proof_unavailable")
+
+
+@dataclass(frozen=True)
+class PreparedPairedArchiveReceipt:
+    receipt: RclPairedArchiveInputReceipt
+    parent: PairedArchiveParent
+    fitted_base: PhysicalAssemblyPacket | None
+
+
+def prepare_paired_archive_input_receipt(
+    request: BatchRequest,
+    selection: DocumentSelection,
+    projection: TextProjection,
+    source: DocumentSourceRead,
+    observations: tuple[OrderedPhysicalObservation, ...],
+) -> PreparedPairedArchiveReceipt | Literal["parents_unavailable", "mapping_unavailable"]:
+    """Offer the whole paired mapping before trying a proved fitted base."""
+    parent = paired_archive_parent(source, observations)
+    if parent is None:
+        return "parents_unavailable"
+    receipt = capture_rcl_archive_input_receipt(
+        request, selection, projection, source, paired=parent
+    )
+    fitted_base = None
+    question = request.question
+    if receipt is None and isinstance(question, AnalysisQuestion) and question.ctx.truncated:
+        fitted_base = paired_fitted_base(source, observations)
+        if fitted_base is not None:
+            receipt = capture_rcl_archive_input_receipt(
+                request, selection, projection, source, paired=parent, fitted_base=fitted_base
+            )
+    if not isinstance(receipt, RclPairedArchiveInputReceipt):
+        return "mapping_unavailable"
+    return PreparedPairedArchiveReceipt(receipt, parent, fitted_base)
+
+
+def paired_archive_companions(
+    prepared: PreparedPairedArchiveReceipt,
+    request: BatchRequest,
+    source: DocumentSourceRead,
+    observations: tuple[OrderedPhysicalObservation, ...],
+) -> Iterator[tuple[RclPairedArchiveInputReceipt, PairedNormativeBase | None]]:
+    """Offer optional companions in proof order, only computing a fallback when needed."""
+    if prepared.fitted_base is not None:
+        return
+    question = request.question
+    assert isinstance(question, AnalysisQuestion), "a paired receipt is for a primary question"
+    receipt, parent = prepared.receipt, prepared.parent
+    normative = paired_normative_base(receipt, source, observations)
+    if normative is not None:
+        offered = with_paired_archive_block_companion(
+            receipt, parent, source, question.ctx.text, normative=normative
+        )
+        if offered is not receipt:
+            yield offered, normative
+    offered = with_paired_archive_block_companion(receipt, parent, source, question.ctx.text)
+    if offered is not receipt:
+        yield offered, None
 
 
 def enrich_primary_input_intent(

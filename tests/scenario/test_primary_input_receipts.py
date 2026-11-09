@@ -25,6 +25,7 @@ from lexinform.models import (
 )
 from lexinform.models.input_receipts import LooseRclInputReceipt, RclArchiveInputReceipt
 from lexinform.services import analysis as module
+from lexinform.services import input_receipts as receipts
 from tests.harness import World, print_url, rcl_document, rcl_folder, rcl_project, rcl_stage
 from tests.scenario.test_extraction_source_history import reader
 from tests.unit.test_doc_note_extraction import source_notes
@@ -130,12 +131,16 @@ def test_new_metadata_failure_is_fail_open_without_private_diagnostics(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     current = world(docx(TEXT))
-    hook = "capture_primary_input_receipt" if stage == "capture" else "enrich_primary_input_intent"
+    owner, hook = (
+        (receipts, "capture_primary_input_receipt")
+        if stage == "capture"
+        else (module, "enrich_primary_input_intent")
+    )
 
     def broken_warning(message: object, *args: object, **kwargs: object) -> None:
         raise RuntimeError("PRIVATE logging error")
 
-    with patch.object(module, hook, side_effect=ValueError("PRIVATE metadata error")):
+    with patch.object(owner, hook, side_effect=ValueError("PRIVATE metadata error")):
         if broken_log:
             monkeypatch.setattr(module.log, "warning", broken_warning)
         current.run(track=False)
@@ -153,7 +158,7 @@ def test_new_metadata_failure_is_fail_open_without_private_diagnostics(
 def test_receipts_preserve_original_provider_payload_cost_and_keys() -> None:
     data = docx(TEXT)
     baseline, candidate = world(data), world(data)
-    with patch.object(module, "capture_primary_input_receipt", return_value=None):
+    with patch.object(receipts, "capture_primary_input_receipt", return_value=None):
         baseline.run(track=False)
     candidate.run(track=False)
     assert candidate.batch.submitted == baseline.batch.submitted
@@ -242,9 +247,13 @@ def test_new_metadata_cancellation_propagates_and_never_queues_or_submits(stage:
     failure = KeyboardInterrupt("controlled metadata cancellation")
     cause = OSError("controlled original cause")
     failure.__cause__ = cause
-    hook = "capture_primary_input_receipt" if stage == "capture" else "enrich_primary_input_intent"
+    owner, hook = (
+        (receipts, "capture_primary_input_receipt")
+        if stage == "capture"
+        else (module, "enrich_primary_input_intent")
+    )
     with (
-        patch.object(module, hook, side_effect=failure),
+        patch.object(owner, hook, side_effect=failure),
         pytest.raises(KeyboardInterrupt) as caught,
     ):
         current.analysis.analyze_bill(current.bill("4100"))
