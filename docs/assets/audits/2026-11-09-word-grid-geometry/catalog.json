@@ -1,0 +1,12 @@
+{
+  "suite": "external",
+  "status": "recorded",
+  "observations": {
+    "word/375208.docx": {
+      "actual": {"sha256": "23c2c274ca1bd6e7ca25c357fe623431b07c7831c605c5f2496f6fa6673c6d6d"}
+    },
+    "word/418603.docx": {
+      "actual": {"sha256": "8501c9b1b7b3550f5184cc4ef70d9cbf90a7a5eb34b5bfd5cf10213e492afbfd"}
+    }
+  }
+}

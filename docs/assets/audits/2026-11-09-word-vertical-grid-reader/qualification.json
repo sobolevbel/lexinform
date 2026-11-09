@@ -1,0 +1,51 @@
+{
+  "baseline_commit": "aa3b07c5",
+  "default_live_writer_unchanged": true,
+  "integrated_baseline_commit": "b15524d4aeeeb490a8b14d93eeb98fdeef7b735b",
+  "integrated_baseline_rejected_new_dumps_atomically": true,
+  "integrated_reader_checked_both_legacy_and_candidate_dumps": true,
+  "legacy_reader_restores_unmodified_outputs_byte_identically": true,
+  "manually_added_metadata_roundtrips": true,
+  "natural_inputs": {
+    "documents/files/375208.docx": {
+      "body_manifest_sha256": "c12ee6e3803850b23eb9910bdc7fcd3ce381388bbd73523f4df26a9d419101b9",
+      "dump_delta_bytes": {
+        "gzip": 150,
+        "sql": 674
+      },
+      "input_sha256": "23c2c274ca1bd6e7ca25c357fe623431b07c7831c605c5f2496f6fa6673c6d6d",
+      "legacy_extraction_id": "extraction-v1:410c639f0a99d4b0648a1464bfcb6e8bcd38873ca8883453e0b4dda79894d29f",
+      "legacy_text_sha256": "c7eb8238e239b0405133d1df071b5204db6aa717d11d6ee85664cc5ecd007540",
+      "metadata_bytes": 654,
+      "new_extraction_id": "extraction-v1:8e1da5e845f99807962d4b20b71710693a4ec319a13e44a6c1a6b17f20406692",
+      "notes_manifest_sha256": "dd329a70e12989298a8ca5e893e6562655a2a7c8cd4968986464ef4866ee23b7",
+      "vertical_chains": 4,
+      "vertical_continuations": 10,
+      "word_xml_sha256": "9106b033db5f9cdcb9dd40615526c7b6987c2261c3a64770f0dd091537851798"
+    },
+    "documents/files/418603.docx": {
+      "body_manifest_sha256": "82f265d444c7518d0e7b4f6856c2f60a507915b58e4b50668e9d37d8e1949772",
+      "dump_delta_bytes": {
+        "gzip": 136,
+        "sql": 603
+      },
+      "input_sha256": "8501c9b1b7b3550f5184cc4ef70d9cbf90a7a5eb34b5bfd5cf10213e492afbfd",
+      "legacy_extraction_id": "extraction-v1:a70df9b681c8efdf531bfdfe649da69555f649df0ac777a7149e7baa8de25bcd",
+      "legacy_text_sha256": "efc802b7dd769d90a26a05cd5c8c5bedc59653c89d604633450e62958e2c0dd4",
+      "metadata_bytes": 583,
+      "new_extraction_id": "extraction-v1:42cdd26e6c58de87bc22476b87cb63327e48a2e871135c59180fc4dff34deab6",
+      "notes_manifest_sha256": "498ab6102a20f32a7e99853933cdf9c4c87d48c201648fe4aee6ba86d307a2e9",
+      "vertical_chains": 3,
+      "vertical_continuations": 6,
+      "word_xml_sha256": "fac2f0109c4646a502c4123a2e82d9978e85e8aba57ad722b44e65a55b164d56"
+    }
+  },
+  "pinned_geometry_report_sha256": "efa66f4a26273885a84aae97ab49765d1d0ec16cc5b0c9563193f83604cfa4ba",
+  "previous_reader_rejects_new_dumps_atomically": true,
+  "raw_xml_independent_chain_verification": true,
+  "saved_state_parity": {
+    "input_sha256": "c0e0b96dbb5a2afcac83d1f63f71698212cae9c19a723237eb2e8c912d330b55",
+    "restored_sha256": "8f9496bf666ac85d2c341c995d896ad181df3f99ae8e4879fe3db1bc3303d70c",
+    "sql_bytes": 27296702
+  }
+}

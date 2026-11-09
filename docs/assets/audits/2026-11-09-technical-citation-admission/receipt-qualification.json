@@ -1,0 +1,27 @@
+{
+  "persistence": "none",
+  "positive": {
+    "j576_natural_frozen_checkpoint": {
+      "block": false,
+      "receipt_id": "primary-claim-technical-v1:3cca400d77cdb47a20092bdccd159a816fe27f2083fbaea9975148cbf16d08cd",
+      "utf8_bytes": 799
+    },
+    "j610_pinned_block_in_j654_saved_result": {
+      "block": true,
+      "receipt_id": "primary-claim-technical-v1:171413f1d40837810bdeef9d303d5d452efd10e02bd281fa45012820d4250ee1",
+      "utf8_bytes": 1160
+    }
+  },
+  "rejected": [
+    "foreign_result",
+    "foreign_request",
+    "foreign_source_hash",
+    "foreign_claim_hash",
+    "shifted_range",
+    "missing_checkpoint",
+    "stale_block_parent",
+    "wrong_block_sha"
+  ],
+  "semantic": "not_assessed",
+  "sources_unchanged": true
+}

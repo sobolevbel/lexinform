@@ -22,7 +22,10 @@ from lexinform.adapters.llm_prompts import build_user_prompt
 from lexinform.json_storage import read_json
 from lexinform.models import AnalysisRecord, BatchItemMeta, ComputationResult, ReviewDocument
 from lexinform.models.batch import AnalysisQuestion, batch_item_meta
-from lexinform.models.claim_evidence import PrimaryClaimCitation
+from lexinform.models.claim_evidence import (
+    PrimaryClaimCitation,
+    PrimaryClaimTechnicalReceipt,
+)
 from lexinform.models.input_receipts import MultipartTextInputReceipt, PrimaryInputReceipt
 from lexinform.primary_claims import validate_retained_claim_citation
 from tools.corpus_artifacts import digest, read_artifact, write_json
@@ -539,6 +542,57 @@ def _retained_block(
         "block_span": [block_left, block_left + right - left],
         "intersection": copy.intersection,
     }
+
+
+def verify_primary_claim_technical_receipt(
+    database: Path,
+    *,
+    database_sha256: str,
+    result_id: str,
+    receipt: PrimaryClaimTechnicalReceipt,
+    input_checkpoint: ReviewInputCheckpoint | None = None,
+) -> None:
+    receipt = PrimaryClaimTechnicalReceipt.read(receipt.model_dump_json())
+    if receipt.result_id != result_id:
+        raise ValueError("claim receipt identifies a different result")
+    if receipt.input_checkpoint_sha256 != (
+        input_checkpoint.sha256 if input_checkpoint is not None else None
+    ):
+        raise ValueError("claim receipt identifies a different input checkpoint")
+    with _open_saved_review_input(
+        database,
+        database_sha256=database_sha256,
+        result_id=result_id,
+        input_checkpoint=input_checkpoint,
+    ) as (saved, db, input_receipt):
+        if (saved.request_sha256, saved.text_sha256) != (
+            receipt.request_sha256,
+            receipt.submitted_text_sha256,
+        ):
+            raise ValueError("claim receipt differs from its exact saved request")
+        source = submitted_review_document(saved, "submitted-context")
+        checked = validate_retained_claim_citation(saved.record, receipt.evidence, (source,))
+        if (
+            checked.status != "quote_present"
+            or checked.observed_text_span != receipt.submitted_span
+        ):
+            raise ValueError("claim receipt differs from its exact literal citation")
+        if (block := receipt.block) is None:
+            return
+        if (
+            input_receipt is None
+            or input_receipt.block_companion is None
+            or (block.prepared_copy not in input_receipt.block_companion.rows)
+        ):
+            raise ValueError("claim receipt requires its exact retained block copy")
+        observed = _retained_block(db, input_receipt, saved.text, receipt.submitted_span)
+        if (
+            observed.get("status"),
+            observed.get("block_id"),
+            observed.get("block_text_sha256"),
+            observed.get("block_span"),
+        ) != ("verified_copy", block.block_id, block.block_text_sha256, list(block.block_span)):
+            raise ValueError("claim receipt differs from its exact retained block coordinates")
 
 
 def retained_citation_report(

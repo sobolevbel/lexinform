@@ -1,0 +1,29 @@
+{
+  "current_sql_sha256": "c0e0b96dbb5a2afcac83d1f63f71698212cae9c19a723237eb2e8c912d330b55",
+  "current_state_sha": "0e96a57da4b3a1194dce8513b9d3602455e69674",
+  "database_sha256": {
+    "after": "bdc1c013c582a714b27983083e54dc9addc4dd35fe0b2fecf4445881448dda70",
+    "before": "2ae37c2a0307b79ff844e23e5ac40d693faecae289ae35fac94c55f70aac7368"
+  },
+  "delivery_and_editorial_reports_equal_except_snapshot_hash": true,
+  "editorial_histories": 7,
+  "new_completed_delivery_cycles": 0,
+  "previous_state_sha": "b0cceff5e150039363f10e1405311c4d7bfe4af9",
+  "primary_cycle_reasons": {
+    "consumed_projection_unavailable": 4,
+    "exact_retained_cycle": 1,
+    "frozen_paid_reference_unavailable": 3,
+    "frozen_plan_unavailable": 27,
+    "frozen_render_context_unavailable": 13,
+    "prepared_receipt_unavailable": 1,
+    "publication_outside_direct_original_scope": 1,
+    "recorded_send_unavailable": 1
+  },
+  "secondary_cases": 5,
+  "table_row_count_changes": {
+    "runs": [
+      462,
+      463
+    ]
+  }
+}

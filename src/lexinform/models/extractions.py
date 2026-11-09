@@ -27,6 +27,7 @@ from lexinform.models.odt_notes import _width as odt_note_metadata_width
 from lexinform.models.odt_tables import MAX_ODT_TABLE_BYTES, OdtTableMerges
 from lexinform.models.physical_inventory import Position, Sha256
 from lexinform.models.word_field_ranges import MAX_WORD_FIELD_BYTES, WordFieldPrefix
+from lexinform.models.word_grid_merges import MAX_WORD_GRID_MERGE_BYTES, WordVerticalGridMerges
 
 MAX_EXTRACTION_METADATA_BYTES = 16_384
 MAX_EXTRACTION_PART_SUMMARIES = 16
@@ -313,6 +314,10 @@ class ExtractedPartSummary(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
 
+    word_grid_merges: WordVerticalGridMerges | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
     odt_note_status: OdtNoteStatus | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
@@ -429,6 +434,23 @@ class ExtractedPartSummary(BaseModel):
                 or len(fields.paragraphs) > self.block_count
             ):
                 raise ValueError("Word field prefix requires its actual input and Word manifest")
+        if self.word_grid_merges is not None:
+            grids = WordVerticalGridMerges.model_validate(self.word_grid_merges)
+            if (
+                (self.format, self.coordinates, self.text_view)
+                != ("word", "word-blocks-v1", "legacy-word-body-v1")
+                or grids.input_sha256 != self.sha256
+                or extraction_metadata_sha256(
+                    (grids.body_manifest_sha256, grids.notes_manifest_sha256)
+                )
+                != self.manifest_sha256
+                or self.block_count is None
+                or sum(len(merge.cells) for table in grids.tables for merge in table.merges)
+                > self.block_count
+            ):
+                raise ValueError(
+                    "Word vertical merges require their actual input and body manifest"
+                )
         if self.odt_table_merges is not None:
             tables = OdtTableMerges.model_validate(self.odt_table_merges)
             if (
@@ -606,6 +628,15 @@ class ExtractionResult(BaseModel):
                 or part.doc_notes is not None
             ):
                 ExtractedPartSummary.model_validate(part)
+        word_grid_bytes = 0
+        for part in self.selected_parts:
+            if part.word_grid_merges is not None:
+                if not isinstance(part.word_grid_merges, WordVerticalGridMerges):
+                    raise ValueError("Constructed Word summary requires typed grid metadata")
+                ExtractedPartSummary.model_validate(part)
+                word_grid_bytes += len(part.word_grid_merges.model_dump_json().encode())
+        if word_grid_bytes > MAX_WORD_GRID_MERGE_BYTES:
+            raise ValueError("Stored Word vertical merges exceed the aggregate byte limit")
         table_bytes = 0
         for part in self.selected_parts:
             if part.odt_table_merges is not None:

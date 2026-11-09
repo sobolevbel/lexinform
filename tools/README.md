@@ -789,6 +789,15 @@ Add `--note-body-projection` with tracked cleanup to record half-open note
 body ranges and text hashes. Empty output and unverified boundaries remain
 distinct from mapped nonempty text. The report contains no note text.
 
+### Word table grid
+
+Use `python -m tools.replay_word_blocks --mode table-grid` with the same
+`--corpus`, `--catalog` and `--catalog-sha256` as a fresh `--mode library`
+report. Pass that report as `--reference` with `--reference-sha256` and use a
+new output path. The report records grid intervals and exact vertical anchors
+for supported direct DOCX and DOCM body tables. Unsupported tables keep an
+explicit reason. Legacy text is compared with the library report.
+
 ### Word revision projection
 
 `python -m tools.replay_word_revisions` accepts a corpus path, a pinned external

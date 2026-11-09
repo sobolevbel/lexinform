@@ -5,6 +5,7 @@ import io
 import json
 import logging
 import zipfile
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Literal
 from xml.etree import ElementTree as ET
@@ -24,6 +25,7 @@ from lexinform.models import (
 )
 from tools.corpus_artifacts import digest, observation_changes, read_artifact, write_json
 from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
+from tools.word_table_grid import word_table_grids
 
 
 def verify_structure(data: bytes, result: WordStructuredExtraction) -> dict[str, Any]:
@@ -149,6 +151,7 @@ def snapshot(
     with_notes: bool = False,
     with_structure: bool = False,
     semantic_structure: bool = False,
+    with_table_grid: bool = False,
 ) -> tuple[dict[str, Any], dict[str, Any] | None]:
     reader = DocxTextExtractor()
     structured: WordStructuredExtraction | None = None
@@ -255,6 +258,8 @@ def snapshot(
         },
         "verified_coordinates": len(result.blocks),
     }
+    if with_table_grid and result.body_state == "read":
+        physical["table_grid"] = [asdict(table) for table in word_table_grids(root, result.blocks)]
     if detailed is not None:
         notes = detailed.notes
         if (
@@ -331,6 +336,7 @@ def run(
         "structure-parts",
         "semantic-structure",
         "semantic-structure-parts",
+        "table-grid",
     ],
     reference: Path | None = None,
     reference_sha256: str | None = None,
@@ -372,7 +378,9 @@ def run(
     before = source_fingerprints()
     result: dict[str, Any] = {
         "suite": "word-blocks-v1",
-        "entrypoint": "word_semantic_structure_parts"
+        "entrypoint": "word_table_grid"
+        if mode == "table-grid"
+        else "word_semantic_structure_parts"
         if mode == "semantic-structure-parts"
         else "word_semantic_structure"
         if mode == "semantic-structure"
@@ -402,6 +410,11 @@ def run(
             "Unsupported leaf readers must retain their observed exception; no fabricated blocks.",
         ],
     }
+    if mode == "table-grid":
+        result["exclusions"].append(
+            "Grid geometry covers direct body tables with explicit merges. "
+            "Nested and wrapped tables are outside scope."
+        )
     if mode in ("semantic-structure", "semantic-structure-parts"):
         result["retention_profile"] = "semantic-first-v2"
         result["structure_max_bytes"] = 524288
@@ -434,6 +447,8 @@ def run(
                             else {}
                         ),
                     )
+                elif mode == "table-grid":
+                    core, physical = snapshot(data, adapter=True, with_table_grid=True)
                 else:
                     core, physical = snapshot(
                         data,
@@ -478,6 +493,7 @@ def main() -> None:
             "structure-parts",
             "semantic-structure",
             "semantic-structure-parts",
+            "table-grid",
         ),
         required=True,
     )

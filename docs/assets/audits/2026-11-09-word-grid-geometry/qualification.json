@@ -1,0 +1,112 @@
+{
+  "baseline_report_sha256": "ca5e14ca846e26d5eeaa97cbd1061f50a7744686c69931abd56bb03b6cf601d3",
+  "candidate_report_sha256": "9ffd78cabfbec2da1863075eea19b09d381f916a517b3dc89265a3a3b797b57b",
+  "catalog_sha256": "3532564f2ecf90d151ed5412cdfae1b8fa6ad31f7f45ce0ef816c84869fbf47b",
+  "inputs": {
+    "documents/files/375208.docx": {
+      "input_sha256": "23c2c274ca1bd6e7ca25c357fe623431b07c7831c605c5f2496f6fa6673c6d6d",
+      "legacy_text_sha256": "c7eb8238e239b0405133d1df071b5204db6aa717d11d6ee85664cc5ecd007540",
+      "selected_text_sha256": "c7eb8238e239b0405133d1df071b5204db6aa717d11d6ee85664cc5ecd007540",
+      "selection_roles": [
+        "bill"
+      ],
+      "tables": [
+        {
+          "columns": 29,
+          "first_continuation": {
+            "anchor": [
+              0,
+              87,
+              19,
+              1
+            ],
+            "columns": [
+              0,
+              4
+            ],
+            "path": [
+              0,
+              87,
+              20,
+              1
+            ],
+            "row": 18
+          },
+          "merged_cells": 277,
+          "path": [
+            0,
+            87
+          ],
+          "rows": 66,
+          "vertical_continuations": 10
+        }
+      ],
+      "xml_sha256": "9106b033db5f9cdcb9dd40615526c7b6987c2261c3a64770f0dd091537851798"
+    },
+    "documents/files/418603.docx": {
+      "input_sha256": "8501c9b1b7b3550f5184cc4ef70d9cbf90a7a5eb34b5bfd5cf10213e492afbfd",
+      "legacy_text_sha256": "efc802b7dd769d90a26a05cd5c8c5bedc59653c89d604633450e62958e2c0dd4",
+      "selected_text_sha256": "efc802b7dd769d90a26a05cd5c8c5bedc59653c89d604633450e62958e2c0dd4",
+      "selection_roles": [
+        "bill"
+      ],
+      "tables": [
+        {
+          "columns": 4,
+          "first_continuation": null,
+          "merged_cells": 4,
+          "path": [
+            0,
+            278
+          ],
+          "rows": 16,
+          "vertical_continuations": 0
+        },
+        {
+          "columns": 29,
+          "first_continuation": {
+            "anchor": [
+              0,
+              308,
+              25,
+              1
+            ],
+            "columns": [
+              0,
+              4
+            ],
+            "path": [
+              0,
+              308,
+              26,
+              1
+            ],
+            "row": 24
+          },
+          "merged_cells": 282,
+          "path": [
+            0,
+            308
+          ],
+          "rows": 68,
+          "vertical_continuations": 6
+        }
+      ],
+      "xml_sha256": "fac2f0109c4646a502c4123a2e82d9978e85e8aba57ad722b44e65a55b164d56"
+    }
+  },
+  "mutation": {
+    "changed_legacy_text": false,
+    "grid_span_after": 3,
+    "grid_span_before": 4,
+    "input": "documents/files/375208.docx",
+    "physical_cell_path": [
+      0,
+      87,
+      20,
+      1
+    ],
+    "table_reason": "unmatched_vertical_merge"
+  },
+  "unchanged_legacy_observations": true
+}
