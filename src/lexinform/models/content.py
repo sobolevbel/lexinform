@@ -162,6 +162,10 @@ class CardPrimaryEvidence(BaseModel):
         default=None, pattern=r"^[0-9a-f]{64}$", exclude_if=lambda value: value is None
     )
 
+    revision_projection: Literal["current"] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
 
 type ContentApplicationProfile = Literal[
     "amendment-projections-v1", "supplement-projection-v1", "supplement-pair-projections-v1"
@@ -406,6 +410,10 @@ class ContentVersion(BaseModel):
             or self.reason not in ("original", "card_revision")
             or (self.reason == "card_revision")
             != (self.card_primary_evidence.revision_analysis_sha256 is not None)
+            or (
+                self.card_primary_evidence.revision_projection is not None
+                and self.reason != "card_revision"
+            )
         ):
             raise ValueError("Primary card evidence requires its exact compact card profile")
         if self.card_context_profile is not None and self.change_snapshot_id is not None:

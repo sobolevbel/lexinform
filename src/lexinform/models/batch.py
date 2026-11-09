@@ -949,7 +949,12 @@ class BatchIntent(BaseModel):
                     or (binding.term, binding.number) != (request.term, request.number)
                 ):
                     raise ValueError("Multipart text receipt requires its actual source question")
-            if isinstance(
+            if (
+                isinstance(receipt, RclPairedArchiveInputReceipt)
+                and receipt.fitted_base_capture_id is not None
+            ):
+                receipt.validate_fitted_text(ctx.text, truncated=ctx.truncated)
+            elif isinstance(
                 receipt, (RclArchiveSelfAmendmentInputReceipt, RclPairedArchiveInputReceipt)
             ):
                 final = receipt.segments[-1]

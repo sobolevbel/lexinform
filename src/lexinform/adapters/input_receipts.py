@@ -41,6 +41,7 @@ from lexinform.models import (
     ComputationResult,
     DigestItemMeta,
     DocumentPart,
+    DocumentSelection,
     DocumentSelectionRecord,
     ExtractionResult,
     LlmBatchItem,
@@ -656,12 +657,13 @@ def _paired_archive_amendment_parent(
     )
     amendment = parts[-1]
     recorded = receipt.amendment_part
-    label = receipt.segments[-2]
-    expected_label = self_amendment_header(amendment)
+    if receipt.fitted_base_capture_id is None:
+        label = receipt.segments[-2]
+        if label.end - label.start < len(self_amendment_header(amendment)):
+            raise ValueError("paired archive receipt differs from its amendment label")
     if (
         root != proof.base_sha256
         or root == proof.proposal_sha256
-        or label.end - label.start < len(expected_label)
         or (amendment.source_sha256, amendment.sha256)
         != (proof.proposal_sha256, proof.proposal_member_sha256)
         or (amendment.role, amendment.text_sha256, amendment.text_start, amendment.text_end)
@@ -738,13 +740,14 @@ def _paired_word_body(reader: PhysicalInventoryReader, order: PhysicalRootOrder,
     return body_reads[0][6]
 
 
-def _paired_bill_xml_parent(
+def _paired_base_capture(
     connection: sqlite3.Connection,
     receipt: RclPairedArchiveInputReceipt,
-    part: DocumentPart,
-    slot: int,
+    members: tuple[tuple[DocumentPart, int], ...],
     capture_id: str,
-) -> str:
+    *,
+    word_xml: bool = False,
+) -> str | None:
     old_factory = connection.row_factory
     connection.row_factory = sqlite3.Row
     try:
@@ -753,28 +756,51 @@ def _paired_bill_xml_parent(
             _one(connection, "SELECT * FROM physical_captures WHERE capture_id=?", (capture_id,))
         )
         if (capture.artifact_sha256, capture.extraction_id) != (
-            part.source_sha256,
+            members[0][0].source_sha256,
             receipt.extraction_id,
         ):
-            raise ValueError("Paired bill witness differs from its exact base capture")
+            raise ValueError("Paired archive differs from its exact base capture")
         execution = reader.typed(capture.execution_id, "execution")
         order = execution.metadata
         if execution.coverage != "complete" or not isinstance(order, PhysicalRootOrder):
-            raise ValueError("Paired bill witness requires complete base execution")
-        path, leaf_sha256, text_sha256 = archive_member_in_execution(reader, order, slot)
-        if len(path) != 1 or (leaf_sha256, text_sha256) != (part.sha256, part.text_sha256):
-            raise ValueError("Paired bill witness differs from its exact base slot")
+            raise ValueError("Paired archive requires complete base execution")
         graph = reader.typed(capture.inventory_id, "graph")
-        header = _one(
-            connection,
-            "SELECT runtime_name FROM physical_header_rows WHERE header_id=? AND ordinal=?",
-            (graph.header_id, path[0]),
-        )
-        if part.members != (header["runtime_name"],):
-            raise ValueError("Paired bill witness differs from its exact base member")
-        return _paired_word_body(reader, order, slot)
+        for part, slot in members:
+            path, leaf_sha256, text_sha256 = archive_member_in_execution(reader, order, slot)
+            if len(path) != 1 or (leaf_sha256, text_sha256) != (part.sha256, part.text_sha256):
+                raise ValueError("Paired archive differs from its exact base slot")
+            header = _one(
+                connection,
+                "SELECT runtime_name FROM physical_header_rows WHERE header_id=? AND ordinal=?",
+                (graph.header_id, path[0]),
+            )
+            if part.members != (header["runtime_name"],):
+                raise ValueError("Paired archive differs from its exact base member")
+        return _paired_word_body(reader, order, members[0][1]) if word_xml else None
     finally:
         connection.row_factory = old_factory
+
+
+def _validate_fitted_archive_coverage(
+    receipt: RclPairedArchiveInputReceipt, selection: DocumentSelection
+) -> None:
+    for index, part in enumerate(receipt.source_parts):
+        if part.role not in ("bill", "normative_annex"):
+            continue
+        fitted = [
+            span
+            for span in selection.coverage
+            if span.stage == "analysis" and span.part_index == index
+        ]
+        mapped = [
+            (segment.source_start, segment.source_end)
+            for segment in receipt.segments
+            if segment.part_index == index
+        ]
+        if any("input coverage unknown" in span.losses for span in fitted) or [
+            (span.start, span.end) for span in fitted
+        ] != (mapped or [(0, 0)]):
+            raise ValueError("Fitted paired archive differs from the recorded normative coverage")
 
 
 def _archive_parents(
@@ -806,16 +832,27 @@ def _archive_parents(
         amendment_extraction, amendment_xml_sha256 = _paired_archive_amendment_parent(
             connection, receipt, selection, document
         )
+        if receipt.fitted_base_capture_id is not None:
+            _validate_fitted_archive_coverage(receipt, meta.selection)
+            _paired_base_capture(
+                connection,
+                receipt,
+                tuple(
+                    (part, recorded.physical_index)
+                    for part, recorded in zip(parts[:-1], receipt.source_parts[:-1], strict=True)
+                ),
+                receipt.fitted_base_capture_id,
+            )
         companion = receipt.paired_block_companion
         base_xml_sha256 = None
         if companion is not None and companion.base_bill_capture_id is not None:
             row = companion.base.rows[0]
-            base_xml_sha256 = _paired_bill_xml_parent(
+            base_xml_sha256 = _paired_base_capture(
                 connection,
                 receipt,
-                parts[row.part_index],
-                row.physical_index,
+                ((parts[row.part_index], row.physical_index),),
                 companion.base_bill_capture_id,
+                word_xml=True,
             )
         _block_parents(
             connection,
@@ -1497,7 +1534,10 @@ def validate_multipart_intent(connection: sqlite3.Connection, intent: BatchInten
         _multipart_parents(
             connection, receipt, meta, (validated.request.term, validated.request.number)
         )
-        if isinstance(receipt, RclPairedArchiveInputReceipt):
+        if (
+            isinstance(receipt, RclPairedArchiveInputReceipt)
+            and receipt.fitted_base_capture_id is None
+        ):
             question = validated.request.question
             label = receipt.segments[-2]
             if not isinstance(question, AnalysisQuestion) or not question.ctx.text[

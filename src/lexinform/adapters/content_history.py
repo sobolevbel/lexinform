@@ -388,6 +388,8 @@ def _verify_card_primary_evidence(
     root: Publication | None,
     *,
     revision_analysis_sha256: str | None = None,
+    projection_after: datetime | None = None,
+    compact_revision: bool = False,
 ) -> dict[str, object]:
     projection_row = _query(
         connection,
@@ -426,9 +428,13 @@ def _verify_card_primary_evidence(
         record = rendered_bill.analysis
         if (
             record is None
-            or not primary_record_matches(record, paid)
-            or record.model_dump(exclude=set(PRIMARY_USAGE_FIELDS))
-            != paid.record.model_dump(exclude=set(PRIMARY_USAGE_FIELDS))
+            and not compact_revision
+            or record is not None
+            and (
+                not primary_record_matches(record, paid)
+                or record.model_dump(exclude=set(PRIMARY_USAGE_FIELDS))
+                != paid.record.model_dump(exclude=set(PRIMARY_USAGE_FIELDS))
+            )
         ):
             raise CardPrimaryEvidenceError("card_primary_render_result_mismatch")
     item = reader.get_consumed_primary_input(
@@ -496,6 +502,8 @@ def _verify_card_primary_evidence(
         any(value.utcoffset() is None for value in (*chronology, item.consumed_at))
         or chronology != tuple(sorted(chronology))
         or not paid.collected_at <= item.consumed_at <= projection.created_at
+        or projection_after is not None
+        and projection.created_at < projection_after
     ):
         raise CardPrimaryEvidenceError("card_primary_chronology")
     return {
@@ -572,6 +580,8 @@ def _verify_card_content(
             raise CardPrimaryEvidenceError("invalid_card_primary_evidence") from exc
     previous_ids: set[int] = set()
     marked_continuation = False
+    current_projection = False
+    projection_after = None
     if value.previous_version_id is not None:
         row = _query(
             connection,
@@ -607,24 +617,41 @@ def _verify_card_content(
                 or semantic.sitting_group
             ):
                 raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
+            current_projection = reference.revision_projection == "current"
             try:
-                original = _card_primary_revision_origin(
-                    connection, value, root, previous, previous_ids
-                )
-                inherited = reference.model_copy(update={"revision_analysis_sha256": None})
-                primary = _verify_card_primary_evidence(
-                    connection,
-                    inherited,
-                    original,
-                    bill,
-                    root,
-                    revision_analysis_sha256=reference.revision_analysis_sha256,
-                )
+                if current_projection:
+                    projection_after = _card_current_projection_parent(
+                        connection,
+                        reference,
+                        value,
+                        root,
+                        previous,
+                        previous_ids,
+                        bill.analysis_generation,
+                    )
+                    marked_continuation = True
+                else:
+                    original = _card_primary_revision_origin(
+                        connection, value, root, previous, previous_ids
+                    )
+                    inherited = reference.model_copy(update={"revision_analysis_sha256": None})
+                    primary = _verify_card_primary_evidence(
+                        connection,
+                        inherited,
+                        original,
+                        bill,
+                        root,
+                        revision_analysis_sha256=reference.revision_analysis_sha256,
+                    )
             except CardPrimaryEvidenceError:
                 raise
             except ValueError as exc:
                 raise CardPrimaryEvidenceError("invalid_card_primary_evidence") from exc
-        if not retained and (reference is None or previous.previous_version_id is None):
+        if (
+            not retained
+            and not current_projection
+            and (reference is None or previous.previous_version_id is None)
+        ):
             previous_id = verify_card_content(connection, previous, retained=True)
             previous_row = (
                 _query(
@@ -686,7 +713,7 @@ def _verify_card_content(
             if value.previous_version_id is None
             else card_publication_rows(connection, value.root_publication_id)
         )
-    matches: list[int] = []
+    matches: list[Publication] = []
     for row in rows:
         physical = read_content_publication(row)
         if not card_physical_matches(value, physical, root, semantic, previous_ids) or (
@@ -704,14 +731,32 @@ def _verify_card_content(
         elif content_delivery_mismatch(value, snapshots, physical.delivery) is not None:
             continue
         if physical.id is not None:
-            matches.append(physical.id)
+            matches.append(physical)
     if not matches and retained and value.previous_version_id is not None:
         return None, primary
     if len(matches) != 1:
         raise ValueError("card_content_physical_scope")
     if retained and missing:
         return None, primary
-    return matches[0], primary
+    (physical,) = matches
+    reference = value.card_primary_evidence
+    if current_projection and reference is not None:
+        try:
+            primary = _verify_card_primary_evidence(
+                connection,
+                reference,
+                value,
+                bill,
+                physical,
+                revision_analysis_sha256=reference.revision_analysis_sha256,
+                projection_after=projection_after,
+                compact_revision=True,
+            )
+        except CardPrimaryEvidenceError:
+            raise
+        except ValueError as exc:
+            raise CardPrimaryEvidenceError("invalid_card_primary_evidence") from exc
+    return physical.id, primary
 
 
 def _card_revision_time_matches(value: ContentVersion, physical: Publication) -> bool:
@@ -725,6 +770,69 @@ def _card_revision_time_matches(value: ContentVersion, physical: Publication) ->
             and value.recorded_at <= physical.sent_at
         )
     )
+
+
+def _card_current_projection_parent(
+    connection: sqlite3.Connection,
+    reference: CardPrimaryEvidence,
+    value: ContentVersion,
+    root: Publication,
+    previous: ContentVersion,
+    previous_ids: set[int],
+    generation: int,
+) -> datetime | None:
+    prior = previous.card_primary_evidence
+    if root.id is None or root.sent_at is None or len(previous_ids) != 1:
+        raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
+    (prior_id,) = previous_ids
+    row = _query(connection, "SELECT * FROM publications WHERE id=?", (prior_id,)).fetchone()
+    if row is None:
+        raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
+    physical = read_content_publication(row)
+    if (
+        physical.status is not PublicationStatus.SENT
+        or physical.message_id != root.message_id
+        or physical.sent_at is None
+        or not _card_revision_time_matches(previous, physical)
+        or not root.sent_at <= physical.sent_at <= value.recorded_at
+        or _verify_card_content(connection, previous, retained=True, bound_physical_id=prior_id)[0]
+        != prior_id
+    ):
+        raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
+    if prior is None:
+        snapshot = ContentSourceRows(connection).get_content_snapshot(previous.bill_context_id)
+        if snapshot is None:
+            raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
+        previous_bill = Bill.model_validate_json(snapshot.payload_json)
+        if not 0 < previous_bill.analysis_generation < generation:
+            raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
+        return physical.sent_at
+    if reference.projection_application_id == prior.projection_application_id:
+        if prior.revision_projection != "current" or reference != prior:
+            raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
+        return None
+    previous_projection_row = _query(
+        connection,
+        "SELECT * FROM result_applications WHERE id=?",
+        (prior.projection_application_id,),
+    ).fetchone()
+    current_projection_row = _query(
+        connection,
+        "SELECT * FROM result_applications WHERE id=?",
+        (reference.projection_application_id,),
+    ).fetchone()
+    if previous_projection_row is None or current_projection_row is None:
+        raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
+    previous_projection = read_result_application(previous_projection_row)
+    current_projection = read_result_application(current_projection_row)
+    if (
+        previous_projection.result_id == current_projection.result_id
+        or previous_projection.projected_generation is None
+        or current_projection.projected_generation is None
+        or previous_projection.projected_generation >= current_projection.projected_generation
+    ):
+        raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
+    return physical.sent_at
 
 
 def _card_primary_revision_origin(

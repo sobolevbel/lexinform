@@ -1,0 +1,13 @@
+{
+  "exact_double_restores": {
+    "da51-fitted-paired/final-baseline.sql": "7aa57e0d8edac4552528cd2e87e85063974b29a74b2805f9a7c515ba5789d02d",
+    "da51-fitted-paired/final-candidate.sql": "facd1c9a298ce5f4d5e20e82ff3d59534222e1603cc48371c6982f0d978b79cb",
+    "da51-fitted-paired/final-rollback.sql": "7aa57e0d8edac4552528cd2e87e85063974b29a74b2805f9a7c515ba5789d02d",
+    "da72-fresh-paid-card/controlled-0.sql": "a3365ed3a346bb7a0677bc65fa48614bcc29a04a9cb7a6d06f6f9281c95df977",
+    "da72-fresh-paid-card/controlled-1.sql": "402284ba6662adc6ea1769e35c0b3138bf33d39966be3b8452402a579e93dc6d",
+    "da72-fresh-paid-card/controlled-reader-only.sql": "d8c6321956c6f0bfeb7ffe487681ef408e6036fba2aceab503f6b2f7f66e7e0c"
+  },
+  "old_reader_rejects_mark_atomically": true,
+  "scope": "Controlled one-part edit and synthetic paid projection generations 3 to 5",
+  "wrong_predecessor_chronology_rejected": true
+}

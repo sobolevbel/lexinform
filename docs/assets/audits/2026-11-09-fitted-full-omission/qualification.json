@@ -1,0 +1,153 @@
+{
+  "12/100000": {
+    "request_sha256": "73696fbbe6883f186ac419dbc0afa851e57f110607c5c917c6aec47f057f867f",
+    "receipt_bytes": 3765,
+    "size_delta": {
+      "queued": {
+        "sql_bytes": 0,
+        "gzip_bytes": 0
+      },
+      "finalized": {
+        "sql_bytes": 0,
+        "gzip_bytes": 0
+      },
+      "submitted": {
+        "sql_bytes": 0,
+        "gzip_bytes": 0
+      }
+    },
+    "restore_negatives": {},
+    "old_and_new_frozen_and_source_identities_equal": true
+  },
+  "12/1500000": {
+    "request_sha256": "5bbe16bcaaa8428261fc4e9dacbedac8a2f97565d67b73811f2f1ee30b958be2",
+    "receipt_bytes": 6355,
+    "size_delta": {
+      "queued": {
+        "sql_bytes": 0,
+        "gzip_bytes": 0
+      },
+      "finalized": {
+        "sql_bytes": 0,
+        "gzip_bytes": 0
+      },
+      "submitted": {
+        "sql_bytes": 0,
+        "gzip_bytes": 0
+      }
+    },
+    "restore_negatives": {},
+    "old_and_new_frozen_and_source_identities_equal": true
+  },
+  "12/25000": {
+    "request_sha256": "48f8e6bde84c3a60b2d21b8c296edc9c36e67c0c5040aa3c1702fc7c355b7e77",
+    "receipt_bytes": 2831,
+    "size_delta": {
+      "queued": {
+        "sql_bytes": 63072,
+        "gzip_bytes": 12438
+      },
+      "finalized": {
+        "sql_bytes": 2857,
+        "gzip_bytes": 554
+      },
+      "submitted": {
+        "sql_bytes": 2857,
+        "gzip_bytes": 584
+      }
+    },
+    "restore_negatives": {
+      "wrong_amendment_capture": "invalid_input_intent_snapshot",
+      "wrong_base_capture": "invalid_input_intent_snapshot",
+      "wrong_generated_origin": "invalid_input_intent_snapshot",
+      "wrong_map": "invalid_input_intent_snapshot",
+      "wrong_normative_range_with_valid_map_hash": "invalid_input_intent_snapshot",
+      "wrong_role": "invalid_input_intent_snapshot"
+    },
+    "old_and_new_frozen_and_source_identities_equal": true,
+    "amendment_omitted_source_ranges": [
+      [
+        0,
+        22490
+      ]
+    ],
+    "retained_amendment_count": 0,
+    "segments": 11,
+    "native_copy_each_slice_verified": true,
+    "injected_rollback_exact": false
+  },
+  "12/50000": {
+    "request_sha256": "c0c13021ce7ce29a7be5abf29a05bd54a7f68409ce5649c2d0f426a36e8ea75e",
+    "receipt_bytes": 3579,
+    "size_delta": {
+      "queued": {
+        "sql_bytes": 63820,
+        "gzip_bytes": 12560
+      },
+      "finalized": {
+        "sql_bytes": 3605,
+        "gzip_bytes": 751
+      },
+      "submitted": {
+        "sql_bytes": 3605,
+        "gzip_bytes": 831
+      }
+    },
+    "restore_negatives": {
+      "wrong_amendment_capture": "invalid_input_intent_snapshot",
+      "wrong_base_capture": "invalid_input_intent_snapshot",
+      "wrong_generated_origin": "invalid_input_intent_snapshot",
+      "wrong_map": "invalid_input_intent_snapshot",
+      "wrong_normative_range_with_valid_map_hash": "invalid_input_intent_snapshot",
+      "wrong_role": "invalid_input_intent_snapshot"
+    },
+    "old_and_new_frozen_and_source_identities_equal": true,
+    "amendment_omitted_source_ranges": [
+      [
+        0,
+        22490
+      ]
+    ],
+    "retained_amendment_count": 0,
+    "segments": 19,
+    "native_copy_each_slice_verified": true,
+    "injected_rollback_exact": true
+  },
+  "14/50000": {
+    "request_sha256": "c0c13021ce7ce29a7be5abf29a05bd54a7f68409ce5649c2d0f426a36e8ea75e",
+    "receipt_bytes": 3579,
+    "size_delta": {
+      "queued": {
+        "sql_bytes": 63820,
+        "gzip_bytes": 12551
+      },
+      "finalized": {
+        "sql_bytes": 3605,
+        "gzip_bytes": 759
+      },
+      "submitted": {
+        "sql_bytes": 3605,
+        "gzip_bytes": 827
+      }
+    },
+    "restore_negatives": {
+      "wrong_amendment_capture": "invalid_input_intent_snapshot",
+      "wrong_base_capture": "invalid_input_intent_snapshot",
+      "wrong_generated_origin": "invalid_input_intent_snapshot",
+      "wrong_map": "invalid_input_intent_snapshot",
+      "wrong_normative_range_with_valid_map_hash": "invalid_input_intent_snapshot",
+      "wrong_role": "invalid_input_intent_snapshot"
+    },
+    "old_and_new_frozen_and_source_identities_equal": true,
+    "amendment_omitted_source_ranges": [
+      [
+        0,
+        22490
+      ]
+    ],
+    "retained_amendment_count": 0,
+    "segments": 19,
+    "native_copy_each_slice_verified": true,
+    "injected_rollback_exact": false
+  }
+}

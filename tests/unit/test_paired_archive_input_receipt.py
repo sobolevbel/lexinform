@@ -155,3 +155,66 @@ def test_paired_archive_intent_rejects_an_unlinked_source_observation() -> None:
         ):
             repo.save_batch_intent(intent)
         assert repo.dump() == before
+
+
+@pytest.mark.parametrize("amendment_retained", [True, False])
+def test_fitted_pair_distinguishes_retained_generated_and_omitted_text(
+    amendment_retained: bool,
+) -> None:
+    segments = (
+        PreparedTextSegment(
+            start=0, end=4, origin="source", part_index=0, source_start=0, source_end=4
+        ),
+        PreparedTextSegment(start=4, end=11, origin="generated", system_origin="input_transform"),
+        PreparedTextSegment(
+            start=11,
+            end=14,
+            origin="source",
+            part_index=1 if amendment_retained else 0,
+            source_start=2 if amendment_retained else 5,
+            source_end=5 if amendment_retained else 8,
+        ),
+    )
+    fields = {
+        "source_selection_id": "selection-v1:" + "1" * 64,
+        "source_observation_id": "source-observation-v1:" + "2" * 64,
+        "extraction_id": "extraction-v1:" + "3" * 64,
+        "proposal_trace_id": "candidate-trace-v1:" + "4" * 64,
+        "amendment_capture_id": "5" * 64,
+        "amendment_ordinal": 0,
+        "source_parts": (
+            ArchiveInputPart(role="bill", chars=10, text_sha256="6" * 64, physical_index=0),
+            ArchiveInputPart(
+                role="self_amendment", chars=8, text_sha256="7" * 64, physical_index=0
+            ),
+        ),
+        "context_sha256": "8" * 64,
+        "request_sha256": "9" * 64,
+        "text_sha256": "0" * 64,
+        "text_chars": 14,
+        "full_map_sha256": input_map_sha256(segments),
+        "segments": segments,
+    }
+
+    fitted = RclPairedArchiveInputReceipt.model_validate(
+        {**fields, "fitted_base_capture_id": "b" * 64}
+    )
+
+    expected = (
+        (((4, 10),), ((0, 2), (5, 8)))
+        if amendment_retained
+        else (
+            ((4, 5), (8, 10)),
+            ((0, 8),),
+        )
+    )
+    assert fitted.fitted_omissions == expected
+    fitted.validate_fitted_text("abcd\n[...]\nefG", truncated=True)
+    with pytest.raises(ValueError, match="frozen excerpt markers"):
+        fitted.validate_fitted_text("abcd\n[x..]\nefG", truncated=True)
+    with pytest.raises(ValueError, match="complete final amendment"):
+        RclPairedArchiveInputReceipt.model_validate(fields)
+    with pytest.raises(ValueError, match="distinct physical roots"):
+        RclPairedArchiveInputReceipt.model_validate(
+            {**fields, "fitted_base_capture_id": fields["amendment_capture_id"]}
+        )

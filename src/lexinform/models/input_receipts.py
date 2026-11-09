@@ -441,6 +441,9 @@ class RclPairedArchiveInputReceipt(MultipartTextInputReceipt):
     proposal_trace_id: str = Field(pattern=r"^candidate-trace-v1:[0-9a-f]{64}$")
     amendment_capture_id: str = Field(pattern=r"^[0-9a-f]{64}$")
     amendment_ordinal: int = Field(ge=0, le=MAX_INPUT_RECEIPT_INTEGER, strict=True)
+    fitted_base_capture_id: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$", exclude_if=lambda value: value is None
+    )
     paired_block_companion: PairedArchiveBlockCompanion | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
@@ -454,6 +457,9 @@ class RclPairedArchiveInputReceipt(MultipartTextInputReceipt):
         archive = self.source_parts[:-1]
         _require_archive_parts(archive)
         amendment = self.amendment_part
+        if self.fitted_base_capture_id is not None:
+            self._validate_fitted_pair(len(archive))
+            return self
         final = self.segments[-1]
         if (
             amendment.role != "self_amendment"
@@ -484,6 +490,73 @@ class RclPairedArchiveInputReceipt(MultipartTextInputReceipt):
             validate_block_companion(companion.base, self.segments)
             validate_block_companion(companion.amendment, self.segments)
         return self
+
+    def _validate_fitted_pair(self, amendment_index: int) -> None:
+        if (
+            self.amendment_part.role != "self_amendment"
+            or self.block_companion is not None
+            or self.paired_block_companion is not None
+            or self.fitted_base_capture_id == self.amendment_capture_id
+        ):
+            raise ValueError(
+                "Fitted paired archive requires distinct physical roots and no block companion"
+            )
+        previous = (0, 0)
+        has_bill = False
+        has_marker = False
+        for segment in self.segments:
+            if segment.origin == "generated":
+                if segment.system_origin != "input_transform" or segment.end - segment.start != 7:
+                    raise ValueError(
+                        "Fitted paired archive requires exact generated excerpt markers"
+                    )
+                has_marker = True
+                continue
+            index, start, end = segment.part_index, segment.source_start, segment.source_end
+            assert index is not None and start is not None and end is not None, (
+                "Multipart input validates each source range"
+            )
+            if (index, start) < previous:
+                raise ValueError("Fitted paired archive requires disjoint ordered source ranges")
+            previous = (index, end)
+            has_bill = has_bill or index == 0
+        if not has_marker or not has_bill or not self.fitted_omissions[amendment_index]:
+            raise ValueError(
+                "Fitted paired archive requires retained bill and omitted amendment text"
+            )
+
+    @property
+    def fitted_omissions(self) -> tuple[tuple[tuple[int, int], ...], ...]:
+        if self.fitted_base_capture_id is None:
+            return ()
+        by_part: list[list[tuple[int, int]]] = [[] for _ in self.source_parts]
+        for segment in self.segments:
+            if (
+                segment.part_index is not None
+                and segment.source_start is not None
+                and segment.source_end is not None
+            ):
+                by_part[segment.part_index].append((segment.source_start, segment.source_end))
+        omissions = []
+        for part, ranges in zip(self.source_parts, by_part, strict=True):
+            previous = 0
+            missing = []
+            for start, end in ranges:
+                if previous < start:
+                    missing.append((previous, start))
+                previous = end
+            if previous < part.chars:
+                missing.append((previous, part.chars))
+            omissions.append(tuple(missing))
+        return tuple(omissions)
+
+    def validate_fitted_text(self, text: str, *, truncated: bool) -> None:
+        if not truncated or any(
+            text[segment.start : segment.end] != "\n[...]\n"
+            for segment in self.segments
+            if segment.origin == "generated"
+        ):
+            raise ValueError("Fitted paired archive differs from its frozen excerpt markers")
 
 
 class LooseRclInputReceipt(LooseMultipartInputReceipt):

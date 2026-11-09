@@ -1,0 +1,14 @@
+{
+  "control_dumps": {
+    "case-0.sql": "a3365ed3a346bb7a0677bc65fa48614bcc29a04a9cb7a6d06f6f9281c95df977",
+    "case-1.sql": "402284ba6662adc6ea1769e35c0b3138bf33d39966be3b8452402a579e93dc6d",
+    "case-2.sql": "34ff2fab0e1426aeb32f0baeae53266ee64775abb5d2b4dbaccb4655d484eb39",
+    "case-3.sql": "1a0f7035b17a270a4cd4902d4f6c83942383f5f8b456f1c5c03eab37584f3038",
+    "case-4.sql": "e2adb0ebc97df6d6cbc7ff0bee69b00b2535770329c8231a8ebcc39a2db67879",
+    "case-5.sql": "60a180235469f80c2a88c3ee752b49751214b49dc97d704a28baeeb2490bace8"
+  },
+  "double_restore_byte_identical": true,
+  "previous_card_unchanged_and_unmarked": true,
+  "same_generation_and_wrong_chronology_rejected": true,
+  "scope": "Controlled edit with exact paid synthetic projections and a confirmed previous card"
+}
