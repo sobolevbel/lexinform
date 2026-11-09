@@ -1,0 +1,73 @@
+{
+  "atomic_negative_controls": [
+    "foreign_parent",
+    "out_of_row_break",
+    "overlap_existing_copy"
+  ],
+  "dump_delta_bytes": {
+    "gzip": 235,
+    "sql": 449
+  },
+  "existing_block_copies_unchanged": true,
+  "existing_odt_table_geometry_unchanged": true,
+  "metadata_bytes": {
+    "combined": 3564,
+    "existing_geometry": 3132,
+    "new_receipt": 432
+  },
+  "old_and_new_restore_byte_exact": true,
+  "old_reader_rejects_new_format_atomically": true,
+  "proof_sha256": "37d4d4bb8e53bfcc52ca5008c98d9e8501263e9a67cb2be3b36a17eeedf0cb56",
+  "raw_sha256": "743d88976846877fcc7d9c4a81ed0e1128822b1c2f5e70c71b1b518a1027143f",
+  "schema_unchanged": true,
+  "soft_rows": {
+    "parent_sha256": "a8800f18972d96297eb9a24d5ee86122039fcc9a40a5fee9ba33f0c8463a118f",
+    "profile": "odt-soft-rows-v1",
+    "rows": [
+      {
+        "breaks": [
+          {
+            "offset": 388,
+            "path": [
+              5,
+              0,
+              3
+            ]
+          }
+        ],
+        "path": [
+          1,
+          8
+        ],
+        "row_sha256": "0169aa640e787fb5c20bae84a2dfd50619a0e6aa08b620d1a38c435aedd2c6e9",
+        "span": [
+          3836,
+          4297
+        ]
+      },
+      {
+        "breaks": [
+          {
+            "offset": 68,
+            "path": [
+              2,
+              0,
+              1
+            ]
+          }
+        ],
+        "path": [
+          1,
+          18
+        ],
+        "row_sha256": "7bb0d60afae65b4d6e2cf7e99ccf6d6257c1bcd655720daec1708ded2daf81fd",
+        "span": [
+          6035,
+          6151
+        ]
+      }
+    ]
+  },
+  "text_sha256": "a3d540a05977f1c27d5b3e35287294632453519bde8ef953fefe77064d3cc8f9",
+  "writer_unchanged": true
+}

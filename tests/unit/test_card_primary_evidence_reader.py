@@ -1,6 +1,6 @@
 import sqlite3
 from contextlib import closing
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -332,19 +332,16 @@ def test_doctor_omits_compact_primary_refs_when_evidence_is_invalid_or_unbound(
     assert target.read_bytes() == before
 
 
-def test_first_compact_revision_can_bind_the_same_paid_input_after_cleanup(
-    case: Case, tmp_path: Path
-) -> None:
-    root, previous = store_marked_card(case)
-    assert root.id is not None and root.delivery is not None, "the fixture stores the original"
-    reference = previous.card_primary_evidence
-    assert reference is not None, "the fixture stores the exact original evidence"
-    bill = Bill.model_validate_json(root.delivery.bill_json)
-    record = bill.analysis
-    assert record is not None, "the original render has its exact paid record"
-    case.repo.mark_publication(root.id, PublicationStatus.SENT, message_id=10, sent_at=NOW)
-    edited_at = NOW + timedelta(days=1)
-    edited_id = case.repo.create_publication(
+def compact_revision_candidate(
+    case: Case,
+    root: Publication,
+    previous: ContentVersion,
+    previous_id: int,
+    bill: Bill,
+    edited_at: datetime,
+    rendered_text: str,
+) -> tuple[int, ContentVersion]:
+    identity = case.repo.create_publication(
         Publication(
             term=root.term,
             number=root.number,
@@ -352,10 +349,10 @@ def test_first_compact_revision_can_bind_the_same_paid_input_after_cleanup(
             status=PublicationStatus.QUEUED,
             channel_id=root.channel_id,
             created_at=edited_at,
-            ref=f"card/{root.id}/{'a' * 64}-{root.id}/1",
+            ref=f"card/{root.id}/{'a' * 64}-{previous_id}/1",
             delivery=DeliveryPlan(
                 bill_json=continuation_snapshot(bill),
-                rendered_text="Revised metadata",
+                rendered_text=rendered_text,
                 revision_of=root.id,
                 edit_message_id=10,
                 continuation_parent=root.id,
@@ -364,7 +361,7 @@ def test_first_compact_revision_can_bind_the_same_paid_input_after_cleanup(
             ),
         )
     )
-    revision = case.repo.publication_by_id(edited_id)
+    revision = case.repo.publication_by_id(identity)
     assert revision is not None, "the fixture stores a physical revision slot"
     prepared = prepare_publication_content(
         case.repo,
@@ -378,6 +375,24 @@ def test_first_compact_revision_can_bind_the_same_paid_input_after_cleanup(
     plain, snapshots = prepared
     for snapshot in snapshots:
         case.repo.save_content_snapshot(snapshot)
+    return identity, plain
+
+
+def test_first_compact_revision_can_bind_the_same_paid_input_after_cleanup(
+    case: Case, tmp_path: Path
+) -> None:
+    root, previous = store_marked_card(case)
+    assert root.id is not None and root.delivery is not None, "the fixture stores the original"
+    reference = previous.card_primary_evidence
+    assert reference is not None, "the fixture stores the exact original evidence"
+    bill = Bill.model_validate_json(root.delivery.bill_json)
+    record = bill.analysis
+    assert record is not None, "the original render has its exact paid record"
+    case.repo.mark_publication(root.id, PublicationStatus.SENT, message_id=10, sent_at=NOW)
+    edited_at = NOW + timedelta(days=1)
+    edited_id, plain = compact_revision_candidate(
+        case, root, previous, root.id, bill, edited_at, "Revised metadata"
+    )
     with pytest.raises(ValueError, match="exact compact card profile"):
         case.repo.save_content_version(
             plain.model_copy(update={"card_primary_evidence": reference})
@@ -434,3 +449,52 @@ def test_first_compact_revision_can_bind_the_same_paid_input_after_cleanup(
     assert result["histories"][0]["versions"][1]["card_primary_evidence"] == marked.model_dump(
         mode="json"
     )
+
+
+def test_later_compact_revision_requires_the_same_confirmed_predecessor(case: Case) -> None:
+    root, original = store_marked_card(case)
+    assert root.id is not None and root.delivery is not None, "the original root is stored"
+    bill = Bill.model_validate_json(root.delivery.bill_json)
+    assert bill.analysis is not None, "the original has an exact paid record"
+    reference = original.card_primary_evidence
+    assert reference is not None, "the original binds a paid result"
+    reference = reference.model_copy(
+        update={"revision_analysis_sha256": primary_record_sha256(bill.analysis)}
+    )
+    case.repo.mark_publication(root.id, PublicationStatus.SENT, message_id=10, sent_at=NOW)
+    first_at = NOW + timedelta(days=1)
+    first_id, first = compact_revision_candidate(
+        case, root, original, root.id, bill, first_at, "First edit"
+    )
+    first = first.model_copy(update={"card_primary_evidence": reference})
+    case.repo.save_content_version(first)
+    case.repo.bind_publication_content(first_id, first.content_id)
+    case.repo.mark_publication(first_id, PublicationStatus.SENT, message_id=10, sent_at=first_at)
+    second_at = first_at + timedelta(days=1)
+    second_id, second = compact_revision_candidate(
+        case, root, first, first_id, bill, second_at, "Second edit"
+    )
+    second = second.model_copy(update={"card_primary_evidence": reference})
+    case.execute("UPDATE publications SET status='unknown' WHERE id=?", (first_id,))
+    with pytest.raises(ValueError, match="card_revision_primary_predecessor"):
+        case.repo.save_content_version(second)
+    case.execute("UPDATE publications SET status='sent' WHERE id=?", (first_id,))
+    foreign = reference.model_copy(
+        update={"projection_application_id": 1 + reference.projection_application_id}
+    )
+    for candidate in (
+        second.model_copy(update={"card_primary_evidence": foreign}),
+        second.model_copy(update={"recorded_at": NOW}),
+    ):
+        with pytest.raises(ValueError, match="card_revision_primary_predecessor"):
+            case.repo.save_content_version(candidate)
+    case.repo.save_content_version(second)
+    case.repo.bind_publication_content(second_id, second.content_id)
+    case.repo.mark_publication(second_id, PublicationStatus.SENT, message_id=10, sent_at=second_at)
+    case.repo.prune_history(
+        before=second_at + timedelta(days=1), memo_before=NOW - timedelta(days=89)
+    )
+    sql = case.repo.dump()
+    case.repo.restore(sql)
+    assert case.repo.dump() == sql
+    assert case.repo.get_publication_content(second_id) == second

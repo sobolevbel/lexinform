@@ -489,7 +489,11 @@ def _verify_card_primary_evidence(
 
 
 def _verify_card_content(
-    connection: sqlite3.Connection, value: ContentVersion, *, retained: bool
+    connection: sqlite3.Connection,
+    value: ContentVersion,
+    *,
+    retained: bool,
+    bound_physical_id: int | None = None,
 ) -> tuple[int | None, dict[str, object] | None]:
     if (
         value.change_snapshot_id is not None
@@ -528,7 +532,11 @@ def _verify_card_content(
     ):
         raise ValueError("card_content_root_scope")
     primary = None
-    if value.card_primary_evidence is not None and value.previous_version_id is None:
+    if (
+        bound_physical_id is None
+        and value.card_primary_evidence is not None
+        and value.previous_version_id is None
+    ):
         if semantic.reply_to is not None or semantic.update_group or semantic.sitting_group:
             raise CardPrimaryEvidenceError("card_primary_plan_scope")
         try:
@@ -540,6 +548,7 @@ def _verify_card_content(
         except ValueError as exc:
             raise CardPrimaryEvidenceError("invalid_card_primary_evidence") from exc
     previous_ids: set[int] = set()
+    marked_continuation = False
     if value.previous_version_id is not None:
         row = _query(
             connection,
@@ -563,25 +572,27 @@ def _verify_card_content(
             )
         }
         reference = value.card_primary_evidence
-        if reference is not None:
-            inherited = reference.model_copy(update={"revision_analysis_sha256": None})
+        if reference is not None and bound_physical_id is None:
+            marked_continuation = previous.previous_version_id is not None
             if (
                 root is None
                 or root.status is not PublicationStatus.SENT
-                or previous_ids != {root.id}
                 or root.sent_at is None
+                or root.sent_at.utcoffset() is None
                 or root.sent_at > value.recorded_at
-                or previous.previous_version_id is not None
-                or previous.card_primary_evidence != inherited
                 or semantic.update_group
                 or semantic.sitting_group
             ):
                 raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
             try:
+                original = _card_primary_revision_origin(
+                    connection, value, root, previous, previous_ids
+                )
+                inherited = reference.model_copy(update={"revision_analysis_sha256": None})
                 primary = _verify_card_primary_evidence(
                     connection,
                     inherited,
-                    previous,
+                    original,
                     bill,
                     root,
                     revision_analysis_sha256=reference.revision_analysis_sha256,
@@ -590,7 +601,7 @@ def _verify_card_content(
                 raise
             except ValueError as exc:
                 raise CardPrimaryEvidenceError("invalid_card_primary_evidence") from exc
-        if not retained:
+        if not retained and (reference is None or previous.previous_version_id is None):
             previous_id = verify_card_content(connection, previous, retained=True)
             previous_row = (
                 _query(
@@ -626,9 +637,13 @@ def _verify_card_content(
             missing = True
             continue
         physical = read_content_publication(physical_row)
-        if not card_physical_matches(value, physical, root, semantic, previous_ids) or (
-            physical.delivery is not None
-            and content_delivery_mismatch(value, snapshots, physical.delivery) is not None
+        if (
+            not card_physical_matches(value, physical, root, semantic, previous_ids)
+            or (marked_continuation and not _card_revision_time_matches(value, physical))
+            or (
+                physical.delivery is not None
+                and content_delivery_mismatch(value, snapshots, physical.delivery) is not None
+            )
         ):
             raise ValueError("card_content_binding_scope")
     if root is None:
@@ -636,15 +651,24 @@ def _verify_card_content(
             return None, primary
         raise ValueError("card_content_root_missing")
     assert root_row is not None, "the available typed root comes from its physical row"
-    rows = (
-        [root_row]
-        if value.previous_version_id is None
-        else card_publication_rows(connection, value.root_publication_id)
-    )
+    if bound_physical_id is not None:
+        if {binding[0] for binding in bindings} != {bound_physical_id}:
+            return None, primary
+        rows = _query(
+            connection, "SELECT * FROM publications WHERE id=?", (bound_physical_id,)
+        ).fetchall()
+    else:
+        rows = (
+            [root_row]
+            if value.previous_version_id is None
+            else card_publication_rows(connection, value.root_publication_id)
+        )
     matches: list[int] = []
     for row in rows:
         physical = read_content_publication(row)
-        if not card_physical_matches(value, physical, root, semantic, previous_ids):
+        if not card_physical_matches(value, physical, root, semantic, previous_ids) or (
+            marked_continuation and not _card_revision_time_matches(value, physical)
+        ):
             continue
         bound = _query(
             connection,
@@ -665,6 +689,76 @@ def _verify_card_content(
     if retained and missing:
         return None, primary
     return matches[0], primary
+
+
+def _card_revision_time_matches(value: ContentVersion, physical: Publication) -> bool:
+    return (
+        physical.created_at.utcoffset() is not None
+        and physical.created_at <= value.recorded_at
+        and (
+            physical.status is not PublicationStatus.SENT
+            or physical.sent_at is not None
+            and physical.sent_at.utcoffset() is not None
+            and value.recorded_at <= physical.sent_at
+        )
+    )
+
+
+def _card_primary_revision_origin(
+    connection: sqlite3.Connection,
+    value: ContentVersion,
+    root: Publication,
+    previous: ContentVersion,
+    previous_ids: set[int],
+) -> ContentVersion:
+    reference = value.card_primary_evidence
+    assert reference is not None, "only a marked revision resolves its original evidence"
+    inherited = reference.model_copy(update={"revision_analysis_sha256": None})
+    if previous.previous_version_id is None:
+        if previous_ids != {root.id} or previous.card_primary_evidence != inherited:
+            raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
+        return previous
+    if root.id is None or len(previous_ids) != 1 or previous.card_primary_evidence != reference:
+        raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
+    (previous_id,) = previous_ids
+    predecessor_row = _query(
+        connection, "SELECT * FROM publications WHERE id=?", (previous_id,)
+    ).fetchone()
+    if predecessor_row is None:
+        raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
+    predecessor = read_content_publication(predecessor_row)
+    if (
+        predecessor.status is not PublicationStatus.SENT
+        or predecessor.message_id != root.message_id
+        or predecessor.sent_at is None
+        or root.sent_at is None
+        or not _card_revision_time_matches(previous, predecessor)
+        or not root.sent_at <= previous.recorded_at
+        or predecessor.sent_at > value.recorded_at
+        or _verify_card_content(connection, previous, retained=True, bound_physical_id=previous_id)[
+            0
+        ]
+        != previous_id
+    ):
+        raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
+    row = _query(
+        connection,
+        "SELECT v.* FROM publication_content p JOIN content_versions v USING(content_id)"
+        " WHERE p.publication_id=?",
+        (root.id,),
+    ).fetchone()
+    if row is None:
+        raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
+    original = read_content_version(row)
+    if (
+        original.root_publication_id != value.root_publication_id
+        or original.previous_version_id is not None
+        or original.card_primary_evidence != inherited
+        or _verify_card_content(connection, original, retained=True, bound_physical_id=root.id)[0]
+        != root.id
+    ):
+        raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
+    return original
 
 
 class StageAnchorReceipt(NamedTuple):

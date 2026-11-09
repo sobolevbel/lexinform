@@ -29,6 +29,7 @@ NormativeAnnexGapReason = Literal[
 ]
 CandidateTraceReason = Literal[
     "version_choice",
+    "rcl_proposal_resubmitted",
     "version_conflict",
     "version_input_incomplete",
     "first_acceptable_candidate",
@@ -74,6 +75,8 @@ class CandidateDisposition(BaseModel):
         "no_readable_body",
         "first_acceptable_candidate",
         "version_choice",
+        "rcl_proposal_resubmitted",
+        "prior_rcl_proposal",
         "selection_stopped",
     ]
     observed_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
@@ -774,6 +777,26 @@ class SejmOriginalProposal(BaseModel):
         return self
 
 
+class RclProposalResubmission(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    project_id: int = Field(gt=0)
+    stage_id: int = Field(gt=0)
+    secretary_id: int = Field(gt=0)
+    secretary_sha256: Sha256
+    rm_number: str = Field(pattern=r"^RM-[0-9]+-[0-9]+-[0-9]+$", max_length=40)
+    older_date: dt.date
+    revised_date: dt.date
+    bill_part: Position
+    cover_part: Position
+    amendment_part: Position
+    secretary_part: Position
+    bill_member_sha256: Sha256
+    cover_member_sha256: Sha256
+    amendment_member_sha256: Sha256
+    prior_gap: AmendmentPartGap
+
+
 class RclOriginalProposal(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
 
@@ -1147,6 +1170,9 @@ class CandidateDispositionTrace(BaseModel):
     sejm_original_proposal: SejmOriginalProposal | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+    rcl_proposal_resubmission: RclProposalResubmission | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     rcl_original_proposal: RclOriginalProposal | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
@@ -1314,6 +1340,7 @@ class CandidateDispositionTrace(BaseModel):
             if self.result == "selected" and self.reason not in (
                 "version_choice",
                 "first_acceptable_candidate",
+                "rcl_proposal_resubmitted",
             ):
                 raise ValueError("selected result requires a selection reason")
             if any(
@@ -1362,6 +1389,17 @@ class CandidateDispositionTrace(BaseModel):
                 )
         if self.sejm_original_proposal is not None:
             validate_sejm_original_proposal(self, self.sejm_original_proposal)
+        if (self.reason == "rcl_proposal_resubmitted") != (
+            self.rcl_proposal_resubmission is not None
+        ):
+            raise ValueError("RCL resubmission requires its distinct proof and decision reason")
+        if self.rcl_proposal_resubmission is not None:
+            validate_rcl_proposal_resubmission(self, self.rcl_proposal_resubmission)
+        elif any(
+            row.reason in ("rcl_proposal_resubmitted", "prior_rcl_proposal")
+            for row in self.dispositions
+        ):
+            raise ValueError("RCL resubmission dispositions require the distinct proof")
         if self.rcl_original_proposal is not None:
             validate_rcl_original_proposal(self, self.rcl_original_proposal)
         if self.sejm_print_representation is not None:
@@ -1411,6 +1449,7 @@ class CandidateDispositionTrace(BaseModel):
             and self.required_exclusions is None
             and self.sejm_original_proposal is None
             and self.rcl_original_proposal is None
+            and self.rcl_proposal_resubmission is None
             and self.sejm_print_representation is None
             and self.sejm_adopted_text is None
             and self.sejm_committee_recommendation is None
@@ -1619,6 +1658,77 @@ def validate_sejm_original_proposal(
         or disposition.observed_sha256 != proposal.base_sha256
     ):
         raise ValueError("Sejm proposal requires the observed original PDF identity")
+
+
+def validate_rcl_proposal_resubmission(
+    trace: CandidateDispositionTrace, proof: RclProposalResubmission
+) -> None:
+    request = trace.requested_document
+    if (
+        request is None
+        or trace.coverage != "complete"
+        or trace.result != "selected"
+        or trace.selection_state not in ("selected", "unverified")
+        or trace.candidate_count != 3
+        or not request.compare_versions
+        or len(request.alternatives) != 2
+        or proof.older_date >= proof.revised_date
+        or len({proof.cover_part, proof.amendment_part, proof.secretary_part}) != 3
+        or trace.rcl_original_proposal is not None
+    ):
+        raise ValueError("RCL resubmission requires a distinct three-candidate proposal decision")
+    older, amendment = request.alternatives
+    sources = (request, older, amendment)
+    if (
+        tuple(row.phase for row in trace.dispositions) != ("version_comparison",) * 3
+        or tuple((row.outcome, row.reason) for row in trace.dispositions)
+        != (
+            ("selected", "rcl_proposal_resubmitted"),
+            ("policy_excluded", "prior_rcl_proposal"),
+            ("unclassified", "no_readable_body"),
+        )
+        or any(row.observed_sha256 is None for row in trace.dispositions)
+        or len({row.observed_sha256 for row in trace.dispositions}) != 3
+        or (
+            proof.prior_gap.phase,
+            proof.prior_gap.index,
+            proof.prior_gap.amendment_index,
+            proof.prior_gap.reason,
+            proof.prior_gap.file_sha256,
+        )
+        != ("version_comparison", 1, 0, "returned_no_text", trace.dispositions[2].observed_sha256)
+        or older.amendment_urls != (amendment.url,)
+        or request.amendment_urls
+        or amendment.amendment_urls
+        or any(
+            document.kind != "rcl"
+            or document.official_link_conflict
+            or document.required_urls
+            or document.normative_urls
+            or document.extra_urls
+            or len(document.version_basis) != 2
+            or document.version_basis[0] != f"rcl/{proof.project_id}/stage/{proof.stage_id}"
+            or not re.search(rf"\b{re.escape(proof.rm_number)}\b", document.version_basis[1])
+            for document in sources
+        )
+        or older.alternatives
+        or amendment.alternatives
+    ):
+        raise ValueError("RCL resubmission differs from the exact older proposal and amendment")
+    roots = tuple(
+        re.fullmatch(
+            rf"(https://legislacja\.rcl\.gov\.pl/docs/+2/{proof.project_id}/{proof.stage_id}/"
+            r"[0-9]+/)dokument([0-9]+)\.zip",
+            document.url,
+        )
+        for document in sources
+    )
+    if (
+        any(match is None for match in roots)
+        or len({match[1] for match in roots if match is not None}) != 1
+        or str(proof.secretary_id) in {match[2] for match in roots if match is not None}
+    ):
+        raise ValueError("RCL resubmission requires exact co-filed archive identities")
 
 
 def validate_rcl_original_proposal(

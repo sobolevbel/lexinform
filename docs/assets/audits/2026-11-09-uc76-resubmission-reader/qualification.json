@@ -1,0 +1,12 @@
+{
+  "restore": "byte_identical",
+  "malformed_controls": [
+    "wrong_bill_role",
+    "wrong_cover_hash",
+    "wrong_secretary_hash",
+    "missing_secretary_receipt",
+    "missing_source_link"
+  ],
+  "bytes_sql": 80402,
+  "bytes_gzip": 15988
+}

@@ -24,7 +24,7 @@ from lexinform.models.odt_notes import (
     Path,
 )
 from lexinform.models.odt_notes import _width as odt_note_metadata_width
-from lexinform.models.odt_tables import MAX_ODT_TABLE_BYTES, OdtTableMerges
+from lexinform.models.odt_tables import MAX_ODT_TABLE_BYTES, OdtSoftRows, OdtTableMerges
 from lexinform.models.physical_inventory import Position, Sha256
 from lexinform.models.word_field_ranges import MAX_WORD_FIELD_BYTES, WordFieldPrefix
 from lexinform.models.word_grid_merges import (
@@ -338,6 +338,8 @@ class ExtractedPartSummary(BaseModel):
         default=None, exclude_if=lambda value: value is None
     )
 
+    odt_soft_rows: OdtSoftRows | None = Field(default=None, exclude_if=lambda value: value is None)
+
     doc_notes: DocNoteSummary | None = Field(default=None, exclude_if=lambda value: value is None)
 
     @model_validator(mode="after")
@@ -486,6 +488,28 @@ class ExtractedPartSummary(BaseModel):
                 raise ValueError(
                     "ODT table merges require their actual ODT input and body manifest"
                 )
+        if self.odt_soft_rows is not None:
+            soft_rows = OdtSoftRows.model_validate(self.odt_soft_rows)
+            if (
+                witness is None
+                or witness.coordinates != "odt-blocks-v1"
+                or witness.xml_sha256 is None
+                or soft_rows.parent_sha256 != odt_soft_row_parent_sha256(witness)
+                or soft_rows.rows[-1].span[1] > self.text_chars
+                or self.block_count is None
+                or len({run.block_id for run in witness.runs}) + len(soft_rows.rows)
+                > self.block_count
+            ):
+                raise ValueError("ODT soft rows require their exact native text and XML parent")
+            for row in soft_rows.rows:
+                block_id = f"odt-xml:content.xml:body:{row.path[0]}/{row.path[1]}"
+                if any(
+                    run.block_id == block_id
+                    or row.span[0] < run.source_end
+                    and run.source_start < row.span[1]
+                    for run in witness.runs
+                ):
+                    raise ValueError("ODT soft rows cannot replace existing block copies")
         if self.odt_note_status is not None:
             if not isinstance(self.odt_note_status, OdtNoteStatus):
                 raise ValueError("Constructed ODT summary requires its typed note status")
@@ -669,11 +693,18 @@ class ExtractionResult(BaseModel):
             raise ValueError("Stored Word grids exceed the aggregate byte limit")
         table_bytes = 0
         for part in self.selected_parts:
-            if part.odt_table_merges is not None:
-                if not isinstance(part.odt_table_merges, OdtTableMerges):
+            merges, soft_rows = part.odt_table_merges, part.odt_soft_rows
+            if merges is not None or soft_rows is not None:
+                if (merges is not None and not isinstance(merges, OdtTableMerges)) or (
+                    soft_rows is not None and not isinstance(soft_rows, OdtSoftRows)
+                ):
                     raise ValueError("Constructed ODT summary requires typed table metadata")
                 ExtractedPartSummary.model_validate(part)
-                table_bytes += len(part.odt_table_merges.model_dump_json().encode())
+                table_bytes += sum(
+                    len(value.model_dump_json().encode())
+                    for value in (merges, soft_rows)
+                    if value is not None
+                )
         if table_bytes > MAX_ODT_TABLE_BYTES:
             raise ValueError("Stored ODT tables exceed the aggregate byte limit")
         indices = [part.physical_index for part in self.selected_parts]
@@ -736,3 +767,15 @@ class DocumentExtraction(BaseModel):
 def extraction_metadata_sha256(value: object) -> str:
     encoded = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(encoded.encode()).hexdigest()
+
+
+def odt_soft_row_parent_sha256(witness: BlockCopyWitness) -> str:
+    return extraction_metadata_sha256(
+        (
+            witness.part_sha256,
+            witness.xml_sha256,
+            witness.manifest_sha256,
+            witness.text_sha256,
+            witness.text_chars,
+        )
+    )

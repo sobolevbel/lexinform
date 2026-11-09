@@ -1,0 +1,97 @@
+{
+  "block_copy_budget": 4096,
+  "existing_block_copy_bytes": 4075,
+  "existing_extraction_bytes": 10627,
+  "existing_format_can_add_one_run_without_displacement": false,
+  "existing_geometry_bytes": 3132,
+  "existing_runs": 12,
+  "extraction_result_id": "extraction-v1:bb99973ee3ffa0eb27b20fbe3b43df3b16b77da8640c41b77781ac1905cf062c",
+  "negative_controls": {
+    "foreign_input": "row proof has foreign raw input or XML",
+    "foreign_row": "row differs from its pinned path, selected-text interval or hash",
+    "foreign_xml": "row proof has foreign raw input or XML",
+    "shifted_soft_break": "soft page break positions differ from their XML nodes",
+    "shifted_source_range": "row differs from its pinned path, selected-text interval or hash",
+    "wrong_row_hash": "row differs from its pinned path, selected-text interval or hash"
+  },
+  "raw_sha256": "743d88976846877fcc7d9c4a81ed0e1128822b1c2f5e70c71b1b518a1027143f",
+  "rows": [
+    {
+      "marks": [
+        {
+          "row_offset": 388,
+          "selected_offset": 4224,
+          "xml_path": [
+            1,
+            8,
+            5,
+            0,
+            3
+          ]
+        }
+      ],
+      "spans": [
+        {
+          "block_chars": 461,
+          "block_end": 388,
+          "block_id": "odt-xml:content.xml:body:1/8",
+          "block_start": 0,
+          "block_text_sha256": "0169aa640e787fb5c20bae84a2dfd50619a0e6aa08b620d1a38c435aedd2c6e9",
+          "source_end": 4224,
+          "source_start": 3836,
+          "text_sha256": "651392937b72d77aa28a28c54b13dff6eb0ca09dff4eacb5ff42900adb506ba0"
+        },
+        {
+          "block_chars": 461,
+          "block_end": 461,
+          "block_id": "odt-xml:content.xml:body:1/8",
+          "block_start": 389,
+          "block_text_sha256": "0169aa640e787fb5c20bae84a2dfd50619a0e6aa08b620d1a38c435aedd2c6e9",
+          "source_end": 4297,
+          "source_start": 4225,
+          "text_sha256": "0d71a57700c414349a9a44607dc795c574c0e8b498676585c99805fa57f7b1b4"
+        }
+      ]
+    },
+    {
+      "marks": [
+        {
+          "row_offset": 68,
+          "selected_offset": 6103,
+          "xml_path": [
+            1,
+            18,
+            2,
+            0,
+            1
+          ]
+        }
+      ],
+      "spans": [
+        {
+          "block_chars": 116,
+          "block_end": 68,
+          "block_id": "odt-xml:content.xml:body:1/18",
+          "block_start": 0,
+          "block_text_sha256": "7bb0d60afae65b4d6e2cf7e99ccf6d6257c1bcd655720daec1708ded2daf81fd",
+          "source_end": 6103,
+          "source_start": 6035,
+          "text_sha256": "d637c8035f6c0070f694293ef15cd53714da46978d2c25e723bb171776f9e65b"
+        },
+        {
+          "block_chars": 116,
+          "block_end": 116,
+          "block_id": "odt-xml:content.xml:body:1/18",
+          "block_start": 69,
+          "block_text_sha256": "7bb0d60afae65b4d6e2cf7e99ccf6d6257c1bcd655720daec1708ded2daf81fd",
+          "source_end": 6151,
+          "source_start": 6104,
+          "text_sha256": "41b0d3200a5126d63fd380983f39d0d27d0f5b66e74f2c49bccdf87ad2d94a3f"
+        }
+      ]
+    }
+  ],
+  "source": "RCL/12388205 document 684340",
+  "text_sha256": "a3d540a05977f1c27d5b3e35287294632453519bde8ef953fefe77064d3cc8f9",
+  "xml_sha256": "7c70ee46b818ce5fe1f9a4aaa79906ac61927f444cfe19fec1530c06892f8e91"
+}

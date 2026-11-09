@@ -9,6 +9,7 @@ from lexinform.adapters.document_source_rows import DocumentSourceRows
 from lexinform.adapters.extraction_history import read_extraction_result
 from lexinform.adapters.physical_history import PhysicalInventoryReader
 from lexinform.document_editions import candidate_edition
+from lexinform.document_selection import RCL_RESUBMISSION_POLICY_VERSION
 from lexinform.json_storage import read_json
 from lexinform.models.artifacts import ArtifactMetadata, ArtifactReadReceipt
 from lexinform.models.candidate_trace import (
@@ -41,6 +42,7 @@ class CandidateTraceRowError(ValueError):
             "candidate_trace_identity_mismatch",
             "candidate_trace_proposal_parent_mismatch",
             "candidate_trace_rcl_proposal_parent_mismatch",
+            "candidate_trace_rcl_resubmission_parent_mismatch",
             "candidate_trace_representation_parent_mismatch",
             "candidate_trace_adoption_parent_mismatch",
             "candidate_trace_recommendation_parent_mismatch",
@@ -863,9 +865,100 @@ def _validate_compact_version_wait_link(
         ) from None
 
 
+def _validate_rcl_resubmission_link(
+    connection: sqlite3.Connection, trace: CandidateDispositionTrace, observation_id: str
+) -> None:
+    proof, request = trace.rcl_proposal_resubmission, trace.requested_document
+    if proof is None:
+        return
+    code: Literal["candidate_trace_rcl_resubmission_parent_mismatch"] = (
+        "candidate_trace_rcl_resubmission_parent_mismatch"
+    )
+    try:
+        if request is None:
+            raise ValueError("resubmission requires the exact source request")
+        reader = DocumentSourceRows(connection)
+        source = reader.get_source_observation(observation_id)
+        if (
+            source is None
+            or source.number != rcl_number(proof.project_id)
+            or source.purpose not in ("analysis", "prefilter")
+            or source.document != request
+        ):
+            raise ValueError("resubmission differs from its saved proposal source")
+        record = reader.get_document_selection(source.selection_id)
+        if (
+            record is None
+            or record.selection.version != request.version_basis
+            or record.selection.state != trace.selection_state
+            or record.selection.policy_version != RCL_RESUBMISSION_POLICY_VERSION
+        ):
+            raise ValueError("resubmission differs from its saved proposal selection")
+        selection = record.selection
+        bill = selection.parts[proof.bill_part]
+        cover, amendment, secretary = (
+            selection.observed_parts[index]
+            for index in (proof.cover_part, proof.amendment_part, proof.secretary_part)
+        )
+        earlier, declared = request.alternatives
+        later_sha, older_sha, amendment_sha = (row.observed_sha256 for row in trace.dispositions)
+        secretary_url = f"{request.url.rsplit('/', 1)[0]}/dokument{proof.secretary_id}.pdf"
+        if (
+            bill.role != "bill"
+            or sum(part.role == "bill" for part in selection.parts) != 1
+            or any(part.role == "self_amendment" for part in selection.parts)
+            or (bill.url, bill.source_sha256, bill.sha256)
+            != (request.url, later_sha, proof.bill_member_sha256)
+            or len(bill.members) != 1
+            or not bill.members[0].casefold().endswith(".docx")
+            or (cover.url, cover.source_sha256, cover.sha256, cover.pages)
+            != (request.url, later_sha, proof.cover_member_sha256, 3)
+            or (amendment.url, amendment.source_sha256, amendment.sha256, amendment.pages)
+            != (declared.url, amendment_sha, proof.amendment_member_sha256, 1)
+            or any(
+                len(part.members) != 1 or not part.members[0].casefold().endswith(".pdf")
+                for part in (cover, amendment)
+            )
+            or (secretary.url, secretary.sha256, secretary.pages)
+            != (secretary_url, proof.secretary_sha256, 1)
+            or secretary.members
+            or any(
+                not part.text_sha256 or part.losses for part in (bill, cover, amendment, secretary)
+            )
+        ):
+            raise ValueError("resubmission proof has incorrect bill or witness roles")
+        with closing(connection.cursor()) as cursor:
+            cursor.row_factory = sqlite3.Row
+            for url, sha in (
+                (request.url, later_sha),
+                (earlier.url, older_sha),
+                (declared.url, amendment_sha),
+                (secretary_url, proof.secretary_sha256),
+            ):
+                row = cursor.execute(
+                    "SELECT r.*, a.byte_size AS artifact_size FROM artifact_reads AS r"
+                    " JOIN artifacts AS a ON a.sha256=r.artifact_sha256"
+                    " WHERE r.requested_url=? AND r.artifact_sha256=?",
+                    (url, sha),
+                ).fetchone()
+                if row is None:
+                    raise ValueError("resubmission requires each exact complete body read")
+                receipt = ArtifactReadReceipt(
+                    requested_url=url,
+                    sha256=row["artifact_sha256"],
+                    byte_size=row["byte_size"],
+                    recorded_at=row["recorded_at"],
+                )
+                if receipt.read_id != row["read_id"] or receipt.byte_size != row["artifact_size"]:
+                    raise ValueError("resubmission requires each exact artifact identity")
+    except ValueError, TypeError, RecursionError, IndexError, KeyError, sqlite3.Error:
+        raise CandidateTraceRowError(code) from None
+
+
 def validate_candidate_trace_link(
     connection: sqlite3.Connection, trace: CandidateDispositionTrace, observation_id: str
 ) -> None:
+    _validate_rcl_resubmission_link(connection, trace, observation_id)
     _validate_compact_version_wait_link(connection, trace, observation_id)
     _validate_admitted_support_link(connection, trace, observation_id)
     _validate_composed_support_link(connection, trace, observation_id)
@@ -974,6 +1067,7 @@ def validate_candidate_trace_links(
         "candidate_trace_representation_parent_mismatch",
         "candidate_trace_proposal_parent_mismatch",
         "candidate_trace_rcl_proposal_parent_mismatch",
+        "candidate_trace_rcl_resubmission_parent_mismatch",
         "candidate_trace_archive_version_parent_mismatch",
         "candidate_trace_archive_conflict_parent_mismatch",
         "candidate_trace_archive_group_parent_mismatch",
@@ -983,7 +1077,9 @@ def validate_candidate_trace_links(
         "candidate_trace_duplicate_support_parent_mismatch",
         "candidate_trace_admitted_normative_parent_mismatch",
     ]
-    if trace.compact_version_part_gaps:
+    if trace.rcl_proposal_resubmission is not None:
+        code = "candidate_trace_rcl_resubmission_parent_mismatch"
+    elif trace.compact_version_part_gaps:
         code = "candidate_trace_compact_version_wait_parent_mismatch"
     elif trace.admitted_normative_annexes is not None:
         code = "candidate_trace_admitted_normative_parent_mismatch"

@@ -23,6 +23,8 @@ DOCUMENT_SELECTION_POLICY_VERSION = "document-selection-v24"
 RCL_AMENDMENT_ARCHIVE_POLICY_VERSION = "document-selection-v25"
 RCL_COMMENT_TABLE_AMENDMENT_POLICY_VERSION = "document-selection-v26"
 
+RCL_RESUBMISSION_POLICY_VERSION = "rcl-resubmitted-proposal-v1"
+
 
 def bill_selection(
     selection: DocumentSelection, *, source_basis: tuple[str, ...]
