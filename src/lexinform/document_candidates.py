@@ -117,6 +117,16 @@ class CandidateSet:
     def bill_indices(self) -> tuple[int, ...]:
         return tuple(index for index, item in enumerate(self.entries) if item.is_bill)
 
+    def compare_editions(self, indices: tuple[int, ...]) -> tuple[VersionComparison, bool]:
+        editions = tuple(self.entries[index] for index in indices)
+        comparison = compare_version_decision([edition.text or "" for edition in editions])
+        attachments = {
+            (edition.annex_identities, edition.amendment_identities)
+            for index in comparison.matching_indices
+            for edition in (editions[index],)
+        }
+        return comparison, len(attachments) > 1
+
 
 @dataclass(frozen=True)
 class SelectedCandidate:
@@ -137,20 +147,13 @@ def select_candidate_versions(
     bill_indices = candidates.bill_indices()
     if not bill_indices:
         return None
-    comparison = compare_version_decision(
-        [candidates.entries[index].text or "" for index in bill_indices]
-    )
+    comparison, attachment_conflict = candidates.compare_editions(bill_indices)
     observed = tuple(
         part
         for index in bill_indices
         for part in (candidates.entries[index].observed_parts or candidates.entries[index].parts)
     )
-    attachment_identities = {
-        (candidate.annex_identities, candidate.amendment_identities)
-        for index in comparison.matching_indices
-        for candidate in (candidates.entries[bill_indices[index]],)
-    }
-    if len(attachment_identities) > 1:
+    if attachment_conflict:
         comparison = replace(comparison, matching_indices=())
     if not comparison.matching_indices:
         parts = tuple(part for index in bill_indices for part in candidates.entries[index].parts)
@@ -352,7 +355,8 @@ def _select_parts(
     rank, main_index, main = candidates[0]
     peers = [(index, p) for r, index, p in candidates if r[0] == rank[0]]
     peer_set = CandidateSet.from_parts([p for _, p in peers])
-    confirmed = [peers[index] for index in peer_set.bill_indices()]
+    bill_indices = peer_set.bill_indices()
+    confirmed = [peers[index] for index in bill_indices]
     comparison_peers = confirmed or [(main_index, main)]
 
     def archive_parent(
@@ -424,20 +428,23 @@ def _select_parts(
             )
         )
     if len(confirmed) > 1:
-        comparison = compare_version_decision([p.text for _, p in confirmed])
+        annex_keys: dict[tuple[tuple[int, ...], tuple[str, ...]], list[tuple[int, str]]] = {}
+        for index, part in annexes:
+            annex_keys.setdefault(part_parent(index, part), []).append(
+                normative_annex_key(part.text)
+            )
+        editions = CandidateSet(
+            tuple(
+                replace(
+                    candidate,
+                    annex_identities=tuple(sorted(annex_keys.get(part_parent(*peer), ()))),
+                )
+                for candidate, peer in zip(peer_set.entries, peers, strict=True)
+            )
+        )
+        comparison, annex_conflict = editions.compare_editions(bill_indices)
         indices = comparison.matching_indices
         compared_parents = {part_parent(*confirmed[index]) for index in indices}
-        annex_identities = {
-            tuple(
-                sorted(
-                    normative_annex_key(part.text)
-                    for index, part in annexes
-                    if part_parent(index, part) == parent
-                )
-            )
-            for parent in compared_parents
-        }
-        annex_conflict = len(annex_identities) > 1
         if decision_sink is not None and 2 < len(confirmed) <= 32:
             candidate_slots = tuple(index for index, _ in confirmed)
             version_group = ArchiveVersionGroup(
