@@ -113,9 +113,32 @@ def _rows(
     return row_number, tuple(merged)
 
 
+def _horizontal_grid_candidate(table: ET.Element, namespace: str) -> bool:
+    return (
+        next(table.iter(namespace + "gridSpan"), None) is not None
+        and next(table.iter(namespace + "vMerge"), None) is None
+        and next(table.iter(namespace + "hMerge"), None) is None
+    )
+
+
+def has_horizontal_grid_table(root: ET.Element) -> bool:
+    namespace = root.tag.rsplit("}", 1)[0] + "}"
+    body = root.find(namespace + "body")
+    return body is not None and any(
+        table.tag == namespace + "tbl" and _horizontal_grid_candidate(table, namespace)
+        for table in body
+    )
+
+
 def word_table_grids(
-    root: ET.Element, blocks: Sequence[WordTextBlock], *, vertical_only: bool = False
+    root: ET.Element,
+    blocks: Sequence[WordTextBlock],
+    *,
+    vertical_only: bool = False,
+    horizontal_only: bool = False,
 ) -> tuple[WordGridTable, ...]:
+    if vertical_only and horizontal_only:
+        raise ValueError("word grid scope must be unique")
     namespace = root.tag.rsplit("}", 1)[0] + "}"
     bodies = [(index, child) for index, child in enumerate(root) if child.tag == namespace + "body"]
     if len(bodies) != 1:
@@ -123,7 +146,13 @@ def word_table_grids(
     ((body_position, body),) = bodies
     block_paths: dict[XmlPath, str] | None = None
     tables: list[WordGridTable] = []
-    merge_names = ("vMerge",) if vertical_only else ("gridSpan", "vMerge", "hMerge")
+    merge_names = (
+        ("vMerge",)
+        if vertical_only
+        else ("gridSpan",)
+        if horizontal_only
+        else ("gridSpan", "vMerge", "hMerge")
+    )
     markers = {namespace + name for name in merge_names}
     revisions = {
         namespace + name
@@ -131,6 +160,8 @@ def word_table_grids(
     }
     for index, table in enumerate(body):
         if table.tag != namespace + "tbl" or not any(node.tag in markers for node in table.iter()):
+            continue
+        if horizontal_only and not _horizontal_grid_candidate(table, namespace):
             continue
         if len(tables) == _MAX_TABLES:
             raise ValueError("table_grid_count_limit")

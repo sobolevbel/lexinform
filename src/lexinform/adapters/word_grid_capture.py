@@ -1,10 +1,13 @@
-"""Bind bounded vertical grid evidence to the same-pass Word extraction."""
+"""Bind bounded grid evidence to the same-pass Word extraction."""
 
 from collections import defaultdict
 from collections.abc import Sequence
 
 from lexinform.models.documents import WordDetailedExtraction
 from lexinform.models.word_grid_merges import (
+    WordHorizontalGridSpans,
+    WordHorizontalGridTable,
+    WordHorizontalSpan,
     WordVerticalGridMerges,
     WordVerticalGridTable,
     WordVerticalMerge,
@@ -78,3 +81,36 @@ def capture_word_grid_merges(
         unresolved_tables=unresolved,
         tables=tables,
     )
+
+
+def capture_word_horizontal_spans(
+    layouts: Sequence[WordGridTable], legacy: WordDetailedExtraction
+) -> WordHorizontalGridSpans | None:
+    tables: tuple[WordHorizontalGridTable, ...] = ()
+    retained = None
+    for layout in layouts:
+        if layout.reason is not None:
+            continue
+        try:
+            table = WordHorizontalGridTable(
+                path=(layout.path[0], layout.path[1]),
+                columns=layout.columns,
+                rows=layout.rows,
+                spans=tuple(
+                    WordHorizontalSpan(
+                        row=cell.row, columns=cell.columns, cell=(cell.path[-2], cell.path[-1])
+                    )
+                    for cell in layout.merged
+                ),
+            )
+            candidate = WordHorizontalGridSpans(
+                input_sha256=legacy.body.input_sha256,
+                body_manifest_sha256=legacy.notes.body_manifest_sha256,
+                notes_manifest_sha256=legacy.notes.manifest_sha256,
+                tables=(*tables, table),
+            )
+        except ValueError:
+            continue
+        tables = candidate.tables
+        retained = candidate
+    return retained

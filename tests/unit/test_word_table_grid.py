@@ -10,6 +10,7 @@ from lexinform.adapters import document_text
 from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.pdf_text import PypdfTextExtractor
+from lexinform.adapters.word_horizontal_source import enrich_word_horizontal_source
 from lexinform.models.extractions import ExtractionResult
 from lexinform.models.word_grid_merges import WordVerticalMerge
 from lexinform.word_table_grid import WordGridCell, WordGridTable, word_table_grids
@@ -129,3 +130,28 @@ def test_unresolved_or_failed_grid_does_not_change_legacy_selection() -> None:
     assert part.word_grid_merges.unresolved_tables == 1 and not part.word_grid_merges.tables
     with patch.object(document_text, "word_table_grids", side_effect=ValueError("failed")):
         assert enabled.extract_document_with_provenance(raw) == baseline
+
+
+@pytest.mark.parametrize("before", [0, 1])
+def test_additive_horizontal_span_keeps_its_grid_interval(before: int) -> None:
+    horizontal = f"<w:tbl>{GRID}{row('', before=before, after=2 - before, text='200 zł')}</w:tbl>"
+    vertical = f"<w:tbl>{GRID}{row(RESTART, text='100 zł')}{row(CONTINUE)}</w:tbl>"
+    raw = word(paragraph(BILL) + horizontal + vertical)
+    baseline = extractor(capture=True).extract_document_with_provenance(raw)
+    current = enrich_word_horizontal_source(DocxTextExtractor(), raw, baseline)
+    assert current.document == baseline.document
+    assert current.result.components == baseline.result.components
+    (part,) = current.result.selected_parts
+    assert part.word_grid_merges == baseline.result.selected_parts[0].word_grid_merges
+    spans = part.word_horizontal_spans
+    assert spans is not None, "the fixture has one supported horizontal-only table"
+    (table,) = spans.tables
+    assert table.path == (0, 1)
+    (span,) = table.spans
+    assert span.row == 0 and span.columns == (before, before + 2) and span.cell == (1, 1)
+
+
+def test_no_horizontal_evidence_preserves_exact_result() -> None:
+    raw = merged_bill(row(RESTART, text="200 zł") + row(CONTINUE))
+    baseline = extractor(capture=True).extract_document_with_provenance(raw)
+    assert enrich_word_horizontal_source(DocxTextExtractor(), raw, baseline) is baseline

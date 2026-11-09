@@ -1,0 +1,11 @@
+{
+  "bill_and_plan_snapshot_identity_parity": true,
+  "cleaned_round_trip_byte_stable": true,
+  "control": "existing production-profile JOINT_BILL scenario with synthetic provider and Telegram",
+  "foreign_explicit_reference_rejected": true,
+  "gzip_delta_bytes": 10,
+  "marked_application_id": 5,
+  "missing_application_lookup_preserves_plain_history": true,
+  "render_target_and_slot_parity": true,
+  "sql_delta_bytes": 36
+}

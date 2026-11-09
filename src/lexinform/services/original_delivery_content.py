@@ -111,11 +111,16 @@ def record_original_delivery_content(
         review_notice = origin.kind in REVIEW_NOTICE_KINDS
         bill = original_delivery_bill_snapshot(plan.bill_json, review_notice=review_notice)
         application_id = None
+        joint_application_id = None
         if review_notice:
             context = Bill.model_validate_json(bill.payload_json)
             review = validate_review_notice(context, origin.kind, origin.ref)
             application_id = repo.find_review_application_id(
                 context, review, origin.kind, recorded_at=frozen.created_at
+            )
+        elif origin.kind is PublicationKind.JOINT_BILL:
+            joint_application_id = repo.find_joint_comparison_application_id(
+                Bill.model_validate_json(bill.payload_json), recorded_at=frozen.created_at
             )
         snapshot = ContentSnapshot(kind="plan", payload_json=original.model_dump_json())
         bill_budget = MAX_ORIGINAL_DELIVERY_BYTES - len(snapshot.payload_json.encode())
@@ -154,6 +159,7 @@ def record_original_delivery_content(
                     if origin.kind in ORIGINAL_CARD_KINDS
                     else "editorial-notice-v1",
                     "joint_primary": joint_primary,
+                    "joint_comparison_application_id": joint_application_id,
                     "packed_bill": packed_bill,
                     "commission_review_application_id": application_id
                     if origin.kind is PublicationKind.COMMISSION_REVIEW

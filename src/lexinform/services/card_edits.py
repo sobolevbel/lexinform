@@ -312,6 +312,7 @@ def edit_card(
                     formatter_version=FORMATTER_VERSION,
                     language=language,
                     card_history_parent=parent,
+                    card_revision_analysis=bill.analysis,
                 )
         repo.mark_publication(identities[0], PublicationStatus.PENDING, count_attempt=False)
         root = repo.publication_by_id(identities[0])

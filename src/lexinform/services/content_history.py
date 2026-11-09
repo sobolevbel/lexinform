@@ -18,6 +18,7 @@ from lexinform.errors import CardPrimaryEvidenceError, SupplementContentEvidence
 from lexinform.grouped_update_preview import GroupedUpdateRender
 from lexinform.models import (
     AmendmentsRecord,
+    AnalysisRecord,
     Bill,
     ContentSnapshot,
     ContentVersion,
@@ -56,6 +57,7 @@ from lexinform.models.original_delivery_content import (
 )
 from lexinform.models.sejm import has_process
 from lexinform.ports import BillRepository, Clock
+from lexinform.primary_projections import primary_record_sha256
 from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
 
 FORMATTER_VERSION = "telegram-format-v2"
@@ -107,6 +109,7 @@ def record_publication_content(
     source_origin: Publication | None = None,
     application_origin: Publication | None = None,
     card_history_parent: ContentVersion | Literal["original"] | None = None,
+    card_revision_analysis: AnalysisRecord | None = None,
 ) -> ContentVersion | None:
     if publication.id is None:
         raise ValueError("Editorial history requires a saved physical publication")
@@ -187,19 +190,31 @@ def record_publication_content(
                 version = capture_content_applications(
                     repo, version, publication, origin=application_origin
                 )
+            reference = None
             if card_history_parent == "original" and publication.delivery is not None:
                 bill = Bill.model_validate_json(publication.delivery.bill_json)
                 reference = repo.find_card_primary_evidence(bill)
-                if reference is not None:
-                    marked = version.model_copy(update={"card_primary_evidence": reference})
-                    try:
-                        with repo.atomic():
-                            repo.save_content_version(marked)
-                            repo.bind_publication_content(publication.id, marked.content_id)
-                    except CardPrimaryEvidenceError:
-                        pass
-                    else:
-                        return marked
+            elif (
+                isinstance(card_history_parent, ContentVersion)
+                and card_history_parent.reason == "original"
+                and card_history_parent.card_primary_evidence is not None
+                and card_revision_analysis is not None
+            ):
+                reference = card_history_parent.card_primary_evidence.model_copy(
+                    update={
+                        "revision_analysis_sha256": primary_record_sha256(card_revision_analysis)
+                    }
+                )
+            if reference is not None:
+                marked = version.model_copy(update={"card_primary_evidence": reference})
+                try:
+                    with repo.atomic():
+                        repo.save_content_version(marked)
+                        repo.bind_publication_content(publication.id, marked.content_id)
+                except CardPrimaryEvidenceError:
+                    pass
+                else:
+                    return marked
             repo.save_content_version(version)
             repo.bind_publication_content(publication.id, version.content_id)
     except SupplementContentEvidenceError:

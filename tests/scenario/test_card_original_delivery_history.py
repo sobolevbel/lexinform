@@ -50,6 +50,16 @@ def test_card_original_slots_and_targets_survive_cleanup(kind: PublicationKind) 
                 assert frozen.root.reply_to == sent[0].reply_to
                 if kind is PublicationKind.JOINT_BILL:
                     assert evidence.joint_primary is not None
+                    assert evidence.joint_comparison_application_id is not None
+                    subject = durable.repo.get_content_snapshot(history.bill_context_id)
+                    assert subject is not None, "the reply retains its original subject"
+                    assert (
+                        durable.repo.find_joint_comparison_application_id(
+                            Bill.model_validate_json(subject.payload_json),
+                            recorded_at=history.recorded_at,
+                        )
+                        == evidence.joint_comparison_application_id
+                    )
                     primary = durable.repo.publication_by_id(evidence.joint_primary.publication_id)
                     assert primary is not None and primary.number == "3038"
                     assert primary.message_id == frozen.root.reply_to

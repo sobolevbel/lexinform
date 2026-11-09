@@ -920,6 +920,10 @@ class BillRepository(Protocol):
         self, bill: ContentSnapshot, snapshot: ContentSnapshot, version: ContentVersion
     ) -> None: ...
 
+    def find_joint_comparison_application_id(
+        self, bill: Bill, *, recorded_at: datetime
+    ) -> int | None: ...
+
     def find_review_application_id(
         self,
         bill: Bill,

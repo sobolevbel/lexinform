@@ -95,6 +95,7 @@ from lexinform.adapters.input_receipts import (
     validate_scan_attachment,
     validate_word_formula_intent,
 )
+from lexinform.adapters.joint_content_evidence import joint_comparison_application_id
 from lexinform.adapters.legacy_history import read_legacy_batch_item_meta
 from lexinform.adapters.legacy_history import (
     read_legacy_result as _read_legacy_result,
@@ -2425,6 +2426,14 @@ class SqliteBillRepository:
                 [(identity, version.content_id) for identity in edition.bindings],
             )
             verify_multipart_card_revision(self._conn, version, require_bound=True)
+
+    def find_joint_comparison_application_id(
+        self, bill: Bill, *, recorded_at: datetime
+    ) -> int | None:
+        try:
+            return joint_comparison_application_id(self._conn, bill, recorded_at=recorded_at)
+        except ValueError, TypeError, RecursionError, sqlite3.Error:
+            return None
 
     def find_review_application_id(
         self,

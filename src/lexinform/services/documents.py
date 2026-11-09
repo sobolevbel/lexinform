@@ -471,6 +471,7 @@ class TextLoader:
         cache_size: int = 32,
         capture_word_formulas: Callable[[bytes, DocumentExtraction], WordFormulaSource | None]
         | None = None,
+        enrich_word_grid: Callable[[bytes, DocumentExtraction], DocumentExtraction] | None = None,
         verify_rcl_comment_table: Callable[[bytes, DocumentExtraction], bool] | None = None,
         physical_factory: Callable[[ObservationOrder], PhysicalObservationCollector] | None = None,
         sejm: SejmGateway | None = None,
@@ -482,6 +483,7 @@ class TextLoader:
         self._cache: dict[str, _CachedDocument] = {}
         self._cache_size = cache_size
         self._capture_word_formulas = capture_word_formulas
+        self._enrich_word_grid = enrich_word_grid
         self._verify_rcl_comment_table = verify_rcl_comment_table
         self._lock = threading.Lock()
         self._archive_traces: dict[tuple[str, str, str], CandidateDispositionTrace] = {}
@@ -2162,6 +2164,9 @@ class TextLoader:
                 comment_table_bundle = False
                 if isinstance(self._extractor, ProvenanceTextExtractor):
                     observed = self._extractor.extract_document_with_provenance(data)
+                    if self._enrich_word_grid is not None:
+                        with suppress(Exception):
+                            observed = self._enrich_word_grid(data, observed)
                     if self._capture_word_formulas is not None and urlparse(
                         url
                     ).path.lower().endswith((".docx", ".docm")):

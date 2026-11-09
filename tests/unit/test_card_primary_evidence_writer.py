@@ -13,10 +13,12 @@ from lexinform.models import (
     PublicationStatus,
 )
 from lexinform.ports import PublishResult
+from lexinform.services.card_edits import edit_card
 from lexinform.services.content_inspection import inspect_content_page
 from lexinform.services.publishing import PublishingService
 from tests.fakes import FakePublisher, FakeSejmGateway, FixedClock
-from tests.unit.test_card_primary_evidence_reader import card_parents
+from tests.unit.test_card_content_writer import renamed
+from tests.unit.test_card_primary_evidence_reader import card_parents, store_marked_card
 from tests.unit.test_content_sources import Case
 from tests.unit.test_content_sources import case as case
 from tests.unit.test_input_receipts import NOW
@@ -106,4 +108,64 @@ def test_original_publication_captures_exact_evidence_before_first_send(
     assert ("Original card primary lineage was retained." in rendered) is not missing_collection
     for private_value in (reference.source_observation_id, "projection_application_id"):
         assert private_value not in serialized and private_value not in rendered
+    assert case.repo.dump() == sql
+
+
+@pytest.mark.parametrize("changed_analysis", [False, True])
+def test_first_compact_edit_marks_only_its_exact_paid_input(
+    case: Case, monkeypatch: pytest.MonkeyPatch, changed_analysis: bool
+) -> None:
+    original, previous = store_marked_card(case)
+    assert original.id is not None and original.delivery is not None, (
+        "the fixture stores a bound original render"
+    )
+    case.repo.mark_publication(original.id, PublicationStatus.SENT, message_id=10, sent_at=NOW)
+    root = case.repo.publication_by_id(original.id)
+    assert root is not None, "the fixture confirms the physical root"
+    bill = renamed(Bill.model_validate_json(original.delivery.bill_json))
+    record = bill.analysis
+    assert record is not None, "the fixture renders the original paid analysis"
+    if changed_analysis:
+        bill = bill.model_copy(
+            update={
+                "analysis": record.model_copy(
+                    update={
+                        "analysis": record.analysis.model_copy(update={"summary": "New analysis"})
+                    }
+                )
+            }
+        )
+    publisher = FakePublisher()
+    send = publisher.publish_prepared
+    edited_at = NOW + timedelta(days=1)
+    expected = publisher.render_card_parts(bill, None, minimum=1, today=edited_at.date())
+    assert len(expected) == 1, "the fixture uses a compact edit"
+
+    def observe_edit(publication: Publication) -> PublishResult:
+        assert publication.id is not None and publication.delivery is not None, (
+            "the edit is frozen before transmission"
+        )
+        assert publication.delivery.rendered_text == expected[0]
+        version = case.repo.get_publication_content(publication.id)
+        assert version is not None and version.previous_version_id == previous.content_id
+        assert (version.card_primary_evidence is not None) == (not changed_analysis)
+        return send(publication)
+
+    monkeypatch.setattr(publisher, "publish_prepared", observe_edit)
+    result = edit_card(
+        case.repo,
+        FixedClock(edited_at),
+        publisher,
+        bill,
+        root,
+        None,
+        channel_id=root.channel_id,
+        today=edited_at.date(),
+    )
+    assert result.completed
+    case.repo.prune_history(
+        before=edited_at + timedelta(days=1), memo_before=NOW - timedelta(days=89)
+    )
+    sql = case.repo.dump()
+    case.repo.restore(sql)
     assert case.repo.dump() == sql

@@ -42,6 +42,7 @@ from lexinform.adapters.telegram import (
 )
 from lexinform.adapters.telegram_format import APPROVE_DIGEST, MessageFormatter
 from lexinform.adapters.word_formula_capture import capture_word_formula_source
+from lexinform.adapters.word_horizontal_source import enrich_word_horizontal_source
 from lexinform.adapters.wykaz_csv import WykazClient
 from lexinform.clock import SystemClock
 from lexinform.errors import StateCheckpointError
@@ -216,6 +217,9 @@ class Container:
                     else None
                 ),
                 sejm=self.gateway,
+                enrich_word_grid=(
+                    partial(enrich_word_horizontal_source, docx) if self.extractor is None else None
+                ),
                 capture_word_formulas=(
                     partial(capture_word_formula_source, docx)
                     if self.settings.word_formula_inputs_enabled and self.extractor is None
