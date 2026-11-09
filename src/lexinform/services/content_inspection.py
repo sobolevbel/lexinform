@@ -1,5 +1,7 @@
 """Inspect available editorial metadata without changing a delivery or its recovery state."""
 
+from typing import NamedTuple
+
 from lexinform.content_versions import (
     card_confirmation_matches,
     confirmed_content_version,
@@ -23,19 +25,18 @@ from lexinform.models.content import (
     ContentHistoryPage,
     OriginalAmendmentInputStatus,
 )
-from lexinform.ports import BillRepository, CardContentHistory
+from lexinform.ports import BillRepository, EditorialContentHistory
 from lexinform.services.amendment_input_history import original_amendment_input
 
 
 def inspect_content(repo: BillRepository, publication: Publication) -> ContentHistoryView | None:
-    history, _ = _read_inspection(repo, publication)
-    return history
+    return _read_inspection(repo, publication).history
 
 
 def confirmed_card_parent(
     repo: BillRepository, owner: Publication, previous: Publication
 ) -> ContentVersion | None:
-    history, card_history = _read_inspection(repo, owner)
+    history, _, inventory = _read_inspection(repo, owner)
     if (
         history is None
         or history.integrity != "valid"
@@ -44,8 +45,8 @@ def confirmed_card_parent(
     ):
         return None
     candidate = (
-        card_history.bindings.get(previous.id)
-        if card_history is not None
+        inventory.bindings.get(previous.id)
+        if inventory is not None
         else repo.get_publication_content(previous.id)
     )
     return (
@@ -53,33 +54,48 @@ def confirmed_card_parent(
     )
 
 
-def _read_inspection(
-    repo: BillRepository, publication: Publication
-) -> tuple[ContentHistoryView | None, CardContentHistory | None]:
+class _Inspection(NamedTuple):
+    history: ContentHistoryView | None
+    versions: list[ContentVersion]
+    inventory: EditorialContentHistory | None
+
+
+def _read_inspection(repo: BillRepository, publication: Publication) -> _Inspection:
     if publication.id is None:
-        return None, None
+        return _Inspection(None, [], None)
     try:
         selected = repo.get_publication_content(publication.id)
         if selected is None:
             selected = _grouped_member_content(repo, publication)
         if selected is None:
-            return None, None
-        card_history = (
-            repo.read_card_content_history(selected.root_publication_id)
-            if selected.card_context_profile is not None
-            else None
+            return _Inspection(None, [], None)
+        original = selected.original_delivery_evidence
+        if (
+            selected.card_context_profile is not None
+            or selected.multipart_card_revision is not None
+            or (original is not None and original.kind is PublicationKind.NEW_BILL)
+        ):
+            inventory = repo.read_card_content_history(selected.root_publication_id)
+        elif selected.grouped_stage_evidence is not None:
+            inventory = repo.read_bound_content_history(selected.root_publication_id)
+        else:
+            inventory = None
+        versions = (
+            inventory.versions
+            if inventory is not None
+            else repo.list_content_versions(selected.root_publication_id)
         )
-        return _inspect(repo, selected, card_history), card_history
+        return _Inspection(_inspect(repo, selected, versions, inventory), versions, inventory)
     except ValueError:
-        return ContentHistoryView(integrity="unavailable"), None
+        return _Inspection(ContentHistoryView(integrity="unavailable"), [], None)
 
 
 def _inspect_multipart_card(
-    repo: BillRepository, selected: ContentVersion, versions: list[ContentVersion]
+    repo: BillRepository, selected: ContentVersion, inventory: EditorialContentHistory
 ) -> ContentHistoryView:
     root_id = selected.root_publication_id
-    root = repo.publication_by_id(root_id)
-    original = repo.get_publication_content(root_id)
+    root = inventory.publications.get(root_id)
+    original = inventory.bindings.get(root_id)
     if original is None:
         return ContentHistoryView(integrity="unavailable")
     current = (
@@ -87,8 +103,8 @@ def _inspect_multipart_card(
             root,
             repo.card_refresh_parts(root_id),
             alias_count=len(repo.card_aliases(root.channel_id, root.message_id)),
-            version_for=repo.get_publication_content,
-            snapshot_for=repo.get_content_snapshot,
+            version_for=inventory.bindings.get,
+            snapshot_for=inventory.snapshots.get,
         )
         if root is not None and root.message_id is not None
         else None
@@ -98,7 +114,7 @@ def _inspect_multipart_card(
         versions_by_id[current.content_id] = current
     return ContentHistoryView(
         root_publication_id=root_id,
-        version_count=len(versions),
+        version_count=len(inventory.versions),
         inspected_id=selected.content_id,
         original_id=original.content_id,
         current_id=current.content_id if current else None,
@@ -109,23 +125,17 @@ def _inspect_multipart_card(
 
 
 def _inspect(
-    repo: BillRepository, selected: ContentVersion, card_history: CardContentHistory | None
+    repo: BillRepository,
+    selected: ContentVersion,
+    versions: list[ContentVersion],
+    inventory: EditorialContentHistory | None,
 ) -> ContentHistoryView:
     original_evidence = selected.original_delivery_evidence
-    if (
-        selected.multipart_card_revision is not None
-        or (original_evidence is not None and original_evidence.kind is PublicationKind.NEW_BILL)
-        or selected.card_context_profile is not None
+    if inventory is not None and (
+        (original_evidence is not None and original_evidence.kind is PublicationKind.NEW_BILL)
+        or any(version.multipart_card_revision is not None for version in versions)
     ):
-        versions = (
-            card_history.versions
-            if card_history is not None
-            else repo.list_content_versions(selected.root_publication_id)
-        )
-        if original_evidence is not None or any(
-            version.multipart_card_revision is not None for version in versions
-        ):
-            return _inspect_multipart_card(repo, selected, versions)
+        return _inspect_multipart_card(repo, selected, inventory)
     if (
         selected.digest_profile is not None
         or selected.sitting_profile is not None
@@ -136,22 +146,10 @@ def _inspect(
             and selected.direct_stage_evidence.multipart is not None
         )
     ):
-        versions = repo.list_content_versions(selected.root_publication_id)
         digest_parts = repo.list_content_publications(selected.root_publication_id)
         if versions != [selected] or not digest_parts:
             return ContentHistoryView(integrity="unavailable")
         physical_confirmed = all(row.status is PublicationStatus.SENT for row in digest_parts)
-        evidence = selected.original_delivery_evidence
-        if evidence is not None and evidence.kind is PublicationKind.NEW_BILL:
-            root = repo.publication_by_id(selected.root_publication_id)
-            physical_confirmed = (
-                physical_confirmed
-                and root is not None
-                and root.message_id is not None
-                and len(repo.card_aliases(root.channel_id, root.message_id)) == 1
-                and {row.id for row in repo.card_refresh_parts(selected.root_publication_id)}
-                == {row.id for row in digest_parts}
-            )
         return ContentHistoryView(
             root_publication_id=selected.root_publication_id,
             version_count=1,
@@ -161,12 +159,10 @@ def _inspect(
             current_id=selected.content_id if physical_confirmed else None,
         )
     root_id = selected.root_publication_id
-    if card_history is not None:
-        versions = card_history.versions
-        root = card_history.publications.get(root_id)
-        original = card_history.bindings.get(root_id)
+    if inventory is not None:
+        root = inventory.publications.get(root_id)
+        original = inventory.bindings.get(root_id)
     else:
-        versions = repo.list_content_versions(root_id)
         root = repo.publication_by_id(root_id)
         original = repo.get_publication_content(root_id)
     inspected = ContentVersionSummary.from_version(selected)
@@ -182,14 +178,12 @@ def _inspect(
     )
     if root is None or original is None or original.previous_version_id is not None:
         return base.model_copy(update={"integrity": "unavailable"})
-    snapshots: dict[str, ContentSnapshot] = (
-        card_history.snapshots if card_history is not None else {}
-    )
+    snapshots: dict[str, ContentSnapshot] = inventory.snapshots if inventory is not None else {}
     by_id = {version.content_id: version for version in versions}
     for version in versions:
         for kind, identity in content_snapshot_refs(version):
             if identity not in snapshots:
-                snapshot = repo.get_content_snapshot(identity) if card_history is None else None
+                snapshot = repo.get_content_snapshot(identity) if inventory is None else None
                 if snapshot is None:
                     return base.model_copy(update={"integrity": "unavailable"})
                 snapshots[identity] = snapshot
@@ -198,19 +192,19 @@ def _inspect(
         if version.previous_version_id is not None and version.previous_version_id not in by_id:
             return base.model_copy(update={"integrity": "unavailable"})
     confirmed: set[str] = set()
-    inventory = (
-        list(card_history.publications.values())
-        if card_history is not None
+    publications = (
+        list(inventory.publications.values())
+        if inventory is not None
         else repo.list_content_publications(root_id)
     )
     bound_by_publication: dict[int, ContentVersion] = {}
     grouped_uncertain = False
-    for physical in inventory:
+    for physical in publications:
         if physical.id is None:
             continue
         bound = (
-            card_history.bindings.get(physical.id)
-            if card_history is not None
+            inventory.bindings.get(physical.id)
+            if inventory is not None
             else repo.get_publication_content(physical.id)
         )
         if bound is None:
@@ -260,7 +254,7 @@ def _inspect(
     current_id = None if grouped_uncertain else confirmation.current_id
     if original.change_snapshot_id is None and (
         any(version.content_id not in bound_ids for version in versions)
-        or any(item.id not in bound_by_publication for item in inventory)
+        or any(item.id not in bound_by_publication for item in publications)
         or not card_confirmation_matches(
             root,
             repo.card_refresh_parts(root_id),
@@ -335,16 +329,11 @@ def inspect_content_page(
     repo: BillRepository, publication: Publication, *, page: int
 ) -> ContentHistoryPage:
     """Page immutable editorial references under the existing confirmation and integrity policy."""
-    history, card_history = _read_inspection(repo, publication)
+    history, versions, inventory = _read_inspection(repo, publication)
     unavailable = ContentHistoryPage(status="unavailable", page=page, history=history)
     if history is None or history.integrity != "valid" or history.root_publication_id is None:
         return unavailable
     try:
-        versions = (
-            card_history.versions
-            if card_history is not None
-            else repo.list_content_versions(history.root_publication_id)
-        )
         if not 1 <= page <= len(versions):
             return ContentHistoryPage(
                 status="out_of_range",
@@ -353,7 +342,15 @@ def inspect_content_page(
                 history=history,
             )
         version = versions[page - 1]
-        physical = repo.verified_content_publications(version)
+        physical = (
+            [
+                item
+                for identity, item in inventory.publications.items()
+                if inventory.bindings.get(identity) == version
+            ]
+            if inventory is not None
+            else repo.verified_content_publications(version)
+        )
         deliveries: list[ContentDeliverySummary] = []
         for item in physical[:3]:
             assert item.id is not None, "the bound publication inventory supplies persisted IDs"

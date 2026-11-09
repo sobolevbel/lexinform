@@ -568,7 +568,7 @@ class DeliveryQueueState:
 
 
 @dataclass(frozen=True)
-class CardContentHistory:
+class EditorialContentHistory:
     versions: list[ContentVersion]
     publications: dict[int, Publication]
     bindings: dict[int, ContentVersion]
@@ -976,7 +976,9 @@ class BillRepository(Protocol):
 
     def list_content_versions(self, root_publication_id: int) -> list[ContentVersion]: ...
 
-    def read_card_content_history(self, root_publication_id: int) -> CardContentHistory: ...
+    def read_card_content_history(self, root_publication_id: int) -> EditorialContentHistory: ...
+
+    def read_bound_content_history(self, root_publication_id: int) -> EditorialContentHistory: ...
 
     def bind_publication_content(self, publication_id: int, content_id: str) -> None: ...
 

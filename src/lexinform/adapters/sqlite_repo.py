@@ -318,8 +318,8 @@ from lexinform.models.source_omissions import SourceMetadataOmission
 from lexinform.models.wykaz import wykaz_number
 from lexinform.name_binding import bind_mnemonic
 from lexinform.ports import (
-    CardContentHistory,
     DeliveryQueueState,
+    EditorialContentHistory,
     GroupedEditClaim,
     VerifiedEditOutcome,
     VerifiedEditRejection,
@@ -2666,20 +2666,67 @@ class SqliteBillRepository:
             versions.append(version)
         return versions
 
-    def read_card_content_history(self, root_publication_id: int) -> CardContentHistory:
+    def read_card_content_history(self, root_publication_id: int) -> EditorialContentHistory:
         inventory = read_card_content_inventory(self._conn, root_publication_id)
-        for version in inventory.versions.values():
-            self._verify_retained_content_version(version, inventory=inventory)
-        if not set(inventory.bindings.values()).issubset(inventory.versions):
-            raise ValueError("card history contains a foreign or missing binding")
-        return CardContentHistory(
-            list(inventory.versions.values()),
+        return self._verified_editorial_history(
+            inventory.versions,
             inventory.publications,
-            {
-                identity: inventory.versions[content_id]
-                for identity, content_id in inventory.bindings.items()
-            },
+            inventory.bindings,
             inventory.snapshots,
+            card_inventory=inventory,
+        )
+
+    def read_bound_content_history(self, root_publication_id: int) -> EditorialContentHistory:
+        versions = {
+            row["content_id"]: read_content_version(row)
+            for row in self._conn.execute(
+                "SELECT * FROM content_versions WHERE root_publication_id=? ORDER BY rowid",
+                (root_publication_id,),
+            )
+        }
+        publications = {}
+        bindings = {}
+        for row in self._conn.execute(
+            "SELECT p.*, b.content_id AS bound_content_id FROM content_versions v"
+            " JOIN publication_content b ON b.content_id=v.content_id"
+            " JOIN publications p ON p.id=b.publication_id"
+            " WHERE v.root_publication_id=? ORDER BY p.id",
+            (root_publication_id,),
+        ):
+            publications[row["id"]] = self._row_to_publication(row)
+            bindings[row["id"]] = row["bound_content_id"]
+        snapshots = ContentSourceRows(self._conn).get_content_snapshots(
+            {
+                identity
+                for version in versions.values()
+                for _, identity in content_snapshot_refs(version)
+            }
+        )
+        return self._verified_editorial_history(versions, publications, bindings, snapshots)
+
+    def _verified_editorial_history(
+        self,
+        versions: dict[str, ContentVersion],
+        publications: dict[int, Publication],
+        bindings: dict[int, str],
+        snapshots: dict[str, ContentSnapshot],
+        *,
+        card_inventory: CardContentInventory | None = None,
+    ) -> EditorialContentHistory:
+        first_binding: dict[str, int] = {}
+        for identity, content_id in bindings.items():
+            if content_id not in versions:
+                raise ValueError("content history contains a foreign or missing binding")
+            first_binding.setdefault(content_id, identity)
+        for content_id, version in versions.items():
+            self._verify_retained_content_version(
+                version, inventory=card_inventory, publication_id=first_binding.get(content_id)
+            )
+        return EditorialContentHistory(
+            list(versions.values()),
+            publications,
+            {identity: versions[content_id] for identity, content_id in bindings.items()},
+            snapshots,
         )
 
     def _validate_publication_content_binding(
