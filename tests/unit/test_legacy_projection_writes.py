@@ -1,6 +1,7 @@
 import hashlib
 import sqlite3
 from collections.abc import Iterator
+from contextlib import closing
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -61,7 +62,7 @@ LOCATIONS = (
 
 
 def raw_column(path: Path, location: Location) -> str | None:
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         row = connection.execute(
             f"SELECT {location.column} FROM {location.table} WHERE term=10 AND number='3039'"
         ).fetchone()
@@ -83,7 +84,7 @@ def record_at(value: JsonValue, location: Location) -> dict[str, JsonValue]:
 
 
 def share_analysis_bodies(path: Path, values: tuple[LegacyResultValue, ...]) -> None:
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         for value in values:
             envelope = legacy_json(value.value_json)
             assert isinstance(envelope, dict), "LegacyResultValue validates a saved result object"
@@ -293,7 +294,7 @@ def copies(
                 "mnemonic_language",
             ):
                 del answer[field]
-            with sqlite3.connect(inline_path) as connection:
+            with closing(sqlite3.connect(inline_path)) as connection, connection:
                 connection.execute(
                     f"UPDATE {location.table} SET {location.column}=?",
                     (canonical_legacy_json(value),),
@@ -318,7 +319,7 @@ def copies(
         repo.import_legacy_results(imported)
     if request.param is True:
         share_analysis_bodies(projected_path, imported.values)
-    with sqlite3.connect(projected_path) as connection:
+    with closing(sqlite3.connect(projected_path)) as connection, connection:
         for location, occurrence in zip(LOCATIONS, occurrences, strict=True):
             raw = connection.execute(f"SELECT {location.column} FROM {location.table}").fetchone()[
                 0
@@ -532,7 +533,7 @@ def test_writers_reject_corrupt_previous_refs_without_overwriting_them(
     marker = record_at(value, location)
     marker["legacy_result_ref"] = "legacy-value-v1:" + "f" * 64
     damaged = canonical_legacy_json(value)
-    with sqlite3.connect(copies.projected_path) as connection:
+    with closing(sqlite3.connect(copies.projected_path)) as connection, connection:
         connection.execute(f"UPDATE {location.table} SET {location.column}=?", (damaged,))
 
     with pytest.raises(ValueError, match="missing"):
@@ -663,11 +664,11 @@ def test_projected_cost_ranking_matches_sql_null_zero_tie_and_limit_behavior(
     for repo in (inline, projected):
         repo.import_legacy_results(imported)
     share_analysis_bodies(projected_path, imported.values)
-    with sqlite3.connect(projected_path) as connection:
+    with closing(sqlite3.connect(projected_path)) as connection, connection:
         connection.executemany(
             "UPDATE bills SET analysis_json=? WHERE term=? AND number=?", replacements
         )
-    with sqlite3.connect(inline_path) as connection:
+    with closing(sqlite3.connect(inline_path)) as connection, connection:
         expected = connection.execute(
             "SELECT term, number FROM bills WHERE json_extract(analysis_json, '$.input_tokens') IS NOT NULL"
             " ORDER BY json_extract(analysis_json, '$.input_tokens') DESC, term, number LIMIT ?",

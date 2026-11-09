@@ -6,6 +6,7 @@ import json
 import sqlite3
 import tempfile
 from collections import Counter
+from contextlib import ExitStack, closing
 from pathlib import Path
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
@@ -24,11 +25,11 @@ from lexinform.models import (
 
 def audit(dump: Path, destination: Path) -> None:
     destination.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory() as work:
+    with tempfile.TemporaryDirectory() as work, ExitStack() as stack:
         path = Path(work) / "audit.db"
-        repo = SqliteBillRepository(path)
+        repo = stack.enter_context(closing(SqliteBillRepository(path)))
         repo.restore(dump.read_text())
-        connection = sqlite3.connect(path)
+        connection = stack.enter_context(closing(sqlite3.connect(path)))
         connection.row_factory = sqlite3.Row
         rows = connection.execute(
             "SELECT * FROM publications WHERE status = 'sent' AND kind != 'digest'"
@@ -140,8 +141,7 @@ def audit(dump: Path, destination: Path) -> None:
         (destination / "editorial-sample.json").write_text(
             json.dumps(projects, ensure_ascii=False, indent=2) + "\n"
         )
-        connection.close()
-        print(json.dumps(report, ensure_ascii=False, indent=2))
+    print(json.dumps(report, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

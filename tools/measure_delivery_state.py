@@ -14,7 +14,7 @@ import subprocess
 import tempfile
 import time
 from collections.abc import Iterator
-from contextlib import ExitStack, contextmanager
+from contextlib import ExitStack, closing, contextmanager
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, NoReturn
@@ -136,10 +136,11 @@ def source_manifest() -> dict[str, Any]:
     }
 
 
-def ready() -> World:
+def ready(stack: ExitStack) -> World:
     world = World(
         profile="production", reader_attention="on", batch_script={NUMBER: make_analysis()}
     )
+    stack.callback(world.repo.close)
     world.add_bill(NUMBER, TITLE)
     world.run(max_publish=0)
     world.batch.resolve()
@@ -202,7 +203,7 @@ def connect(world: World, directory: Path) -> Path:
 
 
 def counts(script: str) -> dict[str, Any]:
-    with sqlite3.connect(":memory:") as connection:
+    with closing(sqlite3.connect(":memory:")) as connection, connection:
         connection.executescript(script)
         tables = [
             row[0]
@@ -226,7 +227,6 @@ def counts(script: str) -> dict[str, Any]:
             "FROM publications WHERE kind='message_part' AND ref LIKE 'card/%/1' "
             "AND delivery_json IS NOT NULL"
         ).fetchone()
-    connection.close()
     return {
         "table_rows": rows,
         "total_rows": sum(rows.values()),
@@ -312,8 +312,7 @@ def snapshot(world: World, remote: Path, directory: Path) -> dict[str, Any]:
 
 def measure(edits: int, quiet_runs: int, directory: Path, timings: Timings) -> dict[str, Any]:
     with ExitStack() as stack:
-        world = ready()
-        stack.callback(world.repo.close)
+        world = ready(stack)
         baseline = world.repo.dump()
         initial_clock = world.clock.now()
         card = logical_card(world)

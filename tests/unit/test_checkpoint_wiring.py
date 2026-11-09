@@ -1,4 +1,5 @@
 import subprocess
+from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
 
@@ -18,19 +19,25 @@ from tests.fakes import FakeSejmGateway, FixedClock
 from tests.harness import TERM, World
 
 
-def container(settings: Settings) -> Container:
-    repo = SqliteBillRepository(":memory:")
-    repo.migrate()
-    gateway = FakeSejmGateway()
-    return Container(
-        settings=settings,
-        clock=FixedClock(),
-        repo=repo,
-        gateway=gateway,
-        formatter=MessageFormatter("ru"),
-        prefilter=KeywordPrefilter(),
-        terms=TermResolver(gateway, repo),
-    )
+@pytest.fixture
+def make_container(request: pytest.FixtureRequest) -> Callable[[Settings], Container]:
+    def make(settings: Settings) -> Container:
+        repo = SqliteBillRepository(":memory:")
+        repo.migrate()
+        gateway = FakeSejmGateway()
+        instance = Container(
+            settings=settings,
+            clock=FixedClock(),
+            repo=repo,
+            gateway=gateway,
+            formatter=MessageFormatter("ru"),
+            prefilter=KeywordPrefilter(),
+            terms=TermResolver(gateway, repo),
+        )
+        request.addfinalizer(instance.close)
+        return instance
+
+    return make
 
 
 def git_directory(path: Path) -> None:
@@ -44,8 +51,10 @@ def git_directory(path: Path) -> None:
     )
 
 
-def test_disconnected_local_container_has_one_noop_checkpoint() -> None:
-    c = container(Settings(_env_file=None))
+def test_disconnected_local_container_has_one_noop_checkpoint(
+    make_container: Callable[[Settings], Container],
+) -> None:
+    c = make_container(Settings(_env_file=None))
 
     checkpoint = c.state_checkpoint()
     checkpoint()
@@ -55,8 +64,10 @@ def test_disconnected_local_container_has_one_noop_checkpoint() -> None:
     assert c.analysis_options().require_batch
 
 
-def test_required_checkpoint_refuses_a_missing_file_before_building_a_reader_publisher() -> None:
-    c = container(Settings(_env_file=None, state_checkpoint_required=True))
+def test_required_checkpoint_refuses_a_missing_file_before_building_a_reader_publisher(
+    make_container: Callable[[Settings], Container],
+) -> None:
+    c = make_container(Settings(_env_file=None, state_checkpoint_required=True))
 
     with pytest.raises(StateCheckpointError, match="LEXINFORM_LLM_BATCH_STATE_FILE"):
         c.publisher(dry_run=False)
@@ -66,11 +77,11 @@ def test_required_checkpoint_refuses_a_missing_file_before_building_a_reader_pub
 
 @pytest.mark.parametrize("branch", ["", " ", "invalid branch", "-state", "state..other"])
 def test_required_checkpoint_refuses_an_invalid_branch_before_external_work(
-    tmp_path: Path, branch: str
+    make_container: Callable[[Settings], Container], tmp_path: Path, branch: str
 ) -> None:
     git_directory(tmp_path)
     output = tmp_path / "state.sql"
-    c = container(
+    c = make_container(
         Settings(
             _env_file=None,
             state_checkpoint_required=True,
@@ -85,8 +96,10 @@ def test_required_checkpoint_refuses_an_invalid_branch_before_external_work(
     assert not output.exists()
 
 
-def test_required_checkpoint_refuses_a_directory_instead_of_a_sql_file(tmp_path: Path) -> None:
-    c = container(
+def test_required_checkpoint_refuses_a_directory_instead_of_a_sql_file(
+    make_container: Callable[[Settings], Container], tmp_path: Path
+) -> None:
+    c = make_container(
         Settings(_env_file=None, state_checkpoint_required=True, llm_batch_state_file=tmp_path)
     )
 
@@ -94,8 +107,10 @@ def test_required_checkpoint_refuses_a_directory_instead_of_a_sql_file(tmp_path:
         c.state_checkpoint()
 
 
-def test_checkpoint_refuses_a_non_git_directory_before_external_work(tmp_path: Path) -> None:
-    c = container(
+def test_checkpoint_refuses_a_non_git_directory_before_external_work(
+    make_container: Callable[[Settings], Container], tmp_path: Path
+) -> None:
+    c = make_container(
         Settings(
             _env_file=None,
             state_checkpoint_required=True,
@@ -107,9 +122,11 @@ def test_checkpoint_refuses_a_non_git_directory_before_external_work(tmp_path: P
         c.state_checkpoint()
 
 
-def test_required_checkpoint_refuses_an_unconfigured_origin(tmp_path: Path) -> None:
+def test_required_checkpoint_refuses_an_unconfigured_origin(
+    make_container: Callable[[Settings], Container], tmp_path: Path
+) -> None:
     subprocess.run(["git", "init", "-b", "state", str(tmp_path)], check=True, capture_output=True)
-    c = container(
+    c = make_container(
         Settings(
             _env_file=None,
             state_checkpoint_required=True,
@@ -121,10 +138,12 @@ def test_required_checkpoint_refuses_an_unconfigured_origin(tmp_path: Path) -> N
         c.publisher(dry_run=False)
 
 
-def test_configured_checkpoint_is_shared_and_dry_run_checkpoint_cannot_push(tmp_path: Path) -> None:
+def test_configured_checkpoint_is_shared_and_dry_run_checkpoint_cannot_push(
+    make_container: Callable[[Settings], Container], tmp_path: Path
+) -> None:
     git_directory(tmp_path)
     output = tmp_path / "state.sql"
-    c = container(
+    c = make_container(
         Settings(
             _env_file=None,
             state_checkpoint_required=True,

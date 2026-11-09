@@ -235,7 +235,10 @@ def test_search_matches_casefolded_titles_numbers_and_literal_editorial_names(
 
 
 def test_discovery_cannot_overwrite_the_tracking_closure_baseline(
-    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+    request: pytest.FixtureRequest,
+    repo: SqliteBillRepository,
+    process_3039: ProcessDetail,
+    now: datetime,
 ) -> None:
     repo.upsert_summary(process_3039, now=now)
     closed = date(2026, 9, 10)
@@ -245,6 +248,7 @@ def test_discovery_cannot_overwrite_the_tracking_closure_baseline(
         process_3039.model_copy(update={"closure_date": date(2026, 9, 11)}), now=now
     )
     copy = SqliteBillRepository(":memory:")
+    request.addfinalizer(copy.close)
     copy.restore(repo.dump())
     restored = copy.get(10, "3039")
 
@@ -255,7 +259,7 @@ def test_discovery_cannot_overwrite_the_tracking_closure_baseline(
 
 
 def test_v24_backfills_only_previously_observed_processes(
-    tmp_path: Path, process_3039: ProcessDetail, now: datetime
+    request: pytest.FixtureRequest, tmp_path: Path, process_3039: ProcessDetail, now: datetime
 ) -> None:
     legacy = sqlite3.connect(tmp_path / "v23.db")
     for migration in MIGRATIONS[:23]:
@@ -281,6 +285,7 @@ def test_v24_backfills_only_previously_observed_processes(
     dump = "\n".join(legacy.iterdump()) + "\nPRAGMA user_version = 23;\n"
     legacy.close()
     repo = SqliteBillRepository(":memory:")
+    request.addfinalizer(repo.close)
 
     repo.restore(dump)
     known, unread = repo.get(10, "2111"), repo.get(10, "2110")
@@ -339,16 +344,20 @@ def test_analysis_failures_are_counted_and_the_last_error_kept(
 
 
 def test_an_equal_analysis_in_another_serialisation_keeps_the_queued_reanalysis(
-    tmp_path: Path, process_3039: ProcessDetail, now: datetime
+    request: pytest.FixtureRequest, tmp_path: Path, process_3039: ProcessDetail, now: datetime
 ) -> None:
     path = tmp_path / "state.db"
     repo = SqliteBillRepository(str(path))
+    request.addfinalizer(repo.close)
     repo.migrate()
     repo.upsert_summary(process_3039, now=now)
     record = FakeLlm().analyze(_context("3039"))
     repo.save_analysis(10, "3039", record)
     repo.set_status(10, "3039", BillStatus.BATCH_PENDING)
-    with sqlite3.connect(path) as raw:  # a row written by an older release of the model
+    with (
+        closing(sqlite3.connect(path)) as raw,
+        raw,
+    ):  # a row written by an older release of the model
         raw.execute(
             "UPDATE bills SET analysis_json = ? WHERE number = '3039'",
             (json.dumps(json.loads(record.model_dump_json()), indent=1),),
@@ -886,7 +895,10 @@ def test_dry_run_transaction_rolls_back(
 
 
 def test_dump_restores_rows_indexes_and_the_schema_version(
-    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+    request: pytest.FixtureRequest,
+    repo: SqliteBillRepository,
+    process_3039: ProcessDetail,
+    now: datetime,
 ) -> None:
     repo.upsert_summary(process_3039, now=now)
     change_id = repo.add_status_change(_change("3039", now))
@@ -903,6 +915,7 @@ def test_dump_restores_rows_indexes_and_the_schema_version(
 
     script = repo.dump()
     fresh = SqliteBillRepository(":memory:")
+    request.addfinalizer(fresh.close)
     fresh.migrate()  # a pre-existing schema must be replaced, not merged
     fresh.restore(script)
 
@@ -970,10 +983,10 @@ def test_a_rollback_sqlite_refuses_does_not_leave_the_next_one_pretending(
 
 
 def test_restore_revives_only_rpw_files_skipped_on_404(
-    tmp_path: Path, process_3039: ProcessDetail, now: datetime
+    request: pytest.FixtureRequest, tmp_path: Path, process_3039: ProcessDetail, now: datetime
 ) -> None:
     path = tmp_path / "v43.db"
-    with sqlite3.connect(path) as conn:
+    with closing(sqlite3.connect(path)) as conn, conn:
         for migration in MIGRATIONS[:43]:
             conn.executescript(migration)
         conn.execute("PRAGMA user_version = 43")
@@ -992,6 +1005,7 @@ def test_restore_revives_only_rpw_files_skipped_on_404(
     script = legacy.dump()
     legacy.close()
     current = SqliteBillRepository(":memory:")
+    request.addfinalizer(current.close)
 
     current.restore(script)
 
@@ -1004,7 +1018,9 @@ def test_restore_revives_only_rpw_files_skipped_on_404(
         assert bill.analysis_attempts == 0
 
 
-def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> None:
+def test_restore_of_a_v1_dump_applies_every_later_migration(
+    request: pytest.FixtureRequest, tmp_path: Path
+) -> None:
     legacy = sqlite3.connect(tmp_path / "v1.db")
     legacy.executescript(f"BEGIN;{MIGRATIONS[0]}PRAGMA user_version = 1;COMMIT;")
     legacy.execute(
@@ -1038,13 +1054,14 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
     legacy_dump = "\n".join(legacy.iterdump()) + "\n"  # the v1 release wrote no version line
     legacy.close()
     repo = SqliteBillRepository(tmp_path / "current.db")
+    request.addfinalizer(repo.close)
     repo.migrate()
 
     repo.restore(legacy_dump)
 
     assert "user_version" not in legacy_dump
     assert repo.schema_version == SCHEMA_VERSION
-    with sqlite3.connect(tmp_path / "current.db") as schema:
+    with closing(sqlite3.connect(tmp_path / "current.db")) as schema, schema:
         bill_column = next(
             row
             for row in schema.execute("PRAGMA table_info(content_versions)")
@@ -1066,7 +1083,7 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
     assert repo.last_discovery_started_at() is not None  # v2 backfill: ok -> discovery_ok
     assert list(repo.iter_physical_captures()) == []
     assert repo.get_physical_metadata("a" * 64) is None
-    with sqlite3.connect(tmp_path / "current.db") as conn:
+    with closing(sqlite3.connect(tmp_path / "current.db")) as conn, conn:
         publications = {r[1] for r in conn.execute("PRAGMA table_info(publications)")}
         bills = {r[1] for r in conn.execute("PRAGMA table_info(bills)")}
         changes = {r[1] for r in conn.execute("PRAGMA table_info(status_changes)")}
@@ -1137,7 +1154,7 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         "ux_result_application_generation",
         "ux_result_application_target",
     } <= indexes
-    with sqlite3.connect(tmp_path / "current.db") as conn:
+    with closing(sqlite3.connect(tmp_path / "current.db")) as conn, conn:
         changes = {r[1] for r in conn.execute("PRAGMA table_info(status_changes)")}
         tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         commands = {r[1] for r in conn.execute("PRAGMA table_info(commands)")}
@@ -1419,7 +1436,7 @@ def test_a_command_is_recorded_once_and_marked_executed_then_handled(
 
 
 def test_a_v1_dump_keeps_its_rows_and_their_values_through_every_migration(
-    tmp_path: Path, process_3039: ProcessDetail, now: datetime
+    request: pytest.FixtureRequest, tmp_path: Path, process_3039: ProcessDetail, now: datetime
 ) -> None:
     """The schema test above proves the columns arrive; this one proves the rows do.
 
@@ -1466,6 +1483,7 @@ def test_a_v1_dump_keeps_its_rows_and_their_values_through_every_migration(
     dump = "\n".join(legacy.iterdump()) + "\n"
     legacy.close()
     repo = SqliteBillRepository(tmp_path / "current.db")
+    request.addfinalizer(repo.close)
     repo.migrate()
 
     repo.restore(dump)
@@ -1491,7 +1509,10 @@ def test_a_v1_dump_keeps_its_rows_and_their_values_through_every_migration(
 
 
 def test_restore_of_a_dump_that_still_says_skipped_joint(
-    tmp_path: Path, processes_page: list[ProcessSummary], now: datetime
+    request: pytest.FixtureRequest,
+    tmp_path: Path,
+    processes_page: list[ProcessSummary],
+    now: datetime,
 ) -> None:
     """The status is gone with the rule that set it, and `BillStatus` would refuse the word: a
     dump written before 2026-09-14 has to come back as a bill in the queue, not as an error."""
@@ -1499,11 +1520,12 @@ def test_restore_of_a_dump_that_still_says_skipped_joint(
     source.migrate()
     process = processes_page[0]
     source.upsert_summary(process, now=now)
-    with sqlite3.connect(tmp_path / "old.db") as conn:
+    with closing(sqlite3.connect(tmp_path / "old.db")) as conn, conn:
         conn.execute("UPDATE bills SET status = 'skipped_joint', analysis_attempts = 2")
         dump = dump_at_version(conn, version=20)
     source.close()
     repo = SqliteBillRepository(tmp_path / "current.db")
+    request.addfinalizer(repo.close)
     repo.migrate()
 
     repo.restore(dump)
@@ -1513,9 +1535,12 @@ def test_restore_of_a_dump_that_still_says_skipped_joint(
     assert (restored.status, restored.analysis_attempts) == (BillStatus.ANALYSIS_PENDING, 0)
 
 
-def test_the_posts_of_a_week_are_the_sent_ones_inside_its_window(now: datetime) -> None:
+def test_the_posts_of_a_week_are_the_sent_ones_inside_its_window(
+    request: pytest.FixtureRequest, now: datetime
+) -> None:
     """What the digest reads: `sent` rows alone, and the window's end is not in it."""
     repo = SqliteBillRepository(":memory:")
+    request.addfinalizer(repo.close)
     repo.migrate()
     monday = datetime(2026, 9, 7, 0, 0, tzinfo=UTC)
     for number, when, status in (
@@ -1535,8 +1560,11 @@ def test_the_posts_of_a_week_are_the_sent_ones_inside_its_window(now: datetime) 
     assert [p.number for p in found] == ["3039", "3040"]
 
 
-def test_a_digest_row_is_one_per_week_and_channel_and_is_about_no_bill(now: datetime) -> None:
+def test_a_digest_row_is_one_per_week_and_channel_and_is_about_no_bill(
+    request: pytest.FixtureRequest, now: datetime
+) -> None:
     repo = SqliteBillRepository(":memory:")
+    request.addfinalizer(repo.close)
     repo.migrate()
     row = _publication(
         DIGEST_NUMBER,

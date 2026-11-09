@@ -2,6 +2,8 @@ import datetime as dt
 import hashlib
 import json
 import sqlite3
+from collections.abc import Iterator
+from contextlib import closing
 from pathlib import Path
 
 import pytest
@@ -43,10 +45,11 @@ def observation(record: DocumentSelectionRecord) -> SourceObservation:
     )
 
 
-def repository(tmp_path: Path) -> SqliteBillRepository:
-    repo = SqliteBillRepository(tmp_path / "state.db")
-    repo.migrate()
-    return repo
+@pytest.fixture
+def repo(tmp_path: Path) -> Iterator[SqliteBillRepository]:
+    with closing(SqliteBillRepository(tmp_path / "state.db")) as repository:
+        repository.migrate()
+        yield repository
 
 
 def test_source_history_preserves_catalog_relations_without_bodies_or_paid_identity() -> None:
@@ -112,8 +115,9 @@ def test_legacy_policy_remains_unknown_and_future_policy_stays_opaque() -> None:
     assert future.selection_id != original.selection_id
 
 
-def test_first_recording_time_and_dump_remain_stable_on_repeated_check(tmp_path: Path) -> None:
-    repo = repository(tmp_path)
+def test_first_recording_time_and_dump_remain_stable_on_repeated_check(
+    repo: SqliteBillRepository,
+) -> None:
     record = decision()
     source = observation(record)
     repo.save_source_observation(record, source)
@@ -128,8 +132,9 @@ def test_first_recording_time_and_dump_remain_stable_on_repeated_check(tmp_path:
     assert repo.get_document_selection(record.selection_id) == record
 
 
-def test_same_selection_keeps_multiple_owner_and_catalog_observations(tmp_path: Path) -> None:
-    repo = repository(tmp_path)
+def test_same_selection_keeps_multiple_owner_and_catalog_observations(
+    repo: SqliteBillRepository, tmp_path: Path
+) -> None:
     record = decision()
     first = observation(record)
     other = first.model_copy(update={"number": "3040"})
@@ -141,13 +146,12 @@ def test_same_selection_keeps_multiple_owner_and_catalog_observations(tmp_path: 
 
     assert repo.list_source_observations(10, "3039") == [first, moved]
     assert repo.list_source_observations(10, "3040") == [other]
-    with sqlite3.connect(tmp_path / "state.db") as db:
+    with closing(sqlite3.connect(tmp_path / "state.db")) as db, db:
         assert db.execute("SELECT count(*) FROM document_selections").fetchone()[0] == 1
         assert db.execute("SELECT count(*) FROM source_observations").fetchone()[0] == 3
 
 
-def test_new_bytes_at_the_same_url_keep_the_previous_decision(tmp_path: Path) -> None:
-    repo = repository(tmp_path)
+def test_new_bytes_at_the_same_url_keep_the_previous_decision(repo: SqliteBillRepository) -> None:
     first, second = decision(), decision(sha="b" * 64)
     repo.save_source_observation(first, observation(first))
     repo.save_source_observation(second, observation(second))
@@ -158,8 +162,9 @@ def test_new_bytes_at_the_same_url_keep_the_previous_decision(tmp_path: Path) ->
     assert len(repo.list_source_observations(10, "3039")) == 2
 
 
-def test_mismatched_selection_and_invalid_model_copy_write_nothing(tmp_path: Path) -> None:
-    repo = repository(tmp_path)
+def test_mismatched_selection_and_invalid_model_copy_write_nothing(
+    repo: SqliteBillRepository,
+) -> None:
     record = decision()
     before = repo.dump()
 
@@ -174,8 +179,7 @@ def test_mismatched_selection_and_invalid_model_copy_write_nothing(tmp_path: Pat
     assert repo.dump() == before
 
 
-def test_caller_transaction_rolls_back_both_metadata_tables(tmp_path: Path) -> None:
-    repo = repository(tmp_path)
+def test_caller_transaction_rolls_back_both_metadata_tables(repo: SqliteBillRepository) -> None:
     record = decision()
     before = repo.dump()
 
@@ -188,13 +192,12 @@ def test_caller_transaction_rolls_back_both_metadata_tables(tmp_path: Path) -> N
 
 @pytest.mark.parametrize("table", ["document_selections", "source_observations"])
 def test_sql_identity_corruption_is_reported_instead_of_read_as_another_decision(
-    tmp_path: Path, table: str
+    repo: SqliteBillRepository, tmp_path: Path, table: str
 ) -> None:
-    repo = repository(tmp_path)
     record = decision()
     source = observation(record)
     repo.save_source_observation(record, source)
-    with sqlite3.connect(tmp_path / "state.db") as db:
+    with closing(sqlite3.connect(tmp_path / "state.db")) as db, db:
         if table == "document_selections":
             db.execute("UPDATE document_selections SET question='another-question'")
         else:
@@ -207,8 +210,9 @@ def test_sql_identity_corruption_is_reported_instead_of_read_as_another_decision
             repo.get_source_observation(source.observation_id)
 
 
-def test_source_history_survives_sql_restore_without_legacy_backfill(tmp_path: Path) -> None:
-    repo = repository(tmp_path)
+def test_source_history_survives_sql_restore_without_legacy_backfill(
+    repo: SqliteBillRepository,
+) -> None:
     record = decision()
     source = observation(record)
     repo.save_source_observation(record, source)

@@ -162,7 +162,7 @@ def test_known_broken_marker_is_shared_load_doctor_atomic_restore_error(
             number=result.number,
         )
         if mutation == "sql_identity":
-            with sqlite3.connect(path) as connection:
+            with closing(sqlite3.connect(path)) as connection, connection:
                 connection.execute(
                     "UPDATE computation_results SET number='other' WHERE result_id=?",
                     (result.result_id,),
@@ -171,7 +171,12 @@ def test_known_broken_marker_is_shared_load_doctor_atomic_restore_error(
         with pytest.raises(ValueError, match="invalid_review_memo"):
             repo.load_analysis_memo()
         doctor_path = tmp_path / "checkpointed.db"
-        with sqlite3.connect(path) as connection, sqlite3.connect(doctor_path) as copied:
+        with (
+            closing(sqlite3.connect(path)) as connection,
+            connection,
+            closing(sqlite3.connect(doctor_path)) as copied,
+            copied,
+        ):
             connection.backup(copied)
         report = audit(doctor_path)
         assert any(item["code"] == "invalid_review_memo" for item in report["findings"])
@@ -444,7 +449,7 @@ def test_known_blob_marker_has_bounded_error_in_each_reader(tmp_path: Path, boun
         repo.migrate()
         result = paid_review(context())
         repo.save_computation_result(result)
-        with sqlite3.connect(path) as connection:
+        with closing(sqlite3.connect(path)) as connection, connection:
             connection.execute(
                 "INSERT INTO analysis_memo(key,record_json,term,number) VALUES (?,?,?,?)",
                 (context().memo_key(10), marker(result).encode(), 10, result.number),
@@ -455,7 +460,12 @@ def test_known_blob_marker_has_bounded_error_in_each_reader(tmp_path: Path, boun
                 repo.load_analysis_memo()
         elif boundary == "doctor":
             snapshot = tmp_path / "doctor.db"
-            with sqlite3.connect(path) as connection, sqlite3.connect(snapshot) as copied:
+            with (
+                closing(sqlite3.connect(path)) as connection,
+                connection,
+                closing(sqlite3.connect(snapshot)) as copied,
+                copied,
+            ):
                 connection.backup(copied)
             report = audit(snapshot)
             assert any(item["code"] == "invalid_review_memo" for item in report["findings"])

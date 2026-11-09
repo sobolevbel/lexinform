@@ -114,7 +114,7 @@ def test_new_links_do_not_rewrite_opaque_parent_json(repo: SqliteBillRepository)
 def test_schema_56_restore_creates_empty_edition_tables_without_inferred_history(
     repo: SqliteBillRepository,
 ) -> None:
-    with sqlite3.connect(":memory:") as old:
+    with closing(sqlite3.connect(":memory:")) as old, old:
         for migration in MIGRATIONS[:56]:
             old.executescript(migration)
         dump = "\n".join(old.iterdump()) + "\nPRAGMA user_version = 56;\n"

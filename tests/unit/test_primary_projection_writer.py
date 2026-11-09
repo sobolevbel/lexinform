@@ -1,4 +1,5 @@
 import sqlite3
+from contextlib import closing
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -196,7 +197,7 @@ def test_current_and_root_primary_memo_compact_while_ready_stays_inline(
         "primary", result.record.model_dump_json(), term=10, number="3039", used_at=NOW
     )
 
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         current, frozen = connection.execute(
             "SELECT analysis_json, ready_analysis_json FROM bills"
         ).fetchone()
@@ -235,12 +236,12 @@ def test_memo_owner_transfer_materializes_the_original_answer_and_keeps_conflict
     repo.save_analysis_memo(
         "primary", replacement.model_dump_json(), used_at=NOW + timedelta(days=1)
     )
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         repeated = connection.execute("SELECT record_json FROM analysis_memo").fetchone()[0]
     assert "modern_primary_ref" in repeated
     repo.save_analysis_memo("primary", replacement.model_dump_json(), term=11)
 
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         stored, term, number, used_at = connection.execute(
             "SELECT record_json,term,number,last_used_at FROM analysis_memo"
         ).fetchone()
@@ -263,7 +264,7 @@ def test_later_same_owner_memo_save_compacts_original_content_after_paid_result_
     assert isinstance(result.record, AnalysisRecord), "the fixture has a primary record"
     original = result.record.model_dump_json()
     repo.save_analysis_memo("primary", original, term=10, number="3039", used_at=NOW)
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         before = connection.execute("SELECT record_json FROM analysis_memo").fetchone()[0]
     assert before == original
     repo.save_computation_result(result)
@@ -273,7 +274,7 @@ def test_later_same_owner_memo_save_compacts_original_content_after_paid_result_
         "primary", replacement.model_dump_json(), term=10, number="3039", used_at=NOW
     )
 
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         after = connection.execute("SELECT record_json FROM analysis_memo").fetchone()[0]
     assert "modern_primary_ref" in after
     assert canonical_json(read_json(repo.load_analysis_memo()["primary"])) == canonical_json(
@@ -301,7 +302,7 @@ def test_ineligible_memo_never_acquires_a_primary_reference(tmp_path: Path, kind
 
     repo.save_analysis_memo("candidate", raw, term=term, number="3039")
 
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         saved = connection.execute("SELECT record_json FROM analysis_memo").fetchone()[0]
     assert saved == raw
     repo.close()
@@ -341,7 +342,7 @@ def test_invalid_existing_memo_reference_rolls_back_refresh_or_owner_transfer(
     assert isinstance(result.record, AnalysisRecord), "the fixture has a primary record"
     repo.save_computation_result(result)
     repo.save_analysis_memo("primary", result.record.model_dump_json(), term=10, number="3039")
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         connection.execute(
             "UPDATE analysis_memo SET record_json=json_set(record_json,"
             " '$.retained_record_sha256', ?)",
@@ -376,7 +377,7 @@ def test_indexed_paid_owner_corruption_is_not_hidden_by_current_writer(
     result = retained_result("analysis")
     assert isinstance(result.record, AnalysisRecord), "the fixture has a primary record"
     repo.save_computation_result(result)
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         connection.execute("UPDATE computation_results SET number='foreign'")
     before = repo.dump()
 
@@ -401,7 +402,7 @@ def test_direct_government_row_move_materializes_current_without_fabricating_per
     repo.save_analysis(10, number, result.record)
     original = repo.get(10, number)
     assert original is not None and original.analysis is not None, "the current analysis is saved"
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         before = connection.execute("SELECT analysis_json FROM bills").fetchone()[0]
     assert "modern_primary_ref" in before
 
@@ -414,7 +415,7 @@ def test_direct_government_row_move_materializes_current_without_fabricating_per
     assert moved.analysis_generation == original.analysis_generation
     assert not repo.list_result_applications(11, number)
     assert repo.get_computation_result(result.result_id) == result
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         after = connection.execute("SELECT analysis_json FROM bills").fetchone()[0]
     assert "modern_primary_ref" not in after
     repo.save_analysis(11, number, moved.analysis)

@@ -8,6 +8,7 @@ import sqlite3
 import subprocess
 import tempfile
 from collections import Counter
+from contextlib import ExitStack, closing
 from functools import partial
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -23,11 +24,11 @@ def audit(dump: Path, destination: Path) -> dict[str, object]:
     events: list[dict[str, object]] = []
     exclusions: list[dict[str, object]] = []
     counts: Counter[str] = Counter()
-    with tempfile.TemporaryDirectory() as work:
+    with tempfile.TemporaryDirectory() as work, ExitStack() as stack:
         path = Path(work) / "audit.db"
-        repo = SqliteBillRepository(path)
+        repo = stack.enter_context(closing(SqliteBillRepository(path)))
         repo.restore(raw)
-        with sqlite3.connect(path) as connection:
+        with closing(sqlite3.connect(path)) as connection:
             connection.row_factory = sqlite3.Row
             rows = connection.execute(
                 "SELECT * FROM publications ORDER BY created_at, id"

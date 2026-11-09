@@ -2,6 +2,7 @@
 
 import datetime as dt
 import json
+from collections.abc import Callable
 
 import httpx2 as httpx
 import pytest
@@ -18,41 +19,53 @@ from lexinform.settings import Settings
 from tests.fakes import FakePublisher, FakeSejmGateway, FixedClock, MonotonicClock
 
 
-def _container(*, batching: bool) -> Container:
-    repo = SqliteBillRepository(":memory:")
-    repo.migrate()
-    gateway = FakeSejmGateway()
-    clock: Clock = FixedClock()
-    return Container(
-        settings=Settings(_env_file=None, term=10, llm_batch_enabled=batching),
-        clock=clock,
-        repo=repo,
-        gateway=gateway,
-        formatter=MessageFormatter("ru"),
-        prefilter=KeywordPrefilter(),
-        terms=TermResolver(gateway, repo),
-    )
+@pytest.fixture
+def make_container(request: pytest.FixtureRequest) -> Callable[[bool], Container]:
+    def make(batching: bool) -> Container:
+        repo = SqliteBillRepository(":memory:")
+        repo.migrate()
+        gateway = FakeSejmGateway()
+        clock: Clock = FixedClock()
+        instance = Container(
+            settings=Settings(_env_file=None, term=10, llm_batch_enabled=batching),
+            clock=clock,
+            repo=repo,
+            gateway=gateway,
+            formatter=MessageFormatter("ru"),
+            prefilter=KeywordPrefilter(),
+            terms=TermResolver(gateway, repo),
+        )
+        request.addfinalizer(instance.close)
+        return instance
+
+    return make
 
 
-def test_the_batch_backend_is_built_even_with_batching_switched_off() -> None:
+def test_the_batch_backend_is_built_even_with_batching_switched_off(
+    make_container: Callable[[bool], Container],
+) -> None:
     """Switching it off mid-flight would otherwise strand the filed requests, and their bills."""
-    off = _container(batching=False)
+    off = make_container(False)
 
     assert off.batch_backend() is not None
     assert off.analysis_service() is not None
 
 
-def test_legacy_batch_switch_cannot_enable_synchronous_analysis() -> None:
-    on = _container(batching=True)
-    off = _container(batching=False)
+def test_legacy_batch_switch_cannot_enable_synchronous_analysis(
+    make_container: Callable[[bool], Container],
+) -> None:
+    on = make_container(True)
+    off = make_container(False)
 
     assert on.analysis_options().submit_batches is True
     assert off.analysis_options().submit_batches is False
     assert on.analysis_options().require_batch and off.analysis_options().require_batch
 
 
-def test_secondary_batch_options_keep_each_call_model_and_selected_kinds() -> None:
-    c = _container(batching=True)
+def test_secondary_batch_options_keep_each_call_model_and_selected_kinds(
+    make_container: Callable[[bool], Container],
+) -> None:
+    c = make_container(True)
     c.settings.llm_batch_kinds = frozenset({"joint", "supplement"})
     c.settings.llm_joint_model = "gpt-5.1"
     c.settings.llm_supplement_model = "claude-sonnet-5"
@@ -64,6 +77,7 @@ def test_secondary_batch_options_keep_each_call_model_and_selected_kinds() -> No
 
 
 def test_run_notifier_links_the_actions_run_in_the_log_channel(
+    make_container: Callable[[bool], Container],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     messages: list[dict[str, object]] = []
@@ -72,7 +86,7 @@ def test_run_notifier_links_the_actions_run_in_the_log_channel(
         messages.append(json.loads(request.content))
         return httpx.Response(200, json={"ok": True, "result": {"message_id": 1}})
 
-    container = _container(batching=False)
+    container = make_container(False)
     container.settings.telegram_log_channel_id = "@logs"
     client = TelegramBotClient("TOKEN", transport=httpx.MockTransport(handle))
     monkeypatch.setattr(container, "telegram_client", lambda: client)
@@ -106,7 +120,11 @@ def test_run_notifier_links_the_actions_run_in_the_log_channel(
     ],
 )
 def test_preview_factory_refuses_reader_aliases_before_any_send(
-    monkeypatch: pytest.MonkeyPatch, reader: str, target: str, identities: dict[str, int]
+    make_container: Callable[[bool], Container],
+    monkeypatch: pytest.MonkeyPatch,
+    reader: str,
+    target: str,
+    identities: dict[str, int],
 ) -> None:
     calls: list[str] = []
 
@@ -116,7 +134,7 @@ def test_preview_factory_refuses_reader_aliases_before_any_send(
         calls.append(address)
         return httpx.Response(200, json={"ok": True, "result": {"id": identities[address]}})
 
-    c = _container(batching=False)
+    c = make_container(False)
     c.settings.telegram_channel_id = reader
     clock = MonotonicClock()
     client = TelegramBotClient(
@@ -132,13 +150,13 @@ def test_preview_factory_refuses_reader_aliases_before_any_send(
 
 @pytest.mark.parametrize("reader", ["", "@unresolved"])
 def test_preview_factory_fails_closed_without_a_verified_reader(
-    monkeypatch: pytest.MonkeyPatch, reader: str
+    make_container: Callable[[bool], Container], monkeypatch: pytest.MonkeyPatch, reader: str
 ) -> None:
     def handle(request: httpx.Request) -> httpx.Response:
         assert request.url.path.endswith("/getChat"), "an unknown reader prevents sending"
         return httpx.Response(200, json={"ok": True, "result": {"title": "no identity"}})
 
-    c = _container(batching=False)
+    c = make_container(False)
     c.settings.telegram_channel_id = reader
     client = TelegramBotClient("TOKEN", transport=httpx.MockTransport(handle))
     monkeypatch.setattr(c, "telegram_client", lambda: client)
@@ -149,7 +167,7 @@ def test_preview_factory_fails_closed_without_a_verified_reader(
 
 @pytest.mark.parametrize("unavailable", [False, True])
 def test_preview_factory_sends_nothing_when_chat_resolution_fails(
-    monkeypatch: pytest.MonkeyPatch, unavailable: bool
+    make_container: Callable[[bool], Container], monkeypatch: pytest.MonkeyPatch, unavailable: bool
 ) -> None:
     methods: list[str] = []
 
@@ -162,7 +180,7 @@ def test_preview_factory_sends_nothing_when_chat_resolution_fails(
             400, json={"ok": False, "error_code": 400, "description": "chat not found"}
         )
 
-    c = _container(batching=False)
+    c = make_container(False)
     c.settings.telegram_channel_id = "@readers"
     clock = MonotonicClock()
     client = TelegramBotClient(
@@ -178,9 +196,9 @@ def test_preview_factory_sends_nothing_when_chat_resolution_fails(
 
 @pytest.mark.parametrize("override", [False, True])
 def test_preview_factory_keeps_dry_runs_and_fake_overrides_off_telegram(
-    monkeypatch: pytest.MonkeyPatch, override: bool
+    make_container: Callable[[bool], Container], monkeypatch: pytest.MonkeyPatch, override: bool
 ) -> None:
-    c = _container(batching=False)
+    c = make_container(False)
     c.settings.telegram_channel_id = "@readers"
     fake = FakePublisher()
     if override:

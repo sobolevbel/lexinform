@@ -2,6 +2,7 @@ import datetime as dt
 import hashlib
 import json
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 import pytest
@@ -267,6 +268,7 @@ def test_trace_serialization_failure_does_not_change_document_choice(
 
 
 def test_same_source_observation_links_distinct_rejected_universes_and_repeats(
+    request: pytest.FixtureRequest,
     tmp_path: Path,
 ) -> None:
     chosen = TextDocument(url=HOST + "selected", kind="rcl")
@@ -281,6 +283,7 @@ def test_same_source_observation_links_distinct_rejected_universes_and_repeats(
     ]
     reader, gateway = loader({chosen.url: b"selected"})
     repo = SqliteBillRepository(tmp_path / "state.db")
+    request.addfinalizer(repo.close)
     repo.migrate()
     traces = []
     for document in requested:
@@ -342,17 +345,20 @@ def test_same_source_observation_links_distinct_rejected_universes_and_repeats(
     assert [
         trace.trace_id for trace in repo.list_candidate_disposition_traces(other[0].observation_id)
     ] == [traces[0].trace_id]
-    with sqlite3.connect(tmp_path / "state.db") as db:
+    with closing(sqlite3.connect(tmp_path / "state.db")) as db, db:
         assert db.execute("SELECT count(*) FROM candidate_disposition_traces").fetchone()[0] == 2
         assert db.execute("SELECT count(*) FROM source_candidate_traces").fetchone()[0] == 3
 
 
-def test_trace_link_rolls_back_with_calling_transaction(tmp_path: Path) -> None:
+def test_trace_link_rolls_back_with_calling_transaction(
+    request: pytest.FixtureRequest, tmp_path: Path
+) -> None:
     requested = TextDocument(url=HOST + "conflict", kind="rcl", official_link_conflict=True)
     reader, _ = loader({})
     selected, loaded = reader.select_document(requested)
     assert loaded.candidate_trace is not None
     repo = SqliteBillRepository(tmp_path / "state.db")
+    request.addfinalizer(repo.close)
     repo.migrate()
     before = repo.dump()
 
@@ -396,7 +402,9 @@ def test_oversized_complete_trace_is_rejected_on_read() -> None:
         CandidateDispositionTrace.model_validate(invalid)
 
 
-def test_schema_58_dump_restores_without_inferred_candidate_history(tmp_path: Path) -> None:
+def test_schema_58_dump_restores_without_inferred_candidate_history(
+    request: pytest.FixtureRequest, tmp_path: Path
+) -> None:
     previous = sqlite3.connect(tmp_path / "previous.db")
     for migration in MIGRATIONS[:58]:
         previous.executescript(migration)
@@ -438,6 +446,7 @@ def test_schema_58_dump_restores_without_inferred_candidate_history(tmp_path: Pa
     old_dump = "\n".join(previous.iterdump()) + "\nPRAGMA user_version = 58;\n"
     previous.close()
     repo = SqliteBillRepository(tmp_path / "current.db")
+    request.addfinalizer(repo.close)
     repo.migrate()
 
     repo.restore(old_dump)
@@ -449,13 +458,14 @@ def test_schema_58_dump_restores_without_inferred_candidate_history(tmp_path: Pa
 
 @pytest.mark.parametrize("corruption", ["checksum", "orphan_link"])
 def test_restore_rejects_corrupt_trace_before_replacing_database(
-    tmp_path: Path, corruption: str
+    request: pytest.FixtureRequest, tmp_path: Path, corruption: str
 ) -> None:
     requested = TextDocument(url=HOST + "conflict", kind="rcl", official_link_conflict=True)
     reader, _ = loader({})
     selected, loaded = reader.select_document(requested)
     assert loaded.candidate_trace is not None
     repo = SqliteBillRepository(tmp_path / "state.db")
+    request.addfinalizer(repo.close)
     repo.migrate()
     record_source_read(
         repo,

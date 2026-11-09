@@ -2,6 +2,7 @@ import datetime as dt
 import hashlib
 import sqlite3
 from collections.abc import Iterator
+from contextlib import closing
 from pathlib import Path
 
 import pytest
@@ -173,7 +174,7 @@ def test_corrupt_identity_columns_are_not_accepted(
     record_body(repo)
     first = receipt()
     repo.save_artifact_read(first)
-    with sqlite3.connect(tmp_path / "state.db") as connection:
+    with closing(sqlite3.connect(tmp_path / "state.db")) as connection, connection:
         connection.execute("UPDATE artifact_reads SET requested_url=?", (URL + "?changed=1",))
 
     with pytest.raises(ValueError, match="columns differ"):

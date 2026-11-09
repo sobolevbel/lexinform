@@ -6,6 +6,7 @@ import hashlib
 import json
 import sqlite3
 import tempfile
+from contextlib import ExitStack, closing
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -27,11 +28,11 @@ def audit(dump: Path, output: Path, ref: str) -> None:
     output.mkdir(parents=True, exist_ok=True)
     raw = dump.read_text()
     reports: list[dict[str, object]] = []
-    with tempfile.TemporaryDirectory() as work:
+    with tempfile.TemporaryDirectory() as work, ExitStack() as stack:
         path = Path(work) / "copy.db"
-        repo = SqliteBillRepository(path)
+        repo = stack.enter_context(closing(SqliteBillRepository(path)))
         repo.restore(raw)
-        with sqlite3.connect(path) as conn:
+        with closing(sqlite3.connect(path)) as conn:
             channels = [
                 row[0]
                 for row in conn.execute(

@@ -1,5 +1,6 @@
 import hashlib
 import sqlite3
+from collections.abc import Iterator
 from contextlib import closing
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -38,6 +39,12 @@ from tests.unit.test_physical_extraction import archive, docx, extractor
 NOW = datetime(2026, 10, 28, tzinfo=UTC)
 URL = "https://api.test/draft.docx"
 TEXT = "USTAWA\nArt. 1. Cudzoziemiec składa wniosek osobiście. " * 30
+
+
+@pytest.fixture
+def repo(tmp_path: Path) -> Iterator[SqliteBillRepository]:
+    with closing(repository(tmp_path)) as instance:
+        yield instance
 
 
 def repository(tmp_path: Path) -> SqliteBillRepository:
@@ -208,13 +215,13 @@ def test_custom_extractors_keep_the_legacy_loader_contract() -> None:
 
 
 def test_source_transaction_retains_one_result_across_urls_checks_and_restore(
+    repo: SqliteBillRepository,
     tmp_path: Path,
 ) -> None:
     data = docx(TEXT)
     other = URL + "?alias=1"
     gateway = FakeSejmGateway(files={URL: data, other: data})
     loader = TextLoader({"api.test": gateway.download}, extractor(), max_bytes=100_000)
-    repo = repository(tmp_path)
     result_ids: set[str] = set()
     for url in (URL, other):
         document, loaded = loader.select_document(TextDocument(url=url, kind="print"))
@@ -247,14 +254,15 @@ def test_source_transaction_retains_one_result_across_urls_checks_and_restore(
     assert repo.dump() == before
     repo.restore(before)
     assert repo.get_extraction_result(result_id) == retained
-    with sqlite3.connect(tmp_path / "state.db") as connection:
+    with closing(sqlite3.connect(tmp_path / "state.db")) as connection, connection:
         assert connection.execute("SELECT count(*) FROM extraction_results").fetchone() == (1,)
         assert connection.execute("PRAGMA integrity_check").fetchone() == ("ok",)
         assert not connection.execute("PRAGMA foreign_key_check").fetchall()
 
 
-def test_parent_validation_and_caller_rollback_prevent_dangling_results(tmp_path: Path) -> None:
-    repo = repository(tmp_path)
+def test_parent_validation_and_caller_rollback_prevent_dangling_results(
+    repo: SqliteBillRepository,
+) -> None:
     observed = extractor().extract_document_with_provenance(docx(TEXT))
     result = observed.result
     before = repo.dump()
@@ -271,8 +279,7 @@ def test_parent_validation_and_caller_rollback_prevent_dangling_results(tmp_path
     assert repo.dump() == before
 
 
-def test_result_link_refuses_an_unrelated_outer_body(tmp_path: Path) -> None:
-    repo = repository(tmp_path)
+def test_result_link_refuses_an_unrelated_outer_body(repo: SqliteBillRepository) -> None:
     observed = extractor().extract_document_with_provenance(docx(TEXT))
     result = observed.result
     repo.save_artifact_metadata(
@@ -301,21 +308,24 @@ def test_result_link_refuses_an_unrelated_outer_body(tmp_path: Path) -> None:
         )
 
 
-def test_corrupt_sql_result_identity_is_not_silently_accepted(tmp_path: Path) -> None:
-    repo = repository(tmp_path)
+def test_corrupt_sql_result_identity_is_not_silently_accepted(
+    repo: SqliteBillRepository, tmp_path: Path
+) -> None:
     result = extractor().extract_document_with_provenance(docx(TEXT)).result
     repo.save_artifact_metadata(
         ArtifactMetadata(sha256=result.artifact_sha256, byte_size=1, recorded_at=NOW)
     )
     repo.save_extraction_result(result, recorded_at=NOW)
-    with sqlite3.connect(tmp_path / "state.db") as connection:
+    with closing(sqlite3.connect(tmp_path / "state.db")) as connection, connection:
         connection.execute("UPDATE extraction_results SET artifact_sha256=?", ("b" * 64,))
 
     with pytest.raises(ValueError, match="columns differ"):
         repo.get_extraction_result(result.result_id)
 
 
-def test_pdf_page_map_round_trips_and_rejects_out_of_bounds_pages(tmp_path: Path) -> None:
+def test_pdf_page_map_round_trips_and_rejects_out_of_bounds_pages(
+    repo: SqliteBillRepository,
+) -> None:
     data = (FIXTURES / "print_3039.pdf").read_bytes()
     reader = DocumentTextExtractor(PypdfTextExtractor(), DocxTextExtractor(), DocTextExtractor())
     result = reader.extract_document_with_provenance(data).result
@@ -345,7 +355,6 @@ def test_pdf_page_map_round_trips_and_rejects_out_of_bounds_pages(tmp_path: Path
     with pytest.raises(ValueError, match="ordered and disjoint"):
         PdfPageMap(pages=(page, page))
 
-    repo = repository(tmp_path)
     repo.save_artifact_metadata(
         ArtifactMetadata(sha256=result.artifact_sha256, byte_size=len(data), recorded_at=NOW)
     )

@@ -1,4 +1,5 @@
 import sqlite3
+from contextlib import closing
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -89,7 +90,7 @@ def test_get_ready_memo_cost_restore_and_cleanup_read_the_same_public_projection
             }
         }
     )
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         connection.execute(
             "UPDATE bills SET analysis_json=?, ready_analysis_json=?",
             (
@@ -115,7 +116,7 @@ def test_get_ready_memo_cost_restore_and_cleanup_read_the_same_public_projection
         assert repo.most_expensive_analyses(limit=1)[0].analysis == current
         assert repo.dump() == before
     snapshot = tmp_path / "snapshot.db"
-    with sqlite3.connect(snapshot) as connection:
+    with closing(sqlite3.connect(snapshot)) as connection, connection:
         connection.executescript(repo.dump())
     assert audit(snapshot)["summary"]["errors"] == 0
     repo.prune_history(before=NOW + timedelta(days=300), memo_before=NOW + timedelta(days=300))
@@ -135,14 +136,14 @@ def test_corrupt_reference_doctor_and_restore_preserve_existing_database(
     result = retained_result("analysis")
     repo.save_computation_result(result)
     malformed = reference(result).model_copy(update={"retained_record_sha256": "b" * 64})
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         connection.execute("UPDATE bills SET analysis_json=?", (malformed.model_dump_json(),))
     with pytest.raises(PrimaryProjectionError):
         repo.get(10, "3039")
     with pytest.raises(PrimaryProjectionError):
         repo.most_expensive_analyses(limit=1)
     snapshot = tmp_path / "broken-snapshot.db"
-    with sqlite3.connect(snapshot) as connection:
+    with closing(sqlite3.connect(snapshot)) as connection, connection:
         connection.executescript(repo.dump())
     report = audit(snapshot)
     assert any(item["code"] == "invalid_modern_primary_projection" for item in report["findings"])
@@ -185,7 +186,7 @@ def test_equal_public_resave_keeps_generation_with_same_owner_reference_writer(
     repo.save_computation_result(result)
     repo.save_analysis(10, "3039", result.record)
     before = repo.get(10, "3039")
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         connection.execute(
             "UPDATE bills SET analysis_json=?", (reference(result).model_dump_json(),)
         )
@@ -196,7 +197,7 @@ def test_equal_public_resave_keeps_generation_with_same_owner_reference_writer(
         after.analysis_generation == before.analysis_generation
         and after.analysis == before.analysis
     )
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         raw = connection.execute("SELECT analysis_json FROM bills").fetchone()[0]
         assert "modern_primary_ref" in raw
         assert not list(primary_projection_issues(connection))
@@ -218,7 +219,7 @@ def test_native_link_alias_with_source_receipt_allows_foreign_current_ref(
     assert isinstance(result.record, AnalysisRecord), "the source paid result is primary"
     repo.save_computation_result(result)
     apply_analysis(repo, 10, source, result.record, now=NOW)
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         connection.execute(
             "UPDATE bills SET analysis_json=? WHERE number='3039'",
             (reference(result).model_dump_json(),),
@@ -234,7 +235,7 @@ def test_native_link_alias_with_source_receipt_allows_foreign_current_ref(
     assert repo.list_tracked(
         CHANNEL, closed_grace_days=30, pending_decision_max_days=365, now=NOW
     ) == [target]
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         connection.execute(
             "UPDATE result_applications SET application_json=json_set(application_json, "
             "'$.number', 'foreign') WHERE number=?",
@@ -260,7 +261,7 @@ def test_first_foreign_application_remains_inline_before_link_alias_or_receipt(
     target = repo.get(10, "3039")
     assert target is not None and target.analysis == result.record
     assert repo.list_result_applications(10, "3039")
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         raw = connection.execute("SELECT analysis_json FROM bills").fetchone()[0]
         assert "modern_primary_ref" not in raw
     repo.close()
@@ -298,7 +299,7 @@ def test_actual_ready_move_uses_collection_receipt_only_after_known_link(
         )
     )
     if compact:
-        with sqlite3.connect(path) as connection:
+        with closing(sqlite3.connect(path)) as connection, connection:
             value = ready.model_dump(mode="json")
             value["record"] = reference(result).model_dump(mode="json")
             connection.execute(
@@ -323,11 +324,11 @@ def test_actual_ready_move_uses_collection_receipt_only_after_known_link(
         CHANNEL, closed_grace_days=30, pending_decision_max_days=365, now=NOW
     ) == [target]
     if compact:
-        with sqlite3.connect(path) as connection:
+        with closing(sqlite3.connect(path)) as connection, connection:
             connection.execute("UPDATE bills SET analysis_generation=1 WHERE number='3039'")
         with pytest.raises(PrimaryProjectionError, match="generation"):
             repo.get(10, "3039")
-        with sqlite3.connect(path) as connection:
+        with closing(sqlite3.connect(path)) as connection, connection:
             connection.execute("UPDATE bills SET analysis_generation=0 WHERE number='3039'")
             connection.execute("DELETE FROM result_applications")
         with pytest.raises(PrimaryProjectionError, match="owner bridge"):

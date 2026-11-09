@@ -250,7 +250,7 @@ def test_corrupt_current_owner_receipt_rejects_before_prepare(
     with closing(SqliteBillRepository(str(path))) as repo:
         case = prepared(repo, "RCL/123", "consultation_review")
         original, encoded = replace_and_clean(case)
-        with sqlite3.connect(path) as connection:
+        with closing(sqlite3.connect(path)) as connection, connection:
             connection.execute("PRAGMA ignore_check_constraints=ON")
             row = connection.execute(
                 "SELECT id, application_json FROM result_applications WHERE term=11 AND result_id=?",
@@ -305,7 +305,7 @@ def test_unproven_or_changed_review_uses_ordinary_prepare(tmp_path: Path, unknow
         original, encoded = replace_and_clean(case)
         context = original.context
         if unknown in ("missing_receipt", "opaque_address"):
-            with sqlite3.connect(path) as connection:
+            with closing(sqlite3.connect(path)) as connection, connection:
                 if unknown == "missing_receipt":
                     connection.execute(
                         "DELETE FROM result_applications WHERE term=11 AND result_id=?",
@@ -395,7 +395,7 @@ def test_known_same_number_rollover_receipt_cannot_name_another_government_resul
         assert other.computation_id is not None, (
             "the second government review is actually collected"
         )
-        with sqlite3.connect(path) as connection:
+        with closing(sqlite3.connect(path)) as connection, connection:
             row = connection.execute(
                 "SELECT id, application_json FROM result_applications WHERE term=11 AND result_id=?",
                 (original.computation_id,),

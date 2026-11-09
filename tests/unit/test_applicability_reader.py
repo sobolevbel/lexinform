@@ -1,6 +1,7 @@
 import datetime as dt
 import sqlite3
 from collections.abc import Iterator
+from contextlib import closing
 from pathlib import Path
 
 import pytest
@@ -121,7 +122,7 @@ def test_reader_rejects_disagreement_between_sql_and_recorded_identity(
     observation = captured()
     repository.save_applicability_observation(observation)
     repository.close()
-    with sqlite3.connect(path) as database:
+    with closing(sqlite3.connect(path)) as database, database:
         if column in ("observation_id", "result_id"):
             database.execute(f"UPDATE result_applicability SET {column}='changed'")
         elif column == "term":

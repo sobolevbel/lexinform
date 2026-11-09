@@ -2,14 +2,18 @@ import datetime as dt
 import json
 from pathlib import Path
 
+import pytest
 from tools.message_usefulness_audit import audit
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models import DeliveryPlan, Publication, PublicationKind, PublicationStatus
 
 
-def test_audit_preserves_frozen_text_and_excludes_missing_history(tmp_path: Path) -> None:
+def test_audit_preserves_frozen_text_and_excludes_missing_history(
+    request: pytest.FixtureRequest, tmp_path: Path
+) -> None:
     repo = SqliteBillRepository(":memory:")
+    request.addfinalizer(repo.close)
     repo.migrate()
     for number, plan in (
         ("DIGEST", DeliveryPlan(bill_json="", rendered_text="saved text")),

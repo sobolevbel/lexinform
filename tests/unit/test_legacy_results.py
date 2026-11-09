@@ -2,6 +2,7 @@ import gzip
 import hashlib
 import json
 import sqlite3
+from contextlib import closing
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import cast
@@ -139,38 +140,41 @@ def test_corrupt_shared_bodies_are_not_exposed_as_original_values(body: str) -> 
 
 
 def test_repository_reads_optional_shared_layout_and_rejects_corruption_on_restore(
+    request: pytest.FixtureRequest,
     tmp_path: Path,
 ) -> None:
     path = tmp_path / "shared.db"
     repo = SqliteBillRepository(path)
+    request.addfinalizer(repo.close)
     repo.migrate()
     value = saved_value()
-    request = imported(value)
-    repo.import_legacy_results(request)
+    import_request = imported(value)
+    repo.import_legacy_results(import_request)
     envelope = decoded(value)
     body = canonical_legacy_json(envelope.pop("analysis"))
     body_sha = hashlib.sha256(body.encode()).hexdigest()
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         connection.execute("INSERT INTO legacy_analysis_bodies VALUES (?, ?)", (body_sha, body))
         connection.execute(
             "UPDATE legacy_result_values SET envelope_json = ?, analysis_body_sha256 = ? WHERE value_id = ?",
             (canonical_legacy_json(envelope), body_sha, value.value_id),
         )
     assert repo.get_legacy_result(value.value_id) == value
-    assert not repo.import_legacy_results(request)
-    assert repo.list_legacy_result_occurrences(10, "3039") == list(request.occurrences)
+    assert not repo.import_legacy_results(import_request)
+    assert repo.list_legacy_result_occurrences(10, "3039") == list(import_request.occurrences)
     restored = SqliteBillRepository(":memory:")
+    request.addfinalizer(restored.close)
     restored.restore(repo.dump())
     assert restored.get_legacy_result(value.value_id) == value
     before = restored.dump()
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         connection.execute(
             "UPDATE legacy_analysis_bodies SET body_json = '{}' WHERE body_sha256 = ?", (body_sha,)
         )
     with pytest.raises(ValueError, match="checksum"):
         repo.get_legacy_result(value.value_id)
     with pytest.raises(ValueError, match="checksum"):
-        repo.import_legacy_results(request)
+        repo.import_legacy_results(import_request)
     with pytest.raises(ValueError, match="checksum"):
         restored.restore(repo.dump())
     assert restored.dump() == before
@@ -423,29 +427,33 @@ def test_restore_rejects_tampered_legacy_import_before_replacing_state(
     assert repo.dump() == before
 
 
-def test_same_manifest_reimport_rejects_corrupt_existing_rows(tmp_path: Path) -> None:
+def test_same_manifest_reimport_rejects_corrupt_existing_rows(
+    request: pytest.FixtureRequest, tmp_path: Path
+) -> None:
     path = tmp_path / "legacy.db"
     repo = SqliteBillRepository(path)
+    request.addfinalizer(repo.close)
     repo.migrate()
     value = saved_value()
-    request = imported(value)
-    assert repo.import_legacy_results(request)
-    assert not repo.import_legacy_results(request)
-    with sqlite3.connect(path) as connection:
+    import_request = imported(value)
+    assert repo.import_legacy_results(import_request)
+    assert not repo.import_legacy_results(import_request)
+    with closing(sqlite3.connect(path)) as connection, connection:
         connection.execute(
             "UPDATE legacy_result_occurrences SET value_id = ?",
             ("legacy-value-v1:" + "f" * 64,),
         )
 
     with pytest.raises(ValueError, match="broken reference"):
-        repo.import_legacy_results(request)
+        repo.import_legacy_results(import_request)
 
 
 def test_bridge_reader_materializes_bill_memo_and_restored_dump(
-    tmp_path: Path, process_3039: ProcessDetail
+    request: pytest.FixtureRequest, tmp_path: Path, process_3039: ProcessDetail
 ) -> None:
     path = tmp_path / "bridge.db"
     repo = SqliteBillRepository(path)
+    request.addfinalizer(repo.close)
     repo.migrate()
     repo.upsert_summary(process_3039, now=NOW)
     analysis = AnalysisRecord(
@@ -463,7 +471,7 @@ def test_bridge_reader_materializes_bill_memo_and_restored_dump(
     )
     repo.import_legacy_results(imported(value))
     marker = json.dumps({"legacy_result_ref": value.value_id})
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         connection.execute(
             "UPDATE bills SET analysis_json = ? WHERE term = 10 AND number = '3039'", (marker,)
         )
@@ -476,6 +484,7 @@ def test_bridge_reader_materializes_bill_memo_and_restored_dump(
     dump = repo.dump()
     assert marker in dump
     restored = SqliteBillRepository(":memory:")
+    request.addfinalizer(restored.close)
     restored.restore(dump)
     restored_bill = restored.get(10, "3039")
     assert restored_bill is not None and restored_bill.analysis == analysis

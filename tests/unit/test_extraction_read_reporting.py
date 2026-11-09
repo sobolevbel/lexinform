@@ -1,6 +1,7 @@
 import datetime as dt
 import sqlite3
 import threading
+from contextlib import closing
 
 import pytest
 
@@ -26,7 +27,7 @@ def reader() -> tuple[TextLoader, TextDocument, FakeSejmGateway]:
 
 
 def inventory_rows(repo: SqliteBillRepository) -> str:
-    with sqlite3.connect(":memory:") as connection:
+    with closing(sqlite3.connect(":memory:")) as connection, connection:
         connection.executescript(repo.dump())
         return "\n".join(
             row

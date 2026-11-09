@@ -2,6 +2,7 @@ import datetime as dt
 import json
 import sqlite3
 from collections.abc import Iterator
+from contextlib import closing
 from pathlib import Path
 
 import pytest
@@ -246,7 +247,7 @@ def test_reader_rejects_mismatched_sql_identity_columns(
 ) -> None:
     value = version()
     record(repo, value)
-    with sqlite3.connect(tmp_path / "content.db") as connection:
+    with closing(sqlite3.connect(tmp_path / "content.db")) as connection, connection:
         connection.execute("UPDATE content_versions SET root_publication_id=2")
     with pytest.raises(ValueError, match="columns"):
         repo.get_content_version(value.content_id)

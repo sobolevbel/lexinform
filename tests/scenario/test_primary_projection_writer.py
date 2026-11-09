@@ -1,4 +1,5 @@
 import sqlite3
+from contextlib import closing
 from datetime import datetime
 
 import pytest
@@ -28,7 +29,7 @@ def test_production_primary_batch_writes_compact_current_and_memo_without_anothe
         "the applied analysis retains a primary result"
     )
     applications = world.repo.list_result_applications(10, "3039")
-    with sqlite3.connect(":memory:") as connection:
+    with closing(sqlite3.connect(":memory:")) as connection:
         connection.executescript(world.repo.dump())
         current = connection.execute("SELECT analysis_json FROM bills").fetchone()[0]
         memos = connection.execute("SELECT record_json FROM analysis_memo").fetchall()
@@ -44,7 +45,7 @@ def test_production_primary_batch_writes_compact_current_and_memo_without_anothe
     assert len(world.publisher.new_bills) == 1
     assert world.repo.get_computation_result(paid.result_id) == paid
     assert world.repo.list_result_applications(10, "3039") == applications
-    with sqlite3.connect(":memory:") as connection:
+    with closing(sqlite3.connect(":memory:")) as connection:
         connection.executescript(world.repo.dump())
         saved_paid = connection.execute(
             "SELECT result_json FROM computation_results WHERE result_id=?", (paid.result_id,)
@@ -91,7 +92,7 @@ def test_primary_memo_sql_failure_rolls_back_collection_before_any_paid_charge(
     assert bill.status is BillStatus.BATCH_PENDING and bill.ready_analysis is None
     item = world.repo.list_llm_batch_items(batch_id)[0]
     assert item.consumed_at is None and item.result is None
-    with sqlite3.connect(":memory:") as connection:
+    with closing(sqlite3.connect(":memory:")) as connection:
         connection.executescript(world.repo.dump())
         assert connection.execute("SELECT accounted_at FROM llm_batch_items").fetchone()[0] is None
     assert not analysis.calls and not world.publisher.new_bills
@@ -104,7 +105,7 @@ def test_primary_memo_sql_failure_rolls_back_collection_before_any_paid_charge(
     assert len(world.repo.list_computation_results(10, "3039")) == 1
     assert len(world.repo.list_result_applications(10, "3039")) == 1
     assert len(analysis.calls) == 1
-    with sqlite3.connect(":memory:") as connection:
+    with closing(sqlite3.connect(":memory:")) as connection:
         connection.executescript(world.repo.dump())
         ready = connection.execute("SELECT ready_analysis_json FROM bills").fetchone()[0]
         memo = connection.execute("SELECT record_json FROM analysis_memo").fetchone()[0]

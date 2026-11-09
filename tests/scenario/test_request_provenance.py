@@ -1,6 +1,7 @@
 import json
 import sqlite3
 from collections.abc import Sequence
+from contextlib import closing
 from pathlib import Path
 from typing import Literal
 
@@ -32,7 +33,7 @@ Answer = AmendmentsRecord | SupplementRecord | JointRecord | NameRecord | Docume
 
 
 def retained_item(world: World, batch_id: str) -> tuple[dict[str, object], dict[str, object]]:
-    with sqlite3.connect(":memory:") as database:
+    with closing(sqlite3.connect(":memory:")) as database:
         database.executescript(world.repo.dump())
         row = database.execute(
             "SELECT meta_json, result_json FROM llm_batch_items WHERE batch_id = ?", (batch_id,)

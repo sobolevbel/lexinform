@@ -235,7 +235,7 @@ def seed_repository(
     if opaque:
         raw["unknown"] = {"null": None, "exact": [0, False, ""]}
     other = {**raw, "source_checked_at": "2026-01-02T00:00:00Z"}
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         connection.execute("UPDATE bills SET analysis_json=?", (json.dumps(raw),))
         connection.execute(
             "INSERT INTO analysis_memo(key,record_json) VALUES ('memo',?)", (json.dumps(other),)
@@ -244,7 +244,7 @@ def seed_repository(
 
 
 def counts(path: Path) -> tuple[int, ...]:
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         return tuple(
             connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
             for table in (
@@ -357,7 +357,7 @@ def test_budget_failure_rolls_back_import_sharing_and_replacements(tmp_path: Pat
 def test_physical_cas_failure_rolls_back_nested_import(tmp_path: Path) -> None:
     path = tmp_path / "cas.db"
     repo = seed_repository(path)
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         connection.execute(
             "CREATE TRIGGER ignore_projection BEFORE UPDATE OF analysis_json ON bills"
             " BEGIN SELECT RAISE(IGNORE); END"
@@ -373,7 +373,7 @@ def test_physical_cas_failure_rolls_back_nested_import(tmp_path: Path) -> None:
 def test_unrelated_broken_foreign_key_rolls_back_the_candidate(tmp_path: Path) -> None:
     path = tmp_path / "fk.db"
     repo = seed_repository(path)
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         connection.execute("INSERT INTO publication_content VALUES (1,'missing-content')")
     before = repo.dump()
     plan = repo.plan_legacy_maintenance(imported_at=NOW)
@@ -386,7 +386,7 @@ def test_unrelated_broken_foreign_key_rolls_back_the_candidate(tmp_path: Path) -
 def test_invalid_existing_reader_model_blocks_import_before_writes(tmp_path: Path) -> None:
     path = tmp_path / "model.db"
     repo = seed_repository(path)
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         connection.execute("UPDATE bills SET analysis_json='{}'")
     before = repo.dump()
     plan = repo.plan_legacy_maintenance(imported_at=NOW)
@@ -431,7 +431,7 @@ def test_corrupted_existing_archive_blocks_noop(tmp_path: Path) -> None:
     repo = seed_repository(path)
     plan = repo.plan_legacy_maintenance(imported_at=NOW)
     repo.apply_legacy_maintenance(plan)
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         connection.execute("UPDATE legacy_analysis_bodies SET body_json='{}'")
     with pytest.raises(ValueError, match="checksum"):
         repo.plan_legacy_maintenance(imported_at=NOW)
@@ -448,7 +448,7 @@ def test_analysis_quiet_refresh_preserves_original_import_counts(tmp_path: Path)
     assert bill is not None and bill.analysis is not None, "the seeded bill has an analysis"
     record = bill.analysis.model_copy(update={"source_checked_at": NOW + timedelta(days=1)})
     repo.save_analysis(10, "3039", record)
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection, connection:
         saved = cast(str, connection.execute("SELECT analysis_json FROM bills").fetchone()[0])
     assert "legacy_result_ref" in saved
     assert counts(path) == (1, 2, 2, 1)
