@@ -12,7 +12,7 @@ from tempfile import TemporaryDirectory
 from time import monotonic
 from uuid import uuid4
 
-from lexinform.adapters.state_snapshot import MANIFEST_NAME, write_state_snapshot
+from lexinform.adapters.state_snapshot import MANIFEST_NAME, pending_manifest, write_state_snapshot
 from lexinform.errors import StateCheckpointError
 from lexinform.log_context import log_extra
 from lexinform.models import LlmBatch
@@ -115,6 +115,7 @@ class GitStateCheckpoint:
         self._message = message
         self._expected: str | None = None
         self._initialized = False
+        self._owned_intent_token: str | None = None
 
     def __call__(self) -> None:
         metrics = _CheckpointMetrics()
@@ -125,6 +126,7 @@ class GitStateCheckpoint:
             metrics.log()
 
     def _checkpoint(self, metrics: _CheckpointMetrics) -> None:
+        verified_snapshot = None
         with metrics.measure("preflight"):
             self._git("check-ref-format", "--branch", self._branch)
             intent_path = Path(
@@ -133,8 +135,18 @@ class GitStateCheckpoint:
             head = self._head()
             intent = _CheckpointIntent.read(intent_path)
             if intent is not None:
-                self._resume(intent, head, metrics)
-                self._clear_intent(intent_path)
+                recovered = self._resume(intent, head, metrics)
+                owns_intent = intent.token == self._owned_intent_token
+                if not owns_intent:
+                    verified_snapshot = self._verify_recovered_snapshot(recovered, metrics)
+                if recovered is not None:
+                    self._clear_intent(intent_path)
+                    intent = None
+                    self._expected = recovered
+                    if not owns_intent:
+                        self._initialized = True
+                        metrics.changed = False
+                        return
             if not self._initialized:
                 self._expected = head
                 self._initialized = True
@@ -143,11 +155,17 @@ class GitStateCheckpoint:
             if self._remote_head() != self._expected:
                 raise StateCheckpointError("state checkpoint failed: remote baseline changed")
         try:
-            with metrics.measure("dump"):
-                dump = self._dump()
+            if verified_snapshot is None:
+                with metrics.measure("dump"):
+                    dump = self._dump()
+            else:
+                dump = verified_snapshot[0]
             with metrics.measure("snapshot"):
-                write_state_snapshot(self._path, dump, self._pending_batches())
-                del dump
+                batches = (
+                    self._pending_batches() if verified_snapshot is None else verified_snapshot[1]
+                )
+                write_state_snapshot(self._path, dump, batches)
+            del dump, verified_snapshot
         except Exception as exc:
             raise StateCheckpointError(
                 "state checkpoint failed: snapshot could not be written"
@@ -162,10 +180,12 @@ class GitStateCheckpoint:
             changed = self._run("diff", "--cached", "--quiet", "--", *names, allowed=(0, 1))
             metrics.changed = bool(changed.returncode)
             if changed.returncode:
-                intent = _CheckpointIntent(
-                    self._expected, self._branch, self._path.name, uuid4().hex
-                )
-                intent.write(intent_path)
+                if intent is None:
+                    intent = _CheckpointIntent(
+                        self._expected, self._branch, self._path.name, uuid4().hex
+                    )
+                    intent.write(intent_path)
+                    self._owned_intent_token = intent.token
                 self._git(
                     "-c",
                     "user.name=github-actions[bot]",
@@ -185,13 +205,13 @@ class GitStateCheckpoint:
                 raise StateCheckpointError("state checkpoint failed: snapshot has no commit")
         with metrics.measure("push"):
             self._push(prepared, self._expected, metrics)
-            if changed.returncode:
+            if intent is not None:
                 self._clear_intent(intent_path)
         self._expected = prepared
 
     def _resume(
         self, intent: _CheckpointIntent, head: str | None, metrics: _CheckpointMetrics
-    ) -> None:
+    ) -> str | None:
         if (intent.branch, intent.snapshot) != (self._branch, self._path.name) or (
             self._initialized and intent.baseline != self._expected
         ):
@@ -202,7 +222,7 @@ class GitStateCheckpoint:
         if head == intent.baseline:
             if remote != head:
                 raise StateCheckpointError("state checkpoint failed: remote baseline changed")
-            return
+            return None
         if head is None:
             raise StateCheckpointError("state checkpoint failed: local baseline changed")
         parent, _, body = self._git("show", "-s", "--format=%P%n%B", head).partition("\n")
@@ -222,16 +242,44 @@ class GitStateCheckpoint:
         elif remote != head:
             raise StateCheckpointError("state checkpoint failed: remote baseline changed")
         metrics.reconciled_push = True
-        self._expected = head
+        return head
 
-    @staticmethod
-    def _clear_intent(path: Path) -> None:
+    def _verify_recovered_snapshot(
+        self, commit: str | None, metrics: _CheckpointMetrics
+    ) -> tuple[str, list[LlmBatch]]:
+        """A writer without the original intent must prove its database matches the snapshot."""
+        try:
+            with metrics.measure("dump"):
+                dump = self._dump()
+                batches = self._pending_batches()
+                manifest = pending_manifest(batches)
+        except Exception as exc:
+            raise StateCheckpointError(
+                "state checkpoint failed: snapshot could not be read"
+            ) from exc
+        prefix = f"{commit or ''}:"
+        stored = tuple(
+            self._git("rev-parse", "--verify", f"{prefix}{name}").strip()
+            for name in (self._path.name, MANIFEST_NAME)
+        )
+        current = tuple(
+            self._run("hash-object", "--stdin", input_text=value).stdout.strip()
+            for value in (dump, manifest)
+        )
+        if stored != current:
+            raise StateCheckpointError(
+                "state checkpoint failed: restore the prepared snapshot before writing again"
+            )
+        return dump, batches
+
+    def _clear_intent(self, path: Path) -> None:
         try:
             path.unlink()
         except OSError as exc:
             raise StateCheckpointError(
                 "state checkpoint failed: could not clear local intent"
             ) from exc
+        self._owned_intent_token = None
 
     def _push(self, prepared: str, baseline: str | None, metrics: _CheckpointMetrics) -> None:
         target = f"refs/heads/{self._branch}"
@@ -264,12 +312,15 @@ class GitStateCheckpoint:
     def _git(self, *args: str) -> str:
         return self._run(*args).stdout
 
-    def _run(self, *args: str, allowed: tuple[int, ...] = (0,)) -> subprocess.CompletedProcess[str]:
+    def _run(
+        self, *args: str, allowed: tuple[int, ...] = (0,), input_text: str | None = None
+    ) -> subprocess.CompletedProcess[str]:
         try:
             result = subprocess.run(
                 ["git", "-C", str(self._path.parent), *args],
                 capture_output=True,
-                text=True,
+                encoding="utf-8",
+                input=input_text,
                 timeout=60,
                 check=False,
             )

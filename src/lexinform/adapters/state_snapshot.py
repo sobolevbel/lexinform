@@ -8,11 +8,15 @@ from lexinform.models import LlmBatch, PendingBatch, PendingBatches
 MANIFEST_NAME = "pending-batches.json"
 
 
-def write_state_snapshot(path: Path, dump: str, batches: Sequence[LlmBatch]) -> None:
+def pending_manifest(batches: Sequence[LlmBatch]) -> str:
     manifest = PendingBatches(
         version=1, batches=[PendingBatch(batch_id=b.batch_id, provider=b.provider) for b in batches]
     )
-    payloads = {path: dump, path.with_name(MANIFEST_NAME): manifest.model_dump_json() + "\n"}
+    return manifest.model_dump_json() + "\n"
+
+
+def write_state_snapshot(path: Path, dump: str, batches: Sequence[LlmBatch]) -> None:
+    payloads = {path: dump, path.with_name(MANIFEST_NAME): pending_manifest(batches)}
     path.parent.mkdir(parents=True, exist_ok=True)
     for target, payload in payloads.items():
         temporary = target.with_suffix(target.suffix + ".tmp")

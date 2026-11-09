@@ -164,10 +164,7 @@ def test_rejected_snapshot_is_preserved_locally_without_changing_the_remote(tmp_
     assert (local / "state.sql").read_text() == "-- unsaved\n"
 
 
-@pytest.mark.parametrize("fresh_writer", [False, True])
-def test_retry_pushes_the_owned_snapshot_before_preparing_new_state(
-    tmp_path: Path, fresh_writer: bool
-) -> None:
+def test_original_writer_recovers_before_preparing_new_state(tmp_path: Path) -> None:
     remote, local, _ = state_writer(tmp_path)
     hook = local / ".git" / "hooks" / "pre-push"
     hook.write_text('#!/bin/sh\nrm "$0"\nexit 1\n')
@@ -178,14 +175,55 @@ def test_retry_pushes_the_owned_snapshot_before_preparing_new_state(
         checkpoint()
     prepared = git(local, "rev-parse", "HEAD")
     payload = "-- later work\n"
-    if fresh_writer:
-        checkpoint = GitStateCheckpoint(lambda: payload, local / "state.sql", "state", lambda: [])
-
     checkpoint()
 
     assert git(remote, "rev-parse", "state^") == prepared
     assert git(remote, "show", f"{prepared}:state.sql") == "-- known receipt"
     assert git(remote, "show", "state:state.sql") == "-- later work"
+
+
+@pytest.mark.parametrize("failure_point", ["pre-push", "pre-commit"])
+@pytest.mark.parametrize("already_initialized", [False, True])
+def test_other_writer_requires_the_prepared_database_after_failure(
+    tmp_path: Path, failure_point: str, already_initialized: bool
+) -> None:
+    remote, local, _ = state_writer(tmp_path)
+    baseline = git(remote, "rev-parse", "state")
+    snapshot = local / "state.sql"
+    payload = "-- original\n"
+    reads: list[str] = []
+
+    def dump_other() -> str:
+        reads.append(payload)
+        return payload
+
+    other = GitStateCheckpoint(dump_other, snapshot, "state", lambda: [])
+    if already_initialized:
+        other()
+    hook = local / ".git" / "hooks" / failure_point
+    hook.write_text('#!/bin/sh\nrm "$0"\nexit 1\n')
+    hook.chmod(0o755)
+    receipt = "-- known receipt\n"
+    original = GitStateCheckpoint(lambda: receipt, snapshot, "state", lambda: [])
+    with pytest.raises(StateCheckpointError):
+        original()
+    prepared = git(local, "rev-parse", "HEAD")
+    assert git(remote, "rev-parse", "state") == baseline
+
+    for _ in range(2):
+        with pytest.raises(StateCheckpointError, match="restore the prepared snapshot"):
+            other()
+    assert git(remote, "rev-parse", "state") == prepared
+    assert snapshot.read_text() == receipt
+    assert (local / ".git/lexinform-state-checkpoint").exists()
+
+    payload = receipt
+    reads.clear()
+    other()
+    assert reads == [receipt]
+    assert git(remote, "show", "state:state.sql") == receipt.rstrip()
+    assert git(remote, "rev-list", "--count", "state") == "2"
+    assert not (local / ".git/lexinform-state-checkpoint").exists()
 
 
 def test_fresh_writer_refuses_a_foreign_local_commit_after_preparing_state(tmp_path: Path) -> None:
