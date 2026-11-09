@@ -29,7 +29,7 @@ from lexinform.models.input_receipts import (
     RclPairedArchiveInputReceipt,
 )
 from lexinform.models.reviews import ReviewDocument
-from lexinform.primary_claim_input import multipart_claim_part_role
+from lexinform.primary_claim_input import multipart_claim_part_role, multipart_claim_span_role
 from lexinform.primary_claims import validate_retained_claim_citation
 
 MAX_TECHNICAL_CLAIM_RECEIPTS_PER_RESULT = 32
@@ -39,7 +39,10 @@ MAX_TECHNICAL_CLAIM_RECEIPTS_PER_RESULT = 32
 class CheckedPrimaryClaimReceipt:
     receipt: PrimaryClaimTechnicalReceipt
     verification: Literal[
-        "exact_retained_input", "submitted_input_unavailable", "checkpoint_required"
+        "exact_retained_input",
+        "submitted_input_unavailable",
+        "checkpoint_required",
+        "source_role_unverified",
     ]
 
 
@@ -228,6 +231,11 @@ def _verify_receipt(
     checked = validate_retained_claim_citation(record, receipt.evidence, (document,))
     if checked.status != "quote_present" or checked.observed_text_span != receipt.submitted_span:
         raise ValueError("technical claim receipt differs from its exact literal citation")
+    if (
+        isinstance(prepared, MultipartTextInputReceipt)
+        and multipart_claim_span_role(prepared, receipt.submitted_span) != "normative"
+    ):
+        return CheckedPrimaryClaimReceipt(receipt, "source_role_unverified")
     status: Literal["checkpoint_required", "exact_retained_input"] = (
         "checkpoint_required"
         if receipt.input_checkpoint_sha256 is not None

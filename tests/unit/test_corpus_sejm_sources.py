@@ -83,7 +83,14 @@ def test_catalogue_keeps_parent_occurrences_and_requires_explicit_snapshot_membe
     assert data["diff"] == {"added": ["1-s"], "changed": [], "removed": []}
     assert data["observations"]["rpw:RPW/3/2026"]["reserved_holdout"]
     assert verify(plan)["status"] == "recorded"
-    (corpus / "sejm/snapshots/2026-10-25/term10").mkdir(parents=True)
+    destination = corpus / "sejm/snapshots/2026-10-25/term10"
+    destination.mkdir(parents=True)
+    target_listing = destination / "prints.json"
+    target_listing.write_text("[]")
+    with pytest.raises(ValueError, match="differs from the pinned"):
+        publish_catalogue(corpus, plan, "2026-10-25")
+    assert not (destination / "supplements.json").exists()
+    target_listing.write_bytes((corpus / "sejm/snapshots/new/term10/prints.json").read_bytes())
     target = publish_catalogue(corpus, plan, "2026-10-25")
     assert json.loads(target.read_bytes())[0]["parent"] == "1"
     assert publish_catalogue(corpus, plan, "2026-10-25") == target

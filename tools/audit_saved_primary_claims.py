@@ -30,6 +30,7 @@ from lexinform.models.claim_evidence import (
     PrimaryClaimTechnicalReceipt,
 )
 from lexinform.models.input_receipts import MultipartTextInputReceipt, PrimaryInputReceipt
+from lexinform.primary_claim_input import multipart_claim_span_role
 from lexinform.primary_claims import validate_retained_claim_citation
 from tools.corpus_artifacts import digest, read_artifact, write_json
 from tools.sqlite_snapshot import live_journal, open_snapshot, snapshot_files
@@ -561,6 +562,11 @@ def verify_primary_claim_technical_receipt(
             or checked.observed_text_span != receipt.submitted_span
         ):
             raise ValueError("claim receipt differs from its exact literal citation")
+        if (
+            isinstance(input_receipt, MultipartTextInputReceipt)
+            and multipart_claim_span_role(input_receipt, receipt.submitted_span) != "normative"
+        ):
+            raise ValueError("claim receipt requires a normative source span")
         if (block := receipt.block) is None:
             return
         if block.prepared_copy not in primary_claim_block_copies(input_receipt):
@@ -595,12 +601,18 @@ def retained_citation_report(
         for evidence in review.claim_citations:
             checked = validate_retained_claim_citation(review.record, evidence, (source,))
             span = checked.observed_text_span
+            role = (
+                multipart_claim_span_role(receipt, span)
+                if span is not None and isinstance(receipt, MultipartTextInputReceipt)
+                else None
+            )
             rows.append(
                 {
                     "field": evidence.field,
                     "index": evidence.index,
                     "claim_sha256": evidence.claim_text_sha256,
                     "status": checked.status,
+                    **({"source_role": role} if role is not None else {}),
                     "submitted_text_span": span,
                     "block": _retained_block(db, receipt, review.text, span)
                     if span is not None

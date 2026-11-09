@@ -2,6 +2,7 @@ import sqlite3
 from collections.abc import Iterator
 from contextlib import closing, contextmanager
 from pathlib import Path
+from typing import Literal
 from unittest.mock import patch
 
 import pytest
@@ -17,6 +18,8 @@ from lexinform.models.claim_evidence import (
     PrimaryComparisonCitation,
     PrimaryComparisonTechnicalReceipt,
 )
+from lexinform.models.input_receipts import MultipartTextInputReceipt, input_map_sha256
+from lexinform.models.prepared_input import PreparedTextPart, PreparedTextSegment
 from lexinform.models.reviews import EvidenceCitation
 from tests.unit.test_primary_claim_citation_reader import primary_result
 
@@ -100,6 +103,58 @@ def test_technical_receipt_rechecks_exact_parent_and_literal_range(tmp_path: Pat
             verify(receipt.model_copy(update={"request_sha256": "b" * 64}))
         with pytest.raises(ValueError, match="exact literal citation"):
             verify(receipt.model_copy(update={"submitted_span": (SPAN[0] - 1, SPAN[1] - 1)}))
+
+
+@pytest.mark.parametrize("role", ["normative_annex", "osr", "unknown"])
+def test_blockless_citation_requires_a_normative_source_part(
+    role: Literal["normative_annex", "osr", "unknown"], tmp_path: Path
+) -> None:
+    receipt, saved = receipt_and_saved()
+    parts = tuple(
+        PreparedTextPart(text_sha256=digest(text.encode()), chars=len(text), role=part_role)
+        for text, part_role in ((TEXT[: SPAN[0]], "bill"), (QUOTE, role))
+    )
+    segments = tuple(
+        PreparedTextSegment(
+            start=left,
+            end=right,
+            origin="source",
+            part_index=index,
+            source_start=0,
+            source_end=right - left,
+        )
+        for index, (left, right) in enumerate(((0, SPAN[0]), SPAN))
+    )
+    prepared = MultipartTextInputReceipt(
+        profile="test-multipart",
+        source_selection_id="selection-v1:" + "a" * 64,
+        source_parts=parts,
+        context_sha256="b" * 64,
+        request_sha256=saved.request_sha256,
+        text_sha256=saved.text_sha256,
+        text_chars=len(TEXT),
+        segments=segments,
+        full_map_sha256=input_map_sha256(segments),
+    )
+
+    @contextmanager
+    def opened(
+        _database: Path,
+        **_: object,
+    ) -> Iterator[tuple[SavedClaimReview, sqlite3.Connection, MultipartTextInputReceipt]]:
+        with closing(sqlite3.connect(":memory:")) as connection:
+            yield saved, connection, prepared
+
+    with patch.object(audit, "_open_saved_review_input", opened):
+        if role == "normative_annex":
+            audit.verify_primary_claim_technical_receipt(
+                tmp_path, database_sha256="c" * 64, result_id=receipt.result_id, receipt=receipt
+            )
+        else:
+            with pytest.raises(ValueError, match="requires a normative source span"):
+                audit.verify_primary_claim_technical_receipt(
+                    tmp_path, database_sha256="c" * 64, result_id=receipt.result_id, receipt=receipt
+                )
 
 
 def test_comparison_receipt_requires_two_distinct_ordered_scopes() -> None:

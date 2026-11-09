@@ -4,7 +4,6 @@ import argparse
 import fcntl
 import gzip
 import json
-import os
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -15,7 +14,7 @@ from lexinform.adapters.browser_identity import BROWSER_HEADERS
 from lexinform.models.rcl import text_role
 from lexinform.sections import document_kind
 from tools.corpus_artifacts import create_only as create_only
-from tools.corpus_artifacts import digest, read_artifact, write_json
+from tools.corpus_artifacts import digest, read_artifact, replace_if_unchanged, write_json
 from tools.corpus_extraction import bounded_reader
 from tools.corpus_health import local_path
 from tools.corpus_http import attachment_extension, fetch
@@ -177,6 +176,16 @@ def install(corpus: Path, source_run: Path, root: Path, identity: str) -> dict[s
             if digest(raw) != row["sha256"]:
                 raise ValueError("Downloaded source hash mismatch")
             if key in old:
+                if old[key].get("file_sha256") != row["sha256"]:
+                    raise ValueError(f"Installed original hash mismatch: {key}")
+                cache = local_path(corpus, f"documents/text/{key}.txt.gz")
+                expected_text = old[key].get("extraction_sha256")
+                if not expected_text:
+                    raise ValueError(f"Existing extraction has no recorded hash: {key}")
+                with gzip.open(cache, "rb") as stream:
+                    text_bytes = stream.read(4 * old[key]["chars"] + 1)
+                if digest(text_bytes) != expected_text:
+                    raise ValueError(f"Installed extraction hash mismatch: {key}")
                 create_only(local_path(corpus, f"documents/files/{key}.{row['extension']}"), raw)
                 rows[key] = {"state": "already_installed", "file_sha256": row["sha256"]}
                 continue
@@ -213,13 +222,9 @@ def install(corpus: Path, source_run: Path, root: Path, identity: str) -> dict[s
         if any(updated[key] != value for key, value in old.items()):
             raise ValueError("Installation must preserve every old index record")
         if updated != old:
-            staged = local_path(corpus, "documents/.corpus-index-new.json")
-            with staged.open("xb") as stream:
-                stream.write(json.dumps(updated, ensure_ascii=False, indent=1).encode())
-            if index_path.read_bytes() != before_bytes:
-                staged.unlink()
-                raise ValueError("Index changed before publication")
-            os.replace(staged, index_path)
+            replace_if_unchanged(
+                index_path, before_bytes, json.dumps(updated, ensure_ascii=False, indent=1).encode()
+            )
     result = {
         "status": "recorded",
         "scope": "Append-only new originals and caches",

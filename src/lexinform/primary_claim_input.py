@@ -10,6 +10,7 @@ from lexinform.models.document_history import DocumentSelectionRecord
 from lexinform.models.input_receipts import (
     ArchiveInputPart,
     LooseRclInputReceipt,
+    MultipartTextInputReceipt,
     PrimaryInputReceipt,
     RclArchiveInputReceipt,
     RclArchiveSelfAmendmentInputReceipt,
@@ -49,6 +50,23 @@ type MultipartCitationReceipt = (
     | RclPairedArchiveInputReceipt
     | SejmSelfAmendmentInputReceipt
 )
+
+
+def multipart_claim_span_role(
+    receipt: MultipartTextInputReceipt, span: tuple[int, int]
+) -> Literal["normative", "non_normative", "unmapped"]:
+    left, right = span
+    for segment in receipt.segments:
+        if segment.start <= left < right <= segment.end and segment.part_index is not None:
+            role = receipt.source_parts[segment.part_index].role
+            if role == "unknown":
+                return "unmapped"
+            return (
+                "normative"
+                if role in ("bill", "normative_annex", "self_amendment")
+                else "non_normative"
+            )
+    return "unmapped"
 
 
 def multipart_claim_part_role(

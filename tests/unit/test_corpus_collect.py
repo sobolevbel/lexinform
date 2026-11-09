@@ -1,5 +1,8 @@
+import gzip
 import json
+import os
 from pathlib import Path
+from unittest.mock import patch
 
 import httpx2 as httpx
 import pytest
@@ -89,6 +92,13 @@ def test_failed_source_does_not_hide_an_independent_download_and_installation(
     assert collected["status"] == "recorded"
     assert {p: p.read_bytes() for p in corpus.rglob("*") if p.is_file()} == before
     assert verify(runs / "download") == collected
+    with (
+        patch.object(os, "replace", side_effect=OSError("interrupted publication")),
+        pytest.raises(OSError, match="interrupted publication"),
+    ):
+        install(corpus, runs / "download", runs, "interrupted")
+    assert index.read_bytes() == before[index]
+    (index.parent / ".corpus-index-new.json").write_text("partial previous attempt")
     result = install(corpus, runs / "download", runs, "install")
     assert result["status"] == "recorded"
     rows = json.loads(index.read_bytes())
@@ -106,6 +116,10 @@ def test_failed_source_does_not_hide_an_independent_download_and_installation(
         ]
         == "already_installed"
     )
+    cache = corpus / "documents/text/999.txt.gz"
+    cache.write_bytes(gzip.compress(b"wrong cached text"))
+    with pytest.raises(ValueError, match="Installed extraction hash mismatch"):
+        install(corpus, runs / "download", runs, "bad-cache")
     with pytest.raises(ValueError, match="explicit collector"):
         execute(runs, "not-offline", "sources", corpus, [])
 

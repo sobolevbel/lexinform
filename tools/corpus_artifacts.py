@@ -2,8 +2,11 @@
 
 import hashlib
 import json
+import os
+import stat
 from collections.abc import Mapping
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from typing import Any
 
 
@@ -24,6 +27,18 @@ def create_only(path: Path, data: bytes) -> None:
     else:
         with path.open("xb") as stream:
             stream.write(data)
+
+
+def replace_if_unchanged(path: Path, before: bytes, data: bytes) -> None:
+    with NamedTemporaryFile(
+        dir=path.parent, prefix=f".{path.name}-", delete_on_close=False
+    ) as staged:
+        os.fchmod(staged.fileno(), stat.S_IMODE(path.stat().st_mode))
+        staged.write(data)
+        staged.close()
+        if read_artifact(path) != before:
+            raise ValueError(f"Index changed before publication: {path.name}")
+        os.replace(staged.name, path)
 
 
 def write_json(path: Path, value: Any) -> None:

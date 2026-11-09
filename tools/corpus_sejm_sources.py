@@ -4,7 +4,6 @@ import argparse
 import fcntl
 import gzip
 import json
-import os
 import re
 import sys
 from pathlib import Path
@@ -18,8 +17,13 @@ from lexinform.models import supplement_kind
 from lexinform.models.sejm import submission_pdf_url
 from lexinform.sections import PAGE_BREAK, carries_the_document, document_kind, has_cover_letter
 from lexinform.services.documents import MIN_TEXT_CHARS
-from tools.corpus_artifacts import digest, read_artifact, write_json
-from tools.corpus_collect import create_only
+from tools.corpus_artifacts import (
+    create_only,
+    digest,
+    read_artifact,
+    replace_if_unchanged,
+    write_json,
+)
 from tools.corpus_extraction import OPTIONS, bounded_reader
 from tools.corpus_health import local_path
 from tools.corpus_http import attachment_extension, fetch
@@ -303,6 +307,16 @@ def publish_catalogue(corpus: Path, source_run: Path, name: str) -> Path:
     destination = local_path(corpus, f"sejm/snapshots/{name}/term{result['term']}")
     if not destination.is_dir():
         raise ValueError("Publish the Sejm metadata snapshot before its supplementary catalogue")
+    command = json.loads(read_artifact(source_run / "started.json"))["command"]
+    current = Path(command[command.index("--current") + 1])
+    if current.is_absolute():
+        current = current.relative_to(corpus.resolve())
+    source_prints = str(current / "prints.json")
+    target_prints = local_path(corpus, f"sejm/snapshots/{name}/term{result['term']}/prints.json")
+    if not target_prints.is_file() or digest(read_artifact(target_prints)) != result[
+        "read_inputs"
+    ].get(source_prints):
+        raise ValueError("Destination snapshot differs from the pinned current Sejm listing")
     create_only(destination / "supplements.json", data)
     provenance = {
         "source_manifest_sha256": digest(read_artifact(source_run / "manifest.json")),
@@ -480,12 +494,9 @@ def install(corpus: Path, source_run: Path, root: Path, identity: str) -> dict[s
         if any(updated[key] != value for key, value in old.items()):
             raise ValueError("Old RPW records must remain unchanged")
         if updated != old:
-            staged = local_path(corpus, f"rpw/term{term}/.corpus-index-new.json")
-            create_only(staged, json.dumps(updated, ensure_ascii=False, indent=1).encode())
-            if read_artifact(index_path) != before:
-                staged.unlink()
-                raise ValueError("RPW index changed during installation")
-            os.replace(staged, index_path)
+            replace_if_unchanged(
+                index_path, before, json.dumps(updated, ensure_ascii=False, indent=1).encode()
+            )
     write_json(
         directory / "result.json",
         {

@@ -300,13 +300,16 @@ def register(root: Path, identity: str, suite: str, artifact: Path) -> dict[str,
     return finish(directory, suite, returncode=0, started=started)
 
 
-def verify(directory: Path) -> dict[str, Any]:
+def verify(directory: Path, *, manifest_sha256: str | None = None) -> dict[str, Any]:
     root = directory.resolve(strict=True)
     manifest_path = root / "manifest.json"
     if manifest_path.is_symlink() or (root / "manifest.sha256").is_symlink():
         raise ValueError("Run manifest must not be a symlink")
     data = read_artifact(manifest_path)
-    if digest(data) != (root / "manifest.sha256").read_text().strip():
+    actual = digest(data)
+    if actual != (root / "manifest.sha256").read_text().strip() or (
+        manifest_sha256 is not None and actual != manifest_sha256
+    ):
         raise ValueError("Run manifest SHA mismatch")
     manifest: dict[str, Any] = json.loads(data)
     if manifest.get("version") != 1 or manifest.get("id") != root.name:
@@ -325,10 +328,13 @@ def verify(directory: Path) -> dict[str, Any]:
     return manifest
 
 
-def compare(before: Path, after: Path, output: Path) -> dict[str, Any]:
+def compare(
+    before: Path, after: Path, output: Path, *, before_manifest_sha256: str | None = None
+) -> dict[str, Any]:
     if any(output.resolve().is_relative_to(path.resolve()) for path in (before, after)):
         raise ValueError("Diff must be outside the immutable runs")
-    old_manifest, new_manifest = verify(before), verify(after)
+    old_manifest = verify(before, manifest_sha256=before_manifest_sha256)
+    new_manifest = verify(after)
     if old_manifest["suite"] != new_manifest["suite"]:
         raise ValueError("Cannot compare different suites")
     if any(row["status"] not in ("passed", "recorded") for row in (old_manifest, new_manifest)):
@@ -499,12 +505,11 @@ def release_reference(
         raise ValueError("Release reference must qualify the same complete plan and profiles")
     for identity in required:
         directory = release_sidecar(reference) / identity
-        manifest = verify(directory)
-        if (
-            manifest["status"] not in ("recorded", "passed")
-            or digest(read_artifact(directory / "manifest.json"))
-            != previous["children"][identity]["manifest_sha256"]
-        ):
+        expected = previous["children"][identity]["manifest_sha256"]
+        if not isinstance(expected, str) or not re.fullmatch(r"[0-9a-f]{64}", expected):
+            raise ValueError("Release reference child is missing its manifest SHA")
+        manifest = verify(directory, manifest_sha256=expected)
+        if manifest["status"] not in ("recorded", "passed"):
             raise ValueError("Release reference child differs from its pinned manifest")
     return previous
 
@@ -576,8 +581,11 @@ def check(
             raise ValueError("Release corpus INDEX escapes the corpus")
         if digest(read_artifact(root / "INDEX.json")) != manifest.index_sha256:
             raise ValueError("Release corpus INDEX SHA mismatch")
-        if reference is not None:
+        reference_report = (
             release_reference(reference, reference_sha256, plan_sha256, profiles, required)
+            if reference is not None
+            else None
+        )
         sidecar.mkdir(parents=True)
         for identity in required:
             if identity not in jobs:
@@ -611,12 +619,14 @@ def check(
                     "observations": len(observations(report)),
                     "ids_sha256": observation_ids_sha256(observations(report)),
                 }
-                if status == "recorded" and reference is not None:
-                    release_reference(reference, reference_sha256, plan_sha256, profiles, required)
+                if status == "recorded" and reference is not None and reference_report is not None:
                     diff = compare(
                         release_sidecar(reference) / identity,
                         directory,
                         sidecar / f"{identity}-diff.json",
+                        before_manifest_sha256=reference_report["children"][identity][
+                            "manifest_sha256"
+                        ],
                     )
                     children[identity]["comparison"] = diff["status"]
                     if diff["status"] != "same":
