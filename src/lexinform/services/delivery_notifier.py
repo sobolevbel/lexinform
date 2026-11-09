@@ -73,7 +73,17 @@ class DeliveryNotifier:
 
     def _fingerprint(self) -> str:
         warnings: list[tuple[int | None, str, int, str | None]] = []
-        for pub in self._repo.list_open_deliveries(self._channel_id):
+        publications = self._repo.list_open_deliveries(self._channel_id)
+        digest_owners = self._repo.digest_owners(
+            tuple(
+                pub.id
+                for pub in publications
+                if pub.id is not None
+                and pub.delivery is not None
+                and pub.delivery.destination == "digest_only"
+            )
+        )
+        for pub in publications:
             plan = pub.delivery
             assert plan is not None
             overdue = plan.schedule is not None and self._clock.now() > plan.schedule.deliver_by
@@ -88,11 +98,7 @@ class DeliveryNotifier:
                     Bill.model_validate_json(plan.bill_json), plan.participation
                 ).consultation
                 unavailable = window is None or window.end is None
-            approved_digest = (
-                plan.destination == "digest_only"
-                and pub.id is not None
-                and self._repo.digest_owner(pub.id) is not None
-            )
+            approved_digest = plan.destination == "digest_only" and pub.id in digest_owners
             if overdue or unavailable or approved_digest:
                 warnings.append((pub.id, pub.status.value, pub.attempts, pub.error))
         return hashlib.sha256(json.dumps(warnings).encode()).hexdigest()

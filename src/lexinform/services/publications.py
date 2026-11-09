@@ -173,25 +173,7 @@ def _fail_deliveries(
 def open_card_edit_ids(repo: BillRepository, card: Publication) -> tuple[int, ...]:
     if card.message_id is None:
         return ()
-    edits: list[int] = []
-    for part in repo.list_open_deliveries(card.channel_id):
-        if part.kind is not PublicationKind.MESSAGE_PART or part.delivery is None:
-            continue
-        root = (
-            repo.publication_by_id(part.delivery.continuation_root)
-            if part.delivery.continuation_root is not None
-            else part
-        )
-        if (
-            root is not None
-            and root.kind is PublicationKind.MESSAGE_PART
-            and root.channel_id == card.channel_id
-            and root.delivery is not None
-            and root.delivery.edit_message_id == card.message_id
-        ):
-            assert part.id is not None, "list_open_deliveries returns stored operations"
-            edits.append(part.id)
-    return tuple(edits)
+    return repo.open_card_edit_ids(card.channel_id, (card.message_id,))
 
 
 def card_revision_owner(repo: BillRepository, publication: Publication) -> Publication | None:

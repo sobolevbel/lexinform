@@ -1890,28 +1890,16 @@ class Poster:
 
     def attention_metrics(self) -> dict[str, int]:
         metrics = dict(self._attention_metrics)
-        digest_queue = [
-            pub
-            for pub in self._repo.list_open_deliveries(self._channel_id)
-            if pub.delivery is not None and pub.delivery.destination == "digest_only"
-        ]
-        if digest_queue:
-            metrics["digest_queued_events"] = len(digest_queue)
-            metrics["digest_awaiting_approval"] = sum(
-                pub.id is not None and self._repo.digest_owner(pub.id) is None
-                for pub in digest_queue
-            )
+        queue = self._repo.delivery_queue_state(self._channel_id)
+        now = self._clock.now()
+        if queue.oldest_digest_at is not None:
+            metrics["digest_queued_events"] = queue.digest_events
+            metrics["digest_awaiting_approval"] = queue.unassigned_digest_events
             metrics["digest_oldest_minutes"] = max(
-                max(0, int((self._clock.now() - pub.created_at).total_seconds() // 60))
-                for pub in digest_queue
+                0, int((now - queue.oldest_digest_at).total_seconds() // 60)
             )
-        schedules = [
-            pub.delivery.schedule
-            for pub in self._repo.list_scheduled_deliveries(self._channel_id)
-            if pub.delivery is not None and pub.delivery.schedule is not None
-        ]
+        schedules = queue.schedules
         if schedules:
-            now = self._clock.now()
             metrics["daily_queued"] = len(schedules)
             metrics["daily_oldest_minutes"] = max(
                 max(0, int((now - schedule.detected_at).total_seconds() // 60))

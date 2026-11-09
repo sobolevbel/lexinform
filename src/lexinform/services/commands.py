@@ -555,6 +555,11 @@ class CommandService:
             )
         if command.editorial_priority is None or command.editorial_until is None:
             posts = self._repo.list_attention_publications(bill.term, bill.number, limit=20)
+            digest_owners = self._repo.digest_owners(
+                tuple(
+                    post.id for post in posts if post.id is not None and post.attention is not None
+                )
+            )
             notes = [
                 f"{post.id}: {post.kind} · {post.status}"
                 f" · {post.attention.importance}/{post.attention.urgency}"
@@ -562,7 +567,7 @@ class CommandService:
                 f" · novelty={post.attention.novelty}"
                 " · destination="
                 f"{post.delivery.destination if post.delivery else 'retained history'}"
-                f" · owner={self._repo.digest_owner(post.id) if post.id is not None else None}"
+                f" · owner={digest_owners.get(post.id) if post.id is not None else None}"
                 for post in posts
                 if post.attention is not None
             ]

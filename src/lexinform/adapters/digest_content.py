@@ -1,5 +1,6 @@
 """Validate immutable digest parts against exact retained physical owners."""
 
+import json
 import sqlite3
 from dataclasses import dataclass
 from datetime import datetime
@@ -81,15 +82,45 @@ def verify_digest_content(
     identities = tuple(part.publication_id for part in resolved.parts)
     if version.root_publication_id != identities[0]:
         raise ValueError("digest_content_root_mismatch")
+    cursor = connection.cursor()
+    cursor.row_factory = sqlite3.Row
+    keys = (json.dumps(identities),)
+    publications = {
+        row["id"]: row
+        for row in cursor.execute(
+            "SELECT p.* FROM json_each(?) parts JOIN publications p ON p.id=parts.value", keys
+        )
+    }
+    event_owners: dict[int, dict[int, sqlite3.Row]] = {}
+    for row in cursor.execute(
+        """
+        SELECT l.owner_publication_id, l.source_publication_id,
+            p.channel_id, p.kind, p.term, p.number
+        FROM json_each(?) parts
+        JOIN digest_event_links l ON l.owner_publication_id=parts.value
+        LEFT JOIN publications p ON p.id=l.source_publication_id
+        """,
+        keys,
+    ):
+        event_owners.setdefault(row["owner_publication_id"], {})[row["source_publication_id"]] = row
+    semantic_owners: dict[int, set[tuple[int, str, str]]] = {}
+    if resolved.digest is not None:
+        for entry in (
+            *resolved.digest.cards,
+            *resolved.digest.updates,
+            *resolved.digest.highlights,
+        ):
+            for identity in entry.source_publication_ids:
+                semantic_owners.setdefault(identity, set()).add(
+                    (entry.term, entry.number, entry.kind.value)
+                )
     receipts: list[int] = []
     previous_created = version.recorded_at
     sent_prefix = True
     for index, part in enumerate(resolved.parts):
-        cursor = connection.execute("SELECT * FROM publications WHERE id=?", (part.publication_id,))
-        row = cursor.fetchone()
-        if row is None:
+        columns = publications.get(part.publication_id)
+        if columns is None:
             raise ValueError("digest_content_part_missing")
-        columns = {name[0]: value for name, value in zip(cursor.description, row, strict=True)}
         created = datetime.fromisoformat(columns["created_at"])
         if (
             (columns["term"], columns["number"], columns["kind"], columns["channel_id"])
@@ -147,36 +178,19 @@ def verify_digest_content(
                 raise ValueError("digest_content_frozen_part")
         elif status not in (PublicationStatus.SENT, PublicationStatus.DISMISSED):
             raise ValueError("digest_content_unretained_pending_part")
-        events = connection.execute(
-            "SELECT source_publication_id FROM digest_event_links WHERE owner_publication_id=?"
-            " ORDER BY source_publication_id",
-            (part.publication_id,),
-        ).fetchall()
-        if [row[0] for row in events] != sorted(part.event_ids):
+        events = event_owners.get(part.publication_id, {})
+        if events.keys() != set(part.event_ids):
             raise ValueError("digest_content_event_binding")
         owners = []
         for event in part.event_ids:
-            owner = connection.execute(
-                "SELECT channel_id,kind,term,number FROM publications WHERE id=?", (event,)
-            ).fetchone()
-            if owner is None or owner[0] != channel_id or owner[1] == "digest":
+            owner = events[event]
+            if owner["channel_id"] != channel_id or owner["kind"] == "digest":
                 raise ValueError("digest_content_event_owner")
-            if resolved.digest is not None:
-                entries = [
-                    entry
-                    for entry in (
-                        *resolved.digest.cards,
-                        *resolved.digest.updates,
-                        *resolved.digest.highlights,
-                    )
-                    if event in entry.source_publication_ids
-                ]
-                if not entries or any(
-                    (entry.term, entry.number, entry.kind.value) != (owner[2], owner[3], owner[1])
-                    for entry in entries
-                ):
-                    raise ValueError("digest_content_event_owner")
-            owners.append((event, owner[2], owner[3], owner[1]))
+            if resolved.digest is not None and semantic_owners.get(event) != {
+                (owner["term"], owner["number"], owner["kind"])
+            }:
+                raise ValueError("digest_content_event_owner")
+            owners.append((event, owner["term"], owner["number"], owner["kind"]))
         if isinstance(
             part, DigestRenderedPart
         ) and part.event_owner_sha256 != digest_event_owner_sha256(owners):

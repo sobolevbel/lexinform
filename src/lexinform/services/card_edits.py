@@ -158,27 +158,6 @@ def _physical_targets(edition: list[Publication]) -> tuple[int, ...]:
     return tuple(targets)
 
 
-def _active_edit(
-    repo: BillRepository, channel_id: str, aliases: list[Publication], targets: tuple[int, ...]
-) -> bool:
-    owners = {alias.id for alias in aliases}
-    for pending in repo.list_open_deliveries(channel_id):
-        plan = pending.delivery
-        if pending.kind is not PublicationKind.MESSAGE_PART or plan is None:
-            continue
-        root = repo.publication_by_id(plan.continuation_root) if plan.continuation_root else pending
-        owner = card_revision_owner(repo, root) if root is not None else None
-        if owner is not None and owner.id in owners:
-            return True
-        if plan.edit_message_id in targets or (
-            root is not None
-            and root.delivery is not None
-            and root.delivery.edit_message_id in targets
-        ):
-            return True
-    return False
-
-
 def edit_card(
     repo: BillRepository,
     clock: Clock,
@@ -231,7 +210,7 @@ def edit_card(
         not targets
         or targets[0] != owner.message_id
         or len(set(targets)) != len(targets)
-        or _active_edit(repo, channel_id, aliases, targets)
+        or repo.open_card_edit_ids(channel_id, targets, include_part_targets=True)
     ):
         return CardEditResult()
     parent = confirmed_card_parent(repo, owner, previous)

@@ -235,6 +235,7 @@ from lexinform.models import (
     DeliveryAlert,
     DeliveryPlan,
     DeliveryResolution,
+    DeliverySchedule,
     DigestItemMeta,
     DigestPart,
     DocumentEdition,
@@ -318,6 +319,7 @@ from lexinform.models.wykaz import wykaz_number
 from lexinform.name_binding import bind_mnemonic
 from lexinform.ports import (
     CardContentHistory,
+    DeliveryQueueState,
     GroupedEditClaim,
     VerifiedEditOutcome,
     VerifiedEditRejection,
@@ -4521,15 +4523,38 @@ class SqliteBillRepository:
         ).fetchall()
         return [self._row_to_publication(row) for row in rows]
 
-    def list_scheduled_deliveries(self, channel_id: str) -> list[Publication]:
+    def delivery_queue_state(self, channel_id: str) -> DeliveryQueueState:
         rows = self._conn.execute(
-            "SELECT * FROM publications WHERE channel_id = ?"
-            " AND status IN ('queued', 'failed', 'pending', 'unknown')"
-            " AND json_extract(delivery_json, '$.schedule') IS NOT NULL"
-            " AND json_extract(delivery_json, '$.absorbed_by') IS NULL ORDER BY id",
+            """
+            SELECT p.kind, p.status, p.created_at,
+                json_extract(p.delivery_json, '$.destination')='digest_only' AS digest_event,
+                json_extract(p.delivery_json, '$.schedule') AS schedule,
+                link.owner_publication_id
+            FROM publications p INDEXED BY ix_pub_channel_sent
+            LEFT JOIN digest_event_links link ON link.source_publication_id=p.id
+            WHERE p.channel_id=? AND p.status IN ('queued','failed','pending','unknown')
+            AND p.delivery_json IS NOT NULL
+            AND json_extract(p.delivery_json, '$.absorbed_by') IS NULL
+            """,
             (channel_id,),
-        ).fetchall()
-        return [self._row_to_publication(row) for row in rows]
+        )
+        pending = unknown = digest_count = digest_unassigned = 0
+        digest_oldest: datetime | None = None
+        schedules: list[DeliverySchedule] = []
+        for row in rows:
+            pending += row["kind"] != "digest"
+            unknown += row["status"] == "unknown"
+            if row["digest_event"]:
+                digest_count += 1
+                digest_unassigned += row["owner_publication_id"] is None
+                created = datetime.fromisoformat(row["created_at"])
+                if digest_oldest is None or created < digest_oldest:
+                    digest_oldest = created
+            if row["schedule"] is not None:
+                schedules.append(DeliverySchedule.model_validate_json(row["schedule"]))
+        return DeliveryQueueState(
+            pending, unknown, digest_count, digest_unassigned, digest_oldest, tuple(schedules)
+        )
 
     def list_open_deliveries(self, channel_id: str) -> list[Publication]:
         rows = self._conn.execute(
@@ -4540,6 +4565,40 @@ class SqliteBillRepository:
             (channel_id,),
         ).fetchall()
         return [self._row_to_publication(row) for row in rows]
+
+    def open_card_edit_ids(
+        self, channel_id: str, targets: tuple[int, ...], *, include_part_targets: bool = False
+    ) -> tuple[int, ...]:
+        if not targets:
+            return ()
+        rows = self._conn.execute(
+            """
+            WITH targets AS (SELECT value FROM json_each(?))
+            SELECT part.id FROM publications part INDEXED BY ix_pub_channel_sent
+            LEFT JOIN publications root ON root.id=COALESCE(
+                CAST(json_extract(part.delivery_json, '$.continuation_root') AS INTEGER), part.id
+            )
+            WHERE part.channel_id=? AND part.kind='message_part'
+            AND part.status IN ('queued','failed','pending','unknown')
+            AND part.delivery_json IS NOT NULL
+            AND json_extract(part.delivery_json, '$.absorbed_by') IS NULL
+            AND (
+                (CAST(json_extract(root.delivery_json, '$.edit_message_id') AS INTEGER)
+                    IN targets AND (? OR (root.kind='message_part' AND root.channel_id=?)))
+                OR (? AND CAST(json_extract(part.delivery_json, '$.edit_message_id') AS INTEGER)
+                    IN targets)
+            )
+            ORDER BY part.id
+            """,
+            (
+                json.dumps(targets),
+                channel_id,
+                include_part_targets,
+                channel_id,
+                include_part_targets,
+            ),
+        )
+        return tuple(row["id"] for row in rows)
 
     def get_delivery_alert(self, channel_id: str) -> DeliveryAlert | None:
         row = self._conn.execute(
@@ -5914,6 +5973,16 @@ class SqliteBillRepository:
             (source_id,),
         ).fetchone()
         return int(row[0]) if row else None
+
+    def digest_owners(self, source_ids: tuple[int, ...]) -> dict[int, int]:
+        if not source_ids:
+            return {}
+        rows = self._conn.execute(
+            "SELECT source_publication_id, owner_publication_id FROM digest_event_links"
+            " WHERE source_publication_id IN (SELECT value FROM json_each(?))",
+            (json.dumps(source_ids),),
+        )
+        return {row["source_publication_id"]: row["owner_publication_id"] for row in rows}
 
     def digest_sources(self, owner_id: int) -> list[Publication]:
         rows = self._conn.execute(

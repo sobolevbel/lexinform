@@ -377,16 +377,11 @@ class DigestService:
             and r.mode is not RunMode.DRY_RUN
             and r.execution_accounting_measured
         ]
+        queue = self._repo.delivery_queue_state(self._channel_id)
         return Digest(
             ref=ref,
-            pending_events=sum(
-                pub.kind is not PublicationKind.DIGEST
-                for pub in self._repo.list_open_deliveries(self._channel_id)
-            ),
-            unknown_deliveries=sum(
-                pub.status is PublicationStatus.UNKNOWN
-                for pub in self._repo.list_open_deliveries(self._channel_id)
-            ),
+            pending_events=queue.pending_events,
+            unknown_deliveries=queue.unknown_deliveries,
             checks_incomplete=any(report.errors for report in reports) or not reports,
             since=since,
             until=until,

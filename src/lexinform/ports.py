@@ -43,6 +43,7 @@ from lexinform.models import (
     DeliveryAlert,
     DeliveryPlan,
     DeliveryResolution,
+    DeliverySchedule,
     Digest,
     DigestPart,
     DocumentDownloadDiagnostics,
@@ -554,6 +555,16 @@ class GroupedEditClaim:
     chat_id: int
     message_id: int
     html: str
+
+
+@dataclass(frozen=True)
+class DeliveryQueueState:
+    pending_events: int
+    unknown_deliveries: int
+    digest_events: int
+    unassigned_digest_events: int
+    oldest_digest_at: datetime | None
+    schedules: tuple[DeliverySchedule, ...]
 
 
 @dataclass(frozen=True)
@@ -1123,9 +1134,13 @@ class BillRepository(Protocol):
 
     def list_deferred_updates(self, channel_id: str) -> list[Publication]: ...
 
-    def list_scheduled_deliveries(self, channel_id: str) -> list[Publication]: ...
+    def delivery_queue_state(self, channel_id: str) -> DeliveryQueueState: ...
 
     def list_open_deliveries(self, channel_id: str) -> list[Publication]: ...
+
+    def open_card_edit_ids(
+        self, channel_id: str, targets: tuple[int, ...], *, include_part_targets: bool = False
+    ) -> tuple[int, ...]: ...
 
     def get_delivery_alert(self, channel_id: str) -> DeliveryAlert | None: ...
 
@@ -1352,6 +1367,8 @@ class BillRepository(Protocol):
     ) -> list[Publication]: ...
 
     def digest_owner(self, source_id: int) -> int | None: ...
+
+    def digest_owners(self, source_ids: tuple[int, ...]) -> dict[int, int]: ...
 
     def digest_sources(self, owner_id: int) -> list[Publication]: ...
 
