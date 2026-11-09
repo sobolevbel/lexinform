@@ -1,0 +1,256 @@
+{
+  "12-0": {
+    "code_version": "cf4496f339d162bfd160c89aabb45b4ab67fbd7e",
+    "database_sha256": "3c8330e1c335e45252827d5cc67179ac16373ceb59d94f91b65fc9723326a35a",
+    "proof": {
+      "artifact_sha256": "4d2c1be3c8c1a48811e50f58c516b517f115965ab95bf6014756bef42dbb0843",
+      "check": {
+        "block_origins": "unmapped",
+        "evidence": {
+          "block_origins": "unmapped",
+          "observed_text_span": [
+            1657,
+            1743
+          ],
+          "paid_origins": "unmapped",
+          "quote_occurrences": 1,
+          "semantic": "semantic_not_assessed",
+          "source_complete": false,
+          "status": "quote_present"
+        },
+        "input_span": [
+          1657,
+          1743
+        ],
+        "physical_origins": "unmapped",
+        "reason": "retained_source_span",
+        "semantic": "semantic_not_assessed",
+        "status": "retained"
+      },
+      "claim_text_sha256": "da510d098b77de766df108e741649934eb72296488c5ea6bd8161adfda5995d1",
+      "member_sha256": "fba401578906b2d8d8acfb02b385f0c321dba69c24d362d5eca464c013056b49",
+      "profile": "primary-rcl-paired-archive-text-v1",
+      "quote_sha256": "38000cf2439d856e66dcb8fa4da7d10f801ac552c25c616abd72d5d98ef951d2",
+      "request_sha256": "5bbe16bcaaa8428261fc4e9dacbedac8a2f97565d67b73811f2f1ee30b958be2",
+      "source_observation_id": "source-observation-v1:d3c8a6b5aedeba5565400293d66bcd889e8df6e54bc953cc007bd727e5cbd7af",
+      "source_part_role": "bill",
+      "source_selection_id": "selection-v1:d63327c173a4d26d0349ba0235905b22702722f17bdbe50d1005447332a4ebeb",
+      "source_text_sha256": "c21bb374ae5f266f5aff4e018f46b82eeb06e5a3493afdda1d7e62c70ba73aa9",
+      "word_paragraph": {
+        "block_id": "word-xml:word/document.xml:0/4",
+        "block_sha256": "f84920d312d3b607080c545cb38b5dc1a345d7102a326a5d8052815203ee3b5d",
+        "block_span": [
+          0,
+          86
+        ],
+        "coordinates": "word-xml-plain-run-prefix-python-string",
+        "manifest_sha256": "6735ada3ab8eaecee0fb2d2f3a22c2d60f4e679b85a3bdf9ad01c9d792052804",
+        "raw_run_prefix_sha256": "f84920d312d3b607080c545cb38b5dc1a345d7102a326a5d8052815203ee3b5d",
+        "selected_text_span": [
+          1657,
+          1743
+        ],
+        "xml_part": "word/document.xml",
+        "xml_sha256": "4d49af7474c004bb9eed3b7b04d0e1ce27c3124c405d837f0c91fae34b9d9832"
+      }
+    },
+    "read_inputs": {
+      "documents/files/684251.zip": "4d2c1be3c8c1a48811e50f58c516b517f115965ab95bf6014756bef42dbb0843"
+    },
+    "scope": "Literal text in a durable offline prepared context.",
+    "source_pins_sha256": "3786de0113aeb0ae4978b7783b98096cd2e6078a236856c62aa5d01dcc0c2255",
+    "status": "recorded",
+    "version": "primary-multipart-citation-v1"
+  },
+  "12-3": {
+    "code_version": "cf4496f339d162bfd160c89aabb45b4ab67fbd7e",
+    "database_sha256": "3c8330e1c335e45252827d5cc67179ac16373ceb59d94f91b65fc9723326a35a",
+    "proof": {
+      "artifact_sha256": "8f1dd7f69eaf8741cc2646fea2a6b4f20d642ed205b2eab605bd3edce79375ab",
+      "check": {
+        "block_origins": "unmapped",
+        "evidence": {
+          "block_origins": "unmapped",
+          "observed_text_span": [
+            3728,
+            3816
+          ],
+          "paid_origins": "unmapped",
+          "quote_occurrences": 1,
+          "semantic": "semantic_not_assessed",
+          "source_complete": false,
+          "status": "quote_present"
+        },
+        "input_span": [
+          432732,
+          432820
+        ],
+        "physical_origins": "unmapped",
+        "reason": "retained_source_span",
+        "semantic": "semantic_not_assessed",
+        "status": "retained"
+      },
+      "claim_text_sha256": "da510d098b77de766df108e741649934eb72296488c5ea6bd8161adfda5995d1",
+      "member_sha256": "ad902c7054a417e7af6c85c49742e5f60c16d6edbfd44b5a0dd7cb80ee072c4f",
+      "profile": "primary-rcl-paired-archive-text-v1",
+      "quote_sha256": "2c9680a5f75ef4014b36c7488a0d2ba889b8f4c694e1aab1ce0624e1537145e2",
+      "request_sha256": "5bbe16bcaaa8428261fc4e9dacbedac8a2f97565d67b73811f2f1ee30b958be2",
+      "source_observation_id": "source-observation-v1:d3c8a6b5aedeba5565400293d66bcd889e8df6e54bc953cc007bd727e5cbd7af",
+      "source_part_index": 3,
+      "source_part_role": "self_amendment",
+      "source_selection_id": "selection-v1:d63327c173a4d26d0349ba0235905b22702722f17bdbe50d1005447332a4ebeb",
+      "source_text_sha256": "0f929ceecf488e871ee83326cd4fcf5bff7e388504b37114d7db65696882fdb4",
+      "word_paragraph": {
+        "block_id": "word-xml:word/document.xml:0/23",
+        "block_sha256": "b19f66008f86120523f774ab4868bc7cad998f76f3576a2492ebc8f4683850bd",
+        "block_span": [
+          1,
+          89
+        ],
+        "coordinates": "word-xml-plain-run-prefix-python-string",
+        "manifest_sha256": "c13cfc376257cc156398843cadad68e1c0d55eff63f9a34d17dbab1198eaa836",
+        "raw_run_prefix_sha256": "a03350369fe05a18e3230202f075975c0f1ebe6ee42947c4edd12c5377bbc171",
+        "selected_text_span": [
+          3728,
+          3816
+        ],
+        "xml_part": "word/document.xml",
+        "xml_sha256": "ac97124d3a792ad17eee39f589aff274c06418e42c39f60da9fc8f349867901f"
+      }
+    },
+    "read_inputs": {
+      "documents/files/684485.zip": "8f1dd7f69eaf8741cc2646fea2a6b4f20d642ed205b2eab605bd3edce79375ab"
+    },
+    "scope": "Literal text in a durable offline prepared context.",
+    "source_pins_sha256": "3786de0113aeb0ae4978b7783b98096cd2e6078a236856c62aa5d01dcc0c2255",
+    "status": "recorded",
+    "version": "primary-multipart-citation-v1"
+  },
+  "14-0": {
+    "code_version": "cf4496f339d162bfd160c89aabb45b4ab67fbd7e",
+    "database_sha256": "19a6cadb885bc82767e955d07f7866579b7514f1571e9bc77e15562b8745da59",
+    "proof": {
+      "artifact_sha256": "4d2c1be3c8c1a48811e50f58c516b517f115965ab95bf6014756bef42dbb0843",
+      "check": {
+        "block_origins": "unmapped",
+        "evidence": {
+          "block_origins": "unmapped",
+          "observed_text_span": [
+            1657,
+            1743
+          ],
+          "paid_origins": "unmapped",
+          "quote_occurrences": 1,
+          "semantic": "semantic_not_assessed",
+          "source_complete": false,
+          "status": "quote_present"
+        },
+        "input_span": [
+          1657,
+          1743
+        ],
+        "physical_origins": "unmapped",
+        "reason": "retained_source_span",
+        "semantic": "semantic_not_assessed",
+        "status": "retained"
+      },
+      "claim_text_sha256": "da510d098b77de766df108e741649934eb72296488c5ea6bd8161adfda5995d1",
+      "member_sha256": "fba401578906b2d8d8acfb02b385f0c321dba69c24d362d5eca464c013056b49",
+      "profile": "primary-rcl-paired-archive-text-v1",
+      "quote_sha256": "38000cf2439d856e66dcb8fa4da7d10f801ac552c25c616abd72d5d98ef951d2",
+      "request_sha256": "5bbe16bcaaa8428261fc4e9dacbedac8a2f97565d67b73811f2f1ee30b958be2",
+      "source_observation_id": "source-observation-v1:d3c8a6b5aedeba5565400293d66bcd889e8df6e54bc953cc007bd727e5cbd7af",
+      "source_part_role": "bill",
+      "source_selection_id": "selection-v1:d63327c173a4d26d0349ba0235905b22702722f17bdbe50d1005447332a4ebeb",
+      "source_text_sha256": "c21bb374ae5f266f5aff4e018f46b82eeb06e5a3493afdda1d7e62c70ba73aa9",
+      "word_paragraph": {
+        "block_id": "word-xml:word/document.xml:0/4",
+        "block_sha256": "f84920d312d3b607080c545cb38b5dc1a345d7102a326a5d8052815203ee3b5d",
+        "block_span": [
+          0,
+          86
+        ],
+        "coordinates": "word-xml-plain-run-prefix-python-string",
+        "manifest_sha256": "6735ada3ab8eaecee0fb2d2f3a22c2d60f4e679b85a3bdf9ad01c9d792052804",
+        "raw_run_prefix_sha256": "f84920d312d3b607080c545cb38b5dc1a345d7102a326a5d8052815203ee3b5d",
+        "selected_text_span": [
+          1657,
+          1743
+        ],
+        "xml_part": "word/document.xml",
+        "xml_sha256": "4d49af7474c004bb9eed3b7b04d0e1ce27c3124c405d837f0c91fae34b9d9832"
+      }
+    },
+    "read_inputs": {
+      "documents/files/684251.zip": "4d2c1be3c8c1a48811e50f58c516b517f115965ab95bf6014756bef42dbb0843"
+    },
+    "scope": "Literal text in a durable offline prepared context.",
+    "source_pins_sha256": "3786de0113aeb0ae4978b7783b98096cd2e6078a236856c62aa5d01dcc0c2255",
+    "status": "recorded",
+    "version": "primary-multipart-citation-v1"
+  },
+  "14-3": {
+    "code_version": "cf4496f339d162bfd160c89aabb45b4ab67fbd7e",
+    "database_sha256": "19a6cadb885bc82767e955d07f7866579b7514f1571e9bc77e15562b8745da59",
+    "proof": {
+      "artifact_sha256": "8f1dd7f69eaf8741cc2646fea2a6b4f20d642ed205b2eab605bd3edce79375ab",
+      "check": {
+        "block_origins": "unmapped",
+        "evidence": {
+          "block_origins": "unmapped",
+          "observed_text_span": [
+            3728,
+            3816
+          ],
+          "paid_origins": "unmapped",
+          "quote_occurrences": 1,
+          "semantic": "semantic_not_assessed",
+          "source_complete": false,
+          "status": "quote_present"
+        },
+        "input_span": [
+          432732,
+          432820
+        ],
+        "physical_origins": "unmapped",
+        "reason": "retained_source_span",
+        "semantic": "semantic_not_assessed",
+        "status": "retained"
+      },
+      "claim_text_sha256": "da510d098b77de766df108e741649934eb72296488c5ea6bd8161adfda5995d1",
+      "member_sha256": "ad902c7054a417e7af6c85c49742e5f60c16d6edbfd44b5a0dd7cb80ee072c4f",
+      "profile": "primary-rcl-paired-archive-text-v1",
+      "quote_sha256": "2c9680a5f75ef4014b36c7488a0d2ba889b8f4c694e1aab1ce0624e1537145e2",
+      "request_sha256": "5bbe16bcaaa8428261fc4e9dacbedac8a2f97565d67b73811f2f1ee30b958be2",
+      "source_observation_id": "source-observation-v1:d3c8a6b5aedeba5565400293d66bcd889e8df6e54bc953cc007bd727e5cbd7af",
+      "source_part_index": 3,
+      "source_part_role": "self_amendment",
+      "source_selection_id": "selection-v1:d63327c173a4d26d0349ba0235905b22702722f17bdbe50d1005447332a4ebeb",
+      "source_text_sha256": "0f929ceecf488e871ee83326cd4fcf5bff7e388504b37114d7db65696882fdb4",
+      "word_paragraph": {
+        "block_id": "word-xml:word/document.xml:0/23",
+        "block_sha256": "b19f66008f86120523f774ab4868bc7cad998f76f3576a2492ebc8f4683850bd",
+        "block_span": [
+          1,
+          89
+        ],
+        "coordinates": "word-xml-plain-run-prefix-python-string",
+        "manifest_sha256": "c13cfc376257cc156398843cadad68e1c0d55eff63f9a34d17dbab1198eaa836",
+        "raw_run_prefix_sha256": "a03350369fe05a18e3230202f075975c0f1ebe6ee42947c4edd12c5377bbc171",
+        "selected_text_span": [
+          3728,
+          3816
+        ],
+        "xml_part": "word/document.xml",
+        "xml_sha256": "ac97124d3a792ad17eee39f589aff274c06418e42c39f60da9fc8f349867901f"
+      }
+    },
+    "read_inputs": {
+      "documents/files/684485.zip": "8f1dd7f69eaf8741cc2646fea2a6b4f20d642ed205b2eab605bd3edce79375ab"
+    },
+    "scope": "Literal text in a durable offline prepared context.",
+    "source_pins_sha256": "3786de0113aeb0ae4978b7783b98096cd2e6078a236856c62aa5d01dcc0c2255",
+    "status": "recorded",
+    "version": "primary-multipart-citation-v1"
+  }
+}

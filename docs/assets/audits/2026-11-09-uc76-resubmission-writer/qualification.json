@@ -1,0 +1,17 @@
+{
+  "12": "eligible_proposal",
+  "14": "preserved_wait",
+  "candidate_state": "unverified",
+  "analysis_admission": "text",
+  "prefilter_admission": "same_source_text_and_trace",
+  "adopted": false,
+  "missing_secretary_control": "preserved_wait",
+  "exact_reads": [
+    "734614",
+    "730644",
+    "730661",
+    "734607",
+    "734607"
+  ],
+  "body_sha256": "93c1cd9d6c10c02b2c440e556353d4b6c414fa8a2d9bebfde8213fbc4a4bbd9d"
+}

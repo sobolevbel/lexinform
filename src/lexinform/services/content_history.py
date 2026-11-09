@@ -196,7 +196,6 @@ def record_publication_content(
                 reference = repo.find_card_primary_evidence(bill)
             elif (
                 isinstance(card_history_parent, ContentVersion)
-                and card_history_parent.reason == "original"
                 and card_history_parent.card_primary_evidence is not None
                 and card_revision_analysis is not None
             ):

@@ -20,13 +20,18 @@ from lexinform.adapters.checkpoint import NoopStateCheckpoint, validate_checkpoi
 from lexinform.adapters.console import ConsolePublisher, ConsoleReplier, ConsoleRunNotifier
 from lexinform.adapters.consultation_documents import SejmConsultationDocuments
 from lexinform.adapters.doc_text import DocTextExtractor
-from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
+from lexinform.adapters.document_text import (
+    DocumentTextExtractor,
+    DocxTextExtractor,
+    OdtTextExtractor,
+)
 from lexinform.adapters.github_inbox import GitHubInboxWriter
 from lexinform.adapters.inbox_files import FileInbox
 from lexinform.adapters.llm_anthropic import AnthropicAnalyzer
 from lexinform.adapters.llm_hybrid import HybridAnalyzer
 from lexinform.adapters.llm_openai import OpenAiAnalyzer
 from lexinform.adapters.llm_prompts import PROMPT_VERSION
+from lexinform.adapters.odt_soft_row_source import enrich_odt_soft_rows
 from lexinform.adapters.orka import OrkaClient
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.adapters.rcl_html import RclClient
@@ -219,6 +224,11 @@ class Container:
                 sejm=self.gateway,
                 enrich_word_grid=(
                     partial(enrich_word_horizontal_source, docx) if self.extractor is None else None
+                ),
+                enrich_odt_rows=(
+                    partial(enrich_odt_soft_rows, OdtTextExtractor())
+                    if self.extractor is None
+                    else None
                 ),
                 capture_word_formulas=(
                     partial(capture_word_formula_source, docx)

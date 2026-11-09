@@ -1,0 +1,40 @@
+{
+  "baseline_sha256": "fc895452d8a7e1590743a597d4d7c09c9c636046723257465e58157d01ada824",
+  "cases": 148,
+  "unchanged_complete_rows": 147,
+  "unchanged_raw_input_hashes": 357,
+  "changes": {
+    "12393550/12": {
+      "before": "waiting",
+      "after": "unverified",
+      "body_sha256": "93c1cd9d6c10c02b2c440e556353d4b6c414fa8a2d9bebfde8213fbc4a4bbd9d",
+      "selected_url": "https://legislacja.rcl.gov.pl/docs//2/12393550/13106000/13106001/dokument734614.zip",
+      "scoped_rcl_reads": [
+        "734607"
+      ]
+    }
+  },
+  "new_pinned_input": {
+    "documents/files/734607.pdf": "3bbb9809bb4ea136f5cbe5d4770de9b7e5dff3fc35f4bfb4f1d84baba92b6516"
+  },
+  "unchanged_existing_rcl_request_controls": [
+    "12392400/2",
+    "12392400/3",
+    "12392400/4"
+  ],
+  "referral_wait_preserved": "12393550/14",
+  "uc21_preserved": [
+    "12383101/9",
+    "12383101/10"
+  ],
+  "existing_rcl_original_sizes_unchanged": {
+    "12389752/12": {
+      "gzip": 15052,
+      "sql": 76198
+    },
+    "12389752/14": {
+      "gzip": 15052,
+      "sql": 76198
+    }
+  }
+}

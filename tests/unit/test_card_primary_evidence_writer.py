@@ -169,3 +169,65 @@ def test_first_compact_edit_marks_only_its_exact_paid_input(
     sql = case.repo.dump()
     case.repo.restore(sql)
     assert case.repo.dump() == sql
+
+
+@pytest.mark.parametrize("changed_answer", [False, True])
+def test_later_compact_edits_continue_only_confirmed_same_paid_input(
+    case: Case, changed_answer: bool
+) -> None:
+    original, version = store_marked_card(case)
+    assert original.id is not None and original.delivery is not None, "the original is frozen"
+    case.repo.mark_publication(original.id, PublicationStatus.SENT, message_id=10, sent_at=NOW)
+    bill = renamed(Bill.model_validate_json(original.delivery.bill_json))
+    record = bill.analysis
+    name = bill.editorial.mnemonic
+    assert record is not None and name is not None, (
+        "the fixture starts with a paid analysis and name"
+    )
+    publisher = FakePublisher()
+
+    for index in (1, 2, 3):
+        edited_at = NOW + timedelta(days=index * 2)
+        root = case.repo.publication_by_id(original.id)
+        assert root is not None, "the root physical identity remains the same"
+        analysis = record
+        if index == 2 and changed_answer:
+            analysis = record.model_copy(
+                update={
+                    "analysis": record.analysis.model_copy(update={"summary": "Changed answer"})
+                }
+            )
+        edition = bill.model_copy(
+            update={
+                "analysis": analysis,
+                "editorial": bill.editorial.model_copy(
+                    update={"mnemonic": name.model_copy(update={"name": f"Edition {index}"})}
+                ),
+            }
+        )
+        expected = publisher.render_card_parts(edition, None, minimum=1, today=edited_at.date())
+        assert len(expected) == 1, "the normal formatter keeps this revision in one message"
+        outcome = edit_card(
+            case.repo,
+            FixedClock(edited_at),
+            publisher,
+            edition,
+            root,
+            None,
+            channel_id=root.channel_id,
+            today=edited_at.date(),
+        )
+        assert outcome.completed
+        assert (publisher.edited[-1][0].text, publisher.edited[-1][1]) == (expected[0], 10)
+        versions = case.repo.list_content_versions(original.id)
+        assert len(versions) == index + 1
+        current = versions[-1]
+        assert current.previous_version_id == version.content_id
+        assert (current.card_primary_evidence is not None) == (not changed_answer or index == 1)
+        case.repo.prune_history(
+            before=edited_at + timedelta(days=1), memo_before=NOW - timedelta(days=89)
+        )
+        sql = case.repo.dump()
+        case.repo.restore(sql)
+        assert case.repo.dump() == sql
+        version = current

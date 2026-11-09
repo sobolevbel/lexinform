@@ -59,6 +59,7 @@ from lexinform.document_selection import (
     DOCUMENT_SELECTION_POLICY_VERSION,
     RCL_AMENDMENT_ARCHIVE_POLICY_VERSION,
     RCL_COMMENT_TABLE_AMENDMENT_POLICY_VERSION,
+    RCL_RESUBMISSION_POLICY_VERSION,
 )
 from lexinform.errors import AttachmentTooLargeError, DownloadError, ServiceUnavailableError
 from lexinform.local_timing import observe_read_timing
@@ -101,6 +102,7 @@ from lexinform.models.candidate_trace import (
     ComposedSupportPart,
     NormativeAnnexGap,
     RclOriginalProposal,
+    RclProposalResubmission,
     RequiredPartGap,
     SupportingExclusionReason,
     SupportingPartExclusion,
@@ -132,6 +134,10 @@ from lexinform.ports import (
     TextExtractor,
 )
 from lexinform.rcl_amendments import rcl_amendment_base_index, rcl_self_amendment_part
+from lexinform.rcl_resubmission import (
+    resubmission_proof,
+    resubmission_sources,
+)
 from lexinform.required_part_capture import RequiredPartCapture
 from lexinform.sections import Kind, scan_page_window
 from lexinform.services.document_history import (
@@ -472,6 +478,7 @@ class TextLoader:
         capture_word_formulas: Callable[[bytes, DocumentExtraction], WordFormulaSource | None]
         | None = None,
         enrich_word_grid: Callable[[bytes, DocumentExtraction], DocumentExtraction] | None = None,
+        enrich_odt_rows: Callable[[bytes, DocumentExtraction], DocumentExtraction] | None = None,
         verify_rcl_comment_table: Callable[[bytes, DocumentExtraction], bool] | None = None,
         physical_factory: Callable[[ObservationOrder], PhysicalObservationCollector] | None = None,
         sejm: SejmGateway | None = None,
@@ -483,7 +490,9 @@ class TextLoader:
         self._cache: dict[str, _CachedDocument] = {}
         self._cache_size = cache_size
         self._capture_word_formulas = capture_word_formulas
-        self._enrich_word_grid = enrich_word_grid
+        self._native_enrichments = tuple(
+            enrich for enrich in (enrich_word_grid, enrich_odt_rows) if enrich is not None
+        )
         self._verify_rcl_comment_table = verify_rcl_comment_table
         self._lock = threading.Lock()
         self._archive_traces: dict[tuple[str, str, str], CandidateDispositionTrace] = {}
@@ -916,7 +925,11 @@ class TextLoader:
             source_document,
             DocumentSelectionRecord.from_selection(recorded_selection),
             physical.artifacts,
-            reads=tuple(dict.fromkeys((*source_reads, *file.excluded_amendment_reads))),
+            reads=tuple(
+                dict.fromkeys(
+                    (*source_reads, *file.excluded_amendment_reads, *file.rcl_resubmission_reads)
+                )
+            ),
             extractions=physical.extractions,
             candidate_trace=trace,
             rcl_proposal=file.rcl_proposal
@@ -1281,10 +1294,16 @@ class TextLoader:
         *,
         retain_routine_trace: bool = False,
         rcl_project: RclProject | None = None,
+        proposal_analysis: bool = False,
     ) -> tuple[TextDocument, LoadedFile]:
         selected, loaded = self._select_document_once(
             document, retain_routine_trace=retain_routine_trace
         )
+        if proposal_analysis and rcl_project is not None and selected == document:
+            with suppress(Exception):
+                resubmitted = self._recover_rcl_resubmission(document, rcl_project, loaded)
+                if resubmitted is not None:
+                    return selected, resubmitted
         if (
             rcl_project is not None
             and selected == document
@@ -1295,6 +1314,173 @@ class TextLoader:
                 if recovered is not None:
                     return recovered
         return selected, loaded
+
+    def _recover_rcl_resubmission(
+        self, document: TextDocument, project: RclProject, waiting: LoadedFile
+    ) -> LoadedFile | None:
+        sources = resubmission_sources(project, document)
+        if sources is None:
+            return None
+        trace = waiting.candidate_trace
+        if (
+            trace is None
+            or trace.result != "waiting"
+            or trace.coverage != "complete"
+            or trace.requested_document != document
+            or len(trace.dispositions) != 3
+            or tuple(row.reason for row in trace.dispositions)
+            != (
+                "version_comparison_deferred",
+                "normative_part_read_incomplete",
+                "no_readable_body",
+            )
+        ):
+            return None
+        gaps = trace.version_part_gaps
+        if len(gaps) != 1:
+            return None
+        (gap,) = gaps
+        if (
+            not isinstance(gap, AmendmentPartGap)
+            or gap.index != 1
+            or gap.amendment_index != 0
+            or gap.reason != "returned_no_text"
+            or gap.file_sha256 is None
+        ):
+            return None
+        main = self.read(sources.later.url)
+        older = self.read(sources.older.url)
+        amendment = self.read(sources.amendment.url)
+        if (
+            main.sha256 != trace.dispositions[0].observed_sha256
+            or older.sha256 != trace.dispositions[1].observed_sha256
+            or amendment.sha256 != gap.file_sha256
+            or amendment.sha256 != trace.dispositions[2].observed_sha256
+        ):
+            return None
+        _, main_read, main_extraction = self.file_origins(sources.later.url, main)
+        _, older_read, _ = self.file_origins(sources.older.url, older)
+        _, amendment_read, amendment_extraction = self.file_origins(
+            sources.amendment.url, amendment
+        )
+        if (
+            main_read is None
+            or older_read is None
+            or amendment_read is None
+            or main_extraction is None
+            or amendment_extraction is None
+            or amendment_extraction.rejected_count
+            or amendment_extraction.physical_part_count != 2
+        ):
+            return None
+        loaded = self._with_evidence(document, self.read_document(document))
+        if (
+            loaded.text is None
+            or loaded.selection.state not in ("selected", "unverified")
+            or "normative_text_omitted" in loaded.selection.limitations
+            or not any(fact.kind == "coverage" for fact in loaded.selection.facts)
+        ):
+            return None
+        bills = tuple(part for part in loaded.selection.parts if part.role == "bill")
+        covers = tuple(
+            part
+            for part in main.selection.observed_parts
+            if part.pages == 3
+            and "w załączeniu przekazuję poprawiony projekt" in part.text.casefold()
+        )
+        proposals = tuple(
+            part for part in amendment.selection.observed_parts if "AUTOPOPRAWKA\nArt." in part.text
+        )
+        if len(bills) != 1 or len(covers) != 1 or len(proposals) != 1:
+            return None
+        letter = self.read_bounded(sources.secretary.url, max_bytes=2_000_000)
+        _, letter_read, _ = self.file_origins(sources.secretary.url, letter)
+        page = letter.first_pdf_page
+        if letter_read is None or page is None or letter.complete_pdf_pages != 1:
+            return None
+        proof = resubmission_proof(
+            sources,
+            bill=bills[0],
+            cover=covers[0],
+            amendment=proposals[0],
+            secretary=DocumentPart(
+                url=letter_read.requested_url,
+                sha256=letter_read.sha256,
+                text=page.text,
+                pages=1,
+                text_sha256=hashlib.sha256(page.text.encode()).hexdigest(),
+            ),
+        )
+        earlier_date, revised_date = sources.older.created, sources.later.created
+        if proof is None or earlier_date is None or revised_date is None:
+            return None
+        observed = tuple(
+            dict.fromkeys(
+                (
+                    *loaded.selection.observed_parts,
+                    proof.cover,
+                    proof.amendment,
+                    proof.secretary,
+                )
+            )
+        )
+        later_row, older_row, amendment_row = trace.dispositions
+        decision = RclProposalResubmission(
+            project_id=project.id,
+            stage_id=project.reached_stages[-1].id,
+            secretary_id=sources.secretary.id,
+            secretary_sha256=letter_read.sha256,
+            rm_number=sources.rm_key,
+            older_date=earlier_date,
+            revised_date=revised_date,
+            bill_part=loaded.selection.parts.index(proof.bill),
+            cover_part=observed.index(proof.cover),
+            amendment_part=observed.index(proof.amendment),
+            secretary_part=observed.index(proof.secretary),
+            bill_member_sha256=proof.bill.sha256,
+            cover_member_sha256=proof.cover.sha256,
+            amendment_member_sha256=proof.amendment.sha256,
+            prior_gap=gap,
+        )
+        selected_trace = CandidateDispositionTrace.model_validate(
+            {
+                "coverage": "complete",
+                "requested_document": document,
+                "universe_sha256": trace.universe_sha256,
+                "candidate_count": trace.candidate_count,
+                "omitted_dispositions": 0,
+                "dispositions": (
+                    later_row.model_copy(
+                        update={
+                            "outcome": "selected",
+                            "reason": "rcl_proposal_resubmitted",
+                        }
+                    ),
+                    older_row.model_copy(
+                        update={
+                            "outcome": "policy_excluded",
+                            "reason": "prior_rcl_proposal",
+                        }
+                    ),
+                    amendment_row,
+                ),
+                "result": "selected",
+                "reason": "rcl_proposal_resubmitted",
+                "selection_state": loaded.selection.state,
+                "rcl_proposal_resubmission": decision,
+            }
+        )
+        return replace(
+            loaded,
+            selection=loaded.selection.model_copy(
+                update={
+                    "policy_version": RCL_RESUBMISSION_POLICY_VERSION,
+                    "observed_parts": observed,
+                }
+            ),
+            candidate_trace=selected_trace,
+            rcl_resubmission_reads=(main_read, older_read, amendment_read, letter_read),
+        )
 
     def _recover_rcl_amendment(
         self, document: TextDocument, project: RclProject
@@ -2164,9 +2350,9 @@ class TextLoader:
                 comment_table_bundle = False
                 if isinstance(self._extractor, ProvenanceTextExtractor):
                     observed = self._extractor.extract_document_with_provenance(data)
-                    if self._enrich_word_grid is not None:
+                    for enrich in self._native_enrichments:
                         with suppress(Exception):
-                            observed = self._enrich_word_grid(data, observed)
+                            observed = enrich(data, observed)
                     if self._capture_word_formulas is not None and urlparse(
                         url
                     ).path.lower().endswith((".docx", ".docm")):

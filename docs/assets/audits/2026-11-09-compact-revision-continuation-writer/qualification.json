@@ -1,0 +1,14 @@
+{
+  "additional_marked_edits": 2,
+  "base": "4248ceac",
+  "byte_stable_clean_restore": true,
+  "changed_answer_does_not_reanchor": true,
+  "edit_count": 3,
+  "gzip_delta_bytes": -37,
+  "old_reader_refuses_continuation_atomically": true,
+  "old_reader_restores_first_only_byte_identical": true,
+  "qualification": "three ordinary same-paid-analysis metadata edits using the production service with synthetic provider/delivery fixture",
+  "sql_delta_bytes": 600,
+  "sqlite_sha256": "5be21fe7fd4694e609df56bc9de6b04bdab050d522c05df1754b7c086f43a33b",
+  "wrong_or_unknown_predecessor_rejected": true
+}

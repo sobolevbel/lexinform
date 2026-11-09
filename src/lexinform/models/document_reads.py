@@ -183,6 +183,9 @@ class LoadedFile:
     opaque_failure_prose: bool = field(default=False, compare=False, repr=False)
     archive_unpack_blocked: bool = field(default=False, compare=False, repr=False)
     ministerial_comment_table_bundle: bool = field(default=False, compare=False, repr=False)
+    rcl_resubmission_reads: tuple[ArtifactReadIdentity, ...] = field(
+        default=(), compare=False, repr=False
+    )
     excluded_amendment_reads: tuple[ArtifactReadIdentity, ...] = field(
         default=(), compare=False, repr=False
     )

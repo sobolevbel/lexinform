@@ -3121,6 +3121,9 @@ class AnalysisService:
                 document,
                 sejm_origin=sejm_origin,
                 rcl_project=bill.rcl,
+                proposal_analysis=(
+                    previous is None and not bill.has_process and purpose in (None, "analysis")
+                ),
                 owner=SourceReferenceOmissionOwner(
                     term=bill.term, number=bill.number, purpose="analysis"
                 ),
@@ -4108,6 +4111,7 @@ class AnalysisService:
         sejm_origin: SejmSourceOrigin | None = None,
         retain_routine_trace: bool = False,
         rcl_project: RclProject | None = None,
+        proposal_analysis: bool = False,
     ) -> _Loaded:
         if owner is None or document is None:
             return self._load_source_inner(
@@ -4116,6 +4120,7 @@ class AnalysisService:
                 sejm_origin=sejm_origin,
                 retain_routine_trace=retain_routine_trace,
                 rcl_project=rcl_project,
+                proposal_analysis=proposal_analysis,
             )
         with self._loader.source_omission_scope(owner, document):
             loaded = self._load_source_inner(
@@ -4124,6 +4129,7 @@ class AnalysisService:
                 sejm_origin=sejm_origin,
                 retain_routine_trace=retain_routine_trace,
                 rcl_project=rcl_project,
+                proposal_analysis=proposal_analysis,
             )
         if isinstance(sejm_origin, SejmRepresentationOrigin):
             return self._read_print_representation(loaded, sejm_origin)
@@ -4174,6 +4180,7 @@ class AnalysisService:
         sejm_origin: SejmSourceOrigin | None = None,
         retain_routine_trace: bool = False,
         rcl_project: RclProject | None = None,
+        proposal_analysis: bool = False,
     ) -> _Loaded:
         """Prepare admitted text or pages, propagating failures and blocked selections."""
         if document is None:
@@ -4185,7 +4192,10 @@ class AnalysisService:
             )
             if rcl_project is not None:
                 document, file = self._loader.select_document(
-                    document, retain_routine_trace=retain_trace, rcl_project=rcl_project
+                    document,
+                    retain_routine_trace=retain_trace,
+                    rcl_project=rcl_project,
+                    proposal_analysis=proposal_analysis,
                 )
             elif retain_trace:
                 document, file = self._loader.select_document(document, retain_routine_trace=True)
