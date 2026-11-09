@@ -130,15 +130,17 @@ class PrimaryProjectionReader:
                 CROSS JOIN bills source ON source.term=target.term
                 AND source.number=target.linked_number
                 AND source.linked_number=target.number AND source.status='linked'
+            ), first_receipts AS (
+                SELECT candidates.*, MIN(matching.id) AS receipt_id
+                FROM candidates LEFT JOIN result_applications matching
+                ON matching.result_id=ref AND matching.term=target_term
+                  AND matching.number=candidate_number AND matching.phase=role
+                  AND matching.generation IS NOT NULL
+                  AND (role='projection' OR matching.generation=rev)
+                GROUP BY ref, target_term, target_number, role, rev, candidate_number, is_alias
             )
-            SELECT candidates.*, receipt.* FROM candidates
-            LEFT JOIN result_applications receipt ON receipt.id = (
-                SELECT id FROM result_applications
-                WHERE result_id=ref AND term=target_term AND number=candidate_number
-                  AND phase=role AND generation IS NOT NULL
-                  AND (role='projection' OR generation=rev)
-                ORDER BY id LIMIT 1
-            )
+            SELECT first_receipts.*, receipt.* FROM first_receipts
+            LEFT JOIN result_applications receipt ON receipt.id=first_receipts.receipt_id
             """,
             (json.dumps(list(keys)),),
         ):

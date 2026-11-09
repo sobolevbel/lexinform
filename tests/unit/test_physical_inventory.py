@@ -11,7 +11,7 @@ from typing import Literal
 import pytest
 from tools.source_history_doctor import audit
 
-from lexinform.adapters.physical_history import PhysicalInventoryRowError
+from lexinform.adapters.physical_history import PhysicalInventoryRowError, physical_inventory_issues
 from lexinform.adapters.sqlite_repo import MIGRATIONS, SCHEMA_VERSION, SqliteBillRepository
 from lexinform.models import ArtifactMetadata
 from lexinform.models.physical_inventory import (
@@ -144,6 +144,41 @@ def save(repo: SqliteBillRepository, value: Case) -> None:
         ArtifactMetadata(sha256=value.capture.artifact_sha256, byte_size=1000, recorded_at=NOW)
     )
     repo.save_physical_inventory(tuple(reversed(value.records)), (value.capture,), recorded_at=NOW)
+
+
+@pytest.mark.parametrize("defect", ["none", "metadata", "missing", "artifact"])
+def test_restore_prefetch_preserves_physical_diagnostics(
+    repo: SqliteBillRepository, defect: str
+) -> None:
+    value = case()
+    save(repo, value)
+    with closing(sqlite3.connect(":memory:")) as connection:
+        connection.executescript(repo.dump())
+        connection.row_factory = sqlite3.Row
+        if defect == "metadata":
+            connection.execute(
+                "UPDATE physical_metadata SET record_json=json_set(record_json, '$.kind', 'recipe')"
+                " WHERE metadata_id=?",
+                (value.header.metadata_id,),
+            )
+        elif defect == "missing":
+            connection.execute(
+                "DELETE FROM physical_metadata WHERE metadata_id=?", (value.header.metadata_id,)
+            )
+        elif defect == "artifact":
+            connection.execute("UPDATE artifacts SET byte_size=0")
+        expected = tuple(physical_inventory_issues(connection))
+        statements: list[str] = []
+        connection.set_trace_callback(statements.append)
+
+        actual = tuple(physical_inventory_issues(connection, prefetch=True))
+
+    assert actual == expected
+    if defect == "none":
+        assert actual == ()
+        assert not any("FROM physical_metadata WHERE metadata_id=" in sql for sql in statements)
+    else:
+        assert actual
 
 
 def test_physical_reader_keeps_zero_part_root_and_recipe_without_extraction(

@@ -3,6 +3,8 @@
 import datetime as dt
 import sqlite3
 from collections.abc import Iterable, Iterator
+from contextlib import suppress
+from itertools import batched
 from typing import Literal
 
 from lexinform.models.artifacts import ArtifactMetadata
@@ -18,6 +20,8 @@ from lexinform.models.physical_inventory import (
     PhysicalMetadata,
     PhysicalRootOrder,
 )
+
+_PARENT_LOOKUP_BATCH_SIZE = 128
 
 PHYSICAL_INVENTORY_MIGRATION = """
 CREATE TABLE physical_metadata (
@@ -230,6 +234,7 @@ class PhysicalInventoryReader:
     def __init__(self, connection: sqlite3.Connection) -> None:
         self.connection = connection
         self.records: dict[str, PhysicalMetadata] = {}
+        self._invalid_records: dict[str, str] = {}
         self.validated: set[str] = set()
         self._artifact_rows: dict[str, sqlite3.Row | None] = {}
         expected: dict[str, str] = {}
@@ -272,6 +277,8 @@ class PhysicalInventoryReader:
         return self.records[metadata_id]
 
     def _load_metadata(self, metadata_id: str) -> PhysicalMetadata | None:
+        if metadata_id in self._invalid_records:
+            raise PhysicalInventoryRowError(self._invalid_records[metadata_id])
         if metadata_id in self.records:
             return self.records[metadata_id]
         row = self.connection.execute(
@@ -292,6 +299,31 @@ class PhysicalInventoryReader:
             self.records[metadata_id] = _metadata_row(row)
         return self.read(metadata_id)
 
+    def remember_metadata(self, rows: Iterable[sqlite3.Row]) -> Iterator[str]:
+        for row in rows:
+            identity = row["metadata_id"]
+            if identity not in self.records:
+                try:
+                    self.records[identity] = _metadata_row(row)
+                except PhysicalInventoryRowError as exc:
+                    self._invalid_records[identity] = exc.code
+            yield identity
+
+    def prefetch_graph_artifacts(self) -> None:
+        def graph_hashes() -> Iterator[str]:
+            for record in self.records.values():
+                graph = record.metadata
+                if isinstance(graph, PhysicalGraph) and graph.header is not None:
+                    yield graph.body_sha
+                    yield from (body for body, _ in graph.edges if body is not None)
+
+        self.prefetch_artifacts(graph_hashes())
+
+    def prefetch_artifacts(self, identities: Iterable[str]) -> None:
+        # Required lookups report database errors at their original validation point.
+        with suppress(sqlite3.Error):
+            self._load_artifacts(identities)
+
     def typed(self, metadata_id: str, kind: MetadataKind) -> PhysicalMetadata:
         record = self.records[metadata_id]
         if record.kind != kind:
@@ -311,13 +343,9 @@ class PhysicalInventoryReader:
         return record, record.metadata
 
     def _load_artifacts(self, identities: Iterable[str]) -> None:
-        missing = tuple(
-            dict.fromkeys(
-                identity for identity in identities if identity not in self._artifact_rows
-            )
-        )
-        for start in range(0, len(missing), 128):
-            batch = missing[start : start + 128]
+        missing = (identity for identity in identities if identity not in self._artifact_rows)
+        for pending in batched(missing, _PARENT_LOOKUP_BATCH_SIZE, strict=False):
+            batch = tuple(dict.fromkeys(pending))
             placeholders = ",".join("?" for _ in batch)
             rows = {
                 row["sha256"]: row
@@ -587,22 +615,34 @@ class PhysicalInventoryReader:
         return seen
 
 
-def physical_inventory_issues(connection: sqlite3.Connection) -> Iterator[tuple[str, str]]:
+def physical_inventory_issues(
+    connection: sqlite3.Connection, *, prefetch: bool = False
+) -> Iterator[tuple[str, str]]:
     try:
         reader = PhysicalInventoryReader(connection)
     except PhysicalInventoryRowError as exc:
         yield exc.code, "physical_inventory"
         return
-    for row in connection.execute("SELECT * FROM physical_metadata ORDER BY metadata_id"):
+    identities = reader.remember_metadata(
+        connection.execute("SELECT * FROM physical_metadata ORDER BY metadata_id")
+    )
+    if prefetch:
+        identities = iter(tuple(identities))
+        reader.prefetch_graph_artifacts()
+    for identity in identities:
         try:
-            reader.read_row(row)
+            reader.read(identity)
         except PhysicalInventoryRowError as exc:
-            yield exc.code, "physical_metadata/" + row["metadata_id"]
-    for row in connection.execute("SELECT * FROM physical_captures ORDER BY capture_id"):
-        try:
-            reader.capture(row)
-        except PhysicalInventoryRowError as exc:
-            yield exc.code, "physical_captures/" + row["capture_id"]
+            yield exc.code, "physical_metadata/" + identity
+    captures = connection.execute("SELECT * FROM physical_captures ORDER BY capture_id")
+    for batch in batched(captures, _PARENT_LOOKUP_BATCH_SIZE, strict=False):
+        if prefetch:
+            reader.prefetch_artifacts(row["artifact_sha256"] for row in batch)
+        for row in batch:
+            try:
+                reader.capture(row)
+            except PhysicalInventoryRowError as exc:
+                yield exc.code, "physical_captures/" + row["capture_id"]
 
 
 def validate_physical_inventory(connection: sqlite3.Connection) -> None:
@@ -619,7 +659,7 @@ def validate_physical_inventory(connection: sqlite3.Connection) -> None:
             return
         if not required <= tables:
             raise PhysicalInventoryRowError("physical_inventory_table_missing")
-        for code, _ in physical_inventory_issues(connection):
+        for code, _ in physical_inventory_issues(connection, prefetch=True):
             raise PhysicalInventoryRowError(code)
     finally:
         connection.row_factory = old_factory
