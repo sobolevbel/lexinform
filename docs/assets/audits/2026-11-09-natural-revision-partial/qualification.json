@@ -1,0 +1,15 @@
+{
+  "state_sha": "3cec8fa54d62fc4c1fbfdf6deced4e720a79c270",
+  "scope": "Read-only natural delivery audit on a pinned state copy",
+  "reanalysis_case": "Sejm 10/3231",
+  "projection_application_id": 28,
+  "projection_utc": "2026-11-05T20:57:47Z",
+  "physical_revision_id": 280,
+  "physical_revision_sent_utc": "2026-11-05T20:58:23Z",
+  "confirmed_exact_paid_key_changes_in_render": 4,
+  "confirmed_practical_impact_in_render": true,
+  "retained_computation_to_revision_binding": false,
+  "status_update_id": 295,
+  "status_update_paid_analysis_role": "context_only",
+  "new_complete_cycle_observed": false
+}

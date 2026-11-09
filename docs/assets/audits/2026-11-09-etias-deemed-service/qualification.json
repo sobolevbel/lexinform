@@ -1,0 +1,81 @@
+{
+  "candidate": {
+    "outcome": "matched_deadline",
+    "sha256": "318ac28e1d25011517dd3ee50ad02cc40151788b80df5691ac58707e79655da5"
+  },
+  "chapter": {
+    "end": 49739,
+    "start": 31551
+  },
+  "checkpoint_sha256": "9366b9c6ee89a5535c0d9dbf26be37e4cf03f1b54836964ee9579e24fbd1d304",
+  "checks": {
+    "competing_trigger_control": {
+      "outcome": "unrecognized_or_ambiguous_deadline",
+      "sha256": "32dade48314bff19921c7f66d4446ccb1386c8f6b0a68063b88ca13d40df5609"
+    },
+    "decision_control": {
+      "outcome": "wrong_trigger",
+      "sha256": "0b80ee63dfef503cab5f5516018693c8e85130b5cf9d3c4a9ff8cf8114ec2c37"
+    },
+    "deemed_delivery_control": {
+      "outcome": "matched_deadline",
+      "sha256": "7de7526496ff5fe7b9e18222fc5b1c6f6701dd95a4782d7d7887081f1dba3e54"
+    },
+    "missing_channel_control": {
+      "outcome": "missing_email_delivery_channel",
+      "sha256": "e7dac1634b99314be9ad08b1a9642fb5a42b76785aacab805f7a61c80475034e"
+    },
+    "negated_control": {
+      "outcome": "negated_deadline",
+      "sha256": "8d63d9a4a03f8040ca404a7c273a52a9db939a5b7a914bfa6fac6ee1efd068be"
+    },
+    "omitted_control": {
+      "outcome": "unrecognized_or_ambiguous_deadline",
+      "sha256": "5e978edad1c1f15c775d62fd0bcd464419eeec045500f1b2bb4d4eca5e4fc094"
+    },
+    "publication_control": {
+      "outcome": "wrong_trigger",
+      "sha256": "79710997720bb22b0e61e4681233670d1a837eba6166950ceba36cae9a39ffa3"
+    },
+    "saved_result": {
+      "outcome": "wrong_object",
+      "sha256": "a3af2154f15abef5b9f904f24387a6f94cb8c9c61f741e13d5fa91c3701c42e5"
+    },
+    "single_correction_control": {
+      "outcome": "matched_deadline",
+      "sha256": "979e3c7a804a25493d4063cb7bdae3ce36e9429be5d98f98aaa25876400dce6c"
+    },
+    "wrong_object_control": {
+      "outcome": "wrong_object",
+      "sha256": "ff23cc98d50de04e91a1304e905b10bae88a1f3d5ef4d1b76900ac5d3217d96d"
+    },
+    "wrong_period_control": {
+      "outcome": "wrong_period",
+      "sha256": "25fb41a60fe763dd970d668c0c0c5ead398406d77782bfc46b9aa69090dfe0f9"
+    }
+  },
+  "citation": {
+    "end": 34755,
+    "sha256": "06653e85deb909341b591c7e6395ff349cbb9197432edfa233e4386cb48960f4",
+    "start": 34239
+  },
+  "database_sha256": "2fa282b623328efa9bec50d3d6da771fd6a8b098565ea619d1a1a4ed38f351b7",
+  "expected": {
+    "days": 7,
+    "equivalent_deemed_delivery_trigger": "wysłania",
+    "object": "powiadomienia",
+    "trigger": "doręczenia"
+  },
+  "provider_calls": 0,
+  "request_sha256": "0c85b87138d626cd4011925137047f4a9da6735b854e3b97bf676b0d16e61181",
+  "result_id": "result-v1:4aaeb04af4d0fae10d65a963eb776bad410855db84de5459a225b4bcda823a6f",
+  "saved_claim_sha256": "a3af2154f15abef5b9f904f24387a6f94cb8c9c61f741e13d5fa91c3701c42e5",
+  "scope": "One ETIAS practical-impact deadline. Narrow lexical gate and synthetic controls. Independent review of the complete generated answer remains required.",
+  "service_date_citation": {
+    "end": 48940,
+    "sha256": "b69cd0263ae63182df05059918750e31e2c62dc8d0f39693b455aa2a281b7ad6",
+    "start": 48773
+  },
+  "source_sha256": "f3fc91c434a4b85e90b94668e31d2254fabdcdd5f33d93b6ace9e9672b3d7500",
+  "synthetic_dispatch_source_control": "matched_deadline"
+}
