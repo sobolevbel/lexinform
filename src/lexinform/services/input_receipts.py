@@ -1,5 +1,6 @@
 """Join prospective text receipts to parents from the actual captured read only."""
 
+from dataclasses import dataclass
 from datetime import datetime
 from typing import cast
 
@@ -44,14 +45,18 @@ from lexinform.models.input_receipts import (
     MultipartTextInputReceipt,
     RclArchiveInputReceipt,
     RclArchiveSelfAmendmentInputReceipt,
+    RclPairedArchiveInputReceipt,
     SejmSelfAmendmentInputReceipt,
     amendment_context_sha256,
     input_map_sha256,
     input_text_sha256,
     primary_context_sha256,
 )
+from lexinform.models.physical_inventory import PhysicalRootOrder
 from lexinform.models.prepared_input import PreparedTextPart, PreparedTextSegment
 from lexinform.models.sejm import SejmProposalOrigin
+from lexinform.physical_observations import OrderedPhysicalObservation
+from lexinform.physical_root_assembly import PhysicalAssemblyPacket
 from lexinform.ports import BillRepository
 from lexinform.prepared_input import prepared_text_input
 from lexinform.services.document_history import (
@@ -135,12 +140,78 @@ def capture_primary_input_receipt(
     )
 
 
+@dataclass(frozen=True)
+class PairedArchiveParent:
+    packet: PhysicalAssemblyPacket
+    physical_index: int
+    ordinal: int
+
+
+def paired_archive_parent(
+    source: DocumentSourceRead, observations: tuple[OrderedPhysicalObservation, ...]
+) -> PairedArchiveParent | None:
+    proof = source.rcl_proposal.trace.rcl_original_proposal if source.rcl_proposal else None
+    if proof is None or len(source.selection.selection.parts) < 2:
+        return None
+    amendment = source.selection.selection.parts[-1]
+    if (
+        amendment.role != "self_amendment"
+        or not amendment.members
+        or (amendment.source_sha256, amendment.sha256)
+        != (proof.proposal_sha256, proof.proposal_member_sha256)
+        or proof.base_sha256 == proof.proposal_sha256
+    ):
+        return None
+    extractions = {extraction.result_id for extraction in source.extractions}
+    parents: dict[tuple[str, int, int], PairedArchiveParent] = {}
+    for entry in observations:
+        packet = entry.observation.assembly
+        if (
+            not isinstance(packet, PhysicalAssemblyPacket)
+            or packet.capture.artifact_sha256 != proof.proposal_sha256
+            or packet.capture.extraction_id not in extractions
+        ):
+            continue
+        metadata = {item.metadata_id: item for item in packet.metadata}
+        execution = metadata.get(packet.capture.execution_id)
+        if (
+            execution is None
+            or execution.coverage != "complete"
+            or not isinstance(order := execution.metadata, PhysicalRootOrder)
+        ):
+            continue
+        for slot, (owner, text_sha256, _) in enumerate(order.physical):
+            if owner >= len(order.contexts):
+                continue
+            parent, ordinal, physical_slot, unit_id = order.contexts[owner]
+            unit = metadata.get(unit_id)
+            if (
+                parent == 0
+                and ordinal is not None
+                and physical_slot == slot
+                and unit is not None
+                and unit.body_sha256 == amendment.sha256
+                and text_sha256 == amendment.text_sha256
+            ):
+                parents[(packet.capture.capture_id, slot, ordinal)] = PairedArchiveParent(
+                    packet, slot, ordinal
+                )
+    return next(iter(parents.values())) if len(parents) == 1 else None
+
+
 def capture_rcl_archive_input_receipt(
     request: BatchRequest,
     selection: DocumentSelection,
     projection: TextProjection | None,
     source: SourceReadCapture | None,
-) -> RclArchiveInputReceipt | RclArchiveSelfAmendmentInputReceipt | None:
+    *,
+    paired: PairedArchiveParent | None = None,
+) -> (
+    RclArchiveInputReceipt
+    | RclArchiveSelfAmendmentInputReceipt
+    | RclPairedArchiveInputReceipt
+    | None
+):
     if (
         not isinstance(request.question, AnalysisQuestion)
         or request.call_kind not in ("analysis", "reanalysis")
@@ -161,7 +232,7 @@ def capture_rcl_archive_input_receipt(
     if projection.text != ctx.text:
         return None
     archive = selection.parts
-    amendment = None
+    amendment: ArchiveInputPart | LooseRclInputPart | None = None
     trace = source.candidate_trace
     version_choice = (
         source.document.compare_versions
@@ -170,7 +241,25 @@ def capture_rcl_archive_input_receipt(
         and trace.version_decision is not None
         and not source.document.amendment_urls
     )
-    if not version_choice and not ordinary_rcl_archive_document(source.document):
+    if paired is not None:
+        if len(archive) < 2 or source.rcl_proposal is None:
+            return None
+        part = archive[-1]
+        if (
+            part.role != "self_amendment"
+            or part.source_sha256 != paired.packet.capture.artifact_sha256
+            or not part.members
+            or (part.text_start, part.text_end) != (0, len(part.text))
+        ):
+            return None
+        amendment = ArchiveInputPart(
+            role=part.role,
+            chars=len(part.text),
+            text_sha256=part.text_sha256,
+            physical_index=paired.physical_index,
+        )
+        archive = archive[:-1]
+    elif not version_choice and not ordinary_rcl_archive_document(source.document):
         amendment_url = rcl_archive_self_amendment_url(source.document)
         if amendment_url is None or len(archive) < 3:
             return None
@@ -292,6 +381,16 @@ def capture_rcl_archive_input_receipt(
         amendment.chars,
     ) or input_text_sha256(ctx.text[final.start : final.end]) != amendment.text_sha256:
         return None
+    if paired is not None and source.rcl_proposal is not None:
+        return RclPairedArchiveInputReceipt.model_validate(
+            {
+                **fields,
+                "source_parts": (*parts, amendment),
+                "proposal_trace_id": source.rcl_proposal.trace.trace_id,
+                "amendment_capture_id": paired.packet.capture.capture_id,
+                "amendment_ordinal": paired.ordinal,
+            }
+        )
     return RclArchiveSelfAmendmentInputReceipt.model_validate(
         {**fields, "source_parts": (*parts, amendment)}
     )

@@ -210,6 +210,7 @@ from lexinform.services.document_history import (
     DocumentSourceRead,
     PrintRepresentationRead,
     SourceReadCapture,
+    record_artifacts,
     record_committee_recommendation,
     record_source_read,
 )
@@ -223,6 +224,7 @@ from lexinform.services.input_receipts import (
     capture_senate_work_input_witness,
     enrich_primary_input_intent,
     enrich_secondary_input_intent,
+    paired_archive_parent,
     senate_work_input_receipt,
     with_block_companion,
 )
@@ -532,6 +534,7 @@ class _Prepared:
     from_batch: bool = False
     source_read: SourceReadCapture | None = None
     input_receipt: PrimaryInputReceipt | MultipartTextInputReceipt | None = None
+    paired_archive_input: tuple[DocumentSelection, TextProjection] | None = None
     local_read: LocalReadTiming | None = None
     word_formula_fallback: _Prepared | None = field(default=None, repr=False, compare=False)
 
@@ -3487,6 +3490,12 @@ class AnalysisService:
                 ),
                 batch_request=request,
                 input_receipt=receipt,
+                paired_archive_input=(loaded.selection, fitted.projection)
+                if receipt is None
+                and fitted.projection is not None
+                and isinstance(loaded.source_read, DocumentSourceRead)
+                and loaded.source_read.rcl_proposal is not None
+                else None,
                 batch_meta=BatchItemMeta(
                     overflow=overflow,
                     input_chars=len(ctx.text),
@@ -3971,20 +3980,54 @@ class AnalysisService:
                 prepared.local_read,
                 discovery_at=bill.first_seen_at if intent.request.call_kind == "analysis" else None,
             )
-            try:
-                self._repo.save_batch_intent(intent)
-            except PreparedInputParentError:
-                if not isinstance(intent.meta.prepared_input_receipt, MultipartTextInputReceipt):
-                    raise
-                log.warning("Prepared input receipt omitted (parents_unavailable)")
-                self._repo.save_batch_intent(
-                    intent.model_copy(
-                        update={
-                            "meta": intent.meta.model_copy(update={"prepared_input_receipt": None})
-                        }
+            if not self._save_paired_archive_intent(intent, prepared, created_at=created_at):
+                try:
+                    self._repo.save_batch_intent(intent)
+                except PreparedInputParentError:
+                    if not isinstance(
+                        intent.meta.prepared_input_receipt, MultipartTextInputReceipt
+                    ):
+                        raise
+                    log.warning("Prepared input receipt omitted (parents_unavailable)")
+                    self._repo.save_batch_intent(
+                        intent.model_copy(
+                            update={
+                                "meta": intent.meta.model_copy(
+                                    update={"prepared_input_receipt": None}
+                                )
+                            }
+                        )
                     )
-                )
             self._repo.set_status(bill.term, bill.number, BillStatus.BATCH_PENDING)
+
+    def _save_paired_archive_intent(
+        self, intent: BatchIntent, prepared: _Prepared, *, created_at: datetime
+    ) -> bool:
+        source = prepared.source_read
+        if prepared.paired_archive_input is None or not isinstance(source, DocumentSourceRead):
+            return False
+        selection, projection = prepared.paired_archive_input
+        try:
+            parent = paired_archive_parent(source, self._loader.read_physical_observations())
+            if parent is None:
+                return False
+            receipt = capture_rcl_archive_input_receipt(
+                intent.request, selection, projection, source, paired=parent
+            )
+            if receipt is None:
+                return False
+            enriched = enrich_primary_input_intent(intent, receipt)
+            packet = parent.packet
+            with self._repo.atomic():
+                record_artifacts(self._repo, packet.artifacts, recorded_at=created_at)
+                self._repo.save_physical_inventory(
+                    packet.metadata, (packet.capture,), recorded_at=created_at
+                )
+                self._repo.save_batch_intent(enriched)
+        except ValueError:
+            log.warning("Paired archive input receipt omitted (parents_or_mapping_unavailable)")
+            return False
+        return True
 
     def _persist(self, prepared: _Prepared) -> AnalysisRecord:
         """Write one prepared analysis down (stages, authors, the record). Calling thread only."""

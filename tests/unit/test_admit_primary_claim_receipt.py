@@ -10,7 +10,11 @@ from tools.corpus_artifacts import digest
 
 from lexinform.adapters.primary_claim_receipts import MAX_TECHNICAL_CLAIM_RECEIPTS_PER_RESULT
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
-from lexinform.models.claim_evidence import PrimaryClaimTechnicalReceipt
+from lexinform.models.claim_evidence import (
+    PrimaryClaimTechnicalReceipt,
+    PrimaryComparisonCitation,
+    PrimaryComparisonTechnicalReceipt,
+)
 from lexinform.models.computation_inputs import ComputationInputBinding
 from tests.unit.test_primary_claim_citation_reader import primary_result
 from tests.unit.test_primary_claim_technical_receipt import receipt_and_saved
@@ -125,3 +129,45 @@ def test_output_publication_cannot_overwrite_a_concurrent_file(
         admit(database, output, receipt)
     assert output.read_bytes() == b"another process"
     assert database.read_bytes() == base
+
+
+def test_comparison_admission_requires_both_checkpoint_pins_before_copying(
+    base_snapshot: tuple[Path, PrimaryClaimTechnicalReceipt], tmp_path: Path
+) -> None:
+    database, single = base_snapshot
+    output = tmp_path / "comparison.db"
+    current = PrimaryComparisonCitation(
+        result_id=single.result_id,
+        request_sha256=single.request_sha256,
+        submitted_text_sha256=single.submitted_text_sha256,
+        submitted_span=single.submitted_span,
+        citation=single.evidence.citation,
+    )
+    previous = current.model_copy(
+        update={
+            "result_id": "result-v1:" + "1" * 64,
+            "request_sha256": "2" * 64,
+            "submitted_text_sha256": "3" * 64,
+            "input_checkpoint_sha256": "4" * 64,
+            "citation": current.citation.model_copy(
+                update={"document_id": "previous-submitted-context"}
+            ),
+        }
+    )
+    comparison = PrimaryComparisonTechnicalReceipt(
+        field="changes_since_previous",
+        index=0,
+        claim_text_sha256=single.evidence.claim_text_sha256,
+        before=previous,
+        after=current,
+    )
+    original = database.read_bytes()
+    with pytest.raises(ValueError, match="different input checkpoint"):
+        admission.admit_primary_claim_receipt(
+            database,
+            output,
+            database_sha256=digest(original),
+            result_id=current.result_id,
+            receipt=comparison,
+        )
+    assert database.read_bytes() == original and not output.exists()

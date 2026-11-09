@@ -6,11 +6,14 @@ from html import escape
 from pathlib import Path
 
 from lexinform.adapters.computation_history import read_computation_result
+from lexinform.models.claim_evidence import PrimaryComparisonTechnicalReceipt
+from lexinform.models.reviews import EvidenceCitation, ReviewDocument, citation_document_in
 from tools.audit_saved_primary_claims import (
     ReviewInputCheckpoint,
     SavedClaimReview,
     _primary_batch_meta,
     saved_claim_review,
+    submitted_review_document,
 )
 from tools.corpus_artifacts import create_only, digest
 from tools.sqlite_snapshot import open_snapshot, snapshot_files
@@ -60,6 +63,56 @@ def review_pair(
         ):
             raise ValueError("A pinned snapshot changed during comparison preparation")
     return before, after
+
+
+def require_submitted_citation(
+    evidence: EvidenceCitation, span: tuple[int, int], source: ReviewDocument
+) -> None:
+    left, right = span
+    if (
+        evidence.document_id != source.identity
+        or not 0 <= left < right <= len(source.text)
+        or not 0 < len(evidence.quote) <= 1200
+        or source.text[left:right] != evidence.quote
+        or citation_document_in(evidence, (source,), {"project_text"}) is None
+    ):
+        raise ValueError("Citation differs from its exact submitted-context text span or locator")
+
+
+def verify_primary_comparison_technical_receipt(
+    database: Path,
+    *,
+    database_sha256: str,
+    result_id: str,
+    receipt: PrimaryComparisonTechnicalReceipt,
+    baseline_checkpoint: ReviewInputCheckpoint | None = None,
+    input_checkpoint: ReviewInputCheckpoint | None = None,
+) -> None:
+    if receipt.after.result_id != result_id:
+        raise ValueError("Comparison receipt identifies a different current result")
+    for side, checkpoint in (
+        (receipt.before, baseline_checkpoint),
+        (receipt.after, input_checkpoint),
+    ):
+        if side.input_checkpoint_sha256 != (checkpoint.sha256 if checkpoint is not None else None):
+            raise ValueError("Comparison receipt identifies a different input checkpoint")
+    before, after = review_pair(
+        database,
+        database_sha256,
+        result_id,
+        baseline_checkpoint=baseline_checkpoint,
+        input_checkpoint=input_checkpoint,
+    )
+    receipt.require_claim(after.record.analysis)
+    for side, saved in ((receipt.before, before), (receipt.after, after)):
+        if (side.result_id, side.request_sha256, side.submitted_text_sha256) != (
+            saved.record.computation_id,
+            saved.request_sha256,
+            saved.text_sha256,
+        ):
+            raise ValueError("Comparison receipt differs from its exact saved requests")
+        source = submitted_review_document(saved, side.citation.document_id)
+        require_submitted_citation(side.citation, side.submitted_span, source)
 
 
 def _text_section(title: str, edition: SavedClaimReview) -> str:

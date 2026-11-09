@@ -1,0 +1,51 @@
+{
+  "direct_admission": {
+    "baseline_checkpoint_sha256": null,
+    "before_input_verification": "exact_retained_input",
+    "current_input_verification": "exact_retained_input",
+    "database_sha256": "818562e84ea0d0183f7881af3a02d49bb68724165f45c4c4a4ca151cf41d5a53",
+    "input_checkpoint_sha256": null,
+    "inserted": true,
+    "output_sha256": "5e53815b445defb061224e799c413b85530bc9823d369897016a2b74ab413d91",
+    "receipt_id": "primary-comparison-technical-v1:7606abc0834731776c658f2c26a5bfd04ca62d8f6a42e37258c156e08adc3711",
+    "result_id": "result-v1:c4fc0489db0161cf78437b3e4f989c31edc133d9a6af5f85b24567855b0b3383",
+    "semantic": "semantic_not_assessed"
+  },
+  "dump_round_trip_byte_identical": true,
+  "gzip_delta_bytes": 277,
+  "input_pins_unchanged": true,
+  "negative_controls": {
+    "missing_current_text": "python -m tools.admit_primary_claim_receipt: error: Review requires the exact retained submitted text",
+    "missing_previous_checkpoint_argument": "python -m tools.admit_primary_claim_receipt: error: Comparison receipt identifies a different input checkpoint",
+    "missing_previous_text": "python -m tools.admit_primary_claim_receipt: error: Review requires the exact retained submitted text",
+    "wrong_baseline_result": "python -m tools.admit_primary_claim_receipt: error: Comparison receipt differs from its exact saved requests",
+    "wrong_previous_checkpoint_file": "python -m tools.admit_primary_claim_receipt: error: Input checkpoint SHA-256 differs from its pin",
+    "wrong_previous_citation_span": "python -m tools.admit_primary_claim_receipt: error: Citation differs from its exact submitted-context text span or locator"
+  },
+  "one_checkpoint_admission": {
+    "baseline_checkpoint_sha256": "44f2dda934b74932d96a978ac936ab37e2fc23df641e541658f25a658b7797b0",
+    "before_input_verification": "submitted_input_unavailable",
+    "current_input_verification": "exact_retained_input",
+    "database_sha256": "6764db7d2c81cfd1000f9f37bb8752160773af801a6244dc11accb7fa18bde48",
+    "input_checkpoint_sha256": null,
+    "inserted": true,
+    "output_sha256": "9611e2356fd4cc7fb6eff136b627521e8f6dc8bb877577b355d94e053f0dd02a",
+    "receipt_id": "primary-comparison-technical-v1:34daa7f81cce625774d23c6003aa00a5093af5943e6d486c169208a665662080",
+    "result_id": "result-v1:c4fc0489db0161cf78437b3e4f989c31edc133d9a6af5f85b24567855b0b3383",
+    "semantic": "semantic_not_assessed"
+  },
+  "same_id_byte_identical_direct_and_checkpoint_repeat": true,
+  "sql_delta_bytes": 1281,
+  "two_checkpoint_admission": {
+    "baseline_checkpoint_sha256": "44f2dda934b74932d96a978ac936ab37e2fc23df641e541658f25a658b7797b0",
+    "before_input_verification": "submitted_input_unavailable",
+    "current_input_verification": "submitted_input_unavailable",
+    "database_sha256": "b80e7a9ed31ca94841ca0e6af9011bf4cdefd662b446d2fbb80ac74ede9c4755",
+    "input_checkpoint_sha256": "44f2dda934b74932d96a978ac936ab37e2fc23df641e541658f25a658b7797b0",
+    "inserted": true,
+    "output_sha256": "89a463ae0de5fcfe1624a7f600953216ea04dd59eda232874c2f640f043cb3ce",
+    "receipt_id": "primary-comparison-technical-v1:bc5258f692b17baecc2abb2696fccb243c4c47f18505503ae203bda4f33c943e",
+    "result_id": "result-v1:c4fc0489db0161cf78437b3e4f989c31edc133d9a6af5f85b24567855b0b3383",
+    "semantic": "semantic_not_assessed"
+  }
+}

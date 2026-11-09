@@ -10,7 +10,6 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from lexinform.models import EvidenceCitation, ReviewDocument
 from lexinform.models.physical_inventory import Sha256
-from lexinform.models.reviews import citation_document_in
 from tools.audit_saved_primary_claims import (
     ReviewInputCheckpoint,
     SavedClaimReview,
@@ -19,7 +18,7 @@ from tools.audit_saved_primary_claims import (
     submitted_review_document,
 )
 from tools.corpus_artifacts import digest, read_artifact, write_json
-from tools.review_saved_comparison import review_pair
+from tools.review_saved_comparison import require_submitted_citation, review_pair
 from tools.sqlite_snapshot import live_journal, snapshot_files
 
 _CLAIM_DOCUMENT_ID = "submitted-context"
@@ -85,14 +84,7 @@ class ReviewAnswers(BaseModel):
 
 
 def _validate_citation(citation: LiteralReviewCitation, source: ReviewDocument) -> None:
-    if (
-        citation.evidence.document_id != source.identity
-        or not 0 <= citation.start < citation.end <= len(source.text)
-        or not 0 < len(citation.evidence.quote) <= 1200
-        or source.text[citation.start : citation.end] != citation.evidence.quote
-        or citation_document_in(citation.evidence, (source,), {"project_text"}) is None
-    ):
-        raise ValueError("Citation differs from its exact submitted-context text span or locator")
+    require_submitted_citation(citation.evidence, (citation.start, citation.end), source)
 
 
 def validate_judgment(
