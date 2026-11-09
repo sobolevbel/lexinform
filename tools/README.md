@@ -418,6 +418,8 @@ and text pins, a reviewer name, ISO date, kind and independence declaration. Eac
 slot has its field, index (null for the date), claim hash, explicit judgment and reason.
 A supported judgment requires an `EvidenceCitation` naming `submitted-context` with exact
 Python string offsets in the retained text. Unknown and conflicting judgments remain explicit.
+Use `reviewer_kind: "agent"` for machine reviews. Independent agent votes appear in
+`agent_claims` and human votes appear in `claims`. Both use the same citation checks.
 Synthetic controls and nonindependent responses contribute no consensus labels. This profile
 covers only the supplied primary text and leaves comparisons with an unavailable earlier
 edition unknown.

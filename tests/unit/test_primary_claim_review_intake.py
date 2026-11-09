@@ -84,12 +84,31 @@ def test_explicit_independent_disagreement_stays_conflict(database: Path) -> Non
     assert output.is_file()
 
 
+def test_independent_agent_votes_stay_separate_from_human_votes(database: Path) -> None:
+    result = record_primary_claim_review.record(
+        database,
+        digest(database.read_bytes()),
+        RESULT,
+        [
+            answers(database, "Human", judgment="unsupported"),
+            answers(database, "Agent 1", reviewer_kind="agent"),
+            answers(database, "Agent 2", reviewer_kind="agent", judgment="unsupported"),
+            answers(database, "Agent 3", reviewer_kind="agent", independent=False),
+        ],
+        database.parent / "result.json",
+    )
+    slot = {"field": "key_changes", "index": 0, "claim_sha256": digest(CLAIM.encode())}
+    assert result["claims"] == [slot | {"judgment": "unsupported"}]
+    assert result["agent_claims"] == [slot | {"judgment": "conflict"}]
+
+
 @pytest.mark.parametrize(
     ("kind", "independent", "expected"),
     [
         ("human", True, "unknown"),
         ("human", False, "unreviewed"),
         ("synthetic_control", False, "unreviewed"),
+        ("agent", False, "unreviewed"),
     ],
 )
 def test_unknown_and_nonindependent_inputs_keep_distinct_states(
@@ -114,6 +133,7 @@ def test_unknown_and_nonindependent_inputs_keep_distinct_states(
             "judgment": expected,
         }
     ]
+    assert "agent_claims" not in result
 
 
 @pytest.mark.parametrize(

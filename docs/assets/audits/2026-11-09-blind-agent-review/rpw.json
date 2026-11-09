@@ -1,0 +1,45 @@
+{
+  "review_profile": "Separate agent context with only the pinned review inputs. No previous answers provided.",
+  "queue_sha256": "dfb933090c83125f5c50e54eb2439eb526f53ec4d00acda3995c13cb50b1436f",
+  "archive_sha256": "fdeb55a2c2e55d3f9553405a69726c91462d057529ede6e70e6aa3ddce9edcee",
+  "machine_review_sha256": "0a37b8881e800951e68a795fa140a37ddb530f3f41863c4b241e703c7d95bd25",
+  "canonical_report_sha256": "a1ff4dd7006075afb12ddbe6fa19f8be152fa6c922c99bdf5eb8dc5aaf6c5de4",
+  "prior_draft_sha256": "6ddccfd43379cf7500b8e7fd97eb952321d0ec0224bc6e9162411e88552d2cba",
+  "agreement_count": 18,
+  "unknown_exact_draft_dates": 2,
+  "counts": {
+    "split": {
+      "regression": 3
+    },
+    "status": {
+      "pending": 3
+    }
+  },
+  "originals": [
+    {
+      "id": "rpw:RPW/35839/2026",
+      "pdf_sha256": "329539aadf99800a14356f195cb98e8500ef19db649d27fd7dbd92b1e32c8f01",
+      "normative_text_pages": [
+        2,
+        3
+      ]
+    },
+    {
+      "id": "rpw:RPW/35996/2026",
+      "pdf_sha256": "227421e09b4969e8ecdffd12051f550e6fadfd79f0e4583b8c22c3f636db1e14",
+      "normative_text_pages": [
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "id": "rpw:RPW/36776/2026",
+      "pdf_sha256": "e937169dfb1ea770dd3e0e7545bc8815c49bfe045e06e2e34c957ab43d381725",
+      "normative_text_pages": [
+        4,
+        5
+      ]
+    }
+  ]
+}

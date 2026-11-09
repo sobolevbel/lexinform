@@ -78,7 +78,7 @@ class ReviewAnswers(BaseModel):
 
     reviewer: str = Field(min_length=1, max_length=128)
     reviewed_on: date = Field(strict=True)
-    reviewer_kind: Literal["human", "synthetic_control"]
+    reviewer_kind: Literal["human", "agent", "synthetic_control"]
     independent: bool = Field(strict=True)
     claims: tuple[ClaimJudgment, ...] = Field(min_length=1, max_length=128)
 
@@ -224,6 +224,33 @@ def template(
     return result
 
 
+def _review_labels(
+    slots: dict[tuple[str, int | None], str], votes: dict[tuple[str, int | None], set[str]]
+) -> list[dict[str, object]]:
+    labels: list[dict[str, object]] = []
+    for (field, index), text in slots.items():
+        declared = votes.get((field, index), set())
+        known = declared - {"unknown"}
+        judgment = (
+            "unreviewed"
+            if not declared
+            else "unknown"
+            if not known
+            else "conflict"
+            if len(known) > 1
+            else next(iter(known))
+        )
+        labels.append(
+            {
+                "field": field,
+                "index": index,
+                "claim_sha256": digest(text.encode()),
+                "judgment": judgment,
+            }
+        )
+    return labels
+
+
 def record(
     database: Path,
     database_sha256: str,
@@ -253,6 +280,7 @@ def record(
     reviews: list[dict[str, object]] = []
     voters: set[str] = set()
     votes: dict[tuple[str, int | None], set[str]] = {}
+    agent_votes: dict[tuple[str, int | None], set[str]] = {}
     for path, pin in answers:
         raw = read_artifact(path)
         if len(raw) > _MAX_ANSWERS_BYTES or digest(raw) != pin:
@@ -278,7 +306,11 @@ def record(
         if review.baseline != baseline_pin:
             raise ValueError("Review answers refer to a different previous result or request")
         voter = review.reviewer.strip().casefold()
-        if not voter or voter in voters or (review.reviewer_kind != "human" and review.independent):
+        if (
+            not voter
+            or voter in voters
+            or (review.reviewer_kind == "synthetic_control" and review.independent)
+        ):
             raise ValueError("Require one named reviewer and a valid independence declaration")
         voters.add(voter)
         seen: set[tuple[str, int | None]] = set()
@@ -290,6 +322,8 @@ def record(
             validate_judgment(item, slots[address], source, baseline_source)
             if review.reviewer_kind == "human" and review.independent:
                 votes.setdefault(address, set()).add(item.judgment)
+            elif review.reviewer_kind == "agent" and review.independent:
+                agent_votes.setdefault(address, set()).add(item.judgment)
         reviews.append(
             {
                 "answers_sha256": pin,
@@ -317,27 +351,6 @@ def record(
         or any(digest(read_artifact(path)) != pin for path, pin in answers)
     ):
         raise ValueError("Review snapshot or pinned answers changed during recording")
-    labels: list[dict[str, object]] = []
-    for (field, index), text in slots.items():
-        declared = votes.get((field, index), set())
-        known = declared - {"unknown"}
-        judgment = (
-            "unreviewed"
-            if not declared
-            else "unknown"
-            if not known
-            else "conflict"
-            if len(known) > 1
-            else next(iter(known))
-        )
-        labels.append(
-            {
-                "field": field,
-                "index": index,
-                "claim_sha256": digest(text.encode()),
-                "judgment": judgment,
-            }
-        )
     result: dict[str, object] = {
         "version": "saved-primary-claim-review-v1",
         "status": "recorded",
@@ -353,7 +366,8 @@ def record(
         ),
         **({"baseline": baseline_pin.model_dump(mode="json")} if baseline_pin else {}),
         "reviews": sorted(reviews, key=lambda row: str(row["answers_sha256"])),
-        "claims": labels,
+        "claims": _review_labels(slots, votes),
+        **({"agent_claims": _review_labels(slots, agent_votes)} if agent_votes else {}),
         "judgment_source": "reviewer_declared",
     }
     write_json(output, result)

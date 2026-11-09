@@ -1,0 +1,128 @@
+{
+  "review_profile": "Blinded machine review. Agent answers, mechanical citations and human labels are separate.",
+  "claims": 96,
+  "reviewer_outcomes": {
+    "supported": 70,
+    "caveat": 22,
+    "unsupported": 4
+  },
+  "independent_human_votes": 0,
+  "excluded_comparisons_missing_prior_input": 8,
+  "input_review_sha256": {
+    "blind-agent-01-05.json": "dda460b729002edbe15da471dfcd363bf90de7610bffc74dd85328969d338017",
+    "blind-agent-06-10.json": "a387c59c1d1615cef89ece05fe417e2487b64c44557a9aa58cd2f673360758f3"
+  },
+  "canonical_report_sha256": {
+    "case-01": "93b5320a63a072fa5eac84353262e1a153d1c4250ced456d0f79a57d84ccafe8",
+    "case-02": "9a18fb4331b94b0b0ac873a3acdda54affeb8784d63e8a1924fb338c314e3926",
+    "case-03": "a903e20c41d38467f8062dc5fa8e3611757717dbf6a18de17f795581c1ac53a3",
+    "case-04": "725bd874d05470b42dd62848b4982bfc16569c67584efbb5f29a93d8f6338b3b",
+    "case-05": "69f838f81417d133bd65464e2802c53a7bd6a04439198d967fcb7e2d1638174a",
+    "case-06": "dee245a0b540e7a3f1eb79c44dadbd7cbf5f43c31a49f29e33320d1ec02b2079",
+    "case-07": "99cf283079146d180e25569ca21115eb3ffb0c71a0e1c13f96d77759f1f76f64",
+    "case-08": "1fe561af58c38d692c8f6de4b33e59c3f688ec091af5c417f83507a005ba27e6",
+    "case-09": "590e5bf6540165984c38732bf375d3aaa4edf4e3a01b174b2bba1d8eddddcc6a",
+    "case-10": "09106b3e89b3519832991150ff57d4dbab124bf590a42e0cdb2f79eabd67f7b2"
+  },
+  "legacy_case_01_report_sha256": "a9e47d6a6ed1c104297626a3af07c637712b8b0da6909e39b5989163ae7c108b",
+  "adjudication": [
+    {
+      "case": "case-03",
+      "claim": 5,
+      "outcome": "unsupported",
+      "reason": "Suspension and deletion do not form a universal sequence."
+    },
+    {
+      "case": "case-03",
+      "claim": 10,
+      "outcome": "caveat",
+      "reason": "Inspection applies only in the stated registration and ownership cases."
+    },
+    {
+      "case": "case-04",
+      "claim": 10,
+      "outcome": "unsupported",
+      "reason": "The draft establishes neither the stated individual complaint route nor one consequence for distinct duties."
+    },
+    {
+      "case": "case-05",
+      "claim": 11,
+      "outcome": "caveat",
+      "reason": "Article 12 ends after point 2. The following numbers are separate articles; preserve the effective dates and avoid presenting the translation as a direct quotation."
+    },
+    {
+      "case": "case-06",
+      "claim": 10,
+      "outcome": "unsupported",
+      "reason": "Electronic arrest is not generally equivalent to detention for all immigration purposes and no general renewal consequence is established."
+    }
+  ],
+  "reader_payload_decision": "Keep current published payload pending evaluation of changed generation. Known current-prompt ETIAS error becomes a release regression candidate.",
+  "cohort": [
+    {
+      "case": "case-01",
+      "model": "gpt-6.1-sol",
+      "prompt_version": "2026-10-v13",
+      "purpose": "analysis"
+    },
+    {
+      "case": "case-02",
+      "model": "gpt-6.1-sol",
+      "prompt_version": "2026-10-v14",
+      "purpose": "analysis"
+    },
+    {
+      "case": "case-03",
+      "model": "gpt-5.1-2025-11-13",
+      "prompt_version": "2026-10-v12",
+      "purpose": "analysis"
+    },
+    {
+      "case": "case-04",
+      "model": "gpt-5.1-2025-11-13",
+      "prompt_version": "2026-10-v12",
+      "purpose": "reanalysis"
+    },
+    {
+      "case": "case-05",
+      "model": "gpt-6.1-sol",
+      "prompt_version": "2026-10-v13",
+      "purpose": "analysis"
+    },
+    {
+      "case": "case-06",
+      "model": "gpt-5.1-2025-11-13",
+      "prompt_version": "2026-10-v12",
+      "purpose": "analysis"
+    },
+    {
+      "case": "case-07",
+      "model": "gpt-6.1-sol",
+      "prompt_version": "2026-10-v14",
+      "purpose": "reanalysis"
+    },
+    {
+      "case": "case-08",
+      "model": "gpt-6.1-sol",
+      "prompt_version": "2026-10-v14",
+      "purpose": "reanalysis"
+    },
+    {
+      "case": "case-09",
+      "model": "gpt-6.1-sol",
+      "prompt_version": "2026-10-v14",
+      "purpose": "reanalysis"
+    },
+    {
+      "case": "case-10",
+      "model": "gpt-6.1-sol",
+      "prompt_version": "2026-10-v14",
+      "purpose": "reanalysis"
+    }
+  ],
+  "adjudicated_outcomes": {
+    "supported": 69,
+    "caveat": 20,
+    "unsupported": 7
+  }
+}
