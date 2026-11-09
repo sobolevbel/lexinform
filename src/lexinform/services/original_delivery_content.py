@@ -2,6 +2,7 @@
 
 import logging
 
+from lexinform.errors import CardPrimaryEvidenceError
 from lexinform.models import Bill, ContentSnapshot, ContentVersion, Publication, PublicationKind
 from lexinform.models.content import (
     original_delivery_bill_snapshot,
@@ -112,6 +113,11 @@ def record_original_delivery_content(
         bill = original_delivery_bill_snapshot(plan.bill_json, review_notice=review_notice)
         application_id = None
         joint_application_id = None
+        card_primary = (
+            repo.find_card_primary_evidence(Bill.model_validate_json(bill.payload_json))
+            if origin.kind is PublicationKind.NEW_BILL
+            else None
+        )
         if review_notice:
             context = Bill.model_validate_json(bill.payload_json)
             review = validate_review_notice(context, origin.kind, origin.ref)
@@ -173,6 +179,14 @@ def record_original_delivery_content(
     except ValueError:
         log.warning("original delivery history omitted: publication=%s reason=profile", identity)
         return
+    if card_primary is not None:
+        marked = version.model_copy(update={"card_primary_evidence": card_primary})
+        try:
+            repo.save_original_delivery_content(bill, snapshot, marked)
+        except CardPrimaryEvidenceError:
+            pass
+        else:
+            return
     if primary_snapshot is None:
         repo.save_original_delivery_content(bill, snapshot, version)
     else:

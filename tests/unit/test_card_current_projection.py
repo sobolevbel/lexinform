@@ -13,6 +13,7 @@ from lexinform.models import (
     DocumentSelectionRecord,
     LlmBatch,
     LlmBatchItem,
+    PublicationKind,
     PublicationStatus,
     ResultApplication,
     SelectionArtifactReference,
@@ -22,9 +23,11 @@ from lexinform.models import (
 from lexinform.models.content import CardPrimaryEvidence
 from lexinform.primary_projections import primary_record_sha256
 from lexinform.services.card_edits import edit_card
-from tests.fakes import FakePublisher, FixedClock
-from tests.unit.test_card_content_writer import renamed
+from lexinform.services.publishing import PublishingService
+from tests.fakes import FakePublisher, FakeSejmGateway, FixedClock
+from tests.unit.test_card_content_writer import MultipartPublisher, renamed
 from tests.unit.test_card_primary_evidence_reader import (
+    card_parents,
     compact_revision_candidate,
     store_marked_card,
 )
@@ -290,3 +293,156 @@ def test_real_card_refresh_marks_new_paid_analysis_only_with_exact_projection(
         case.repo.restore(sql)
         assert case.repo.dump() == sql
         confirmed = current
+
+
+@pytest.mark.parametrize("profile", ["exact", "early", "same_generation"])
+def test_multipart_refresh_marks_new_paid_analysis_only_after_confirmed_predecessor(
+    case: Case, profile: str
+) -> None:
+    original, previous = store_marked_card(case)
+    assert original.id is not None, "the fixture retains the original physical card"
+    case.repo.mark_publication(
+        original.id, PublicationStatus.SENT, message_id=10, sent_at=NOW + timedelta(days=1)
+    )
+    paid_at = NOW + timedelta(days=3 if profile != "early" else 1, hours=1)
+    bill, reference = changed_paid_card(case, paid_at)
+    assert bill.analysis is not None, "the fixture retains the changed answer"
+    historical_bill = renamed(
+        bill.model_copy(
+            update={
+                "analysis": bill.analysis.model_copy(update={"model": "historical-unbound"}),
+                "analysis_generation": 5 if profile == "same_generation" else 3,
+            }
+        )
+    )
+    publisher = MultipartPublisher(publication_by_id=case.repo.publication_by_id)
+    root = case.repo.publication_by_id(original.id)
+    assert root is not None, "both refreshes target the same card"
+    history_at = NOW + timedelta(days=2)
+    historic_outcome = edit_card(
+        case.repo,
+        FixedClock(history_at),
+        publisher,
+        historical_bill,
+        root,
+        None,
+        channel_id=root.channel_id,
+        today=history_at.date(),
+    )
+    assert historic_outcome.completed
+    historical = case.repo.list_content_versions(original.id)[-1]
+    assert historical.previous_version_id == previous.content_id
+    assert historical.multipart_card_revision is not None
+    assert historical.card_primary_evidence is None
+    prior_targets = tuple(row.message_id for row in case.repo.card_refresh_parts(original.id))
+    assert len(prior_targets) == len(set(prior_targets)) == 2
+    current_at = NOW + timedelta(days=4)
+    expected = publisher.render_card_parts(bill, None, minimum=2, today=current_at.date())
+    assert len(expected) == 2
+    outcome = edit_card(
+        case.repo,
+        FixedClock(current_at),
+        publisher,
+        bill,
+        root,
+        None,
+        channel_id=root.channel_id,
+        today=current_at.date(),
+    )
+    assert outcome.completed
+    assert tuple((message.text, target) for message, target in publisher.edited[-2:]) == tuple(
+        zip(expected, prior_targets, strict=True)
+    )
+    assert len(publisher.sent) == 1
+    versions = case.repo.list_content_versions(original.id)
+    assert versions[:2] == [previous, historical]
+    current = versions[-1]
+    assert current.previous_version_id == historical.content_id
+    assert current.multipart_card_revision is not None
+    assert current.card_primary_evidence == (reference if profile == "exact" else None)
+    case.repo.prune_history(before=current_at + timedelta(days=1), memo_before=NOW)
+    sql = case.repo.dump()
+    case.repo.restore(sql)
+    assert case.repo.dump() == sql
+    assert case.repo.list_content_versions(original.id) == versions
+
+
+@pytest.mark.parametrize("complete_receipt", [False, True])
+def test_first_multipart_card_retains_exact_paid_proof_only_with_complete_receipt(
+    case: Case, complete_receipt: bool
+) -> None:
+    provisional, reference = card_parents(case)
+    assert provisional.delivery is not None, "the fixture supplies the frozen paid Bill"
+    bill = Bill.model_validate_json(provisional.delivery.bill_json)
+    case.repo.delete_publication(
+        bill.term, bill.number, PublicationKind.NEW_BILL, provisional.channel_id
+    )
+    if not complete_receipt:
+        case.execute(
+            "DELETE FROM result_applications WHERE phase='collection' AND result_id=("
+            "SELECT result_id FROM result_applications WHERE id=?)",
+            (reference.projection_application_id,),
+        )
+    at = NOW + timedelta(days=1)
+    publisher = MultipartPublisher(publication_by_id=case.repo.publication_by_id)
+    publishing = PublishingService(
+        FakeSejmGateway(),
+        case.repo,
+        publisher,
+        FixedClock(at),
+        channel_id=provisional.channel_id,
+        attention_assess=False,
+    )
+    assert publishing.publish_bill(bill)
+    original = publishing.card_of(bill)
+    assert original is not None and original.id is not None, "the first send has a physical root"
+    history = case.repo.get_publication_content(original.id)
+    assert history is not None and history.original_delivery_evidence is not None
+    assert history.card_primary_evidence == (reference if complete_receipt else None)
+    assert original.delivery is not None, "the freeze retains the physical tail"
+    (child_id,) = original.delivery.continuation_ids
+    child = case.repo.publication_by_id(child_id)
+    assert child is not None and child.status is PublicationStatus.SENT
+    assert case.repo.get_publication_content(child_id) == history
+    expected = publisher.render_card_parts(bill, None, minimum=1, today=at.date())
+    assert tuple(item.text for item in publisher.sent) == expected
+    assert publisher.sent[-1].reply_to == original.message_id
+    case.repo.prune_history(before=at + timedelta(days=1), memo_before=NOW)
+    sql = case.repo.dump()
+    case.repo.restore(sql)
+    assert case.repo.dump() == sql
+    assert case.repo.get_publication_content(original.id) == history
+    assert case.repo.get_publication_content(child_id) == history
+    revised_at = at + timedelta(days=2)
+    outcome = edit_card(
+        case.repo,
+        FixedClock(revised_at),
+        publisher,
+        renamed(bill),
+        original,
+        None,
+        channel_id=original.channel_id,
+        today=revised_at.date(),
+    )
+    assert outcome.completed
+    versions = case.repo.list_content_versions(original.id)
+    assert versions[0] == history
+    assert versions[-1].previous_version_id == history.content_id
+    assert versions[-1].card_primary_evidence == (
+        reference.model_copy(
+            update={
+                "revision_analysis_sha256": primary_record_sha256(bill.analysis),
+                "revision_projection": "current",
+            }
+        )
+        if complete_receipt and bill.analysis is not None
+        else None
+    )
+    assert tuple(target for _, target in publisher.edited[-2:]) == (
+        original.message_id,
+        child.message_id,
+    )
+    case.repo.prune_history(before=revised_at + timedelta(days=1), memo_before=NOW)
+    sql = case.repo.dump()
+    case.repo.restore(sql)
+    assert case.repo.dump() == sql

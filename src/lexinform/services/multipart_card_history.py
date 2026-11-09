@@ -2,6 +2,7 @@
 
 import logging
 
+from lexinform.errors import CardPrimaryEvidenceError
 from lexinform.models import Bill, ContentSnapshot, ContentVersion, Publication
 from lexinform.models.content import (
     MultipartCardRevisionProfile,
@@ -15,6 +16,7 @@ from lexinform.models.multipart_card_history import (
     MultipartCardSlot,
 )
 from lexinform.ports import BillRepository
+from lexinform.primary_projections import primary_record_sha256
 from lexinform.services.content_history import FORMATTER_VERSION
 
 log = logging.getLogger(__name__)
@@ -83,4 +85,23 @@ def record_multipart_card_revision(
     except ValueError:
         log.warning("multipart card history omitted: publication=%s reason=profile", root.id)
         return
+    if bill.analysis is not None:
+        reference = repo.find_card_primary_evidence(bill)
+        if reference is not None:
+            marked = version.model_copy(
+                update={
+                    "card_primary_evidence": reference.model_copy(
+                        update={
+                            "revision_analysis_sha256": primary_record_sha256(bill.analysis),
+                            "revision_projection": "current",
+                        }
+                    )
+                }
+            )
+            try:
+                repo.save_multipart_card_revision(context, snapshot, marked)
+            except CardPrimaryEvidenceError:
+                pass
+            else:
+                return
     repo.save_multipart_card_revision(context, snapshot, version)
