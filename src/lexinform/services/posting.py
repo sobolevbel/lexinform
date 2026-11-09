@@ -20,6 +20,8 @@ from lexinform.content_sources import (
     SOURCE_CONTEXT_INVALID,
     SourceContextInvalidError,
     inspect_primary_content_sources,
+    source_context_blocked,
+    source_context_blocked_many,
     supported_source_context,
 )
 from lexinform.content_versions import is_grouped_stage_revision_slot
@@ -70,7 +72,6 @@ from lexinform.services.publications import (
     open_card_edit_ids,
     send_publication,
     send_publications,
-    source_context_blocked,
 )
 from lexinform.services.sources import fetch_print
 from lexinform.services.status_change_applications import record_status_change
@@ -340,7 +341,7 @@ class Poster:
     def _flush_update_batch(
         self, pubs: list[Publication], news: list[UpdateNews], result: TrackingResult, today: date
     ) -> None:
-        if any(source_context_blocked(self._repo, pub) for pub in pubs):
+        if source_context_blocked_many(self._repo, pubs):
             return
         if len(pubs) == 1:
             item = news[0]
@@ -392,7 +393,8 @@ class Poster:
         identities = tuple(item.publication_id for item in pub.delivery.update_group)
         if any(identity in self._attempted for identity in identities):
             return False
-        members = [self._repo.publication_by_id(identity) for identity in identities]
+        stored = self._repo.publications_by_ids(identities)
+        members = [stored.get(identity) for identity in identities]
         if any(
             member is None
             or member.channel_id != self._channel_id

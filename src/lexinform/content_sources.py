@@ -1,6 +1,7 @@
 """Audit one frozen primary input chain without recording content or activating a producer."""
 
 import json
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 from typing import Literal, Protocol
 
@@ -205,44 +206,63 @@ def verify_primary_content_source(
 
 
 class SourceContextPublicationReader(Protocol):
-    def publication_by_id(self, publication_id: int) -> Publication | None: ...
+    def publications_by_ids(self, publication_ids: tuple[int, ...]) -> dict[int, Publication]: ...
     def digest_sources(self, owner_id: int) -> list[Publication]: ...
 
 
-def source_context_blocked(repo: SourceContextPublicationReader, publication: Publication) -> bool:
-    pending = [publication]
-    if publication.id is not None:
-        stored = repo.publication_by_id(publication.id)
-        if stored is not None:
-            pending.append(stored)
-    seen: set[int] = set()
-    while pending:
-        current = pending.pop()
-        if current.error == SOURCE_CONTEXT_INVALID:
-            return True
-        if current.id is not None:
-            if current.id in seen:
-                continue
-            seen.add(current.id)
-        plan = current.delivery
-        if plan is not None:
-            identities = (
-                *plan.publication_ids,
-                *plan.continuation_ids,
-                *plan.sitting_group,
-                *plan.digest_parts,
-            )
-            identities += tuple(item.publication_id for item in plan.update_group)
-            if plan.continuation_root is not None:
-                identities += (plan.continuation_root,)
-            for identity in identities:
-                if (
-                    identity not in seen
-                    and (related := repo.publication_by_id(identity)) is not None
-                ):
-                    pending.append(related)
-        if current.kind is PublicationKind.DIGEST and current.id is not None:
-            pending.extend(repo.digest_sources(current.id))
+def source_context_blocked(
+    repo: SourceContextPublicationReader, publication: Publication, *, current: bool = False
+) -> bool:
+    return source_context_blocked_many(repo, (publication,), current=current)
+
+
+def source_context_blocked_many(
+    repo: SourceContextPublicationReader,
+    publications: Iterable[Publication],
+    *,
+    current: bool = False,
+) -> bool:
+    rows = list(publications)
+    if any(publication.error == SOURCE_CONTEXT_INVALID for publication in rows):
+        return True
+    if not current:
+        stored = repo.publications_by_ids(
+            tuple(publication.id for publication in rows if publication.id is not None)
+        )
+        rows = [
+            stored.get(publication.id, publication) if publication.id is not None else publication
+            for publication in rows
+        ]
+    visited: set[int] = set()
+    while rows:
+        references: set[int] = set()
+        digest_members: list[Publication] = []
+        for publication in rows:
+            if publication.error == SOURCE_CONTEXT_INVALID:
+                return True
+            identity = publication.id
+            if identity is not None:
+                if identity in visited:
+                    continue
+                visited.add(identity)
+                if publication.kind is PublicationKind.DIGEST:
+                    digest_members.extend(repo.digest_sources(identity))
+            plan = publication.delivery
+            if plan is not None:
+                references.update(
+                    plan.publication_ids,
+                    plan.continuation_ids,
+                    plan.sitting_group,
+                    plan.digest_parts,
+                )
+                references.update(item.publication_id for item in plan.update_group)
+                if plan.continuation_root is not None:
+                    references.add(plan.continuation_root)
+        references.difference_update(visited)
+        references.difference_update(
+            member.id for member in digest_members if member.id is not None
+        )
+        rows = [*digest_members, *repo.publications_by_ids(tuple(sorted(references))).values()]
     return False
 
 

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from lexinform.content_sources import source_context_blocked as source_context_blocked
+from lexinform.content_sources import source_context_blocked_many
 from lexinform.errors import DeliveryUncertainError, ServiceUnavailableError, StateCheckpointError
 from lexinform.models import (
     ContentVersion,
@@ -30,7 +31,9 @@ class _GroupedSend:
     version: ContentVersion
 
 
-def _grouped_send(repo: BillRepository, pub_ids: Sequence[int]) -> _GroupedSend | None:
+def _grouped_send(
+    repo: BillRepository, pub_ids: Sequence[int], publications: dict[int, Publication]
+) -> _GroupedSend | None:
     if len(pub_ids) != 2:
         return None
     root_id, second_id = pub_ids
@@ -45,7 +48,7 @@ def _grouped_send(repo: BillRepository, pub_ids: Sequence[int]) -> _GroupedSend 
         second_id,
     ):
         return None
-    root, second = repo.publication_by_id(root_id), repo.publication_by_id(second_id)
+    root, second = publications.get(root_id), publications.get(second_id)
     if (
         root is None
         or second is None
@@ -77,13 +80,10 @@ def send_publications(
     capture_grouped_telegram: bool = False,
 ) -> int | None:
     """The caller persists pending work before sending; only definite failures spend attempts."""
-    if any(
-        publication is not None and source_context_blocked(repo, publication)
-        for pub_id in pub_ids
-        for publication in (repo.publication_by_id(pub_id),)
-    ):
+    stored = repo.publications_by_ids(tuple(pub_ids))
+    if source_context_blocked_many(repo, stored.values(), current=True):
         return None
-    group = _grouped_send(repo, pub_ids) if capture_grouped_telegram else None
+    group = _grouped_send(repo, pub_ids, stored) if capture_grouped_telegram else None
     if checkpoint is not None:
         checkpoint()
     try:
@@ -119,11 +119,13 @@ def send_publications(
     )
     try:
         with repo.atomic():
-            if group is not None and (
-                tuple(repo.publication_by_id(identity) for identity in group.ids) != group.members
-                or repo.get_publication_content(group.ids[0]) != group.version
-            ):
-                raise StateCheckpointError("Grouped delivery ownership changed after send")
+            if group is not None:
+                received = repo.publications_by_ids(group.ids)
+                if (
+                    tuple(received.get(identity) for identity in group.ids) != group.members
+                    or repo.get_publication_content(group.ids[0]) != group.version
+                ):
+                    raise StateCheckpointError("Grouped delivery ownership changed after send")
             sent_at = clock.now()
             for pub_id in pub_ids:
                 repo.mark_publication(

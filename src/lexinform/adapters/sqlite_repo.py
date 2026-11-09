@@ -174,6 +174,7 @@ from lexinform.content_sources import (
     SourceContextInvalidError,
     inspect_primary_content_sources,
     source_context_blocked,
+    source_context_blocked_many,
     supported_source_context,
 )
 from lexinform.content_versions import (
@@ -4151,7 +4152,7 @@ class SqliteBillRepository:
 
     def save_update_delivery(self, change_id: int, channel_id: str, delivery: DeliveryPlan) -> None:
         original = self.get_update_publication(change_id, channel_id)
-        if original is not None and source_context_blocked(self, original):
+        if original is not None and source_context_blocked(self, original, current=True):
             return
         self._conn.execute(
             "UPDATE publications SET delivery_json = ?, attention_json = ?"
@@ -4171,7 +4172,7 @@ class SqliteBillRepository:
         self, change_id: int, channel_id: str, delivery: DeliveryPlan
     ) -> bool:
         original = self.get_update_publication(change_id, channel_id)
-        if original is not None and source_context_blocked(self, original):
+        if original is not None and source_context_blocked(self, original, current=True):
             return False
         cur = self._conn.execute(
             "UPDATE publications SET delivery_json = ?, attention_json = ?"
@@ -4193,7 +4194,7 @@ class SqliteBillRepository:
 
     def replace_unattempted_delivery(self, publication_id: int, delivery: DeliveryPlan) -> bool:
         original = self.publication_by_id(publication_id)
-        if original is not None and source_context_blocked(self, original):
+        if original is not None and source_context_blocked(self, original, current=True):
             return False
         if (
             original is not None
@@ -4294,8 +4295,9 @@ class SqliteBillRepository:
         if len(set(identities)) != len(identities) or delivery.held_change_ids:
             return False
         parent = original.id
+        children = self.publications_by_ids(identities)
         for index, identity in enumerate(identities, 2):
-            child = self.publication_by_id(identity)
+            child = children.get(identity)
             if (
                 child is None
                 or child.kind is not PublicationKind.MESSAGE_PART
@@ -4342,12 +4344,10 @@ class SqliteBillRepository:
         identities = tuple(member.id for member in members)
         if not members or len(members) != len(plans) or len(set(identities)) != len(identities):
             return False
-        if any(
-            stored is not None and source_context_blocked(self, stored)
-            for identity in identities
-            if identity is not None
-            for stored in (self.publication_by_id(identity),)
-        ):
+        stored_members = self.publications_by_ids(
+            tuple(identity for identity in identities if identity is not None)
+        )
+        if source_context_blocked_many(self, stored_members.values(), current=True):
             return False
         prepared: list[tuple[str, int, str, int, str]] = []
         with self.atomic():
@@ -4687,11 +4687,8 @@ class SqliteBillRepository:
         )
 
     def tag_update_group(self, publication_ids: tuple[int, ...], ref: str) -> None:
-        if any(
-            stored is not None and source_context_blocked(self, stored)
-            for identity in publication_ids
-            for stored in (self.publication_by_id(identity),)
-        ):
+        stored = self.publications_by_ids(publication_ids)
+        if source_context_blocked_many(self, stored.values(), current=True):
             raise ValueError("source_context_invalid prevents changing its update group")
         self._conn.executemany(
             "UPDATE publications SET ref = ? WHERE id = ? AND kind = 'status_update'",
@@ -5959,7 +5956,8 @@ class SqliteBillRepository:
             ).fetchone()
             previous = self.publication_by_id(int(blocked[0])) if blocked is not None else None
             if previous is not None and (
-                previous.status is PublicationStatus.SENT or source_context_blocked(self, previous)
+                previous.status is PublicationStatus.SENT
+                or source_context_blocked(self, previous, current=True)
             ):
                 return int(blocked[0])
         else:
@@ -5970,7 +5968,7 @@ class SqliteBillRepository:
                 publication.channel_id,
                 ref=publication.ref,
             )
-            if previous is not None and source_context_blocked(self, previous):
+            if previous is not None and source_context_blocked(self, previous, current=True):
                 assert previous.id is not None, "the stored publication has its physical identity"
                 return previous.id
         attention = publication.attention or (
@@ -6083,7 +6081,7 @@ class SqliteBillRepository:
             owner = self.publication_by_id(owner_id)
             if (
                 owner is None
-                or source_context_blocked(self, owner)
+                or source_context_blocked(self, owner, current=True)
                 or owner.kind is not PublicationKind.DIGEST
                 or owner.status is not PublicationStatus.QUEUED
                 or owner.delivery is None
@@ -6097,7 +6095,7 @@ class SqliteBillRepository:
                 linked = self.digest_owner(identity)
                 if (
                     source is None
-                    or source_context_blocked(self, source)
+                    or source_context_blocked(self, source, current=True)
                     or source.channel_id != owner.channel_id
                     or source.status is not PublicationStatus.QUEUED
                     or source.attempts
@@ -6256,14 +6254,14 @@ class SqliteBillRepository:
         sources = self.digest_sources(owner_id)
         if (
             owner is None
-            or source_context_blocked(self, owner)
+            or source_context_blocked(self, owner, current=True)
             or owner.delivery is None
             or set(owner.delivery.digest_event_ids) != {source.id for source in sources}
         ):
             raise ValueError("digest membership does not match its saved payload")
         for source in sources:
             if (
-                source_context_blocked(self, source)
+                source_context_blocked(self, source, current=True)
                 or source.status is not PublicationStatus.QUEUED
                 or source.attempts
                 or source.delivery is None
@@ -6296,6 +6294,19 @@ class SqliteBillRepository:
         ).fetchone()
         return self._row_to_publication(row) if row else None
 
+    def publications_by_ids(self, publication_ids: tuple[int, ...]) -> dict[int, Publication]:
+        if not publication_ids:
+            return {}
+        if len(publication_ids) == 1:
+            identity = publication_ids[0]
+            publication = self.publication_by_id(identity)
+            return {identity: publication} if publication is not None else {}
+        rows = self._conn.execute(
+            "SELECT * FROM publications WHERE id IN (SELECT value FROM json_each(?))",
+            (json.dumps(publication_ids),),
+        )
+        return {row["id"]: self._row_to_publication(row) for row in rows}
+
     def resolve_delivery(self, resolution: DeliveryResolution) -> bool:
         if isinstance(resolution, GroupedEditDeliveryResolution):
             return False
@@ -6312,7 +6323,7 @@ class SqliteBillRepository:
             if (
                 original is None
                 or is_grouped_stage_revision_slot(original)
-                or source_context_blocked(self, original)
+                or source_context_blocked(self, original, current=True)
             ):
                 return False
             plan = original.delivery
@@ -6681,7 +6692,7 @@ class SqliteBillRepository:
         count_attempt: bool = True,
     ) -> None:
         original = self.publication_by_id(publication_id)
-        if original is not None and source_context_blocked(self, original):
+        if original is not None and source_context_blocked(self, original, current=True):
             if (
                 status == original.status
                 and error == SOURCE_CONTEXT_INVALID
