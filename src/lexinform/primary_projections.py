@@ -148,6 +148,11 @@ def read_primary_json(
     return canonical_json({**value, "record": record} if ready else record)
 
 
+def primary_record_sha256(record: AnalysisRecord) -> str:
+    payload = record.model_dump(mode="json", exclude=set(PRIMARY_USAGE_FIELDS))
+    return hashlib.sha256(canonical_json(payload).encode()).hexdigest()
+
+
 def primary_record_matches(record: AnalysisRecord, result: ComputationResult | None) -> bool:
     return (
         result is not None

@@ -1,0 +1,146 @@
+{
+  "observed": 148,
+  "inputs": 357,
+  "identical_rows": 146,
+  "choice_changes": {
+    "12383101/10": {
+      "new_state": [
+        "waiting",
+        "selected"
+      ],
+      "new_text_sha256": [
+        null,
+        "11abb1efaf77a3f5789f8843330e6c068fca290811ea13ed7361b15e43ba8bda"
+      ],
+      "old_state": [
+        "waiting",
+        "selected"
+      ],
+      "old_text_sha256": [
+        null,
+        "11abb1efaf77a3f5789f8843330e6c068fca290811ea13ed7361b15e43ba8bda"
+      ],
+      "persisted_rejected": [
+        [
+          "A declared normative part could not be read during version comparison"
+        ],
+        [
+          "('Odwr\u00f3cona tabela zgodno\u015bci.pdf',): compliance_table",
+          "('Raport z konsultacji.pdf',): consultation_report",
+          "('Tabela nieuwzgl\u0119dnionych uwag.pdf',): remarks_table",
+          "('Tabela zgodnosci.pdf',): compliance_table",
+          "('protok\u00f3\u0142 rozbie\u017cno\u015bci.pdf',): remarks_table",
+          "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument699840.zip: excluded ministerial comments package (b5f05a39de7d4fec34a853c84d80c5821c118d584b77098b821053ee6076be44)"
+        ]
+      ],
+      "policy": [
+        "document-selection-v25",
+        "document-selection-v26"
+      ],
+      "rejected": [
+        [
+          "A declared normative part could not be read during version comparison"
+        ],
+        [
+          "('Odwr\u00f3cona tabela zgodno\u015bci.pdf',): compliance_table",
+          "('Raport z konsultacji.pdf',): consultation_report",
+          "('Tabela nieuwzgl\u0119dnionych uwag.pdf',): remarks_table",
+          "('Tabela zgodnosci.pdf',): compliance_table",
+          "('protok\u00f3\u0142 rozbie\u017cno\u015bci.pdf',): remarks_table"
+        ]
+      ],
+      "roles": [
+        [],
+        [
+          {
+            "member": [
+              "SKRM II - UST_zm. U\u015aUDE_DSA.pdf"
+            ],
+            "role": "bill",
+            "sha256": "836c94652b6544cbb2cd84e28b24d22242cd4f7f5d2855a01889b5b51bd613d4",
+            "text_sha256": "11abb1efaf77a3f5789f8843330e6c068fca290811ea13ed7361b15e43ba8bda",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument729529.zip"
+          },
+          {
+            "member": [],
+            "role": "self_amendment",
+            "sha256": "5279ece0a7e51a2cf7848cc82590e7c67b496bee58b137f02893f455aee2b146",
+            "text_sha256": "2401f702a57f0bdb5c1d237e01a2a8e357c8fa24aa1aa864128393be80caca75",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument731045.pdf"
+          }
+        ]
+      ]
+    },
+    "12383101/9": {
+      "new_state": [
+        "waiting",
+        "selected"
+      ],
+      "new_text_sha256": [
+        null,
+        "11abb1efaf77a3f5789f8843330e6c068fca290811ea13ed7361b15e43ba8bda"
+      ],
+      "old_state": [
+        "waiting",
+        "selected"
+      ],
+      "old_text_sha256": [
+        null,
+        "11abb1efaf77a3f5789f8843330e6c068fca290811ea13ed7361b15e43ba8bda"
+      ],
+      "persisted_rejected": [
+        [
+          "A declared normative part could not be read during version comparison"
+        ],
+        [
+          "('Odwr\u00f3cona tabela zgodno\u015bci.pdf',): compliance_table",
+          "('Raport z konsultacji.pdf',): consultation_report",
+          "('Tabela nieuwzgl\u0119dnionych uwag.pdf',): remarks_table",
+          "('Tabela zgodnosci.pdf',): compliance_table",
+          "('protok\u00f3\u0142 rozbie\u017cno\u015bci.pdf',): remarks_table",
+          "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument699840.zip: excluded ministerial comments package (b5f05a39de7d4fec34a853c84d80c5821c118d584b77098b821053ee6076be44)"
+        ]
+      ],
+      "policy": [
+        "document-selection-v25",
+        "document-selection-v26"
+      ],
+      "rejected": [
+        [
+          "A declared normative part could not be read during version comparison"
+        ],
+        [
+          "('Odwr\u00f3cona tabela zgodno\u015bci.pdf',): compliance_table",
+          "('Raport z konsultacji.pdf',): consultation_report",
+          "('Tabela nieuwzgl\u0119dnionych uwag.pdf',): remarks_table",
+          "('Tabela zgodnosci.pdf',): compliance_table",
+          "('protok\u00f3\u0142 rozbie\u017cno\u015bci.pdf',): remarks_table"
+        ]
+      ],
+      "roles": [
+        [],
+        [
+          {
+            "member": [
+              "SKRM II - UST_zm. U\u015aUDE_DSA.pdf"
+            ],
+            "role": "bill",
+            "sha256": "836c94652b6544cbb2cd84e28b24d22242cd4f7f5d2855a01889b5b51bd613d4",
+            "text_sha256": "11abb1efaf77a3f5789f8843330e6c068fca290811ea13ed7361b15e43ba8bda",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument729529.zip"
+          },
+          {
+            "member": [],
+            "role": "self_amendment",
+            "sha256": "5279ece0a7e51a2cf7848cc82590e7c67b496bee58b137f02893f455aee2b146",
+            "text_sha256": "2401f702a57f0bdb5c1d237e01a2a8e357c8fa24aa1aa864128393be80caca75",
+            "url": "https://legislacja.rcl.gov.pl/docs//2/12383101/13045632/13045633/dokument731045.pdf"
+          }
+        ]
+      ]
+    }
+  },
+  "extraction_ids_only": {},
+  "extraction_id_changes": [],
+  "other_changes": {}
+}

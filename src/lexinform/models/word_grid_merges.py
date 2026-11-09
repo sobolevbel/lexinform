@@ -88,3 +88,66 @@ class WordVerticalGridMerges(BaseModel):
         if len(self.model_dump_json().encode()) > MAX_WORD_GRID_MERGE_BYTES:
             raise ValueError("Stored Word vertical merges exceed their byte limit")
         return self
+
+
+class WordHorizontalSpan(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    row: Position
+    columns: GridPosition
+    cell: GridPosition
+
+
+class WordHorizontalGridTable(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    path: GridPosition
+    columns: Position = Field(gt=0, le=_MAX_COLUMNS)
+    rows: Position = Field(gt=0, le=_MAX_GRID_AREA)
+    spans: tuple[WordHorizontalSpan, ...] = Field(min_length=1, max_length=64)
+
+    @model_validator(mode="after")
+    def consistent_spans(self) -> Self:
+        if self.columns * self.rows > _MAX_GRID_AREA:
+            raise ValueError("Word horizontal span grid exceeds its area limit")
+        previous_row = previous_xml_row = previous_xml_cell = previous_end = -1
+        for span in self.spans:
+            start, end = span.columns
+            xml_row, xml_cell = span.cell
+            if not start + 1 < end <= self.columns or span.row >= self.rows:
+                raise ValueError("Word horizontal span escapes its grid or covers one column")
+            if span.row == previous_row:
+                if xml_row != previous_xml_row or xml_cell <= previous_xml_cell:
+                    raise ValueError("Word horizontal span XML cells require increasing positions")
+                if start < previous_end:
+                    raise ValueError("Word horizontal span intervals cannot overlap")
+            elif span.row < previous_row or xml_row <= previous_xml_row:
+                raise ValueError("Word horizontal span rows require increasing XML positions")
+            previous_row, previous_xml_row, previous_xml_cell, previous_end = (
+                span.row,
+                xml_row,
+                xml_cell,
+                end,
+            )
+        return self
+
+
+class WordHorizontalGridSpans(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", revalidate_instances="always")
+
+    profile: Literal["word-horizontal-grid-spans-v1"] = "word-horizontal-grid-spans-v1"
+    input_sha256: Sha256
+    body_manifest_sha256: Sha256
+    notes_manifest_sha256: Sha256 | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    tables: tuple[WordHorizontalGridTable, ...] = Field(min_length=1, max_length=_MAX_TABLES)
+
+    @model_validator(mode="after")
+    def bounded_tables(self) -> Self:
+        paths = [table.path for table in self.tables]
+        if paths != sorted(set(paths)):
+            raise ValueError("Retained Word tables require distinct ordered verified coordinates")
+        if len(self.model_dump_json().encode()) > MAX_WORD_GRID_MERGE_BYTES:
+            raise ValueError("Stored Word horizontal spans exceed their byte limit")
+        return self

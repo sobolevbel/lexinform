@@ -14,6 +14,7 @@ from lexinform.adapters.input_receipts import (
     retained_pdf_page_ranges,
     validate_multipart_item,
 )
+from lexinform.adapters.joint_content_evidence import joint_comparison_application_id
 from lexinform.adapters.primary_scan_history import read_primary_scan_source
 from lexinform.adapters.review_content_evidence import direct_review_application_id
 from lexinform.adapters.status_changes import read_status_change
@@ -93,7 +94,7 @@ from lexinform.models.sitting_content import (
     sitting_content_context,
 )
 from lexinform.models.wykaz import WykazEntry, wykaz_number
-from lexinform.primary_projections import primary_record_matches
+from lexinform.primary_projections import primary_record_matches, primary_record_sha256
 from lexinform.sitting_delivery import sitting_root_plan
 from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
 
@@ -362,6 +363,8 @@ def _verify_card_primary_evidence(
     version: ContentVersion,
     bill: Bill,
     root: Publication | None,
+    *,
+    revision_analysis_sha256: str | None = None,
 ) -> dict[str, object]:
     projection_row = _query(
         connection,
@@ -419,6 +422,11 @@ def _verify_card_primary_evidence(
         or meta.request_sha256 != paid.request_sha256
     ):
         raise CardPrimaryEvidenceError("card_primary_item_scope")
+    if revision_analysis_sha256 is not None and (
+        meta.prepared_input_receipt is None
+        or revision_analysis_sha256 != primary_record_sha256(paid.record)
+    ):
+        raise CardPrimaryEvidenceError("card_revision_primary_result_mismatch")
     if (
         meta.prepared_input_receipt is None
         and meta.text_source == "scan"
@@ -520,7 +528,7 @@ def _verify_card_content(
     ):
         raise ValueError("card_content_root_scope")
     primary = None
-    if value.card_primary_evidence is not None:
+    if value.card_primary_evidence is not None and value.previous_version_id is None:
         if semantic.reply_to is not None or semantic.update_group or semantic.sitting_group:
             raise CardPrimaryEvidenceError("card_primary_plan_scope")
         try:
@@ -554,6 +562,34 @@ def _verify_card_content(
                 (value.previous_version_id,),
             )
         }
+        reference = value.card_primary_evidence
+        if reference is not None:
+            inherited = reference.model_copy(update={"revision_analysis_sha256": None})
+            if (
+                root is None
+                or root.status is not PublicationStatus.SENT
+                or previous_ids != {root.id}
+                or root.sent_at is None
+                or root.sent_at > value.recorded_at
+                or previous.previous_version_id is not None
+                or previous.card_primary_evidence != inherited
+                or semantic.update_group
+                or semantic.sitting_group
+            ):
+                raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
+            try:
+                primary = _verify_card_primary_evidence(
+                    connection,
+                    inherited,
+                    previous,
+                    bill,
+                    root,
+                    revision_analysis_sha256=reference.revision_analysis_sha256,
+                )
+            except CardPrimaryEvidenceError:
+                raise
+            except ValueError as exc:
+                raise CardPrimaryEvidenceError("invalid_card_primary_evidence") from exc
         if not retained:
             previous_id = verify_card_content(connection, previous, retained=True)
             previous_row = (
@@ -1689,6 +1725,12 @@ def verify_original_delivery_content(
             connection, bill, review, evidence.kind, recorded_at=version.recorded_at
         ):
             raise ValueError("original_delivery_review_application_mismatch")
+    if (
+        evidence.joint_comparison_application_id is not None
+        and evidence.joint_comparison_application_id
+        != joint_comparison_application_id(connection, bill, recorded_at=version.recorded_at)
+    ):
+        raise ValueError("original_delivery_joint_application_mismatch")
     if evidence.kind is PublicationKind.ACT_PUBLISHED and bill.act is None:
         raise ValueError("original_delivery_act_missing")
     primary_context = None

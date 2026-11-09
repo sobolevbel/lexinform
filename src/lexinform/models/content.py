@@ -158,6 +158,10 @@ class CardPrimaryEvidence(BaseModel):
     projection_application_id: int = Field(gt=0, lt=2**63, strict=True)
     source_observation_id: str = Field(pattern=r"^source-observation-v1:[0-9a-f]{64}$")
 
+    revision_analysis_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$", exclude_if=lambda value: value is None
+    )
+
 
 class SupplementContentEvidence(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -390,9 +394,11 @@ class ContentVersion(BaseModel):
         if self.card_primary_evidence is not None and (
             self.card_context_profile != "continuation-v1"
             or self.change_snapshot_id is not None
-            or self.reason != "original"
+            or self.reason not in ("original", "card_revision")
+            or (self.reason == "card_revision")
+            != (self.card_primary_evidence.revision_analysis_sha256 is not None)
         ):
-            raise ValueError("Primary card evidence requires an original compact card")
+            raise ValueError("Primary card evidence requires its exact compact card profile")
         if self.card_context_profile is not None and self.change_snapshot_id is not None:
             raise ValueError("Compact card context cannot describe an amendment")
         if self.reason == "card_revision" and self.change_snapshot_id is not None:

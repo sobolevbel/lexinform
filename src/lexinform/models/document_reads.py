@@ -182,6 +182,10 @@ class LoadedFile:
     complete_unlocated_doc_support: bool = field(default=False, compare=False, repr=False)
     opaque_failure_prose: bool = field(default=False, compare=False, repr=False)
     archive_unpack_blocked: bool = field(default=False, compare=False, repr=False)
+    ministerial_comment_table_bundle: bool = field(default=False, compare=False, repr=False)
+    excluded_amendment_reads: tuple[ArtifactReadIdentity, ...] = field(
+        default=(), compare=False, repr=False
+    )
     archive_version_evidence: ArchiveVersionEvidence | None = field(
         default=None, compare=False, repr=False
     )

@@ -21,6 +21,7 @@ from lexinform.text_projection import SourcePiece, TextProjection, project_piece
 
 DOCUMENT_SELECTION_POLICY_VERSION = "document-selection-v24"
 RCL_AMENDMENT_ARCHIVE_POLICY_VERSION = "document-selection-v25"
+RCL_COMMENT_TABLE_AMENDMENT_POLICY_VERSION = "document-selection-v26"
 
 
 def bill_selection(

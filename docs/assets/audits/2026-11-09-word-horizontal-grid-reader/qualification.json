@@ -1,0 +1,93 @@
+{
+  "atomic_rejections": {
+    "column_interval": "invalid stored extraction result",
+    "foreign_manifest": "invalid stored extraction result"
+  },
+  "baseline": {
+    "gzip_bytes": 8938,
+    "sha256": "5e14b7425be2c4bd1e6b20b53e7488ab0c8ca4eac5a84b96f4895e182d44136a",
+    "sql_bytes": 43970
+  },
+  "default_writer_changed": false,
+  "geometry_qualification_sha256": "92d4dc810c79291877a912251595981b7f0c0ae1fdf90a00c9d99b93c93ca5ba",
+  "horizontal": {
+    "body_manifest_sha256": "82f265d444c7518d0e7b4f6856c2f60a507915b58e4b50668e9d37d8e1949772",
+    "input_sha256": "8501c9b1b7b3550f5184cc4ef70d9cbf90a7a5eb34b5bfd5cf10213e492afbfd",
+    "notes_manifest_sha256": "498ab6102a20f32a7e99853933cdf9c4c87d48c201648fe4aee6ba86d307a2e9",
+    "profile": "word-horizontal-grid-spans-v1",
+    "tables": [
+      {
+        "columns": 4,
+        "path": [
+          0,
+          278
+        ],
+        "rows": 16,
+        "spans": [
+          {
+            "cell": [
+              14,
+              0
+            ],
+            "columns": [
+              0,
+              4
+            ],
+            "row": 12
+          },
+          {
+            "cell": [
+              15,
+              0
+            ],
+            "columns": [
+              0,
+              4
+            ],
+            "row": 13
+          },
+          {
+            "cell": [
+              16,
+              2
+            ],
+            "columns": [
+              2,
+              4
+            ],
+            "row": 14
+          },
+          {
+            "cell": [
+              17,
+              2
+            ],
+            "columns": [
+              2,
+              4
+            ],
+            "row": 15
+          }
+        ]
+      }
+    ]
+  },
+  "inputs": {
+    "documents/files/418603.docx": "8501c9b1b7b3550f5184cc4ef70d9cbf90a7a5eb34b5bfd5cf10213e492afbfd"
+  },
+  "legacy_text_sha256": "efc802b7dd769d90a26a05cd5c8c5bedc59653c89d604633450e62958e2c0dd4",
+  "new_result_id": "extraction-v1:bcb7232238cc6f62635d4d059ae527927511d07508b38868d1a1b7b2875553e6",
+  "old_reader_rejects_candidate_atomically": true,
+  "old_result_id": "extraction-v1:cd676906d3f4a24615cee57c7b3eb4b827c7519b3742d6c97a8c4e5ac063457d",
+  "original_control": {
+    "gzip_bytes": 8864,
+    "sha256": "30cf921e4e6a933953c3d85dced2564ca36cc6fb18d0c09a4b8771ceb6a00cdf",
+    "sql_bytes": 43537
+  },
+  "reader_candidate": {
+    "gzip_bytes": 9016,
+    "sha256": "217b91bcf3d19e7bb829c76dcc77b963ba65253519ffb469c96fb588d4858d01",
+    "sql_bytes": 44525
+  },
+  "vertical_metadata_unchanged": true
+}

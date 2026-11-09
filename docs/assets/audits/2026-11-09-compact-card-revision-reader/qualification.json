@@ -1,0 +1,9 @@
+{
+  "cleaned_dump_restored_byte_identical": true,
+  "gzip_delta_bytes": 67,
+  "legacy_content_ids_unchanged": true,
+  "profile": "first_compact_card_revision_same_paid_prepared_input",
+  "qualification": "synthetic paid-result and delivery fixture through real service",
+  "reader_negative_foreign_projection_rejected": true,
+  "sql_delta_bytes": 300
+}

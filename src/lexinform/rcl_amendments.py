@@ -1,10 +1,16 @@
 """Recognize a separately filed self-amendment directed at one RCL project."""
 
+import hashlib
+import io
 import re
+import zipfile
 
 from lexinform.models.documents import DocumentPart, DocumentSelection
+from lexinform.models.extractions import DocumentExtraction
 from lexinform.models.rcl import normalize_wykaz_number, rcl_num_key
 from lexinform.models.sejm import ProcessSummary
+from lexinform.ports import PdfPageTextExtractor
+from lexinform.sections import PAGE_BREAK
 
 _HEADING = re.compile(
     r"\A\s*(?:\d+[ \t]*\n\s*)?(?:projekt(?:[ \t]+z[ \t]+dnia[ \t]+[^\n]{1,48})?[ \t]*\n\s*)?"
@@ -40,6 +46,111 @@ _NORMATIVE_REFERENCE = re.compile(
     r"uchyla\s+się|skreśla\s+się|zastępuje\s+się|dodaje\s+się)\b",
     re.I,
 )
+
+
+_MINISTRY_COMMENT_TITLE = re.compile(
+    r"stanowisko ministra [^()]{1,80}? wobec uwag zgłoszonych do projektu ustawy "
+    r"[^()]{1,400} \((?:UA|UB|UC|UD(?:ER)?|UO|UPRO)\d{1,5}\)",
+    re.I,
+)
+_MINISTRY_COMMENT_COLUMNS = re.compile(
+    r" w ramach skrm lp\. podmiot wnosząc ?y uwagi jednostka redakcyjna, "
+    r"do której wnoszone są uwagi zgłoszona uwaga stanowisko\b"
+)
+_SEPARATE_NORMATIVE_HEADING = re.compile(
+    r"^[ \t]*(?:autopoprawka\b|(?:projekt[ \t]+)?ustawa[ \t]*(?:z dnia\b|$))",
+    re.I | re.M,
+)
+
+
+def _ministerial_comment_table_parts(parts: tuple[DocumentPart, ...]) -> bool:
+    if len(parts) != 2 or any(
+        len(part.members) != 1
+        or "/" in part.members[0]
+        or "\\" in part.members[0]
+        or not part.members[0].casefold().endswith(".pdf")
+        or not part.sha256
+        or not part.pages
+        or part.losses
+        for part in parts
+    ):
+        return False
+    for letter, table in (parts, parts[::-1]):
+        if (
+            letter.pages != 1
+            or len(letter.text) > 2_000
+            or "autopoprawk" in letter.text.casefold()
+            or _NORMATIVE_REFERENCE.search(letter.text)
+            or _SEPARATE_NORMATIVE_HEADING.search(table.text)
+        ):
+            continue
+        pages = table.text.split(PAGE_BREAK)
+        if len(pages) != table.pages or any(not page.strip() for page in pages):
+            continue
+        opening = " ".join(pages[0][:1_200].casefold().split())
+        title = _MINISTRY_COMMENT_TITLE.match(opening)
+        if title is not None and _MINISTRY_COMMENT_COLUMNS.match(opening, title.end()):
+            forwarding = (
+                f"szanowny panie sekretarzu, w załączeniu przekazuję tabelę zawierającą {title[0]} "
+                "w ramach rozpatrywania przez stały komitet rady ministrów. z wyrazami szacunku,"
+            )
+            if forwarding in " ".join(letter.text.casefold().split()):
+                return True
+    return False
+
+
+def complete_ministerial_comment_table_bundle(
+    pdf: PdfPageTextExtractor, data: bytes, extracted: DocumentExtraction
+) -> bool:
+    selection, result = extracted.document.selection, extracted.result
+    parts = selection.observed_parts
+    if (
+        selection.state != "unsupported"
+        or selection.parts
+        or extracted.document.archive_unpack_blocked
+        or result.physical_part_count != 2
+        or result.rejected_count
+        or not _ministerial_comment_table_parts(parts)
+        or any(part.source_sha256 != result.artifact_sha256 for part in parts)
+    ):
+        return False
+    members = {part.members[0]: part for part in parts}
+    if len(members) != 2 or hashlib.sha256(data).hexdigest() != result.artifact_sha256:
+        return False
+    max_member_bytes = result.options.max_member_bytes
+    if max_member_bytes is None:
+        max_member_bytes = result.options.archive_bytes
+    try:
+        with zipfile.ZipFile(io.BytesIO(data)) as archive:
+            entries = archive.infolist()
+            if (
+                len(entries) != len(members)
+                or {entry.filename for entry in entries} != members.keys()
+                or any(entry.file_size > max_member_bytes for entry in entries)
+                or sum(entry.file_size for entry in entries) > result.options.archive_bytes
+            ):
+                return False
+            for entry in entries:
+                part = members[entry.filename]
+                body = archive.read(entry)
+                if hashlib.sha256(body).hexdigest() != part.sha256:
+                    return False
+                pages = pdf.extract_pages(body)
+                if (
+                    pages.input_sha256 != part.sha256
+                    or pages.page_count != part.pages
+                    or pages.legacy_text != part.text
+                    or any(
+                        page.error_type is not None
+                        or not page.text.strip()
+                        or PAGE_BREAK in page.text
+                        for page in pages.pages
+                    )
+                ):
+                    return False
+    except OSError, ValueError, RuntimeError, zipfile.BadZipFile:
+        return False
+    return True
 
 
 def _title(text: str) -> str:

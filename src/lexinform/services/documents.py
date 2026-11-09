@@ -58,6 +58,7 @@ from lexinform.document_editions import candidate_edition
 from lexinform.document_selection import (
     DOCUMENT_SELECTION_POLICY_VERSION,
     RCL_AMENDMENT_ARCHIVE_POLICY_VERSION,
+    RCL_COMMENT_TABLE_AMENDMENT_POLICY_VERSION,
 )
 from lexinform.errors import AttachmentTooLargeError, DownloadError, ServiceUnavailableError
 from lexinform.local_timing import observe_read_timing
@@ -152,6 +153,7 @@ from lexinform.word_formula_placement import WordFormulaSource
 log = logging.getLogger(__name__)
 
 MAX_DEFERRED_ARCHIVE_TRACES = 256
+MAX_COMMENT_TABLE_EXCLUSIONS = 8
 MIN_TEXT_CHARS = 200
 
 
@@ -196,6 +198,7 @@ class _CompositionCapture:
     )
     required_gap: RequiredPartGap | None = None
     amendment_gap: AmendmentPartGap | None = None
+    comment_table_exclusions: dict[str, ArtifactReadIdentity] = field(default_factory=dict)
     version_part_gaps: list[RequiredPartGap | AmendmentPartGap | NormativeAnnexGap] = field(
         default_factory=list
     )
@@ -468,6 +471,7 @@ class TextLoader:
         cache_size: int = 32,
         capture_word_formulas: Callable[[bytes, DocumentExtraction], WordFormulaSource | None]
         | None = None,
+        verify_rcl_comment_table: Callable[[bytes, DocumentExtraction], bool] | None = None,
         physical_factory: Callable[[ObservationOrder], PhysicalObservationCollector] | None = None,
         sejm: SejmGateway | None = None,
     ) -> None:
@@ -478,6 +482,7 @@ class TextLoader:
         self._cache: dict[str, _CachedDocument] = {}
         self._cache_size = cache_size
         self._capture_word_formulas = capture_word_formulas
+        self._verify_rcl_comment_table = verify_rcl_comment_table
         self._lock = threading.Lock()
         self._archive_traces: dict[tuple[str, str, str], CandidateDispositionTrace] = {}
         self._read_cache_hits = 0
@@ -896,11 +901,20 @@ class TextLoader:
             with suppress(Exception):
                 enriched = _trace_with_archive_evidence(trace, evidence)
                 defer_archive_trace = partial(self._defer_archive_trace, trace.trace_id, enriched)
+        recorded_selection = file.selection
+        if file.excluded_amendment_reads:
+            exclusion_notes = tuple(
+                f"{read.requested_url}: excluded ministerial comments package ({read.sha256})"
+                for read in file.excluded_amendment_reads
+            )
+            recorded_selection = recorded_selection.model_copy(
+                update={"rejected": (*recorded_selection.rejected, *exclusion_notes)}
+            )
         return DocumentSourceRead(
             source_document,
-            DocumentSelectionRecord.from_selection(file.selection),
+            DocumentSelectionRecord.from_selection(recorded_selection),
             physical.artifacts,
-            reads=source_reads,
+            reads=tuple(dict.fromkeys((*source_reads, *file.excluded_amendment_reads))),
             extractions=physical.extractions,
             candidate_trace=trace,
             rcl_proposal=file.rcl_proposal
@@ -1170,6 +1184,19 @@ class TextLoader:
         bundle = finish_normative(bundle)
         for position, url in enumerate(document.amendment_urls):
             file = self._read_composed_part(document, address, "amendment", position, url)
+            if (
+                attempt is not None
+                and document.kind == "rcl"
+                and file.ministerial_comment_table_bundle
+                and urlparse(url).path.casefold().endswith(".zip")
+            ):
+                _, read, _ = self.file_origins(url, file)
+                exclusions = attempt[0].comment_table_exclusions
+                if read is not None and (
+                    read.read_id in exclusions or len(exclusions) < MAX_COMMENT_TABLE_EXCLUSIONS
+                ):
+                    exclusions[read.read_id] = read
+                    continue
             amended = amendment_part(bundle, url, file, rcl=document.kind == "rcl")
             if isinstance(amended, RequiredPartFailure):
                 if attempt is not None:
@@ -1576,11 +1603,21 @@ class TextLoader:
             candidate.amendment_urls for candidate in (document, *document.alternatives)
         ):
             policy_version = RCL_AMENDMENT_ARCHIVE_POLICY_VERSION
+        comment_reads = (
+            tuple(
+                sorted(composition.comment_table_exclusions.values(), key=lambda read: read.read_id)
+            )
+            if composition is not None
+            else ()
+        )
+        if comment_reads:
+            policy_version = RCL_COMMENT_TABLE_AMENDMENT_POLICY_VERSION
         return selected, replace(
             loaded,
             archive_version_evidence=archive_version_evidence,
             selection=loaded.selection.model_copy(update={"policy_version": policy_version}),
             candidate_trace=trace,
+            excluded_amendment_reads=comment_reads,
         )
 
     @contextmanager
@@ -1589,7 +1626,11 @@ class TextLoader:
         token: Token[_CompositionScope | None] | None = None
         try:
             capture = _CompositionCapture(required=RequiredPartCapture())
-            token = _COMPOSITION_SCOPE.set(_CompositionScope(self, threading.get_ident(), capture))
+            parent = _COMPOSITION_SCOPE.get()
+            thread_id = threading.get_ident()
+            if parent is not None and parent.owner is self and parent.thread_id == thread_id:
+                capture.comment_table_exclusions = parent.capture.comment_table_exclusions
+            token = _COMPOSITION_SCOPE.set(_CompositionScope(self, thread_id, capture))
         except Exception:
             capture = None
         try:
@@ -2118,6 +2159,7 @@ class TextLoader:
                 complete_pdf_pages = None
                 word_formula_source = None
                 archive_unpack_blocked = False
+                comment_table_bundle = False
                 if isinstance(self._extractor, ProvenanceTextExtractor):
                     observed = self._extractor.extract_document_with_provenance(data)
                     if self._capture_word_formulas is not None and urlparse(
@@ -2137,6 +2179,13 @@ class TextLoader:
                     text = observed.document.text
                     selection = observed.document.selection
                     archive_unpack_blocked = observed.document.archive_unpack_blocked
+                    if (
+                        self._verify_rcl_comment_table is not None
+                        and observed.result.artifact_sha256 == artifact.sha256
+                        and urlparse(url).path.casefold().endswith(".zip")
+                    ):
+                        with suppress(Exception):
+                            comment_table_bundle = self._verify_rcl_comment_table(data, observed)
                     with self._lock:
                         self._extractions[observed.result.artifact_sha256] = observed.result
                     if invocation is not None:
@@ -2198,6 +2247,7 @@ class TextLoader:
                     native_complete_standalone=native_standalone,
                     complete_unlocated_doc_support=complete_unlocated_doc,
                     archive_unpack_blocked=archive_unpack_blocked,
+                    ministerial_comment_table_bundle=comment_table_bundle,
                 )
                 completed = True
         finally:

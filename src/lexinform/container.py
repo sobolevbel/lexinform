@@ -68,6 +68,7 @@ from lexinform.ports import (
     WykazGateway,
 )
 from lexinform.pricing import input_limit_of, long_input_tier, price_of, scan_page_tokens
+from lexinform.rcl_amendments import complete_ministerial_comment_table_bundle
 from lexinform.sections import TextBudget
 from lexinform.services.amendments import AmendmentsService
 from lexinform.services.analysis import AnalysisOptions, AnalysisService
@@ -194,9 +195,10 @@ class Container:
             if self.rcl is not None:
                 downloaders[_host(self.settings.rcl_base_url)] = self.rcl.download
             max_bytes = self.settings.max_pdf_download_mb * 1024 * 1024
+            pdf = PypdfTextExtractor()
             docx = DocxTextExtractor()
             extractor = self.extractor or DocumentTextExtractor(
-                PypdfTextExtractor(),
+                pdf,
                 docx,
                 DocTextExtractor(),
                 max_member_bytes=max_bytes,
@@ -208,6 +210,11 @@ class Container:
                 extractor,
                 max_bytes=max_bytes,
                 physical_factory=PhysicalObservationCollector,
+                verify_rcl_comment_table=(
+                    partial(complete_ministerial_comment_table_bundle, pdf)
+                    if self.extractor is None
+                    else None
+                ),
                 sejm=self.gateway,
                 capture_word_formulas=(
                     partial(capture_word_formula_source, docx)

@@ -71,6 +71,10 @@ class OriginalDeliveryEvidence(BaseModel):
         default=None, gt=0, lt=2**63, strict=True, exclude_if=lambda value: value is None
     )
 
+    joint_comparison_application_id: int | None = Field(
+        default=None, gt=0, lt=2**63, strict=True, exclude_if=lambda value: value is None
+    )
+
     @model_validator(mode="after")
     def topology(self) -> Self:
         if (self.kind is PublicationKind.JOINT_BILL) != (self.joint_primary is not None) or (
@@ -87,6 +91,11 @@ class OriginalDeliveryEvidence(BaseModel):
             and self.kind is not PublicationKind.CONSULTATION_REVIEW
         ):
             raise ValueError("review application requires its consultation notice")
+        if (
+            self.joint_comparison_application_id is not None
+            and self.kind is not PublicationKind.JOINT_BILL
+        ):
+            raise ValueError("Joint comparison application requires its original reply")
         return self
 
 

@@ -12,6 +12,7 @@ from lexinform.models import (
     AnalysisRecord,
     ArtifactMetadata,
     BatchIntent,
+    Bill,
     BillStatus,
     ComputationInputBinding,
     ComputationResult,
@@ -30,8 +31,10 @@ from lexinform.models import (
     computation_id,
 )
 from lexinform.models.content import CardPrimaryEvidence
+from lexinform.primary_projections import primary_record_sha256
 from lexinform.services.content_history import prepare_publication_content
 from lexinform.services.content_inspection import inspect_content
+from lexinform.services.message_parts import continuation_snapshot
 from tests.fakes import FixedClock
 from tests.unit.test_content_sources import Case
 from tests.unit.test_content_sources import case as case
@@ -327,3 +330,107 @@ def test_doctor_omits_compact_primary_refs_when_evidence_is_invalid_or_unbound(
     assert report["status"] == ("failed" if fault == "source" else "recorded")
     assert "card_primary_evidence" not in report["histories"][0]["versions"][0]
     assert target.read_bytes() == before
+
+
+def test_first_compact_revision_can_bind_the_same_paid_input_after_cleanup(
+    case: Case, tmp_path: Path
+) -> None:
+    root, previous = store_marked_card(case)
+    assert root.id is not None and root.delivery is not None, "the fixture stores the original"
+    reference = previous.card_primary_evidence
+    assert reference is not None, "the fixture stores the exact original evidence"
+    bill = Bill.model_validate_json(root.delivery.bill_json)
+    record = bill.analysis
+    assert record is not None, "the original render has its exact paid record"
+    case.repo.mark_publication(root.id, PublicationStatus.SENT, message_id=10, sent_at=NOW)
+    edited_at = NOW + timedelta(days=1)
+    edited_id = case.repo.create_publication(
+        Publication(
+            term=root.term,
+            number=root.number,
+            kind=PublicationKind.MESSAGE_PART,
+            status=PublicationStatus.QUEUED,
+            channel_id=root.channel_id,
+            created_at=edited_at,
+            ref=f"card/{root.id}/{'a' * 64}-{root.id}/1",
+            delivery=DeliveryPlan(
+                bill_json=continuation_snapshot(bill),
+                rendered_text="Revised metadata",
+                revision_of=root.id,
+                edit_message_id=10,
+                continuation_parent=root.id,
+                continuation_index=1,
+                reply_to=10,
+            ),
+        )
+    )
+    revision = case.repo.publication_by_id(edited_id)
+    assert revision is not None, "the fixture stores a physical revision slot"
+    prepared = prepare_publication_content(
+        case.repo,
+        FixedClock(edited_at),
+        revision,
+        formatter_version="telegram-format-v2",
+        language="ru",
+        card_history_parent=previous,
+    )
+    assert prepared is not None, "the fixture uses the compatible compact edit path"
+    plain, snapshots = prepared
+    for snapshot in snapshots:
+        case.repo.save_content_snapshot(snapshot)
+    with pytest.raises(ValueError, match="exact compact card profile"):
+        case.repo.save_content_version(
+            plain.model_copy(update={"card_primary_evidence": reference})
+        )
+    edited_record = record.model_copy(
+        update={"analysis": record.analysis.model_copy(update={"summary": "Another paid answer"})}
+    )
+    for candidate, reason in (
+        (
+            reference.model_copy(
+                update={"revision_analysis_sha256": primary_record_sha256(edited_record)}
+            ),
+            "card_revision_primary_result_mismatch",
+        ),
+        (
+            reference.model_copy(
+                update={
+                    "revision_analysis_sha256": primary_record_sha256(record),
+                    "projection_application_id": reference.projection_application_id + 1,
+                }
+            ),
+            "card_revision_primary_predecessor",
+        ),
+    ):
+        with pytest.raises(ValueError, match=reason):
+            case.repo.save_content_version(
+                plain.model_copy(update={"card_primary_evidence": candidate})
+            )
+    retained = plain.model_copy(
+        update={
+            "card_primary_evidence": reference.model_copy(
+                update={"revision_analysis_sha256": primary_record_sha256(record)}
+            )
+        }
+    )
+    case.repo.save_content_version(retained)
+    case.repo.bind_publication_content(edited_id, retained.content_id)
+    case.repo.mark_publication(edited_id, PublicationStatus.SENT, message_id=10, sent_at=edited_at)
+    case.repo.prune_history(
+        before=edited_at + timedelta(days=1), memo_before=NOW - timedelta(days=89)
+    )
+    sql = case.repo.dump()
+    case.repo.restore(sql)
+    assert case.repo.dump() == sql
+    assert case.repo.get_publication_content(edited_id) == retained
+    target = tmp_path / "revision-checkpoint.db"
+    with closing(SqliteBillRepository(target)) as copy:
+        copy.restore(sql)
+    result = audit(target, publication_id=root.id)
+    assert result["status"] == "recorded" and not result["findings"]
+    assert result["histories"][0]["current_content_id"] == retained.content_id
+    marked = retained.card_primary_evidence
+    assert marked is not None, "the prospective revision has a persisted witness"
+    assert result["histories"][0]["versions"][1]["card_primary_evidence"] == marked.model_dump(
+        mode="json"
+    )

@@ -213,10 +213,7 @@ def _read_history(
                 and physical_id is None
             ):
                 findings.add("card_content_physical_unavailable", version.content_id, warning=True)
-            if (
-                version.card_primary_evidence is not None
-                and physical_id == version.root_publication_id
-            ):
+            if version.card_primary_evidence is not None and physical_id is not None:
                 validated_primary_refs.add(version.content_id)
         except ValueError, TypeError, RecursionError, sqlite3.Error, IndexError, KeyError:
             findings.add("invalid_card_content_history", version.content_id)
