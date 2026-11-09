@@ -14,6 +14,7 @@ from lexinform.adapters.amendment_inputs import read_amendment_input
 from lexinform.adapters.computation_history import read_result_application
 from lexinform.adapters.content_history import (
     read_bound_card_primary_cycle,
+    read_bound_multipart_primary_cycle,
     read_content_version,
     read_expired_card_primary_cycle,
     verify_original_delivery_content,
@@ -820,7 +821,7 @@ def _consultation_review_cycle(db: sqlite3.Connection, publication_id: int) -> d
 
 
 def _inspect_card(
-    db: sqlite3.Connection, publication_id: int, *, include_compact: bool
+    db: sqlite3.Connection, publication_id: int, *, include_compact: bool, include_multipart: bool
 ) -> tuple[str, dict[str, object]]:
     try:
         cycle = _inspect(db, publication_id)
@@ -831,6 +832,15 @@ def _inspect_card(
         )
         return reason, cycle
     except CycleNotObservedError as exc:
+        if include_multipart and str(exc) in (
+            "frozen_plan_unavailable",
+            "publication_outside_direct_original_scope",
+        ):
+            multipart_bound, multipart = read_bound_multipart_primary_cycle(db, publication_id)
+            if multipart is not None:
+                return "exact_retained_multipart_cycle", multipart
+            if multipart_bound:
+                raise CycleNotObservedError("multipart_recorded_send_unavailable") from exc
         if include_compact and str(exc) == "frozen_plan_unavailable":
             compact = read_expired_card_primary_cycle(db, publication_id)
             if compact is not None:
@@ -848,6 +858,7 @@ def _observe(
     *,
     secondary_application_id: int | None = None,
     include_compact: bool = False,
+    include_multipart: bool = False,
     include_request_prefix: bool = False,
     include_secondary_metadata_cycle: bool = False,
     include_consultation_review_cycle: bool = False,
@@ -859,7 +870,12 @@ def _observe(
             reason = "exact_retained_consultation_review_metadata_cycle"
             cycle = _consultation_review_cycle(db, publication_id)
         elif secondary_application_id is None:
-            reason, cycle = _inspect_card(db, publication_id, include_compact=include_compact)
+            reason, cycle = _inspect_card(
+                db,
+                publication_id,
+                include_compact=include_compact,
+                include_multipart=include_multipart,
+            )
         else:
             reason = "exact_retained_secondary_suffix"
             cycle = _secondary_suffix(
@@ -977,6 +993,7 @@ def audit(
             publication_id,
             secondary_application_id=secondary_application_id,
             include_compact=include_compact,
+            include_multipart=include_compact,
             include_request_prefix=include_request_prefix,
             include_secondary_metadata_cycle=include_secondary_metadata_cycle,
             include_consultation_review_cycle=include_consultation_review_cycle,
@@ -1047,15 +1064,23 @@ def audit(
     }
 
 
-def census(database: Path) -> dict[str, object]:
+def census(
+    database: Path,
+    *,
+    include_consultation_review_cycle: bool = False,
+    include_multipart: bool = False,
+) -> dict[str, object]:
     primary: Counter[str] = Counter()
     secondary = []
+    consultation = []
     with open_snapshot(database) as snapshot:
         db = snapshot.connection
         for (publication_id,) in db.execute(
             "SELECT id FROM publications WHERE kind='new_bill' AND status='sent'"
         ):
-            _, reason, _ = _observe(db, publication_id, include_compact=True)
+            _, reason, _ = _observe(
+                db, publication_id, include_compact=True, include_multipart=include_multipart
+            )
             primary[reason] += 1
         for publication_id, application_id in db.execute(
             "SELECT p.id, a.id FROM result_applications a JOIN publications p"
@@ -1097,6 +1122,22 @@ def census(database: Path) -> dict[str, object]:
                     else {},
                 }
             )
+        if include_consultation_review_cycle:
+            for publication_id, publication_status in db.execute(
+                "SELECT id, status FROM publications WHERE kind='consultation_review' ORDER BY id"
+            ):
+                status, reason, cycle = _observe(
+                    db, publication_id, include_consultation_review_cycle=True
+                )
+                consultation.append(
+                    {
+                        "publication_id": publication_id,
+                        "publication_status": publication_status,
+                        "status": status,
+                        "reason": reason,
+                        "cycle": cycle,
+                    }
+                )
         if not snapshot.unchanged():
             raise ValueError("Database changed during delivery census")
     return {
@@ -1106,6 +1147,11 @@ def census(database: Path) -> dict[str, object]:
         "database_sha256": snapshot.sha256,
         "primary_census": dict(primary),
         "secondary_census": secondary,
+        **(
+            {"consultation_review_census": consultation}
+            if include_consultation_review_cycle
+            else {}
+        ),
     }
 
 
@@ -1120,12 +1166,12 @@ def main() -> None:
     mode.add_argument(
         "--include-consultation-review-cycle",
         action="store_true",
-        help="verify one direct consultation review in the retained metadata profile",
+        help="verify direct consultation reviews in the retained metadata profile",
     )
-    mode.add_argument(
+    parser.add_argument(
         "--include-compact",
         action="store_true",
-        help="allow validated original card evidence before and after plan expiry",
+        help="allow validated original card evidence, including multipart originals",
     )
     parser.add_argument(
         "--include-request-prefix",
@@ -1155,8 +1201,6 @@ def main() -> None:
         if args.census and (
             args.include_request_prefix
             or args.include_secondary_metadata_cycle
-            or args.include_consultation_review_cycle
-            or args.include_compact
             or args.secondary_application_id is not None
             or legacy_text_checkpoint is not None
             or delivery_checkpoint is not None
@@ -1170,7 +1214,11 @@ def main() -> None:
         if args.output.resolve() in protected:
             raise ValueError("Report must be separate from the input database")
         report = (
-            census(args.database)
+            census(
+                args.database,
+                include_consultation_review_cycle=args.include_consultation_review_cycle,
+                include_multipart=args.include_compact,
+            )
             if args.census
             else audit(
                 args.database,

@@ -1916,9 +1916,16 @@ def _retired_card_root(connection: sqlite3.Connection, identity: int) -> Publica
 def verify_original_delivery_content(
     connection: sqlite3.Connection, version: ContentVersion, *, require_bound: bool = False
 ) -> OriginalDeliveryPlan | None:
+    plan, _ = _verify_original_delivery_content(connection, version, require_bound=require_bound)
+    return plan
+
+
+def _verify_original_delivery_content(
+    connection: sqlite3.Connection, version: ContentVersion, *, require_bound: bool
+) -> tuple[OriginalDeliveryPlan | None, dict[str, object] | None]:
     evidence = version.original_delivery_evidence
     if evidence is None:
-        return None
+        return None, None
     reader = ContentSourceRows(connection)
     bill_snapshot = reader.get_content_snapshot(version.bill_context_id)
     snapshot = reader.get_content_snapshot(version.plan_snapshot_id)
@@ -2001,6 +2008,7 @@ def verify_original_delivery_content(
         ):
             raise ValueError("joint_history_primary_receipt")
 
+    primary_cycle = None
     parent: Publication | None = None
     retired_root = False
     for index, part in enumerate(plan.parts, 1):
@@ -2068,7 +2076,7 @@ def verify_original_delivery_content(
                 raise ValueError("original_delivery_frozen_root")
             if version.card_primary_evidence is not None:
                 try:
-                    _verify_card_primary_evidence(
+                    primary_cycle = _verify_card_primary_evidence(
                         connection,
                         version.card_primary_evidence,
                         version,
@@ -2085,7 +2093,7 @@ def verify_original_delivery_content(
                 version, part, index, publication, parent, bill, review_notice=review_notice
             )
         parent = publication
-    return plan
+    return plan, primary_cycle
 
 
 def _verify_original_delivery_child(
@@ -2563,7 +2571,7 @@ def read_bound_card_primary_cycle(
     if binding["content_id"] is None:
         raise ValueError("compact_card_content_missing")
     version = read_content_version(binding)
-    if version.card_primary_evidence is None:
+    if version.card_primary_evidence is None or version.original_delivery_evidence is not None:
         return None
     if version.root_publication_id != publication_id:
         raise ValueError("compact_card_original_binding_scope")
@@ -2582,6 +2590,82 @@ def read_bound_card_primary_cycle(
         "content_version_id": version.content_id,
         "recorded_sent_at": root.sent_at.isoformat(),
         "frozen_render_sha256": hashlib.sha256(version.rendered_text.encode()).hexdigest(),
+    }
+
+
+def read_bound_multipart_primary_cycle(
+    connection: sqlite3.Connection, publication_id: int
+) -> tuple[bool, dict[str, object] | None]:
+    """Report explicit multipart binding separately from complete physical confirmation."""
+    if (
+        _query(
+            connection,
+            "SELECT 1 FROM sqlite_schema WHERE type='table' AND name='publication_content'",
+        ).fetchone()
+        is None
+    ):
+        return False, None
+    binding = _query(
+        connection,
+        "SELECT v.* FROM publication_content p JOIN content_versions v USING(content_id)"
+        " WHERE p.publication_id=?",
+        (publication_id,),
+    ).fetchone()
+    if binding is None:
+        return False, None
+    version = read_content_version(binding)
+    evidence = version.original_delivery_evidence
+    if (
+        evidence is None
+        or evidence.kind is not PublicationKind.NEW_BILL
+        or version.card_primary_evidence is None
+    ):
+        return False, None
+    if version.root_publication_id != publication_id:
+        raise ValueError("multipart_primary_root_binding")
+    plan, primary = _verify_original_delivery_content(connection, version, require_bound=True)
+    if plan is None or primary is None:
+        raise ValueError("multipart_primary_evidence_unavailable")
+    root = _edition_publication(connection, publication_id)
+    if root.status is not PublicationStatus.SENT or root.message_id is None:
+        return True, None
+    aliases = _query(
+        connection,
+        "SELECT count(*) FROM publications WHERE kind='new_bill' AND channel_id=? AND message_id=?",
+        (root.channel_id, root.message_id),
+    ).fetchone()[0]
+    if aliases != 1:
+        return True, None
+    rendered = []
+    message_ids: set[int] = set()
+    previous = version.recorded_at
+    for index, part in enumerate(plan.parts, 1):
+        physical = _edition_publication(connection, part.id)
+        sent_at = physical.sent_at
+        if physical.status is not PublicationStatus.SENT or sent_at is None:
+            return True, None
+        if (
+            physical.message_id is None
+            or physical.message_id in message_ids
+            or previous.utcoffset() is None
+            or physical.created_at.utcoffset() is None
+            or sent_at.utcoffset() is None
+            or sent_at < max(previous, physical.created_at)
+        ):
+            raise ValueError("multipart_primary_send_chronology")
+        message_ids.add(physical.message_id)
+        previous = sent_at
+        rendered.append(
+            {
+                "part_index": index,
+                "recorded_sent_at": sent_at.isoformat(),
+                "frozen_render_sha256": hashlib.sha256(part.html.encode()).hexdigest(),
+            }
+        )
+    return True, {
+        **primary,
+        "content_version_id": version.content_id,
+        "frozen_render_parts": rendered,
     }
 
 

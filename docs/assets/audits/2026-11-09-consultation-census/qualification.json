@@ -1,0 +1,70 @@
+{
+  "production_snapshot": "eb968cd68c9fb7c07d7f7472c7c2487e9005925d",
+  "production_baseline_byte_exact": true,
+  "controlled_fixture": "J700 with original RCL documents, synthetic answer and delivery",
+  "profiles": {
+    "state": {
+      "database_sha256": "d3518de7cdab83e3001e5af218bffdd2678494880c17e2e40a3eac7acbbd9e52",
+      "report_sha256": "161b06ffcd800ce9b56fa31ae1ef48b4a863e68589112b0c95c1cc6c9238252a",
+      "outcomes": [
+        {
+          "publication_status": "queued",
+          "status": "not_observed",
+          "reason": "recorded_send_unavailable"
+        },
+        {
+          "publication_status": "queued",
+          "status": "not_observed",
+          "reason": "recorded_send_unavailable"
+        }
+      ]
+    },
+    "control": {
+      "database_sha256": "464be7ce5ec5bbc1b58a77a404a69e0b220aeec046c7dbff8c4d4c442a6d1c86",
+      "report_sha256": "5e316f738e46ccb7bc42e0b8f31c5e322449ef99911543a6693dbb8ff96e501a",
+      "outcomes": [
+        {
+          "publication_status": "sent",
+          "status": "recorded",
+          "reason": "exact_retained_consultation_review_metadata_cycle"
+        }
+      ]
+    },
+    "multipart": {
+      "database_sha256": "0bc1a060df32d34bb9a5be8cdb3d4bc3dedb25cceb61fa5ae26374faa074dbbe",
+      "opt_in_report_sha256": "2a858c7f832875ec1eb3a0be5c8d25b064cc4742d9c5bd3cda1630cee5cb65b7",
+      "default_primary_census": {
+        "frozen_plan_unavailable": 1
+      },
+      "opt_in_primary_census": {
+        "exact_retained_multipart_cycle": 1
+      }
+    },
+    "legacy": {
+      "database_sha256": "3dbdc94ceca85ae89be9f6da2b4bfeaa563b3b370d05581105dbc937f125f63d",
+      "opt_in_report_sha256": "7d20df4a4991554ae6ed6b9dc2beb98eea69f3d33fd5f34f928d1f69a348f999",
+      "default_primary_census": {
+        "consumed_projection_unavailable": 4,
+        "exact_retained_cycle": 1,
+        "frozen_paid_reference_unavailable": 3,
+        "frozen_plan_unavailable": 27,
+        "frozen_render_context_unavailable": 13,
+        "prepared_receipt_unavailable": 1,
+        "publication_outside_direct_original_scope": 1,
+        "recorded_send_unavailable": 1
+      },
+      "opt_in_primary_census": {
+        "consumed_projection_unavailable": 4,
+        "exact_retained_cycle": 1,
+        "frozen_paid_reference_unavailable": 3,
+        "frozen_plan_unavailable": 27,
+        "frozen_render_context_unavailable": 13,
+        "prepared_receipt_unavailable": 1,
+        "publication_outside_direct_original_scope": 1,
+        "recorded_send_unavailable": 1
+      }
+    }
+  },
+  "multipart_fixture": "J745 using synthetic paid result and delivery",
+  "legacy_fixture": "Pinned 4764779e91d9d8fe5609aba45de02f4a792479be with unmarked RCL/12408601"
+}

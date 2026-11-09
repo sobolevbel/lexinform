@@ -712,3 +712,47 @@ def test_consultation_cycle_keeps_status_updates_outside_its_scope(
             secondary_application_id=application,
             include_consultation_review_cycle=True,
         )
+
+
+@pytest.mark.parametrize("publication_status", ["queued", "sent"])
+def test_opt_in_census_reports_consultation_review_without_changing_default(
+    case: Case, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, publication_status: str
+) -> None:
+    target = tmp_path / "consultation.db"
+    publication_id = card_snapshot(case, target, kind=PublicationKind.CONSULTATION_REVIEW)
+    with closing(sqlite3.connect(target)) as connection, connection:
+        connection.execute(
+            "UPDATE publications SET status=? WHERE id=?", (publication_status, publication_id)
+        )
+    before = target.read_bytes()
+    output = tmp_path / "census.json"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "primary_delivery_cycle",
+            "--database",
+            str(target),
+            "--census",
+            "--include-consultation-review-cycle",
+            "--output",
+            str(output),
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exit_code:
+        main()
+
+    individual = audit(target, publication_id, include_consultation_review_cycle=True)
+    report = json.loads(output.read_bytes())
+    assert exit_code.value.code == 0
+    assert report.pop("consultation_review_census") == [
+        {
+            "publication_id": publication_id,
+            "publication_status": publication_status,
+            "status": "not_observed",
+            "reason": individual["reason"],
+            "cycle": None,
+        }
+    ]
+    assert report == census(target)
+    assert target.read_bytes() == before
