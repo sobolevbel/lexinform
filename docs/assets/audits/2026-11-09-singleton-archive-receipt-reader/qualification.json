@@ -1,0 +1,122 @@
+{
+  "baseline_reader": "6fbef6a6",
+  "manual_receipt_roundtrip": {
+    "baseline": {
+      "gzip_bytes": 8883,
+      "request_sha256": "0bc0776c737e61bfa24e1ac55f6b8ef4a8b3f4bd6facb518b5aa64811b8f52ab",
+      "sql_bytes": 45368,
+      "sql_sha256": "1cc9458b314b994f2c6cffc94fc50bce126bb1d0e198584e6d31043bbd68ac0c"
+    },
+    "candidate": {
+      "gzip_bytes": 9193,
+      "request_sha256": "0bc0776c737e61bfa24e1ac55f6b8ef4a8b3f4bd6facb518b5aa64811b8f52ab",
+      "sql_bytes": 46587,
+      "sql_sha256": "ad32e4907465c14d5cbaa834010ca2205811a2f39c2c03764c261e0a84cc0502"
+    }
+  },
+  "natural_writer_fixtures": {
+    "cases": [
+      {
+        "archive": "documents/files/577807.zip",
+        "archive_sha256": "df4ab4ea9f73458fbd859eedf02aefad32947ee746072c8eda46d24bd1afbf56",
+        "case": "12353551/9",
+        "document": {
+          "alternatives": [],
+          "amendment_urls": [],
+          "compare_versions": true,
+          "extra_urls": [],
+          "kind": "rcl",
+          "normative_urls": [],
+          "official_link_conflict": false,
+          "required_urls": [],
+          "senate": null,
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12353551/12831082/12831083/dokument577807.zip",
+          "version_basis": [
+            "rcl/12353551/stage/12831082",
+            "Projekt ustawy o zmianie ustawy o p\u0142atno\u015bciach w ramach system\u00f3w wsparcia bezpo\u015bredniego oraz ustawy o krajowym systemie ewidencji producent\u00f3w, ewidencji gospodarstw rolnych ... (UD308), KRM-0610-123-21.zip"
+          ]
+        },
+        "extraction_id": "extraction-v1:23ef1f386ac45a91b9b2d9d250a1c18241be05713a314b040ea04c795f525f82",
+        "member": [
+          "Proj_ustawy_zmiana_ustawy o PB_na SKRM.xml"
+        ],
+        "member_sha256": "f672391743edb2423e89de65cf90bc8d292b28be12a201c84ed57497564b7640",
+        "physical_index": 0,
+        "preexisting_zip_pin": false,
+        "project_path": "corpus/12353551.json",
+        "project_sha256": "d7fdc91465f1287e30e532923234dd166276da8ae0c5bcaf306ab33daa01297e",
+        "state": "selected",
+        "text_sha256": "ba15ec31e061119109c33742b95c82601a115de004c0360c0483a50b60e096a8"
+      },
+      {
+        "archive": "documents/files/577806.zip",
+        "archive_sha256": "5ea245ab1364571e0d928c81ac346940daf995f40b4458f6f8d11e35de449c00",
+        "case": "12353551/12",
+        "document": {
+          "alternatives": [],
+          "amendment_urls": [],
+          "compare_versions": true,
+          "extra_urls": [],
+          "kind": "rcl",
+          "normative_urls": [],
+          "official_link_conflict": false,
+          "required_urls": [],
+          "senate": null,
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12353551/12831093/12831094/dokument577806.zip",
+          "version_basis": [
+            "rcl/12353551/stage/12831093",
+            "Projekt ustawy o zmianie ustawy o p\u0142atno\u015bciach w ramach system\u00f3w wsparcia bezpo\u015bredniego oraz ustawy o krajowym systemie ewidencji producent\u00f3w, ewidencji gospodarstw rolnych ... (UD308), RM-0610-158-21, RM 28-12-2021.zip"
+          ]
+        },
+        "extraction_id": "extraction-v1:9906ade2df10f058867055d95c5f8bb447be453965104b31a0b5dd8c95779636",
+        "member": [
+          "Projekt ustawy_UPP_na RM_22 12 2021.xml"
+        ],
+        "member_sha256": "32c17ddbff95337a3a9c0dd64cd54e81a0f6d34f9c7bc5f683a619ed348ecbb9",
+        "physical_index": 1,
+        "preexisting_zip_pin": false,
+        "project_path": "corpus/12353551.json",
+        "project_sha256": "d7fdc91465f1287e30e532923234dd166276da8ae0c5bcaf306ab33daa01297e",
+        "state": "selected",
+        "text_sha256": "165e2984c94b8af200a2fb526da14f2178654a34a53bf61f8d91d6c64bd371f9"
+      },
+      {
+        "archive": "documents/files/632123.zip",
+        "archive_sha256": "5aa7af0a46a51e599171d67c7425abe77e9bc5650af3fb6317086bc6a4ed5e21",
+        "case": "12374702/12",
+        "document": {
+          "alternatives": [],
+          "amendment_urls": [],
+          "compare_versions": true,
+          "extra_urls": [],
+          "kind": "rcl",
+          "normative_urls": [],
+          "official_link_conflict": false,
+          "required_urls": [],
+          "senate": null,
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12374702/12992586/12992587/dokument632123.zip",
+          "version_basis": [
+            "rcl/12374702/stage/12992586",
+            "Projekt ustawy o zasadach udzielania przez Skarb Pa\u0144stwa gwarancji za zobowi\u0105zania Narodowej Agencji Bezpiecze\u0144stwa Energetycznego (UD505), RM-0610-93-23, RM 18-07-23.zip"
+          ]
+        },
+        "extraction_id": "extraction-v1:6e121e1dcf010b93b1d0e35a0e434905a13ebc3b812d4d9f5ab7fe7f14e1ed57",
+        "member": [
+          "Projekt ustawy gwarancje SP dla NABE - wersja scalona z OSR - 11 07 2023 (3968749).docx"
+        ],
+        "member_sha256": "774d8f4700ac9f5fd42e524956cd4ecda0821edeee34b65a963c72413bc012e3",
+        "physical_index": 2,
+        "preexisting_zip_pin": false,
+        "project_path": "corpus/12374702.json",
+        "project_sha256": "f4a5487023e8cf51fa92aa4eaf4d1b6e461330ccbbf2e6b8251dd7acef5efc87",
+        "state": "selected",
+        "text_sha256": "476715c6a57247c5b09534d7221f621209bd7bc5f1400964909f8a79aa57b77d"
+      }
+    ],
+    "eligible_metadata_roots": 785,
+    "j664_stage_report_sha256": "6854917cb7d3a3e97e8c6a43ae5e3f2854c7ca1e8f9d13428cc4465dbfd0f4d8",
+    "raw_roots_checked": 100,
+    "scope": "first 3 natural cases, pinned ZIPs prioritized"
+  },
+  "previous_reader_rejects_new_receipt_and_preserves_existing_database": true
+}

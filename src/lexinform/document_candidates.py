@@ -445,7 +445,8 @@ def _select_parts(
         comparison, annex_conflict = editions.compare_editions(bill_indices)
         indices = comparison.matching_indices
         compared_parents = {part_parent(*confirmed[index]) for index in indices}
-        if decision_sink is not None and 2 < len(confirmed) <= 32:
+        group_minimum = 2 if annex_conflict else 3
+        if decision_sink is not None and group_minimum <= len(confirmed) <= 32:
             candidate_slots = tuple(index for index, _ in confirmed)
             version_group = ArchiveVersionGroup(
                 candidate_slots=candidate_slots,

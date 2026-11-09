@@ -329,7 +329,7 @@ class ArchiveInputPart(PreparedTextPart):
 class RclArchiveInputReceipt(MultipartTextInputReceipt):
     source_kind = "rcl"
     profile: Literal["primary-rcl-archive-package-text-v1"] = "primary-rcl-archive-package-text-v1"
-    source_parts: tuple[ArchiveInputPart, ...] = Field(min_length=2, max_length=6)
+    source_parts: tuple[ArchiveInputPart, ...] = Field(min_length=1, max_length=6)
     source_observation_id: str = Field(pattern=r"^source-observation-v1:[0-9a-f]{64}$")
     extraction_id: str = Field(pattern=r"^extraction-v1:[0-9a-f]{64}$")
 

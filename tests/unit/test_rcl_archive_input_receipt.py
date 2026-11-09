@@ -12,6 +12,8 @@ from lexinform.models import (
     BillContext,
     DocumentSelection,
     DocumentSelectionRecord,
+    LlmBatch,
+    LlmBatchItem,
     TextDocument,
 )
 from lexinform.models.extractions import extraction_metadata_sha256
@@ -35,13 +37,11 @@ from tests.unit.test_physical_extraction import archive, docx, extractor
 URL = "https://api.test/package.zip"
 
 
-def captured_source() -> tuple[DocumentSourceRead, DocumentSelection]:
-    body = archive(
-        {
-            "bill.docx": docx(BILL + "Art. 2. Wchodzi w życie po upływie 21 dni." * 15),
-            "uzasadnienie.docx": docx("UZASADNIENIE\nProjekt reguluje zasady pobytu. " * 12),
-        }
-    )
+def captured_source(*, singleton: bool = False) -> tuple[DocumentSourceRead, DocumentSelection]:
+    entries = {"bill.docx": docx(BILL + "Art. 2. Wchodzi w życie po upływie 21 dni." * 15)}
+    if not singleton:
+        entries["uzasadnienie.docx"] = docx("UZASADNIENIE\nProjekt reguluje zasady pobytu. " * 12)
+    body = archive(entries)
     gateway = FakeSejmGateway(files={URL: body})
     loader = TextLoader({"api.test": gateway.download}, extractor(), max_bytes=100_000)
     document = TextDocument(url=URL, kind="rcl", compare_versions=True)
@@ -52,13 +52,15 @@ def captured_source() -> tuple[DocumentSourceRead, DocumentSelection]:
 
 
 def offered(
-    repo: SqliteBillRepository, fault: str | None = None
+    repo: SqliteBillRepository, fault: str | None = None, *, singleton: bool = False
 ) -> tuple[BatchIntent, RclArchiveInputReceipt]:
-    source, live = captured_source()
+    source, live = captured_source(singleton=singleton)
     text = live.parts[0].text
     (extraction,) = source.extractions
     selection = source.selection.selection
-    assert len(selection.parts) == 2, "the fixture selects a bill and its justification"
+    assert len(selection.parts) == (1 if singleton else 2), (
+        "the fixture selects the expected ZIP members"
+    )
     recorded = []
     for part in selection.parts:
         (summary,) = [
@@ -123,7 +125,7 @@ def offered(
         extraction_id=extraction.result_id
         if fault != "extraction"
         else "extraction-v1:" + "0" * 64,
-        source_parts=(recorded[0], recorded[1]),
+        source_parts=tuple(recorded),
         context_sha256=primary_context_sha256(frozen.question.ctx),
         request_sha256=frozen.payload_sha256,
         text_sha256=hashlib.sha256(text.encode()).hexdigest(),
@@ -159,14 +161,33 @@ def offered(
     ), receipt
 
 
-def test_exact_one_root_receipt_round_trips(repo: SqliteBillRepository) -> None:
-    intent, receipt = offered(repo)
+@pytest.mark.parametrize("singleton", [False, True])
+def test_exact_one_root_receipt_round_trips(repo: SqliteBillRepository, singleton: bool) -> None:
+    intent, receipt = offered(repo, singleton=singleton)
     repo.save_batch_intent(intent)
     dump = repo.dump()
     repo.restore(dump)
     repo.restore(dump)
     (loaded,) = repo.list_queued_batch_intents()
     assert loaded.meta.prepared_input_receipt == receipt
+    assert loaded.request.payload_json == intent.request.payload_json
+    assert loaded.request.payload_sha256 == intent.request.payload_sha256
+    assert repo.dump() == dump
+
+    batch = LlmBatch(
+        batch_id="archive",
+        provider="openai",
+        call_kind="analysis",
+        submitted_at=NOW,
+        status="submitted",
+        request_count=1,
+        estimated_cost_usd=0,
+    )
+    item = LlmBatchItem.from_intent(batch.batch_id, loaded)
+    repo.save_llm_batch(batch, [item])
+    dump = repo.dump()
+    repo.restore(dump)
+    assert repo.list_llm_batch_items(batch.batch_id) == [item]
     assert repo.dump() == dump
     damaged = dump.replace("\nCOMMIT;", "\nDELETE FROM artifact_reads;\nCOMMIT;")
     assert damaged != dump
