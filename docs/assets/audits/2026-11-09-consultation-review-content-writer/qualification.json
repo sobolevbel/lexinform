@@ -1,0 +1,66 @@
+{
+  "baseline_commit": "07788074",
+  "commission_dump_matches_excluding_run_phase_wall_times": true,
+  "commission_existing_editorial_history_byte_identical": true,
+  "dump_delta_bytes": {
+    "cleaned": {
+      "gzip": 10,
+      "sql": 26
+    },
+    "delivered": {
+      "gzip": 9,
+      "sql": 26
+    }
+  },
+  "html_sha256": [
+    "f7479518aedf066adf9a711f4f4fc987f520be57cd3b8b97034be99fe061d8f5"
+  ],
+  "inputs": {
+    "consultations/manifest.json": "2eac943263e4c88d8e6d7e20ceedd368436f209cd045237ce81ea9b08222d0c2",
+    "documents/files/219589.pdf": "e59760df09c529207685bb054229a185a6ecb07d058a65f0614d2f5618875640",
+    "documents/files/219590.pdf": "ec49d276a4dca02e3bd9f0e80153d1af65fd20983aa043d35d1c0f9543205f50",
+    "documents/files/219591.pdf": "d0804ec331a7fe6d034ac0ff9e286888811a8c38f21055adf8ec3fe790b73ac6"
+  },
+  "integrated_v74_replay": {
+    "dump_delta_bytes": {
+      "cleaned": {
+        "gzip": 9,
+        "sql": 26
+      },
+      "delivered": {
+        "gzip": 11,
+        "sql": 26
+      }
+    },
+    "html_sha256": [
+      "f7479518aedf066adf9a711f4f4fc987f520be57cd3b8b97034be99fe061d8f5"
+    ],
+    "parity_fields": [
+      "request_sha256",
+      "request_bytes",
+      "request_cost_usd",
+      "html_sha256",
+      "result_id",
+      "observation_ids"
+    ],
+    "request_sha256": "012078e4f06b678d07e733166f5b01c63784b4b53d97857292514b299fc37dd8"
+  },
+  "legacy_writer_and_reader_dumps_byte_identical": true,
+  "missing_and_malformed_application_preserve_request_html": true,
+  "new_writer_only_adds_editorial_application_id": true,
+  "observation_ids": [
+    "source-observation-v1:ed9ac2075e43253c484a17ae290c0f902a97a81832ff2dc8eb3e37158397c52a",
+    "source-observation-v1:f3036cd5f95b8e290b99735b6e4916e31c95a5cd70e1d0e425dd2d0fccb47901",
+    "source-observation-v1:c621d0c8b0c4f0a7eadbfd45c4e8c3b78fb0713eda2879d9d7dfc20b2d9a39d8"
+  ],
+  "paid_or_telegram_calls": false,
+  "post_cleanup_restore_exact": true,
+  "previous_reader_rejects_new_dumps_atomically": true,
+  "request_cost_usd": 0.067398,
+  "request_sha256": "012078e4f06b678d07e733166f5b01c63784b4b53d97857292514b299fc37dd8",
+  "result_id": "result-v1:0ef2246109b989864c12115886acef5121c420423bbff0647d913dbcb63f7fcf",
+  "rollback_reader_restores_all_eight_v74_dumps_byte_identically": true,
+  "rollback_reader_sha": "13535794",
+  "staged_reader_restores_native_writer_byte_identically": true,
+  "synthetic_outcome": "unknown"
+}

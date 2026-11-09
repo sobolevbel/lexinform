@@ -668,3 +668,29 @@ def test_secondary_exchange_checks_manifest_and_parsed_answer(
         assert prefix["original_request_payload"] == "not_verified"
     else:
         assert prefix == {"status": "invalid", "reason": "invalid_snapshot_evidence"}
+
+
+def test_secondary_metadata_cycle_does_not_promote_a_partial_prefix(
+    secondary_snapshot: tuple[Path, int, int],
+) -> None:
+    target, publication, application = secondary_snapshot
+    add_secondary_batch(target, include_receipt=True)
+    standard = audit(
+        target, publication, secondary_application_id=application, include_request_prefix=True
+    )
+    qualified = audit(
+        target,
+        publication,
+        secondary_application_id=application,
+        include_secondary_metadata_cycle=True,
+    )
+    suffix = qualified["suffix"]
+    assert isinstance(suffix, dict)
+    prefix = suffix["request_prefix"]
+    outcome = prefix.pop("metadata_cycle")
+    assert outcome["status"] == "not_observed"
+    assert outcome["reason"] in {
+        "complete_amendment_source_receipt_unavailable",
+        "outside_retained_amendment_profile",
+    }
+    assert suffix == standard["suffix"]

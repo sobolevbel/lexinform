@@ -1,9 +1,11 @@
 import sqlite3
 from contextlib import closing
 from datetime import timedelta
+from unittest.mock import patch
 
 import pytest
 
+from lexinform.adapters import review_content_evidence
 from lexinform.models import (
     BillStatus,
     Publication,
@@ -94,7 +96,8 @@ def prepared() -> tuple[World, Publication]:
 def test_consultation_content_reader_preserves_legacy_and_verifies_new_link() -> None:
     world, queued = prepared()
     assert queued.id is not None
-    assert world.container.poster(dry_run=False).deliver(queued)
+    with patch.object(world.repo, "find_review_application_id", return_value=None):
+        assert world.container.poster(dry_run=False).deliver(queued)
     legacy = world.repo.get_publication_content(queued.id)
     assert legacy is not None and legacy.original_delivery_evidence is not None
     assert legacy.original_delivery_evidence.review_application_id is None
@@ -130,3 +133,39 @@ def test_consultation_content_reader_preserves_legacy_and_verifies_new_link() ->
         with pytest.raises(ValueError, match="invalid_content_history"):
             durable.repo.restore(with_content(old, legacy, invalid))
         assert durable.repo.dump() == future_dump
+
+
+def test_consultation_writer_preserves_html_with_missing_and_invalid_application() -> None:
+
+    normal, queued = prepared()
+    assert queued.id is not None
+    assert normal.container.poster(dry_run=False).deliver(queued)
+    linked = normal.repo.get_publication_content(queued.id)
+    assert linked is not None and linked.original_delivery_evidence is not None
+    assert linked.original_delivery_evidence.review_application_id is not None
+    assert linked.original_delivery_evidence.commission_review_application_id is None
+
+    for absent in (False, True):
+        fallback, old_queued = prepared()
+        if absent:
+            missing = patch.object(fallback.repo, "find_review_application_id", return_value=None)
+        else:
+            missing = patch.object(
+                review_content_evidence,
+                "read_result_application",
+                side_effect=ValueError("invalid"),
+            )
+        with missing:
+            assert fallback.container.poster(dry_run=False).deliver(old_queued)
+        assert old_queued.id is not None
+        old = fallback.repo.get_publication_content(old_queued.id)
+        assert old is not None and old.original_delivery_evidence is not None
+        assert old.original_delivery_evidence.review_application_id is None
+        assert fallback.publisher.sent == normal.publisher.sent
+        assert fallback.batch.submitted == normal.batch.submitted
+    cutoff = normal.clock.now() + timedelta(days=200)
+    normal.repo.prune_history(before=cutoff, memo_before=cutoff)
+    dump = normal.repo.dump()
+    normal.repo.restore(dump)
+    assert normal.repo.dump() == dump
+    assert normal.repo.get_publication_content(queued.id) == linked

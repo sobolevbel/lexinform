@@ -10,6 +10,7 @@ from pathlib import Path
 
 from pydantic import TypeAdapter
 
+from lexinform.adapters.amendment_inputs import read_amendment_input
 from lexinform.adapters.computation_history import read_result_application
 from lexinform.adapters.content_history import (
     read_bound_card_primary_cycle,
@@ -26,6 +27,7 @@ from lexinform.adapters.primary_scan_history import (
     read_primary_scan_source,
 )
 from lexinform.models import (
+    AmendmentInputReceipt,
     AmendmentsRecord,
     BatchItemMeta,
     BatchResult,
@@ -36,6 +38,7 @@ from lexinform.models import (
     PrimaryInputReceipt,
     ResultApplication,
     ResultApplicationTarget,
+    SourceObservation,
     StatusChange,
     SupplementRecord,
     TokenUsage,
@@ -267,6 +270,7 @@ def _secondary_suffix(
     application_id: int,
     *,
     include_request_prefix: bool = False,
+    include_secondary_metadata_cycle: bool = False,
 ) -> dict[str, object]:
     row = db.execute("SELECT * FROM publications WHERE id=?", (publication_id,)).fetchone()
     if row is None:
@@ -372,7 +376,12 @@ def _secondary_suffix(
     if include_request_prefix:
         try:
             suffix["request_prefix"] = _secondary_request_prefix(
-                db, paid, application.created_at, dates[2], sent_at
+                db,
+                paid,
+                application.created_at,
+                dates[2],
+                sent_at,
+                include_metadata_cycle=include_secondary_metadata_cycle,
             )
         except CycleNotObservedError as exc:
             suffix["request_prefix"] = {"status": "not_observed", "reason": str(exc)}
@@ -387,6 +396,8 @@ def _secondary_request_prefix(
     applied: datetime,
     publication_created: datetime,
     sent: datetime,
+    *,
+    include_metadata_cycle: bool = False,
 ) -> dict[str, object]:
     if paid.request_sha256 is None or paid.input_binding is None:
         raise CycleNotObservedError("original_secondary_request_binding_unavailable")
@@ -438,7 +449,7 @@ def _secondary_request_prefix(
     if manifest is not None and manifest.provider != paid.provider:
         raise ValueError("Frozen request manifest differs from the paid provider")
     answer = _retained_provider_answer(paid, row["result_json"])
-    return {
+    prefix: dict[str, object] = {
         "status": "recorded",
         "reason": "exact_submitted_secondary_request_identity",
         "request_sha256": paid.request_sha256,
@@ -451,7 +462,9 @@ def _secondary_request_prefix(
         else "outside_scope",
         "prepared_input_receipt": receipt,
         "original_request_payload": "not_verified",
-        "source_selection_binding": source,
+        "source_selection_binding": "exact_retained_source_selection"
+        if source is not None
+        else "not_verified",
         **({"normalized_pdf_page_ranges": ranges} if ranges else {}),
         "original_amendment_question": _retained_amendment_question(paid, meta),
         "retained_provider_request_manifest": (
@@ -463,6 +476,81 @@ def _secondary_request_prefix(
             if paid.collected_at == consumed and answer == "exact_retained_answer"
             else "not_verified"
         ),
+    }
+    if include_metadata_cycle:
+        try:
+            prefix["metadata_cycle"] = _secondary_metadata_cycle(db, paid, meta, source, prefix)
+        except CycleNotObservedError as exc:
+            prefix["metadata_cycle"] = {"status": "not_observed", "reason": str(exc)}
+        except ValueError, TypeError, RecursionError, KeyError, IndexError, sqlite3.Error:
+            prefix["metadata_cycle"] = {"status": "invalid", "reason": "invalid_snapshot_evidence"}
+    return prefix
+
+
+def _secondary_metadata_cycle(
+    db: sqlite3.Connection,
+    paid: ComputationResult,
+    meta: DigestItemMeta,
+    source: SourceObservation | None,
+    prefix: dict[str, object],
+) -> dict[str, object]:
+    record, receipt, manifest = (
+        paid.record,
+        meta.prepared_input_receipt,
+        meta.frozen_request_manifest,
+    )
+    reference = paid.amendment_input_ref
+    if not isinstance(record, AmendmentsRecord) or paid.purpose != "amendments":
+        raise CycleNotObservedError("outside_retained_amendment_profile")
+    if record.source_kind not in ("committee_amendments", "senate_amendments"):
+        raise CycleNotObservedError("outside_retained_amendment_source")
+    if (
+        source is None
+        or not isinstance(receipt, AmendmentInputReceipt)
+        or receipt.retention != "complete"
+        or receipt.artifact_sha256 is None
+        or receipt.extraction_id is None
+    ):
+        raise CycleNotObservedError("complete_amendment_source_receipt_unavailable")
+    if meta.queued_at is None or source.recorded_at > meta.queued_at:
+        raise ValueError("Recorded amendment source does not precede its queue entry")
+    if (
+        reference is None
+        or reference.lineage_result_id is not None
+        or reference.lineage_receipt != receipt
+    ):
+        raise CycleNotObservedError("direct_retained_amendment_question_unavailable")
+    snapshot = read_amendment_input(db, reference.snapshot_id)
+    if (
+        snapshot is None
+        or snapshot.context.source_kind != source.document.kind
+        or snapshot.context.source_check != meta.amendment_source
+    ):
+        raise ValueError("Saved amendment question differs from its source")
+    if manifest is None or (manifest.model, manifest.prompt_version) != (
+        paid.model,
+        record.prompt_version,
+    ):
+        raise CycleNotObservedError("exact_amendment_request_manifest_unavailable")
+    if prefix["retained_collection_checkpoint"] != "matching_retained_checkpoint":
+        raise CycleNotObservedError("matching_secondary_collection_checkpoint_unavailable")
+    if prefix["original_collection_application"] != "not_retained":
+        raise CycleNotObservedError("secondary_collection_application_outside_profile")
+    return {
+        "status": "recorded",
+        "reason": "exact_historical_secondary_metadata_cycle",
+        "purpose": paid.purpose,
+        "source_kind": source.document.kind,
+        "source_observation_id": source.observation_id,
+        "source_selection_id": source.selection_id,
+        "source_recorded_at": source.recorded_at.isoformat(),
+        "artifact_sha256": receipt.artifact_sha256,
+        "extraction_id": receipt.extraction_id,
+        "question_sha256": snapshot.question_sha256,
+        "request_manifest_sha256": manifest.manifest_sha256,
+        "collection": "matching_retained_parsed_answer_and_consumed_checkpoint",
+        "collection_application": "not_applicable_to_secondary_collection",
+        "original_provider_payload": "not_verified",
     }
 
 
@@ -516,22 +604,22 @@ def _retained_amendment_question(paid: ComputationResult, meta: DigestItemMeta) 
 
 def _secondary_prepared_source(
     db: sqlite3.Connection, paid: ComputationResult, meta: DigestItemMeta, submitted: datetime
-) -> tuple[str, str, list[dict[str, object]]]:
+) -> tuple[str, SourceObservation | None, list[dict[str, object]]]:
     receipt = meta.prepared_input_receipt
     if receipt is None:
-        return "not_retained", "not_verified", []
+        return "not_retained", None, []
     ranges = retained_pdf_page_ranges(db, receipt)
     if (
         receipt.source_selection_id is None
         or receipt.artifact_sha256 is None
         or receipt.extraction_id is None
     ):
-        return "validated_retained_receipt", "not_verified", []
+        return "validated_retained_receipt", None, []
     observations = DocumentSourceRows(db).source_observations_for_selection(
         paid.term, paid.number, receipt.source_selection_id
     )
     if len(observations) != 1:
-        return "validated_retained_receipt", "not_verified", []
+        return "validated_retained_receipt", None, []
     observation = observations[0]
     if (
         not isinstance(paid.record, (AmendmentsRecord, SupplementRecord))
@@ -541,7 +629,7 @@ def _secondary_prepared_source(
         or observation.recorded_at > submitted
     ):
         raise ValueError("Prepared secondary source differs from its retained observation")
-    return "validated_retained_receipt", "exact_retained_source_selection", ranges
+    return "validated_retained_receipt", observation, ranges
 
 
 def _secondary_records(
@@ -594,6 +682,7 @@ def _observe(
     secondary_application_id: int | None = None,
     include_compact: bool = False,
     include_request_prefix: bool = False,
+    include_secondary_metadata_cycle: bool = False,
 ) -> tuple[str, str, dict[str, object] | None]:
     cycle: dict[str, object] | None = None
     status, reason = "recorded", "exact_retained_cycle"
@@ -607,6 +696,7 @@ def _observe(
                 publication_id,
                 secondary_application_id,
                 include_request_prefix=include_request_prefix,
+                include_secondary_metadata_cycle=include_secondary_metadata_cycle,
             )
     except CycleNotObservedError as exc:
         status, reason = "not_observed", str(exc)
@@ -683,6 +773,7 @@ def audit(
     secondary_application_id: int | None = None,
     include_compact: bool = False,
     include_request_prefix: bool = False,
+    include_secondary_metadata_cycle: bool = False,
     legacy_text_checkpoint: ReviewInputCheckpoint | None = None,
     delivery_checkpoint: ReviewInputCheckpoint | None = None,
 ) -> dict[str, object]:
@@ -690,6 +781,7 @@ def audit(
         raise ValueError("Publication ID must be a positive SQLite integer")
     if secondary_application_id is not None and not 0 < secondary_application_id < 2**63:
         raise ValueError("Application ID must be a positive SQLite integer")
+    include_request_prefix = include_request_prefix or include_secondary_metadata_cycle
     if include_request_prefix and secondary_application_id is None:
         raise ValueError("Request identity requires a secondary application")
     if include_compact and secondary_application_id is not None:
@@ -706,6 +798,7 @@ def audit(
             secondary_application_id=secondary_application_id,
             include_compact=include_compact,
             include_request_prefix=include_request_prefix,
+            include_secondary_metadata_cycle=include_secondary_metadata_cycle,
         )
         if legacy_text_checkpoint is not None and reason == "prepared_receipt_unavailable":
             legacy_text = _legacy_card_text(
@@ -730,9 +823,13 @@ def audit(
             "database_sha256": snapshot.sha256,
             "publication_id": publication_id,
             "requested_application_id": secondary_application_id,
-            "scope": "One retained secondary status-change projection and recorded direct send.",
+            "scope": "One historical amendment cycle in the retained metadata profile."
+            if include_secondary_metadata_cycle
+            else "One retained secondary status-change projection and recorded direct send.",
             "exclusions": [
-                "Source observation and selection",
+                "Exact original provider request payload"
+                if include_secondary_metadata_cycle
+                else "Source observation and selection",
                 "Current Telegram content",
                 "live verification",
                 "source-family acceptance",
@@ -833,6 +930,11 @@ def main() -> None:
         action="store_true",
         help="verify retained submitted request identity for an exact secondary status send",
     )
+    parser.add_argument(
+        "--include-secondary-metadata-cycle",
+        action="store_true",
+        help="verify one historical amendment cycle in the retained metadata profile",
+    )
     parser.add_argument("--legacy-text-checkpoint", nargs=2, metavar=("PATH", "SHA256"))
     parser.add_argument("--delivery-checkpoint", nargs=2, metavar=("PATH", "SHA256"))
     parser.add_argument("--output", type=Path, required=True)
@@ -850,6 +952,7 @@ def main() -> None:
     try:
         if args.census and (
             args.include_request_prefix
+            or args.include_secondary_metadata_cycle
             or args.include_compact
             or args.secondary_application_id is not None
             or legacy_text_checkpoint is not None
@@ -872,6 +975,7 @@ def main() -> None:
                 secondary_application_id=args.secondary_application_id,
                 include_compact=args.include_compact,
                 include_request_prefix=args.include_request_prefix,
+                include_secondary_metadata_cycle=args.include_secondary_metadata_cycle,
                 legacy_text_checkpoint=legacy_text_checkpoint,
                 delivery_checkpoint=delivery_checkpoint,
             )
@@ -881,8 +985,13 @@ def main() -> None:
         parser.error(str(exc))
     status = report["status"]
     suffix = report.get("suffix")
-    if args.include_request_prefix and isinstance(suffix, dict):
-        status = suffix["request_prefix"]["status"]
+    if (args.include_request_prefix or args.include_secondary_metadata_cycle) and isinstance(
+        suffix, dict
+    ):
+        prefix = suffix["request_prefix"]
+        status = prefix["status"]
+        if args.include_secondary_metadata_cycle and "metadata_cycle" in prefix:
+            status = prefix["metadata_cycle"]["status"]
     raise SystemExit(0 if status == "recorded" else 1 if status == "invalid" else 2)
 
 

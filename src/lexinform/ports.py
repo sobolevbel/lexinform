@@ -920,8 +920,13 @@ class BillRepository(Protocol):
         self, bill: ContentSnapshot, snapshot: ContentSnapshot, version: ContentVersion
     ) -> None: ...
 
-    def find_commission_review_application_id(
-        self, bill: Bill, record: DocumentReviewRecord, *, recorded_at: datetime
+    def find_review_application_id(
+        self,
+        bill: Bill,
+        record: DocumentReviewRecord,
+        kind: PublicationKind,
+        *,
+        recorded_at: datetime,
     ) -> int | None: ...
 
     def save_original_delivery_content(

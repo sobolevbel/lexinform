@@ -1,0 +1,106 @@
+{
+  "exact_metadata_cycles": {
+    "33": {
+      "cycle": {
+        "artifact_sha256": "6c5899538c8048ef968170cc95a28f4f93f02ba6ae46034bcc57b047767a4453",
+        "collection": "matching_retained_parsed_answer_and_consumed_checkpoint",
+        "collection_application": "not_applicable_to_secondary_collection",
+        "extraction_id": "extraction-v1:9dd829bc4f660d0652b44c7f75afab7fc0d335bf881183f9e9235390bc50d81b",
+        "original_provider_payload": "not_verified",
+        "purpose": "amendments",
+        "question_sha256": "a3641ca8b9f6ed9c358e13bce7568a8047988aa315478a3233df35d951d56726",
+        "reason": "exact_historical_secondary_metadata_cycle",
+        "request_manifest_sha256": "12401ed7e5ae142698ebf0db287f411e7f8d54372910124dc97e3abffb7c53de",
+        "source_kind": "committee_amendments",
+        "source_observation_id": "source-observation-v1:9a8caf4c462a5893e38408faa96f9212dd6bf6c5291aa930c1cb02f1b593ed14",
+        "source_recorded_at": "2026-11-06T20:01:08+00:00",
+        "source_selection_id": "selection-v1:feee151ac111253ef53733156b0677b5f297af2f6dde3202751cf0b2ebc9cd83",
+        "status": "recorded"
+      },
+      "publication_id": 293
+    },
+    "34": {
+      "cycle": {
+        "artifact_sha256": "d838d241315f3d7c2958acb7191efd919c14840e521570c2a6720e3a35b055eb",
+        "collection": "matching_retained_parsed_answer_and_consumed_checkpoint",
+        "collection_application": "not_applicable_to_secondary_collection",
+        "extraction_id": "extraction-v1:c76c7c560e065e420e1fcdd6092f2c7ce58c44de3d917a1b04bce7090aeca372",
+        "original_provider_payload": "not_verified",
+        "purpose": "amendments",
+        "question_sha256": "43023cf17341869f7584025409b2c8ab0705c21bac94616c68360aa14936608f",
+        "reason": "exact_historical_secondary_metadata_cycle",
+        "request_manifest_sha256": "f0c800bfcb0bedae606439673d65f65ba8ce6f877a0193ee1b2b804cae847465",
+        "source_kind": "senate_amendments",
+        "source_observation_id": "source-observation-v1:0192d67603f879952b684f0f7a6712bd7b00f8507960db031633df324d1e6442",
+        "source_recorded_at": "2026-10-28T18:58:10+00:00",
+        "source_selection_id": "selection-v1:f140a546569f4f561678e69cd77562269f155d0056a123706eedde505261cad6",
+        "status": "recorded"
+      },
+      "publication_id": 294
+    },
+    "35": {
+      "cycle": {
+        "artifact_sha256": "10d4e38891841eaa7d5a327379e182beb4c46a98eac4f1e7a36c33735e1a6fbb",
+        "collection": "matching_retained_parsed_answer_and_consumed_checkpoint",
+        "collection_application": "not_applicable_to_secondary_collection",
+        "extraction_id": "extraction-v1:083b8128d02aa27a25cc95547878407bcf0df43e98cab45efa795c303b872d51",
+        "original_provider_payload": "not_verified",
+        "purpose": "amendments",
+        "question_sha256": "f49af9b608ee8dde79dcaf3832d0a39f56ae5a054b85bdc0e09842fe9a327806",
+        "reason": "exact_historical_secondary_metadata_cycle",
+        "request_manifest_sha256": "62e2ad2b2597889c2857be755a325094526883c30c45f975c8880cacaa4d8698",
+        "source_kind": "committee_amendments",
+        "source_observation_id": "source-observation-v1:0d9a4ab09b5418371e54fc0a462b0a1e7d039f7b4473889f2232aa92f4c33935",
+        "source_recorded_at": "2026-11-06T20:01:14+00:00",
+        "source_selection_id": "selection-v1:569c902e8808091e9653b9ca85b42e6685e46be73239893559fc22983d3a0db6",
+        "status": "recorded"
+      },
+      "publication_id": 295
+    }
+  },
+  "historical_database_sha256": "c53f468cea246f6a8f2b74eaef46dbf5ea46fc72efa5a3af28741fbe919c974a",
+  "historical_state_commit": "9a802a5514d3333de72c76454d115a7d91538e0d",
+  "later_database_sha256": "bdc1c013c582a714b27983083e54dc9addc4dd35fe0b2fecf4445881448dda70",
+  "later_snapshot_after_answer_cleanup": {
+    "33": {
+      "reason": "matching_secondary_collection_checkpoint_unavailable",
+      "status": "not_observed"
+    },
+    "34": {
+      "reason": "matching_secondary_collection_checkpoint_unavailable",
+      "status": "not_observed"
+    },
+    "35": {
+      "reason": "matching_secondary_collection_checkpoint_unavailable",
+      "status": "not_observed"
+    }
+  },
+  "legacy_reports_byte_identical": 6,
+  "negative_controls": {
+    "late_observation": {
+      "reason": "invalid_snapshot_evidence",
+      "status": "invalid"
+    },
+    "missing_answer": {
+      "reason": "matching_secondary_collection_checkpoint_unavailable",
+      "status": "not_observed"
+    },
+    "missing_manifest": {
+      "reason": "exact_amendment_request_manifest_unavailable",
+      "status": "not_observed"
+    },
+    "missing_question": {
+      "reason": "invalid_snapshot_evidence",
+      "status": "invalid"
+    },
+    "missing_source": {
+      "reason": "complete_amendment_source_receipt_unavailable",
+      "status": "not_observed"
+    },
+    "wrong_manifest_model": {
+      "reason": "exact_amendment_request_manifest_unavailable",
+      "status": "not_observed"
+    }
+  },
+  "source_databases_unchanged": true
+}

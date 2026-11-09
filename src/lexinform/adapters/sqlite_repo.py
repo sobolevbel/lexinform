@@ -126,7 +126,7 @@ from lexinform.adapters.primary_projections import (
     validate_primary_cost_projections,
     validate_primary_projections,
 )
-from lexinform.adapters.review_content_evidence import commission_review_application_id
+from lexinform.adapters.review_content_evidence import direct_review_application_id
 from lexinform.adapters.review_memos import validate_review_memo_row, validate_review_memos
 from lexinform.adapters.review_prepared_input import capture_submitted_review_input
 from lexinform.adapters.secondary_dependencies import (
@@ -2425,12 +2425,17 @@ class SqliteBillRepository:
             )
             verify_multipart_card_revision(self._conn, version, require_bound=True)
 
-    def find_commission_review_application_id(
-        self, bill: Bill, record: DocumentReviewRecord, *, recorded_at: datetime
+    def find_review_application_id(
+        self,
+        bill: Bill,
+        record: DocumentReviewRecord,
+        kind: PublicationKind,
+        *,
+        recorded_at: datetime,
     ) -> int | None:
         try:
-            return commission_review_application_id(
-                self._conn, bill, record, recorded_at=recorded_at
+            return direct_review_application_id(
+                self._conn, bill, record, kind, recorded_at=recorded_at
             )
         except ValueError, TypeError, RecursionError, sqlite3.Error:
             return None

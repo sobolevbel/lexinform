@@ -29,18 +29,6 @@ def review_application_evidence(
     )
 
 
-def commission_review_application_id(
-    db: sqlite3.Connection,
-    bill: Bill,
-    frozen: DocumentReviewRecord,
-    *,
-    recorded_at: datetime,
-) -> int | None:
-    return direct_review_application_id(
-        db, bill, frozen, PublicationKind.COMMISSION_REVIEW, recorded_at=recorded_at
-    )
-
-
 def direct_review_application_id(
     db: sqlite3.Connection,
     bill: Bill,
