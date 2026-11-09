@@ -1,0 +1,32 @@
+{
+  "baseline_reader": "c96aeb22",
+  "manual_pair": {
+    "after_dump": {
+      "gzip_bytes": 15028,
+      "sql_bytes": 86904,
+      "sql_sha256": "12ce373cd6ff270557e0711f70fb75cf9bff1a9730e7e6b718d193949b9bc87c"
+    },
+    "archive_sha256": "e4acbe6687e1e8029ea6fc53f9074de21b8402b57db19c25b3b9f4a4c9299161",
+    "before_dump": {
+      "gzip_bytes": 14778,
+      "sql_bytes": 83751,
+      "sql_sha256": "f9c5974d7b3eaed16e7cafd81f4e2c7fe8310d40fb0c23d0416722bb151d7cd4"
+    },
+    "candidate_slots": [
+      0,
+      2
+    ]
+  },
+  "new_reader_restores_manual_pair_dump_byte_identically": true,
+  "normal_writer_reports_and_dumps_byte_identical": true,
+  "pinned_corpus_pdf_sha256": {
+    "300517.pdf": "15532bec7c7f79d6955cc28e252f804825866f37e9921d72a1a107986c609514",
+    "667159.pdf": "78b8c6ab5fd1fd30b898be3548a1caa677f3bda849756758eb3a7f58a672e8c8"
+  },
+  "previous_reader_rejects_pair_and_preserves_existing_database": true,
+  "prior_real_group_read_parity": {
+    "database_sha256": "2564130718a0de069479cf0fe5477bde88da168638c69ceb07b6b25a32d3861f",
+    "trace_count": 2,
+    "trace_projection_sha256": "e5966f39684824936262ee5dd7c7a520e8f5a7f2eccb0acabba70b4caf9169d6"
+  }
+}

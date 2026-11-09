@@ -23,24 +23,27 @@ from tests.unit.test_candidate_disposition_trace import NOW
 from tests.unit.test_physical_extraction import archive, docx, extractor
 
 
-@pytest.mark.parametrize("outcome", ["selected", "text_conflict", "annex_conflict"])
+@pytest.mark.parametrize(
+    ("outcome", "count"),
+    [("selected", 3), ("text_conflict", 3), ("annex_conflict", 3), ("annex_conflict", 2)],
+)
 def test_archive_version_group_requires_exact_physical_parents(
-    tmp_path: Path, outcome: Literal["selected", "text_conflict", "annex_conflict"]
+    tmp_path: Path, outcome: Literal["selected", "text_conflict", "annex_conflict"], count: int
 ) -> None:
     conflict = outcome != "selected"
     third = CONTENT.replace("200 zł", "400 zł") if outcome == "text_conflict" else CONTENT
     if outcome == "annex_conflict":
         draft = docx(CONTENT)
-        body = archive(
-            {
-                "a.zip": archive(
-                    {"annex.docx": docx("Załącznik do ustawy\nTreść"), "projekt.docx": draft}
-                ),
-                "b.zip": archive({"projekt.docx": draft}),
-                "c.zip": archive({"projekt.docx": draft}),
-            }
-        )
-        slots = (1, 2, 3)
+        packages = {
+            "a.zip": archive(
+                {"annex.docx": docx("Załącznik do ustawy\nTreść"), "projekt.docx": draft}
+            ),
+            "b.zip": archive({"projekt.docx": draft}),
+        }
+        if count == 3:
+            packages["c.zip"] = archive({"projekt.docx": draft})
+        body = archive(packages)
+        slots = tuple(range(1, count + 1))
     else:
         body = archive({"a.docx": docx(CONTENT), "b.docx": docx(CONTENT), "c.docx": docx(third)})
         slots = (0, 1, 2)
@@ -104,6 +107,9 @@ def test_archive_version_group_requires_exact_physical_parents(
         trace = CandidateDispositionTrace.model_validate(
             {**base.model_dump(), "archive_version_group": evidence}
         )
+        if count == 2:
+            assert repo.list_candidate_disposition_traces(observation.observation_id) == [base]
+            repo.save_candidate_disposition_trace(observation.observation_id, trace)
         assert repo.get_candidate_disposition_trace(trace.trace_id) == trace
         good = repo.dump()
         history.persist_source_history(repo, recorded_at=NOW)

@@ -1062,8 +1062,8 @@ class ArchiveVersionGroupEvidence(BaseModel):
     capture_id: Sha256
     phase: Literal["version_comparison", "fallback"]
     index: Position
-    candidate_slots: tuple[Position, ...] = Field(min_length=3, max_length=32)
-    members: tuple[ArchiveMemberDisposition, ...] = Field(min_length=3, max_length=32)
+    candidate_slots: tuple[Position, ...] = Field(min_length=2, max_length=32)
+    members: tuple[ArchiveMemberDisposition, ...] = Field(min_length=2, max_length=32)
     retained_slots: tuple[Position, ...] = Field(min_length=1, max_length=32)
     matching_slots: tuple[Position, ...] = Field(max_length=32)
     date_filter: tuple[VersionDate, ...] | None = Field(
@@ -1075,6 +1075,8 @@ class ArchiveVersionGroupEvidence(BaseModel):
     @model_validator(mode="after")
     def comparison_steps(self) -> Self:
         expected = self.candidate_slots
+        if len(expected) == 2 and self.outcome != "annex_conflict":
+            raise ValueError("only an annex conflict uses group evidence for a pair")
         if (
             len(set(expected)) != len(expected)
             or tuple(member.physical_part_index for member in self.members) != expected
