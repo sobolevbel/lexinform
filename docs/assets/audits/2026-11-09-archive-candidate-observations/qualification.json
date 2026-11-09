@@ -1,0 +1,47 @@
+{
+  "exact_normalized_rows": 148,
+  "exact_raw_hashes": 358,
+  "exact_scoped_rcl_requests": true,
+  "exact_uc76_resubmission_evidence": true,
+  "exact_selected_source_locations_and_parts": true,
+  "normalized_extractions": 204,
+  "new_to_old_normalization": "package_policy_source_sha256 only",
+  "old_to_new_identity_map_sha256": "72f85e46610d725ff74d420544fce7e80cd99aa1f3d92a0b1de4d10fb2afa79e",
+  "existing_proof_reference_normalized": "original_extraction_id only",
+  "existing_proof_cases": [
+    "12389752/12",
+    "12389752/14"
+  ],
+  "package_policy_sha_before": "38eadebb35f944100c3601be83017a4fe80b9daa9759789165c919c548eca79c",
+  "package_policy_sha_after": "208316552e5bf9f7a72c21401765172adcbf85924fb427e216186d17ddd128fa",
+  "baseline_shards_sha256": {
+    "candidate-0.json": "eeca4f25ce11edf18e731bc46c9dd57473924f4debd53073a6f260eb899c5887",
+    "candidate-1.json": "e4d3f2fdd9859a123ca9b377c60a84f6e2de8168da5f5ddf1ea3bff37ce8682c",
+    "candidate-2.json": "b204df9ab5a17a4837c080b179b17a70d2e7caa30df989f75eef5b5f5180087d"
+  },
+  "fresh_proof_dump_size_deltas": {
+    "12389752/12": {
+      "sql_delta": 0,
+      "gzip_delta": 1
+    },
+    "12389752/14": {
+      "sql_delta": 0,
+      "gzip_delta": 1
+    }
+  },
+  "fresh_proof_size_control": {
+    "old_sql": 76198,
+    "new_sql": 76198,
+    "old_gzip": 15052,
+    "new_gzip": 15053,
+    "only_changed_tables": [
+      "candidate_disposition_traces",
+      "extraction_results",
+      "selection_extractions",
+      "source_candidate_traces"
+    ]
+  },
+  "nested_capture_sha256": "a504e8b769eae2cf834bca6be71365543d3e8fe5ad00c8af1ffe15ec935ad89f",
+  "nested_archive_policy_rows": 40,
+  "reobservation": "../reobservation-qualification.json"
+}

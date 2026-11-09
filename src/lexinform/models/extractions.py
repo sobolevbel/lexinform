@@ -35,6 +35,7 @@ from lexinform.models.word_grid_merges import (
 )
 
 MAX_EXTRACTION_METADATA_BYTES = 16_384
+MAX_SELECTED_BILL_BLOCK_SAMPLE_BYTES = 1024
 MAX_EXTRACTION_PART_SUMMARIES = 16
 MAX_WORD_VIEW_STATUS_BYTES = 512
 MAX_ODT_NOTE_STATUS_BYTES = 1024
@@ -636,6 +637,9 @@ class ExtractionResult(BaseModel):
     observed_member_block_copy: ObservedMemberBlockCopy | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
+    selected_bill_block_sample: ObservedMemberBlockCopy | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     bodies: Literal["not_retained"] = "not_retained"
     physical_coordinates: Literal["manifest_not_retained"] = "manifest_not_retained"
     input_mapping: Literal["unmapped"] = "unmapped"
@@ -670,6 +674,28 @@ class ExtractionResult(BaseModel):
             or any(part.physical_index == observed.physical_index for part in self.selected_parts)
         ):
             raise ValueError("Observed member witness requires its unselected physical slot")
+        bill_sample = self.selected_bill_block_sample
+        if bill_sample is not None:
+            matching = [
+                part
+                for part in self.selected_parts
+                if part.physical_index == bill_sample.physical_index
+            ]
+            if (
+                observed is not None
+                or self.omitted_selected_parts
+                or self.rejected_count
+                or len(matching) != 1
+                or matching[0].block_copy_witness is not None
+                or len(bill_sample.model_dump_json().encode())
+                > MAX_SELECTED_BILL_BLOCK_SAMPLE_BYTES
+            ):
+                raise ValueError(
+                    "Selected bill sample requires one bounded selected slot without a witness"
+                )
+            ExtractedPartSummary.model_validate(
+                {**matching[0].model_dump(), "block_copy_witness": bill_sample.witness}
+            )
         _odt_prefix_budget(self.selected_parts)
         for part in self.selected_parts:
             if part.block_copy_witness is not None:

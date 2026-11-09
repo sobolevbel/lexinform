@@ -1,0 +1,22 @@
+{
+  "amendment": {
+    "artifact_sha256": "8f1dd7f69eaf8741cc2646fea2a6b4f20d642ed205b2eab605bd3edce79375ab",
+    "capture_id": "49c530db41099c2f3e332eb5992f66b4ec27e092ef732198c28494fa16be7c67",
+    "member_sha256": "ad902c7054a417e7af6c85c49742e5f60c16d6edbfd44b5a0dd7cb80ee072c4f",
+    "physical_index": 0,
+    "role": "self_amendment"
+  },
+  "exact_restores": true,
+  "gzip_delta_bytes": 85,
+  "old_reader_rejected_mark_atomically": true,
+  "proof_roles": [
+    "bill",
+    "justification",
+    "osr",
+    "self_amendment"
+  ],
+  "request_sha256": "5bbe16bcaaa8428261fc4e9dacbedac8a2f97565d67b73811f2f1ee30b958be2",
+  "same_render_and_request": true,
+  "sql_delta_bytes": 206,
+  "wrong_amendment_capture_rejected_atomically": true
+}

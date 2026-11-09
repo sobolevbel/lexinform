@@ -713,23 +713,66 @@ def _paired_archive_amendment_parent(
             raise ValueError("paired archive receipt differs from its exact amendment occurrence")
         if receipt.paired_block_companion is None:
             return capture.extraction_id, None
-        context_index = order.physical[recorded.physical_index][0]
-        unit = reader.typed(order.contexts[context_index][3], "unit")
-        native = unit.metadata
-        if (
-            unit.coverage != "complete"
-            or not isinstance(native, PhysicalContainerExecution)
-            or native.route != "word"
+        return capture.extraction_id, _paired_word_body(reader, order, recorded.physical_index)
+    finally:
+        connection.row_factory = old_factory
+
+
+def _paired_word_body(reader: PhysicalInventoryReader, order: PhysicalRootOrder, slot: int) -> str:
+    context_index = order.physical[slot][0]
+    unit = reader.typed(order.contexts[context_index][3], "unit")
+    native = unit.metadata
+    if (
+        unit.coverage != "complete"
+        or not isinstance(native, PhysicalContainerExecution)
+        or native.route != "word"
+    ):
+        raise ValueError("Paired block witness requires complete Word execution")
+    body_reads = [
+        request
+        for request in native.requests
+        if request[:3] == ("xml", "name", "word/document.xml")
+    ]
+    if len(body_reads) != 1 or body_reads[0][4] != "complete" or body_reads[0][6] is None:
+        raise ValueError("Paired block witness requires its exact Word body read")
+    return body_reads[0][6]
+
+
+def _paired_bill_xml_parent(
+    connection: sqlite3.Connection,
+    receipt: RclPairedArchiveInputReceipt,
+    part: DocumentPart,
+    slot: int,
+    capture_id: str,
+) -> str:
+    old_factory = connection.row_factory
+    connection.row_factory = sqlite3.Row
+    try:
+        reader = PhysicalInventoryReader(connection)
+        capture = reader.capture(
+            _one(connection, "SELECT * FROM physical_captures WHERE capture_id=?", (capture_id,))
+        )
+        if (capture.artifact_sha256, capture.extraction_id) != (
+            part.source_sha256,
+            receipt.extraction_id,
         ):
-            raise ValueError("Paired observed block witness requires complete Word execution")
-        body_reads = [
-            request
-            for request in native.requests
-            if request[:3] == ("xml", "name", "word/document.xml")
-        ]
-        if len(body_reads) != 1 or body_reads[0][4] != "complete" or body_reads[0][6] is None:
-            raise ValueError("Paired observed block witness requires its exact Word body read")
-        return capture.extraction_id, body_reads[0][6]
+            raise ValueError("Paired bill witness differs from its exact base capture")
+        execution = reader.typed(capture.execution_id, "execution")
+        order = execution.metadata
+        if execution.coverage != "complete" or not isinstance(order, PhysicalRootOrder):
+            raise ValueError("Paired bill witness requires complete base execution")
+        path, leaf_sha256, text_sha256 = archive_member_in_execution(reader, order, slot)
+        if len(path) != 1 or (leaf_sha256, text_sha256) != (part.sha256, part.text_sha256):
+            raise ValueError("Paired bill witness differs from its exact base slot")
+        graph = reader.typed(capture.inventory_id, "graph")
+        header = _one(
+            connection,
+            "SELECT runtime_name FROM physical_header_rows WHERE header_id=? AND ordinal=?",
+            (graph.header_id, path[0]),
+        )
+        if part.members != (header["runtime_name"],):
+            raise ValueError("Paired bill witness differs from its exact base member")
+        return _paired_word_body(reader, order, slot)
     finally:
         connection.row_factory = old_factory
 
@@ -763,9 +806,21 @@ def _archive_parents(
         amendment_extraction, amendment_xml_sha256 = _paired_archive_amendment_parent(
             connection, receipt, selection, document
         )
+        companion = receipt.paired_block_companion
+        base_xml_sha256 = None
+        if companion is not None and companion.base_bill_capture_id is not None:
+            row = companion.base.rows[0]
+            base_xml_sha256 = _paired_bill_xml_parent(
+                connection,
+                receipt,
+                parts[row.part_index],
+                row.physical_index,
+                companion.base_bill_capture_id,
+            )
         _block_parents(
             connection,
             receipt,
+            paired_base_xml_sha256=base_xml_sha256,
             paired_amendment_extraction_id=amendment_extraction,
             paired_amendment_xml_sha256=amendment_xml_sha256,
         )
@@ -893,6 +948,7 @@ def _block_parents(
     | AmendmentInputReceipt
     | MultipartTextInputReceipt,
     *,
+    paired_base_xml_sha256: str | None = None,
     paired_amendment_extraction_id: str | None = None,
     paired_amendment_xml_sha256: str | None = None,
 ) -> None:
@@ -966,6 +1022,16 @@ def _block_parents(
             ):
                 raise ValueError("paired block companion lacks its exact observed amendment")
             witness = observed.witness
+        elif paired_base_xml_sha256 is not None:
+            prefix = extraction.selected_bill_block_sample
+            if (
+                part.role != "bill"
+                or prefix is None
+                or prefix.physical_index != row.physical_index
+                or prefix.witness.xml_sha256 != paired_base_xml_sha256
+            ):
+                raise ValueError("Paired block companion lacks its exact normative bill witness")
+            witness = prefix.witness
         else:
             matches = [
                 summary

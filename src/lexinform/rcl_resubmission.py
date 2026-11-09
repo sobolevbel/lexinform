@@ -3,7 +3,9 @@ import re
 from dataclasses import dataclass
 from urllib.parse import urlsplit
 
-from lexinform.document_candidate_observations import CandidateObservation, CandidateObservations
+from lexinform.document_candidate_observations import CandidateObservations
+from lexinform.document_candidates import DocumentCandidate
+from lexinform.models.candidate_observation import CandidateObservation
 from lexinform.models.documents import DocumentPart
 from lexinform.models.rcl import RclDocument, RclProject, rcl_num_key
 from lexinform.rcl_letters import parse_letter
@@ -166,7 +168,7 @@ def resubmission_proof(
     bill: DocumentPart,
     cover: DocumentPart,
     amendment: DocumentPart,
-    corroboration: CandidateObservation,
+    corroboration: CandidateObservation[DocumentCandidate],
 ) -> RclResubmissionProof | None:
     if (
         corroboration.candidate.source != sources.secretary.url

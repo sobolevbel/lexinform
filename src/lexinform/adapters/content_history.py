@@ -75,6 +75,7 @@ from lexinform.models.input_receipts import (
     LooseRclInputReceipt,
     RclArchiveInputReceipt,
     RclArchiveSelfAmendmentInputReceipt,
+    RclPairedArchiveInputReceipt,
     SejmSelfAmendmentInputReceipt,
 )
 from lexinform.models.multipart_card_history import MAX_MULTIPART_CARD_BYTES, MultipartCardPlan
@@ -272,6 +273,7 @@ def _card_primary_text_source(
                 LooseRclInputReceipt,
                 RclArchiveInputReceipt,
                 RclArchiveSelfAmendmentInputReceipt,
+                RclPairedArchiveInputReceipt,
                 SejmSelfAmendmentInputReceipt,
             ),
         )
@@ -313,12 +315,20 @@ def _card_primary_text_source(
         if receipt.source_observation_id != reference.source_observation_id:
             raise CardPrimaryEvidenceError("card_primary_source_scope")
         parts = validate_multipart_item(connection, item)
-        if isinstance(receipt, (RclArchiveInputReceipt, RclArchiveSelfAmendmentInputReceipt)):
-            archive_parts = (
-                receipt.archive_parts
-                if isinstance(receipt, RclArchiveSelfAmendmentInputReceipt)
-                else receipt.source_parts
-            )
+        if isinstance(
+            receipt,
+            (
+                RclArchiveInputReceipt,
+                RclArchiveSelfAmendmentInputReceipt,
+                RclPairedArchiveInputReceipt,
+            ),
+        ):
+            if isinstance(receipt, RclArchiveInputReceipt):
+                archive_parts = receipt.source_parts
+            elif isinstance(receipt, RclArchiveSelfAmendmentInputReceipt):
+                archive_parts = receipt.archive_parts
+            else:
+                archive_parts = receipt.source_parts[:-1]
             source_parts: list[dict[str, object]] = [
                 {"role": recorded.role, "physical_index": recorded.physical_index}
                 for recorded in archive_parts
@@ -329,6 +339,17 @@ def _card_primary_text_source(
                         "role": receipt.amendment_part.role,
                         "artifact_sha256": selection.selection.parts[-1].source_sha256,
                         "extraction_id": receipt.amendment_part.extraction_id,
+                    }
+                )
+            elif isinstance(receipt, RclPairedArchiveInputReceipt):
+                amendment = selection.selection.parts[-1]
+                source_parts.append(
+                    {
+                        "role": receipt.amendment_part.role,
+                        "artifact_sha256": amendment.source_sha256,
+                        "member_sha256": amendment.sha256,
+                        "physical_index": receipt.amendment_part.physical_index,
+                        "capture_id": receipt.amendment_capture_id,
                     }
                 )
             physical = {
@@ -351,9 +372,10 @@ def _card_primary_text_source(
             }
             if isinstance(receipt, SejmSelfAmendmentInputReceipt):
                 physical["proposal_trace_id"] = receipt.proposal_trace_id
-        ranges = project_pdf_page_ranges(receipt.segments, parts)
-        if ranges:
-            physical["normalized_pdf_page_ranges"] = ranges
+        if not isinstance(receipt, RclPairedArchiveInputReceipt):
+            ranges = project_pdf_page_ranges(receipt.segments, parts)
+            if ranges:
+                physical["normalized_pdf_page_ranges"] = ranges
     return source, physical
 
 

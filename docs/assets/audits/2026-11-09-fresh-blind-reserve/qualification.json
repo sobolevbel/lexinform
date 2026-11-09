@@ -1,0 +1,16 @@
+{
+  "archived_containers_checked": 6032,
+  "independent_annotations": 0,
+  "nested_archive_instances": 11225,
+  "nested_archive_members_checked": true,
+  "nested_check_sha256": "771be0289e96a2ebee8a1b917b7cfbc62f2e289d4b7cbae36e5f46e349f0eac5",
+  "nested_exact_aliases": 0,
+  "nested_exclusions_sha256": "9e0623b3dddf48379016b8e8d7794230a72ddad3acc79bbf0efefa221715526d",
+  "nested_max_depth_observed": 5,
+  "nested_unsupported_compression_members": 21,
+  "official_source_manifest_sha256": "76aa257b55955ec6cf7e6e85c44791e1acff41c14c92232917f4ace47633414b",
+  "raw_and_direct_member_hash_aliases": 0,
+  "reserved_initiative_groups": 3,
+  "review_archive_sha256": "fdeb55a2c2e55d3f9553405a69726c91462d057529ede6e70e6aa3ddce9edcee",
+  "sealed_holdout_sha256": "dfb933090c83125f5c50e54eb2439eb526f53ec4d00acda3995c13cb50b1436f"
+}

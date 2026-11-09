@@ -18,6 +18,7 @@ from lexinform.document_versions import (
     normative_annex_key,
     regulation_support,
 )
+from lexinform.models.candidate_observation import CandidateObservation
 from lexinform.models.candidate_trace import ArchiveMemberPolicyReason
 from lexinform.models.documents import (
     PDF_PAGE_FAILURE_PREFIX,
@@ -270,7 +271,17 @@ def _select_parts(
                 pass
         return result
 
-    for index, part in enumerate(parts):
+    physical = tuple(
+        CandidateObservation(
+            index,
+            candidate,
+            archive_ordinals=part_archive_ordinals[index] if part_archive_ordinals else (),
+        )
+        for index, candidate in enumerate(CandidateSet.from_parts(parts).entries)
+    )
+    for observation in physical:
+        index = observation.slot
+        (part,) = observation.candidate.parts
         name = part.members[-1]
         base = name.rsplit("/", 1)[-1]
         kind = _physical_kind(part)
@@ -354,7 +365,12 @@ def _select_parts(
     candidates.sort(key=lambda item: (item[0], item[2].members))
     rank, main_index, main = candidates[0]
     peers = [(index, p) for r, index, p in candidates if r[0] == rank[0]]
-    peer_set = CandidateSet.from_parts([p for _, p in peers])
+    peer_set = CandidateSet(
+        tuple(
+            replace(physical[index].candidate, parts=(part,), observed_parts=(part,))
+            for index, part in peers
+        )
+    )
     bill_indices = peer_set.bill_indices()
     confirmed = [peers[index] for index in bill_indices]
     comparison_peers = confirmed or [(main_index, main)]
@@ -370,9 +386,7 @@ def _select_parts(
         return (*archive_parent(members, ordinals), members[-1].rpartition("/")[0])
 
     def part_parent(index: int, part: DocumentPart) -> tuple[tuple[int, ...], tuple[str, ...]]:
-        return archive_parent(
-            part.members, part_archive_ordinals[index] if part_archive_ordinals else ()
-        )
+        return archive_parent(part.members, physical[index].archive_ordinals)
 
     def part_family(index: int, part: DocumentPart) -> tuple[tuple[int, ...], tuple[str, ...], str]:
         return (*part_parent(index, part), part.members[-1].rpartition("/")[0])

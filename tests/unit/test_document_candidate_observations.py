@@ -1,4 +1,4 @@
-from lexinform.document_candidate_observations import CandidateObservations
+from lexinform.document_candidate_observations import CandidateObservations, with_candidate_read
 from lexinform.models.documents import DocumentPart
 from lexinform.models.sejm import TextDocument
 
@@ -18,8 +18,8 @@ def test_comparison_projection_preserves_exact_official_and_archive_observations
     physical = DocumentPart(url=later, members=("nested.zip", "bill.docx"))
     rejected = DocumentPart(url=later, members=("nested.zip", "table.docx"))
     older_physical = physical.model_copy(update={"url": earlier})
-    first = primary.with_read("USTAWA", (physical,), (physical, rejected))
-    second = older.with_read("USTAWA", (older_physical,), (older_physical,))
+    first = with_candidate_read(primary, "USTAWA", (physical,), (physical, rejected))
+    second = with_candidate_read(older, "USTAWA", (older_physical,), (older_physical,))
 
     observations = CandidateObservations((first, second))
     projection = observations.comparison((1,))

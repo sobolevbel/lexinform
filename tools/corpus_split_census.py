@@ -4,10 +4,17 @@ import argparse
 import json
 import re
 from collections import Counter, defaultdict
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
 from tools.corpus_artifacts import digest, read_artifact, write_json
+from tools.corpus_holdout_exposure import (
+    ExposureCase,
+    ExposurePin,
+    connected_exposed_cases,
+    load_exposures,
+)
 from tools.corpus_review import EMPTY_REVIEW_QUESTIONS, settle
 from tools.corpus_runs import SUITES, verify
 
@@ -94,7 +101,12 @@ def population(suite: str, report: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return cases
 
 
-def audit(runs: list[tuple[Path, str]], output: Path) -> dict[str, Any]:
+def audit(
+    runs: list[tuple[Path, str]],
+    output: Path,
+    *,
+    exposures: Sequence[ExposurePin] = (),
+) -> dict[str, Any]:
     roots = [(path.resolve(strict=True), pin) for path, pin in runs]
     if len({pin for _, pin in roots}) != len(roots):
         raise ValueError("Supply each run seal once")
@@ -113,6 +125,9 @@ def audit(runs: list[tuple[Path, str]], output: Path) -> dict[str, Any]:
     }
     if not queues:
         raise ValueError("Supply at least one pinned population queue")
+    exposure_rows = load_exposures(exposures)
+    if any(item.queue_sha256 not in queues for item in exposure_rows.values()):
+        raise ValueError("Supply the exact pinned parent queue of every exposure receipt")
     case_groups: dict[str, set[str]] = defaultdict(set)
     case_suites: dict[str, set[str]] = defaultdict(set)
     aliases: dict[str, set[str]] = defaultdict(set)
@@ -157,7 +172,27 @@ def audit(runs: list[tuple[Path, str]], output: Path) -> dict[str, Any]:
         pin = queue["manifest_sha256"]
         if pin not in queues or queue["suite"] != sealed[pin][0]:
             raise ValueError("Supply the exact pinned parent of each review or form")
+        recorded_exposures = set(report.get("exposures", {}).values())
+        if not recorded_exposures <= exposure_rows.keys():
+            raise ValueError("Supply the exact exposure receipts used to create the review")
+        demoted = (
+            connected_exposed_cases(
+                (
+                    ExposureCase(id=key, group=value["group"], originals=tuple(value["raw"]))
+                    for key, value in queues[pin].items()
+                ),
+                (exposure_rows[value] for value in recorded_exposures),
+            )
+            if recorded_exposures and queue["suite"] == "holdout"
+            else set()
+        )
         if suite == "review-form":
+            if recorded_exposures and any(
+                row["holdout_eligible"]
+                != (queues[pin][row["id"]]["holdout_eligible"] and row["id"] not in demoted)
+                for row in report["cases"]
+            ):
+                raise ValueError("Review form differs from its pinned exposure decisions")
             continue
         for row in report["cases"]:
             identity = row["id"]
@@ -171,7 +206,10 @@ def audit(runs: list[tuple[Path, str]], output: Path) -> dict[str, Any]:
                 for value in (review["answers_sha256"] for review in row["reviews"])
             ):
                 raise ValueError("Recorded review differs from its pinned queue or answers")
-            resolved = settle(identity, target, row["reviews"])
+            recorded_target = (
+                {**target, "holdout_eligible": False} if identity in demoted else target
+            )
+            resolved = settle(identity, recorded_target, row["reviews"])
             if any(row[key] != resolved[key] for key in ("status", "split", "oracle", "labels")):
                 raise ValueError("Recorded labels differ from their human reviews")
             previous = review_targets.setdefault(identity, target)
@@ -187,6 +225,10 @@ def audit(runs: list[tuple[Path, str]], output: Path) -> dict[str, Any]:
     diagnostic_components = {representative(key) for key in diagnostics}
     diagnostic_groups = set().union(*(case_groups[key] for key in diagnostics))
     overlaps = {key for key in reserved if representative(key) in diagnostic_components}
+    exposed_components = {
+        representative(case.id) for item in exposure_rows.values() for case in item.cases
+    }
+    exposed_reserved = {key for key in reserved if representative(key) in exposed_components}
     labels: Counter[str] = Counter()
     independent = set()
     for identity, reviews in review_records.items():
@@ -202,7 +244,7 @@ def audit(runs: list[tuple[Path, str]], output: Path) -> dict[str, Any]:
                 else "known"
                 for value in row["labels"].values()
             )
-        if row["split"] == "holdout" and identity not in overlaps:
+        if row["split"] == "holdout" and identity not in overlaps | exposed_reserved:
             independent.add(identity)
     result = {
         "version": 1,
@@ -223,7 +265,18 @@ def audit(runs: list[tuple[Path, str]], output: Path) -> dict[str, Any]:
         "human_review_question_counts": {
             key: labels[key] for key in ("known", "unknown", "conflict")
         },
-        "holdout_evaluation_use": "unknown",
+        "holdout_evaluation_use": "exposure_recorded" if exposure_rows else "unknown",
+        **(
+            {
+                "exposures": {str(path.resolve()): pin for path, pin in exposures},
+                "exposed_holdout_case_ids": sorted(exposed_reserved),
+                "remaining_reserved_holdout_case_ids": sorted(
+                    reserved - exposed_reserved - overlaps
+                ),
+            }
+            if exposure_rows
+            else {}
+        ),
         "scope": "Supplied sealed runs only; raw aliases record identical bytes.",
     }
     write_json(output, result)
@@ -235,10 +288,17 @@ def main() -> None:
     parser.add_argument(
         "--run", nargs=2, metavar=("DIRECTORY", "SHA256"), action="append", required=True
     )
+    parser.add_argument(
+        "--exposure", nargs=2, action="append", default=[], metavar=("FILE", "SHA256")
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     try:
-        audit([(Path(path), pin) for path, pin in args.run], args.output)
+        audit(
+            [(Path(path), pin) for path, pin in args.run],
+            args.output,
+            exposures=[(Path(path), pin) for path, pin in args.exposure],
+        )
     except (KeyError, OSError, TypeError, ValueError) as exc:
         parser.error(str(exc))
 

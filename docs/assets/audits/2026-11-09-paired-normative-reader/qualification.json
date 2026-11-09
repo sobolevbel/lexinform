@@ -1,0 +1,96 @@
+{
+  "amendment_operational_block_id": "word-xml:word/document.xml:0/7",
+  "amendment_scope": [
+    [
+      429004,
+      429012,
+      0,
+      0
+    ],
+    [
+      429013,
+      429026,
+      0,
+      1
+    ],
+    [
+      429027,
+      429184,
+      0,
+      2
+    ],
+    [
+      429185,
+      429375,
+      0,
+      3
+    ],
+    [
+      429376,
+      429378,
+      0,
+      4
+    ],
+    [
+      429389,
+      429391,
+      0,
+      5
+    ],
+    [
+      429432,
+      429436,
+      0,
+      6
+    ],
+    [
+      429479,
+      429938,
+      0,
+      7
+    ]
+  ],
+  "base_block_id": "word-xml:word/document.xml:0/10",
+  "base_extraction_bytes": 12268,
+  "base_role": "bill",
+  "base_scope": [
+    [
+      2195,
+      2534,
+      2,
+      0
+    ]
+  ],
+  "frozen_request_unchanged": true,
+  "gzip_delta_bytes": 1900,
+  "legacy_osr_companion_restores": true,
+  "negative_controls": {
+    "missing_base_prefix": "invalid_input_intent_snapshot",
+    "missing_witness": "invalid_input_intent_snapshot",
+    "wrong_base_capture": "invalid_input_intent_snapshot",
+    "wrong_base_role": "invalid_input_intent_snapshot",
+    "wrong_base_slot": "invalid_input_intent_snapshot",
+    "wrong_base_xml": "invalid_input_intent_snapshot",
+    "wrong_emitted_hash": "invalid_input_intent_snapshot",
+    "wrong_leaf": "invalid_input_intent_snapshot",
+    "wrong_root": "invalid_input_intent_snapshot",
+    "wrong_slot": "invalid_input_intent_snapshot",
+    "wrong_xml": "invalid_input_intent_snapshot"
+  },
+  "observed_candidates": {
+    "amendment": 11,
+    "base": 1
+  },
+  "paired_companion_bytes": 3595,
+  "pinned_db_sha256": "3c8330e1c335e45252827d5cc67179ac16373ceb59d94f91b65fc9723326a35a",
+  "qualification": "reader-only manual attachment of native witness from original member in copied database",
+  "restore_byte_stable": true,
+  "row_counts": {
+    "amendment": 8,
+    "base": 1
+  },
+  "selected_bill_sample_bytes": 952,
+  "source_unchanged": true,
+  "sql_delta_bytes": 8564,
+  "witness_bytes": 3900
+}

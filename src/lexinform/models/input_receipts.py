@@ -417,6 +417,9 @@ class PairedArchiveBlockCompanion(BaseModel):
 
     base: PreparedBlockCompanion
     amendment: PreparedBlockCompanion
+    base_bill_capture_id: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$", exclude_if=lambda value: value is None
+    )
 
     @model_validator(mode="after")
     def shared_budget(self) -> Self:
@@ -472,6 +475,12 @@ class RclPairedArchiveInputReceipt(MultipartTextInputReceipt):
                 row.part_index != len(archive) for row in companion.amendment.rows
             ):
                 raise ValueError("Paired block companions must keep distinct root scopes")
+            if companion.base_bill_capture_id is not None and any(
+                archive[row.part_index].role != "bill" for row in companion.base.rows
+            ):
+                raise ValueError(
+                    "Paired normative archive evidence requires the selected bill role"
+                )
             validate_block_companion(companion.base, self.segments)
             validate_block_companion(companion.amendment, self.segments)
         return self

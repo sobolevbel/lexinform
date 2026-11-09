@@ -2,33 +2,28 @@ from collections.abc import Sequence
 from dataclasses import dataclass, replace
 
 from lexinform.document_candidates import CandidateSet, DocumentCandidate
+from lexinform.models.candidate_observation import CandidateObservation
 from lexinform.models.documents import DocumentPart
 from lexinform.models.sejm import TextDocument
 
 
-@dataclass(frozen=True)
-class CandidateObservation:
-    slot: int
-    candidate: DocumentCandidate
-    official: TextDocument | None = None
-
-    def with_read(
-        self,
-        text: str | None,
-        parts: tuple[DocumentPart, ...],
-        observed_parts: tuple[DocumentPart, ...],
-    ) -> CandidateObservation:
-        return replace(
-            self,
-            candidate=replace(
-                self.candidate, text=text, parts=parts, observed_parts=observed_parts
-            ),
-        )
+def with_candidate_read(
+    observation: CandidateObservation[DocumentCandidate],
+    text: str | None,
+    parts: tuple[DocumentPart, ...],
+    observed_parts: tuple[DocumentPart, ...],
+) -> CandidateObservation[DocumentCandidate]:
+    return replace(
+        observation,
+        candidate=replace(
+            observation.candidate, text=text, parts=parts, observed_parts=observed_parts
+        ),
+    )
 
 
 @dataclass(frozen=True)
 class CandidateObservations:
-    entries: tuple[CandidateObservation, ...]
+    entries: tuple[CandidateObservation[DocumentCandidate], ...]
 
     @classmethod
     def from_sources(cls, requested: TextDocument) -> CandidateObservations:

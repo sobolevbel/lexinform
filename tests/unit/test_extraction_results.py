@@ -22,7 +22,12 @@ from lexinform.models import (
     TextDocument,
 )
 from lexinform.models.block_input import MAX_BLOCK_INPUT_BYTES, MAX_BLOCK_INPUT_ROWS
-from lexinform.models.extractions import MAX_EXTRACTION_METADATA_BYTES, PdfPageMap, PdfPageRange
+from lexinform.models.extractions import (
+    MAX_EXTRACTION_METADATA_BYTES,
+    ObservedMemberBlockCopy,
+    PdfPageMap,
+    PdfPageRange,
+)
 from lexinform.models.prepared_input import PreparedTextSegment
 from lexinform.services.document_history import DocumentSourceRead, record_source_read
 from lexinform.services.documents import TextLoader
@@ -82,6 +87,58 @@ def test_thousands_of_blocks_preserve_metadata_and_witness_bounds() -> None:
     assert len(witness.model_dump_json().encode()) <= MAX_BLOCK_INPUT_BYTES
     assert len(large.model_dump_json().encode()) < MAX_EXTRACTION_METADATA_BYTES
     assert large.physical_manifest_sha256 != small.physical_manifest_sha256
+
+
+def test_selected_bill_sample_is_separately_bounded_and_bound_to_its_summary() -> None:
+    paragraphs = "</w:t></w:r></w:p><w:p><w:r><w:t>".join(
+        f"Art. {i}. Tekst niepowtarzalnego przepisu {i}." for i in range(1, 5)
+    )
+    bill_bytes = docx(paragraphs)
+    data = archive({"projekt.docx": bill_bytes, "osr.docx": docx("OSR " + TEXT)})
+    original = extractor().extract_document_with_provenance(data).result
+    bill, osr = sorted(
+        original.selected_parts,
+        key=lambda part: part.sha256 != hashlib.sha256(bill_bytes).hexdigest(),
+    )
+    native = bill.block_copy_witness
+    assert native is not None, "the Word fixture supplies native block runs"
+    assert len(native.runs) > 1, "distinct fixture paragraphs supply multiple copied runs"
+    assert osr.block_copy_witness is not None, "the OSR fixture supplies independent evidence"
+    sample = ObservedMemberBlockCopy(
+        physical_index=bill.physical_index,
+        witness=native.model_copy(update={"runs": native.runs[:1]}),
+    )
+    legacy = original.model_copy(
+        update={
+            "selected_parts": tuple(
+                part.model_copy(update={"block_copy_witness": None}) if part == bill else part
+                for part in original.selected_parts
+            )
+        }
+    )
+
+    admitted = ExtractionResult.model_validate(
+        {**legacy.model_dump(), "selected_bill_block_sample": sample}
+    )
+
+    assert admitted.selected_parts == legacy.selected_parts
+    assert ExtractionResult.model_validate_json(admitted.model_dump_json()) == admitted
+    assert "selected_bill_block_sample" not in legacy.model_dump()
+    for bad in (
+        sample.model_copy(update={"witness": native}),
+        sample.model_copy(update={"physical_index": osr.physical_index}),
+    ):
+        with pytest.raises(ValueError, match="one bounded selected slot without a witness"):
+            ExtractionResult.model_validate(
+                {**legacy.model_dump(), "selected_bill_block_sample": bad}
+            )
+    foreign = sample.model_copy(
+        update={"witness": sample.witness.model_copy(update={"part_sha256": "0" * 64})}
+    )
+    with pytest.raises(ValueError, match="differs from its native extracted part"):
+        ExtractionResult.model_validate(
+            {**legacy.model_dump(), "selected_bill_block_sample": foreign}
+        )
 
 
 def test_archive_summaries_are_capped_without_losing_selected_document_text() -> None:

@@ -29,7 +29,7 @@ from lexinform.archive_disposition_observations import (
     complete_standalone_root,
 )
 from lexinform.archive_policy_capture import optional_archive_policy_capture
-from lexinform.document_candidate_observations import CandidateObservation, CandidateObservations
+from lexinform.document_candidate_observations import CandidateObservations, with_candidate_read
 from lexinform.document_candidates import (
     AmbiguousCandidates,
     DocumentCandidate,
@@ -82,6 +82,7 @@ from lexinform.models import (
     ScannedDocument,
     TextDocument,
 )
+from lexinform.models.candidate_observation import CandidateObservation
 from lexinform.models.candidate_trace import (
     MAX_ADMITTED_NORMATIVE_ANNEXES,
     MAX_ADMITTED_SUPPORT,
@@ -1388,7 +1389,9 @@ class TextLoader:
             return None
         observations = CandidateObservations(
             tuple(
-                entry.with_read(file.text, file.selection.parts, file.selection.observed_parts)
+                with_candidate_read(
+                    entry, file.text, file.selection.parts, file.selection.observed_parts
+                )
                 for entry, file in zip(source_set.entries, (loaded, older, amendment), strict=True)
             )
         )
@@ -2006,8 +2009,8 @@ class TextLoader:
                     unpack_blocked.add(index)
                 if file.archive_unpack_blocked or file.selection.has_normative_pdf_page_failure:
                     incomplete[index] = file.selection
-            item = observations[index].with_read(
-                file.text, file.selection.parts, file.selection.observed_parts
+            item = with_candidate_read(
+                observations[index], file.text, file.selection.parts, file.selection.observed_parts
             )
             is_bill = item.candidate.is_bill
             if compare_packages and is_bill and index not in incomplete:
@@ -2041,7 +2044,8 @@ class TextLoader:
                                     composition.version_part_gaps.append(gap)
                         is_bill = False
                     else:
-                        item = item.with_read(
+                        item = with_candidate_read(
+                            item,
                             composed.text,
                             composed.selection.parts,
                             tuple(

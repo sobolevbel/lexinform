@@ -1,0 +1,29 @@
+{
+  "J513_different_source_rejected": true,
+  "evidence_sha256": {
+    "docs/assets/audits/2026-11-08-pdf-page-coordinates/qualification.json": "b6cb6a6192074d007644ad26a688bff2390bf3c80b57532d4ea4ce5de8ec0788",
+    "docs/assets/audits/2026-11-08-pdf-page-map-reader/qualification.json": "a0f143de32a2f4ebc50573f6d1e0e8cf258a7493923d8eaf7f4e84c2bae97093",
+    "docs/assets/audits/2026-11-08-pdf-page-map-writer/qualification.json": "ec648575e47d780bb36e1c40abfc9d2ab0b5b4891a61d56494b244bc13c59c39",
+    "docs/assets/audits/2026-11-08-retained-pdf-ranges/qualification.json": "c01e78fe27aac4489e30e6f96fb941a6f65e00ee11fecc3be176b6f22956741c",
+    "docs/assets/audits/2026-11-08-review-and-checkpoints/human-verification.json": "e583fa4842cff50491bbe0f8c28539d92fe1a850ef130a08e0c97c6912776076",
+    "docs/assets/audits/2026-11-08-rpw-page-coverage/qualification.json": "591b68c136982118df5f247195b12dcaf5853e0eb1275e611f24f150b65da108",
+    "docs/assets/audits/2026-11-08-secondary-pdf-ranges/qualification.json": "ef1c13302c2ac7f9222ba634776f6901a9313a327b091079a29c63f7049d06a4"
+  },
+  "exposed": [
+    "rpw:RPW/35346/2026",
+    "rpw:RPW/35635/2026",
+    "rpw:RPW/35783/2026"
+  ],
+  "no_independent_labels": true,
+  "old_census_unknown_unchanged": true,
+  "qualified_J508_through_J512_exact_source_or_request": true,
+  "queue_manifest_sha256": "3b8846cd6f625a19d1da4033d88b0ed8e4764d4f7b2c013d0a2c8a23f208c820",
+  "receipts": {
+    "J507-assisted.json": "7d0b43a3cbc9e720fd77a087a2d44e67154f2776cd3b6d22471d3390af6763fc",
+    "J508-qualification.json": "c18b11d1227cdd0ed5707206eda8890c9b71a3768e5d8b2ebc6c45317ac4ed61"
+  },
+  "remaining_reserved": 0,
+  "reserved_historical": 3,
+  "review_form_and_admission_demote": true,
+  "sealed_inputs_unchanged": true
+}

@@ -1,0 +1,51 @@
+{
+  "cases": {
+    "12383101/9": {
+      "sql_before": 86518,
+      "sql_delta": 26046,
+      "gzip_before": 16806,
+      "gzip_delta": 770,
+      "added_rows": {
+        "extraction_results": 3,
+        "selection_extractions": 3
+      }
+    },
+    "12389752/12": {
+      "sql_before": 76198,
+      "sql_delta": 32060,
+      "gzip_before": 15052,
+      "gzip_delta": 900,
+      "added_rows": {
+        "candidate_disposition_traces": 1,
+        "extraction_results": 3,
+        "selection_extractions": 2,
+        "source_candidate_traces": 1
+      }
+    },
+    "12392400/5": {
+      "sql_before": 79405,
+      "sql_delta": 8259,
+      "gzip_before": 14929,
+      "gzip_delta": 247,
+      "added_rows": {
+        "extraction_results": 1,
+        "selection_extractions": 1
+      }
+    },
+    "12393550/12": {
+      "sql_before": 81530,
+      "sql_delta": 20465,
+      "gzip_before": 16225,
+      "gzip_delta": 689,
+      "added_rows": {
+        "extraction_results": 3,
+        "selection_extractions": 3
+      }
+    }
+  },
+  "actual_policy_sha_before": "38eadebb35f944100c3601be83017a4fe80b9daa9759789165c919c548eca79c",
+  "actual_policy_sha_after": "208316552e5bf9f7a72c21401765172adcbf85924fb427e216186d17ddd128fa",
+  "same_raw_hashes": 18,
+  "same_native_extraction_payload_except_package_policy_source_sha256": true,
+  "native_reobservation_idempotent_after_first": true
+}

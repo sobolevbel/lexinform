@@ -8,6 +8,7 @@ import json
 import re
 import zipfile
 from collections import Counter
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 from urllib.parse import unquote, urlparse
@@ -16,6 +17,12 @@ from lexinform.adapters.pdf_text import PypdfTextExtractor
 from tools.corpus_artifacts import digest, read_artifact, write_json
 from tools.corpus_extraction import MAX_BYTES, bounded_reader
 from tools.corpus_health import local_path
+from tools.corpus_holdout_exposure import (
+    ExposureCase,
+    ExposurePin,
+    connected_exposed_cases,
+    load_exposures,
+)
 from tools.corpus_runs import verify
 from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
 
@@ -173,6 +180,25 @@ def queue_targets(root: Path, queue: Path, pin: str) -> tuple[str, dict[str, Any
     if not targets:
         raise ValueError("Review queue has no cases")
     return manifest["suite"], targets
+
+
+def apply_exposures(
+    suite: str, targets: dict[str, Any], inputs: Sequence[ExposurePin]
+) -> dict[str, str]:
+    exposures = load_exposures(inputs)
+    if exposures and suite == "holdout":
+        exposed = connected_exposed_cases(
+            (
+                ExposureCase(
+                    id=identity, group=target["group"], originals=tuple(target["originals"])
+                )
+                for identity, target in targets.items()
+            ),
+            exposures.values(),
+        )
+        for identity in exposed & targets.keys():
+            targets[identity]["holdout_eligible"] = False
+    return {str(path.resolve()): pin for path, pin in inputs}
 
 
 class Sources:
@@ -474,7 +500,13 @@ def guarded_output(root: Path, queue: Path, output: Path) -> Path:
 
 
 def record(
-    corpus: Path, queue: Path, queue_pin: str, answers: list[tuple[Path, str]], output: Path
+    corpus: Path,
+    queue: Path,
+    queue_pin: str,
+    answers: list[tuple[Path, str]],
+    output: Path,
+    *,
+    exposures: Sequence[ExposurePin] = (),
 ) -> None:
     root = corpus.resolve(strict=True)
     target = guarded_output(root, queue, output)
@@ -482,6 +514,7 @@ def record(
         raise ValueError("At least one answers file is required")
     code = source_fingerprints()
     suite, targets = queue_targets(root, queue, queue_pin)
+    exposure_pins = apply_exposures(suite, targets, exposures)
     sources = Sources(root)
     reviews: dict[str, list[dict[str, Any]]] = {identity: [] for identity in targets}
     errors: list[str] = []
@@ -517,6 +550,7 @@ def record(
         or code != source_fingerprints()
         or digest(read_artifact(queue / "manifest.json")) != queue_pin
         or any(digest(read_artifact(Path(path))) != sha for path, sha in answer_inputs.items())
+        or any(digest(read_artifact(Path(path))) != sha for path, sha in exposure_pins.items())
     ):
         raise ValueError("Review inputs or code changed during recording")
     write_json(
@@ -529,6 +563,7 @@ def record(
             "source_sha256": code,
             "queue": {"path": str(queue.resolve()), "manifest_sha256": queue_pin, "suite": suite},
             "answers": answer_inputs,
+            **({"exposures": exposure_pins} if exposure_pins else {}),
             "read_inputs": sources.reads.initial_sha256,
             "external_inputs": sources.external,
             "cases": cases,
@@ -564,11 +599,19 @@ def place(assets: Path, name: str, data: bytes) -> str:
     return f"{assets.name}/{name}"
 
 
-def form(corpus: Path, queue: Path, queue_pin: str, output: Path) -> None:
+def form(
+    corpus: Path,
+    queue: Path,
+    queue_pin: str,
+    output: Path,
+    *,
+    exposures: Sequence[ExposurePin] = (),
+) -> None:
     root = corpus.resolve(strict=True)
     target = guarded_output(root, queue, output)
     code = source_fingerprints()
     suite, targets = queue_targets(root, queue, queue_pin)
+    exposure_pins = apply_exposures(suite, targets, exposures)
     sources = Sources(root)
     assets = target.with_suffix("")
     cases = []
@@ -614,6 +657,7 @@ def form(corpus: Path, queue: Path, queue_pin: str, output: Path) -> None:
         sources.reads.changed_inputs()
         or code != source_fingerprints()
         or digest(read_artifact(queue / "manifest.json")) != queue_pin
+        or any(digest(read_artifact(Path(path))) != sha for path, sha in exposure_pins.items())
     ):
         raise ValueError("Review inputs or code changed while preparing the form")
     queue_meta = {"path": str(queue.resolve()), "manifest_sha256": queue_pin, "suite": suite}
@@ -628,6 +672,7 @@ def form(corpus: Path, queue: Path, queue_pin: str, output: Path) -> None:
             "code_sha": code_version(),
             "source_sha256": code,
             "queue": queue_meta,
+            **({"exposures": exposure_pins} if exposure_pins else {}),
             "read_inputs": sources.reads.initial_sha256,
             "external_inputs": sources.external,
             "cases": cases,
@@ -884,12 +929,16 @@ def main() -> None:
     parser.add_argument("--queue-sha256", required=True)
     parser.add_argument("--answers", type=Path, action="append", default=[])
     parser.add_argument("--answers-sha256", action="append", default=[])
+    parser.add_argument(
+        "--exposure", nargs=2, action="append", default=[], metavar=("FILE", "SHA256")
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+    exposures = [(Path(path), pin) for path, pin in args.exposure]
     if args.mode == "form":
         if args.answers or args.answers_sha256:
             raise ValueError("A form takes no answers")
-        form(args.corpus, args.queue, args.queue_sha256, args.output)
+        form(args.corpus, args.queue, args.queue_sha256, args.output, exposures=exposures)
         return
     if len(args.answers) != len(args.answers_sha256):
         raise ValueError("Every answers file needs its SHA")
@@ -899,6 +948,7 @@ def main() -> None:
         args.queue_sha256,
         list(zip(args.answers, args.answers_sha256, strict=True)),
         args.output,
+        exposures=exposures,
     )
 
 
