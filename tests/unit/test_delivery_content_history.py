@@ -12,15 +12,11 @@ from lexinform.models import (
     CommandOutcome,
     ContentDecisionSummary,
     ContentDeliverySummary,
-    ContentHistoryView,
     IncomingCommand,
     OutcomeStatus,
-    Publication,
     PublicationStatus,
     parse_command,
 )
-from lexinform.ports import BillRepository
-from lexinform.services import content_inspection
 from lexinform.services.content_inspection import inspect_content_page
 from tests.unit.test_content_history import NOW, publication, record, version
 
@@ -131,23 +127,6 @@ def test_legacy_outcomes_do_not_gain_an_empty_history_page() -> None:
     assert "content_history_page" not in outcome.model_dump(mode="json")
 
 
-def test_ambiguous_history_does_not_offer_a_version_or_infer_confirmation(
-    history_repo: SqliteBillRepository, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    from_history = publication(history_repo)
-    selected = history_repo.publication_by_id(from_history)
-    assert selected is not None, "the fixture creates a physical publication"
-    unavailable = ContentHistoryView(integrity="unavailable", ambiguous=True)
-
-    def inspect(repo: BillRepository, publication: Publication) -> ContentHistoryView:
-        return unavailable
-
-    monkeypatch.setattr(content_inspection, "inspect_content", inspect)
-    page = inspect_content_page(history_repo, selected, page=1)
-    assert page.status == "unavailable" and page.version is None and not page.deliveries
-    assert page.history is unavailable and page.history.current_id is None
-
-
 def test_corrupt_original_snapshot_is_unavailable_and_read_only(
     history_repo: SqliteBillRepository, tmp_path: Path
 ) -> None:
@@ -161,7 +140,8 @@ def test_corrupt_original_snapshot_is_unavailable_and_read_only(
         connection.execute("UPDATE content_snapshots SET payload_json='not-json'")
     before = (tmp_path / "history.db").read_bytes()
     page = inspect_content_page(history_repo, selected, page=1)
-    assert page.status == "unavailable" and page.version is None
+    assert page.status == "unavailable" and page.version is None and not page.deliveries
+    assert page.history is not None and page.history.current_id is None
     assert (tmp_path / "history.db").read_bytes() == before
 
 

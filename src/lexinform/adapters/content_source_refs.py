@@ -1,5 +1,6 @@
 """Read and validate scoped editorial source parents on the supplied SQLite snapshot."""
 
+import json
 import sqlite3
 from datetime import datetime
 
@@ -23,6 +24,13 @@ from lexinform.models import (
 )
 
 
+def _read_content_snapshot(row: sqlite3.Row) -> ContentSnapshot:
+    snapshot = ContentSnapshot(kind=row["kind"], payload_json=row["payload_json"])
+    if snapshot.snapshot_id != row["snapshot_id"]:
+        raise ValueError("content snapshot columns differ from the recorded identity")
+    return snapshot
+
+
 def _row_to_llm_batch_item(row: sqlite3.Row, connection: sqlite3.Connection) -> LlmBatchItem:
     item = LlmBatchItem(
         batch_id=row["batch_id"],
@@ -44,12 +52,17 @@ class ContentSourceRows(DocumentSourceRows):
         row = self._query(
             "SELECT * FROM content_snapshots WHERE snapshot_id=?", (snapshot_id,)
         ).fetchone()
-        if row is None:
-            return None
-        snapshot = ContentSnapshot(kind=row["kind"], payload_json=row["payload_json"])
-        if snapshot.snapshot_id != row["snapshot_id"]:
-            raise ValueError("content snapshot columns differ from the recorded identity")
-        return snapshot
+        return _read_content_snapshot(row) if row is not None else None
+
+    def get_content_snapshots(self, identities: set[str]) -> dict[str, ContentSnapshot]:
+        return {
+            row["snapshot_id"]: _read_content_snapshot(row)
+            for row in self._query(
+                "SELECT * FROM content_snapshots"
+                " WHERE snapshot_id IN (SELECT value FROM json_each(?))",
+                (json.dumps(sorted(identities)),),
+            )
+        }
 
     def get_computation_result(self, result_id: str) -> ComputationResult | None:
         row = self._query(

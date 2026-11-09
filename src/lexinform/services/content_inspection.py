@@ -182,12 +182,14 @@ def _inspect(
     )
     if root is None or original is None or original.previous_version_id is not None:
         return base.model_copy(update={"integrity": "unavailable"})
-    snapshots: dict[str, ContentSnapshot] = {}
+    snapshots: dict[str, ContentSnapshot] = (
+        card_history.snapshots if card_history is not None else {}
+    )
     by_id = {version.content_id: version for version in versions}
     for version in versions:
         for kind, identity in content_snapshot_refs(version):
             if identity not in snapshots:
-                snapshot = repo.get_content_snapshot(identity)
+                snapshot = repo.get_content_snapshot(identity) if card_history is None else None
                 if snapshot is None:
                     return base.model_copy(update={"integrity": "unavailable"})
                 snapshots[identity] = snapshot

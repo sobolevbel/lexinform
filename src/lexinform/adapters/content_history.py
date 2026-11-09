@@ -550,7 +550,11 @@ def _verify_card_content(
     reader = ContentSourceRows(connection)
     snapshots: dict[str, ContentSnapshot] = {}
     for kind, identity in content_snapshot_refs(value):
-        snapshot = reader.get_content_snapshot(identity)
+        snapshot = (
+            inventory.snapshots.get(identity)
+            if inventory is not None
+            else reader.get_content_snapshot(identity)
+        )
         if snapshot is None or snapshot.kind != kind:
             raise ValueError("card_content_snapshot_missing")
         snapshots[identity] = snapshot
@@ -591,27 +595,19 @@ def _verify_card_content(
     current_projection = False
     projection_after = None
     if value.previous_version_id is not None:
-        row = _query(
-            connection,
-            "SELECT * FROM content_versions WHERE content_id=?",
-            (value.previous_version_id,),
-        ).fetchone()
-        if row is None:
+        previous = (
+            inventory.versions.get(value.previous_version_id)
+            if inventory is not None
+            else _card_content_version(connection, value.previous_version_id)
+        )
+        if previous is None:
             raise ValueError("card_content_predecessor_missing")
-        previous = read_content_version(row)
         if (
             previous.root_publication_id != value.root_publication_id
             or previous.change_snapshot_id is not None
         ):
             raise ValueError("card_content_predecessor_scope")
-        previous_ids = {
-            r[0]
-            for r in _query(
-                connection,
-                "SELECT publication_id FROM publication_content WHERE content_id=?",
-                (value.previous_version_id,),
-            )
-        }
+        previous_ids = _card_content_bindings(connection, previous.content_id, inventory)
         reference = value.card_primary_evidence
         if reference is not None and bound_physical_id is None:
             marked_continuation = previous.previous_version_id is not None
@@ -636,11 +632,12 @@ def _verify_card_content(
                         previous,
                         previous_ids,
                         bill.analysis_generation,
+                        inventory,
                     )
                     marked_continuation = True
                 else:
                     original = _card_primary_revision_origin(
-                        connection, value, root, previous, previous_ids
+                        connection, value, root, previous, previous_ids, inventory
                     )
                     inherited = reference.model_copy(update={"revision_analysis_sha256": None})
                     primary = _verify_card_primary_evidence(
@@ -678,19 +675,12 @@ def _verify_card_content(
                 or physical.message_id != root.message_id
             ):
                 raise ValueError("card_content_predecessor_unconfirmed")
-    bindings = _query(
-        connection,
-        "SELECT publication_id FROM publication_content WHERE content_id=?",
-        (value.content_id,),
-    ).fetchall()
-    bound_ids = {binding[0] for binding in bindings}
+    bound_ids = _card_content_bindings(connection, value.content_id, inventory)
     missing = False
-    for identity in bound_ids:
-        if (identity == value.root_publication_id) != (value.previous_version_id is None):
+    for publication_id in bound_ids:
+        if (publication_id == value.root_publication_id) != (value.previous_version_id is None):
             raise ValueError("card_content_binding_scope")
-        physical = inventory.publications.get(identity) if inventory is not None else None
-        if physical is None:
-            physical = _card_publication(connection, identity)
+        physical = _card_publication(connection, publication_id, inventory)
         if physical is None:
             missing = True
             continue
@@ -711,7 +701,7 @@ def _verify_card_content(
     if bound_physical_id is not None:
         if bound_ids != {bound_physical_id}:
             return None, primary
-        candidate = _card_publication(connection, bound_physical_id)
+        candidate = _card_publication(connection, bound_physical_id, inventory)
         candidates = (candidate,) if candidate is not None else ()
     elif value.previous_version_id is None:
         candidates = (root,)
@@ -786,27 +776,33 @@ def _card_current_projection_parent(
     previous: ContentVersion,
     previous_ids: set[int],
     generation: int,
+    inventory: CardContentInventory | None,
 ) -> datetime | None:
     prior = previous.card_primary_evidence
     if root.id is None or root.sent_at is None or len(previous_ids) != 1:
         raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
     (prior_id,) = previous_ids
-    row = _query(connection, "SELECT * FROM publications WHERE id=?", (prior_id,)).fetchone()
-    if row is None:
+    physical = _card_publication(connection, prior_id, inventory)
+    if physical is None:
         raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
-    physical = read_content_publication(row)
     if (
         physical.status is not PublicationStatus.SENT
         or physical.message_id != root.message_id
         or physical.sent_at is None
         or not _card_revision_time_matches(previous, physical)
         or not root.sent_at <= physical.sent_at <= value.recorded_at
-        or _verify_card_content(connection, previous, retained=True, bound_physical_id=prior_id)[0]
+        or _verify_card_content(
+            connection, previous, retained=True, bound_physical_id=prior_id, inventory=inventory
+        )[0]
         != prior_id
     ):
         raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
     if prior is None:
-        snapshot = ContentSourceRows(connection).get_content_snapshot(previous.bill_context_id)
+        snapshot = (
+            inventory.snapshots.get(previous.bill_context_id)
+            if inventory is not None
+            else ContentSourceRows(connection).get_content_snapshot(previous.bill_context_id)
+        )
         if snapshot is None:
             raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
         previous_bill = Bill.model_validate_json(snapshot.payload_json)
@@ -847,6 +843,7 @@ def _card_primary_revision_origin(
     root: Publication,
     previous: ContentVersion,
     previous_ids: set[int],
+    inventory: CardContentInventory | None,
 ) -> ContentVersion:
     reference = value.card_primary_evidence
     assert reference is not None, "only a marked revision resolves its original evidence"
@@ -858,12 +855,9 @@ def _card_primary_revision_origin(
     if root.id is None or len(previous_ids) != 1 or previous.card_primary_evidence != reference:
         raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
     (previous_id,) = previous_ids
-    predecessor_row = _query(
-        connection, "SELECT * FROM publications WHERE id=?", (previous_id,)
-    ).fetchone()
-    if predecessor_row is None:
+    predecessor = _card_publication(connection, previous_id, inventory)
+    if predecessor is None:
         raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
-    predecessor = read_content_publication(predecessor_row)
     if (
         predecessor.status is not PublicationStatus.SENT
         or predecessor.message_id != root.message_id
@@ -872,26 +866,30 @@ def _card_primary_revision_origin(
         or not _card_revision_time_matches(previous, predecessor)
         or not root.sent_at <= previous.recorded_at
         or predecessor.sent_at > value.recorded_at
-        or _verify_card_content(connection, previous, retained=True, bound_physical_id=previous_id)[
-            0
-        ]
+        or _verify_card_content(
+            connection, previous, retained=True, bound_physical_id=previous_id, inventory=inventory
+        )[0]
         != previous_id
     ):
         raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
-    row = _query(
-        connection,
-        "SELECT v.* FROM publication_content p JOIN content_versions v USING(content_id)"
-        " WHERE p.publication_id=?",
-        (root.id,),
-    ).fetchone()
-    if row is None:
-        raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
-    original = read_content_version(row)
+    if inventory is not None:
+        original = inventory.versions.get(inventory.bindings.get(root.id, ""))
+    else:
+        row = _query(
+            connection,
+            "SELECT v.* FROM publication_content p JOIN content_versions v USING(content_id)"
+            " WHERE p.publication_id=?",
+            (root.id,),
+        ).fetchone()
+        original = read_content_version(row) if row is not None else None
     if (
-        original.root_publication_id != value.root_publication_id
+        original is None
+        or original.root_publication_id != value.root_publication_id
         or original.previous_version_id is not None
         or original.card_primary_evidence != inherited
-        or _verify_card_content(connection, original, retained=True, bound_physical_id=root.id)[0]
+        or _verify_card_content(
+            connection, original, retained=True, bound_physical_id=root.id, inventory=inventory
+        )[0]
         != root.id
     ):
         raise CardPrimaryEvidenceError("card_revision_primary_predecessor")
@@ -2529,12 +2527,38 @@ class CardContentInventory(NamedTuple):
     publications: dict[int, Publication]
     bindings: dict[int, str]
     revisions: dict[int, list[Publication]]
+    versions: dict[str, ContentVersion]
+    snapshots: dict[str, ContentSnapshot]
+    bindings_by_content: dict[str, set[int]]
 
 
 def read_card_content_inventory(
     connection: sqlite3.Connection, root_id: int
 ) -> CardContentInventory:
-    inventory = CardContentInventory({}, {}, {})
+    versions = {
+        row["content_id"]: read_content_version(row)
+        for row in _query(
+            connection,
+            "SELECT * FROM content_versions WHERE root_publication_id=? ORDER BY rowid",
+            (root_id,),
+        )
+    }
+    snapshots = ContentSourceRows(connection).get_content_snapshots(
+        {
+            identity
+            for version in versions.values()
+            for _, identity in content_snapshot_refs(version)
+        }
+    )
+    bindings_by_content: dict[str, set[int]] = {}
+    for row in _query(
+        connection,
+        "SELECT b.content_id, b.publication_id FROM content_versions v"
+        " JOIN publication_content b USING(content_id) WHERE v.root_publication_id=?",
+        (root_id,),
+    ):
+        bindings_by_content.setdefault(row["content_id"], set()).add(row["publication_id"])
+    inventory = CardContentInventory({}, {}, {}, versions, snapshots, bindings_by_content)
     for row in card_publication_rows(connection, root_id):
         identity = row["id"]
         publication = read_content_publication(row)
@@ -2547,9 +2571,35 @@ def read_card_content_inventory(
     return inventory
 
 
-def _card_publication(connection: sqlite3.Connection, identity: int) -> Publication | None:
+def _card_publication(
+    connection: sqlite3.Connection, identity: int, inventory: CardContentInventory | None = None
+) -> Publication | None:
+    if inventory is not None and identity in inventory.publications:
+        return inventory.publications[identity]
     row = _query(connection, "SELECT * FROM publications WHERE id=?", (identity,)).fetchone()
     return read_content_publication(row) if row is not None else None
+
+
+def _card_content_version(connection: sqlite3.Connection, content_id: str) -> ContentVersion | None:
+    row = _query(
+        connection, "SELECT * FROM content_versions WHERE content_id=?", (content_id,)
+    ).fetchone()
+    return read_content_version(row) if row is not None else None
+
+
+def _card_content_bindings(
+    connection: sqlite3.Connection, content_id: str, inventory: CardContentInventory | None
+) -> set[int]:
+    if inventory is not None:
+        return inventory.bindings_by_content.get(content_id, set())
+    return {
+        row[0]
+        for row in _query(
+            connection,
+            "SELECT publication_id FROM publication_content WHERE content_id=?",
+            (content_id,),
+        )
+    }
 
 
 def verify_card_content(

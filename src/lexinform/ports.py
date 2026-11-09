@@ -561,6 +561,7 @@ class CardContentHistory:
     versions: list[ContentVersion]
     publications: dict[int, Publication]
     bindings: dict[int, ContentVersion]
+    snapshots: dict[str, ContentSnapshot]
 
 
 class Publisher(Protocol):

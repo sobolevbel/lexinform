@@ -2622,21 +2622,18 @@ class SqliteBillRepository:
 
     def read_card_content_history(self, root_publication_id: int) -> CardContentHistory:
         inventory = read_card_content_inventory(self._conn, root_publication_id)
-        versions = []
-        for row in self._conn.execute(
-            "SELECT * FROM content_versions WHERE root_publication_id=? ORDER BY rowid",
-            (root_publication_id,),
-        ):
-            version = read_content_version(row)
+        for version in inventory.versions.values():
             self._verify_retained_content_version(version, inventory=inventory)
-            versions.append(version)
-        by_id = {version.content_id: version for version in versions}
-        if not set(inventory.bindings.values()).issubset(by_id):
+        if not set(inventory.bindings.values()).issubset(inventory.versions):
             raise ValueError("card history contains a foreign or missing binding")
         return CardContentHistory(
-            versions,
+            list(inventory.versions.values()),
             inventory.publications,
-            {identity: by_id[content_id] for identity, content_id in inventory.bindings.items()},
+            {
+                identity: inventory.versions[content_id]
+                for identity, content_id in inventory.bindings.items()
+            },
+            inventory.snapshots,
         )
 
     def _validate_publication_content_binding(
@@ -6681,7 +6678,8 @@ class SqliteBillRepository:
         return (
             self._conn.execute(
                 """
-            SELECT 1 FROM publications child JOIN publications root ON root.id=CASE
+                SELECT 1 FROM publications child INDEXED BY ix_pub_channel_sent
+                CROSS JOIN publications root ON root.id=CASE
                 WHEN json_valid(child.delivery_json) THEN
                     CAST(json_extract(child.delivery_json, '$.continuation_root') AS INTEGER) END
             WHERE child.channel_id=? AND child.kind='message_part' AND child.status='dismissed'
