@@ -481,6 +481,8 @@ class TextLoader:
         enrich_word_grid: Callable[[bytes, DocumentExtraction], DocumentExtraction] | None = None,
         enrich_odt_rows: Callable[[bytes, DocumentExtraction], DocumentExtraction] | None = None,
         verify_rcl_comment_table: Callable[[bytes, DocumentExtraction], bool] | None = None,
+        enrich_rcl_observed_blocks: Callable[[str, bytes, DocumentExtraction], DocumentExtraction]
+        | None = None,
         physical_factory: Callable[[ObservationOrder], PhysicalObservationCollector] | None = None,
         sejm: SejmGateway | None = None,
     ) -> None:
@@ -495,6 +497,7 @@ class TextLoader:
             enrich for enrich in (enrich_word_grid, enrich_odt_rows) if enrich is not None
         )
         self._verify_rcl_comment_table = verify_rcl_comment_table
+        self._enrich_rcl_observed_blocks = enrich_rcl_observed_blocks
         self._lock = threading.Lock()
         self._archive_traces: dict[tuple[str, str, str], CandidateDispositionTrace] = {}
         self._read_cache_hits = 0
@@ -2366,6 +2369,9 @@ class TextLoader:
                 comment_table_bundle = False
                 if isinstance(self._extractor, ProvenanceTextExtractor):
                     observed = self._extractor.extract_document_with_provenance(data)
+                    if self._enrich_rcl_observed_blocks is not None:
+                        with suppress(Exception):
+                            observed = self._enrich_rcl_observed_blocks(url, data, observed)
                     for enrich in self._native_enrichments:
                         with suppress(Exception):
                             observed = enrich(data, observed)

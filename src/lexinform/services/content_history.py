@@ -38,6 +38,7 @@ from lexinform.models.content import (
     MAX_EXTENDED_GROUPED_STAGE_MEMBERS,
     MAX_GROUPED_STAGE_CONTENT_BYTES,
     ActPublishedContentEvidence,
+    ContentApplicationProfile,
     DirectStageContentEvidence,
     GroupedStageContentEvidence,
     GroupedStageMember,
@@ -186,7 +187,7 @@ def record_publication_content(
                         "source_observation_ids": audit.source_observation_ids,
                     }
                 )
-            if version.supplement_evidence is None:
+            if version.supplement_evidence is None and version.supplement_pair_evidence is None:
                 version = capture_content_applications(
                     repo, version, publication, origin=application_origin
                 )
@@ -382,6 +383,7 @@ def prepare_publication_content(
         )
 
     supplement: tuple[int, SupplementContentEvidence] | None = None
+    supplement_pair = None
     if (
         publication.kind is PublicationKind.STATUS_UPDATE
         and amendments_stage(change.new_stages) is None
@@ -399,7 +401,7 @@ def prepare_publication_content(
         if (
             plan.continuation_ids
             or change.amendments is not None
-            or len(change.supplements) != 1
+            or len(change.supplements) not in (1, 2)
             or change.id != publication.status_change_id
             or plan.continuation_index != 1
             or plan.edit_message_id is not None
@@ -414,9 +416,14 @@ def prepare_publication_content(
             or not _first_direct_application(repo, publication, application_origin)
         ):
             return None
-        supplement = repo.find_supplement_content_evidence(change)
-        if supplement is None:
-            return None
+        if len(change.supplements) == 2:
+            supplement_pair = _supplement_pair(repo, change)
+            if supplement_pair is None:
+                return None
+        else:
+            supplement = repo.find_supplement_content_evidence(change)
+            if supplement is None:
+                return None
     if plan.continuation_ids:
         return None
     bill = Bill.model_validate_json(plan.bill_json)
@@ -444,9 +451,20 @@ def prepare_publication_content(
         formatter_version=formatter_version if plan.rendered_text else None,
         computation_ids=computations,
         status_change_id=change.id,
-        application_ref_profile="supplement-projection-v1" if supplement else None,
-        application_ids=(supplement[0],) if supplement else (),
+        application_ref_profile=(
+            "supplement-projection-v1"
+            if supplement
+            else "supplement-pair-projections-v1"
+            if supplement_pair
+            else None
+        ),
+        application_ids=(supplement[0],)
+        if supplement
+        else supplement_pair[0]
+        if supplement_pair
+        else (),
         supplement_evidence=supplement[1] if supplement else None,
+        supplement_pair_evidence=supplement_pair[1] if supplement_pair else None,
         recorded_at=clock.now(),
     )
     return version, (bill_snapshot, change_snapshot, plan_snapshot)
@@ -677,6 +695,20 @@ def record_grouped_stage_content(
     repo.bind_publication_content(first.publication_id, version.content_id)
 
 
+def _supplement_pair(
+    repo: BillRepository, change: StatusChange
+) -> tuple[tuple[int, int], tuple[SupplementContentEvidence, SupplementContentEvidence]] | None:
+    if len(change.new_stages) > 2:
+        return None
+    first = repo.find_supplement_content_evidence(change, supplement_index=0)
+    second = repo.find_supplement_content_evidence(change, supplement_index=1)
+    if first is None or second is None or first[0] == second[0] or first[1] == second[1]:
+        return None
+    if first[0] > second[0]:
+        first, second = second, first
+    return (first[0], second[0]), (first[1], second[1])
+
+
 def _prepare_direct_stage_content(
     repo: BillRepository,
     clock: Clock,
@@ -750,10 +782,9 @@ def _prepare_direct_stage_content(
         return None
     computation_ids: tuple[str, ...] = ()
     application_ids: tuple[int, ...] = ()
-    application_profile: Literal["amendment-projections-v1", "supplement-projection-v1"] | None = (
-        None
-    )
+    application_profile: ContentApplicationProfile | None = None
     supplement: SupplementContentEvidence | None = None
+    supplement_pair = None
     if has_application:
         amendment_stage = amendments_stage(change.new_stages) is not None
         if change.amendments is not None:
@@ -764,7 +795,24 @@ def _prepare_direct_stage_content(
                 return None
             target = ResultApplicationTarget(kind="status_change", ref=str(change.id))
             application_ids = tuple(repo.find_projection_application_ids(computation_id, target))
+            if len(application_ids) != 1:
+                return None
+            computation_ids = (computation_id,)
             application_profile = "amendment-projections-v1"
+        elif len(change.supplements) == 2:
+            if amendment_stage:
+                return None
+            supplement_pair = _supplement_pair(repo, change)
+            if supplement_pair is None:
+                return None
+            pair_ids = tuple(
+                sorted({r.computation_id for r in change.supplements if r.computation_id})
+            )
+            if len(pair_ids) != 2:
+                return None
+            application_ids = supplement_pair[0]
+            computation_ids = pair_ids
+            application_profile = "supplement-pair-projections-v1"
         else:
             if len(change.supplements) != 1 or amendment_stage or len(change.new_stages) > 1:
                 return None
@@ -774,10 +822,8 @@ def _prepare_direct_stage_content(
                 return None
             identity, supplement = found
             application_ids = (identity,)
+            computation_ids = (computation_id,)
             application_profile = "supplement-projection-v1"
-        if len(application_ids) != 1:
-            return None
-        computation_ids = (computation_id,)
     bill_snapshot = card_bill_snapshot(plan.bill_json)
     change_snapshot = ContentSnapshot(kind="change", payload_json=plan.change_json)
     if multipart:
@@ -846,6 +892,7 @@ def _prepare_direct_stage_content(
             application_ref_profile=application_profile,
             application_ids=application_ids,
             supplement_evidence=supplement,
+            supplement_pair_evidence=supplement_pair[1] if supplement_pair else None,
             recorded_at=clock.now(),
         ),
         snapshots,

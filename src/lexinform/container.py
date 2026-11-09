@@ -35,6 +35,7 @@ from lexinform.adapters.odt_soft_row_source import enrich_odt_soft_rows
 from lexinform.adapters.orka import OrkaClient
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.adapters.rcl_html import RclClient
+from lexinform.adapters.rcl_observed_word_source import enrich_rcl_observed_word_source
 from lexinform.adapters.sejm_api import SejmApiClient
 from lexinform.adapters.senat_html import SenateClient
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
@@ -222,6 +223,13 @@ class Container:
                     else None
                 ),
                 sejm=self.gateway,
+                enrich_rcl_observed_blocks=(
+                    partial(
+                        enrich_rcl_observed_word_source, _host(self.settings.rcl_base_url), docx
+                    )
+                    if self.extractor is None and self.rcl is not None
+                    else None
+                ),
                 enrich_word_grid=(
                     partial(enrich_word_horizontal_source, docx) if self.extractor is None else None
                 ),

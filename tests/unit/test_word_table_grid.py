@@ -155,3 +155,22 @@ def test_no_horizontal_evidence_preserves_exact_result() -> None:
     raw = merged_bill(row(RESTART, text="200 zł") + row(CONTINUE))
     baseline = extractor(capture=True).extract_document_with_provenance(raw)
     assert enrich_word_horizontal_source(DocxTextExtractor(), raw, baseline) is baseline
+
+
+def test_additive_mixed_spans_keep_existing_vertical_chains() -> None:
+    raw = merged_bill(row("", text="Zakres") + row(RESTART, text="100 zł") + row(CONTINUE))
+    baseline = extractor(capture=True).extract_document_with_provenance(raw)
+    current = enrich_word_horizontal_source(DocxTextExtractor(), raw, baseline)
+    assert current.document == baseline.document
+    (part,) = current.result.selected_parts
+    assert part.word_grid_merges == baseline.result.selected_parts[0].word_grid_merges
+    assert part.word_horizontal_spans is None
+    mixed = part.word_mixed_grid_spans
+    assert mixed is not None, "the fixture has one independent horizontal span in a mixed table"
+    (table,) = mixed.tables
+    (span,) = table.spans
+    assert table.path == (0, 1) and table.observed_spans == 1
+    assert span.row == 0 and span.columns == (1, 3) and span.cell == (1, 1)
+    assert (
+        part.model_copy(update={"word_mixed_grid_spans": None}) == baseline.result.selected_parts[0]
+    )

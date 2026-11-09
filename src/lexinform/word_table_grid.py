@@ -136,6 +136,7 @@ def word_table_grids(
     *,
     vertical_only: bool = False,
     horizontal_only: bool = False,
+    table_paths: frozenset[XmlPath] | None = None,
 ) -> tuple[WordGridTable, ...]:
     if vertical_only and horizontal_only:
         raise ValueError("word grid scope must be unique")
@@ -159,13 +160,15 @@ def word_table_grids(
         for name in ("cellIns", "cellDel", "cellMerge", "tblGridChange", "tcPrChange", "trPrChange")
     }
     for index, table in enumerate(body):
+        path = (body_position, index)
+        if table_paths is not None and path not in table_paths:
+            continue
         if table.tag != namespace + "tbl" or not any(node.tag in markers for node in table.iter()):
             continue
         if horizontal_only and not _horizontal_grid_candidate(table, namespace):
             continue
         if len(tables) == _MAX_TABLES:
             raise ValueError("table_grid_count_limit")
-        path = (body_position, index)
         try:
             if any(node is not table for node in table.iter(namespace + "tbl")):
                 raise ValueError("nested_table")

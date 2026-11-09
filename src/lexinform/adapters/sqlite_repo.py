@@ -2387,9 +2387,11 @@ class SqliteBillRepository:
         return ContentSourceRows(self._conn).get_content_snapshot(snapshot_id)
 
     def find_supplement_content_evidence(
-        self, change: StatusChange
+        self, change: StatusChange, *, supplement_index: int | None = None
     ) -> tuple[int, SupplementContentEvidence] | None:
-        return find_supplement_content_evidence(self._conn, change)
+        return find_supplement_content_evidence(
+            self._conn, change, supplement_index=supplement_index
+        )
 
     def find_card_primary_evidence(self, bill: Bill) -> CardPrimaryEvidence | None:
         return card_primary_evidence_candidate(self._conn, bill)

@@ -1,0 +1,38 @@
+{
+  "independent_replay_differences": "Run duration telemetry only",
+  "previous_reader_rejects_new_dump_atomically": true,
+  "qualifications": {
+    "multipart": {
+      "application_ids": [
+        1,
+        2
+      ],
+      "application_source_swap_rejected": true,
+      "gzip_delta_bytes": 1626,
+      "missing_second_capture_preserves_html_and_delivery": true,
+      "missing_second_source_rejected": true,
+      "post_cleanup_restore_identical": true,
+      "slots": 2,
+      "sql_delta_bytes": 13345
+    },
+    "single": {
+      "application_ids": [
+        1,
+        2
+      ],
+      "application_source_swap_rejected": true,
+      "gzip_delta_bytes": 1190,
+      "missing_second_capture_preserves_html_and_delivery": true,
+      "missing_second_source_rejected": true,
+      "post_cleanup_restore_identical": true,
+      "slots": 1,
+      "sql_delta_bytes": 14443
+    }
+  },
+  "scope": "two pinned official J328 PDFs combined under a controlled owner with fake answers and Telegram",
+  "source_pins": {
+    "sejm/term10/supplements/files/3033-001__3033-001.pdf": "63c5a0981e304979be8b097ffb9cd255a7101293314206b42819e84f4ecce85b",
+    "sejm/term10/supplements/files/3039-005__3039-005.pdf": "6a2705ea005751e87a2bbe15588d738c3141f2411e6fb716a046e4174f2d873f"
+  },
+  "staged_reader_restores_new_dump_byte_identical": true
+}

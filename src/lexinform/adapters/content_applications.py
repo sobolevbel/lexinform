@@ -391,11 +391,14 @@ def _supplement_selection(
 
 
 def find_supplement_content_evidence(
-    connection: sqlite3.Connection, change: StatusChange
+    connection: sqlite3.Connection, change: StatusChange, *, supplement_index: int | None = None
 ) -> tuple[int, SupplementContentEvidence] | None:
-    if change.id is None or len(change.supplements) != 1:
+    if change.id is None or (
+        len(change.supplements) != (1 if supplement_index is None else 2)
+        or supplement_index not in (None, 0, 1)
+    ):
         return None
-    projected = change.supplements[0]
+    projected = change.supplements[supplement_index or 0]
     if projected.computation_id is None:
         return None
     target = ResultApplicationTarget(kind="status_change", ref=str(change.id))

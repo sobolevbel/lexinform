@@ -149,6 +149,7 @@ from lexinform.models.computations import CollectionReason, ComputationRecord
 from lexinform.models.documents import SenateAmendmentInputWitness
 from lexinform.models.input_receipts import (
     MultipartTextInputReceipt,
+    RclPairedArchiveInputReceipt,
     primary_context_sha256,
 )
 from lexinform.models.sejm import (
@@ -227,6 +228,7 @@ from lexinform.services.input_receipts import (
     paired_archive_parent,
     senate_work_input_receipt,
     with_block_companion,
+    with_paired_archive_block_companion,
 )
 from lexinform.services.joint import primary_of, revive_prefilter_skips
 from lexinform.services.revision_applications import AmendmentRevisionApplications
@@ -4026,6 +4028,25 @@ class AnalysisService:
                 self._repo.save_physical_inventory(
                     packet.metadata, (packet.capture,), recorded_at=created_at
                 )
+                question = intent.request.question
+                if isinstance(receipt, RclPairedArchiveInputReceipt) and isinstance(
+                    question, AnalysisQuestion
+                ):
+                    offered = with_paired_archive_block_companion(
+                        receipt, parent, source, question.ctx.text
+                    )
+                    if offered is not receipt:
+                        try:
+                            with self._repo.atomic():
+                                self._repo.save_batch_intent(
+                                    enrich_primary_input_intent(intent, offered)
+                                )
+                        except ValueError:
+                            log.warning(
+                                "Paired block companion omitted (parents_or_mapping_unavailable)"
+                            )
+                        else:
+                            return True
                 self._repo.save_batch_intent(enriched)
         except ValueError:
             log.warning("Paired archive input receipt omitted (parents_or_mapping_unavailable)")

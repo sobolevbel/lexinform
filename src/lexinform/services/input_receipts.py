@@ -35,7 +35,7 @@ from lexinform.models import (
     SupplementQuestion,
     TextDocument,
 )
-from lexinform.models.block_input import PreparedBlockCompanion, PreparedBlockCopy
+from lexinform.models.block_input import BlockCopyWitness, PreparedBlockCompanion, PreparedBlockCopy
 from lexinform.models.documents import SenateAmendmentInputWitness
 from lexinform.models.input_receipts import (
     MAX_INPUT_RECEIPT_SEGMENTS,
@@ -43,6 +43,7 @@ from lexinform.models.input_receipts import (
     LooseRclInputPart,
     LooseRclInputReceipt,
     MultipartTextInputReceipt,
+    PairedArchiveBlockCompanion,
     RclArchiveInputReceipt,
     RclArchiveSelfAmendmentInputReceipt,
     RclPairedArchiveInputReceipt,
@@ -813,6 +814,107 @@ def enrich_supplement_input_intent(
     return _enrich_input_intent(original, receipt)
 
 
+def with_paired_archive_block_companion(
+    receipt: RclPairedArchiveInputReceipt,
+    parent: PairedArchiveParent,
+    source: DocumentSourceRead,
+    text: str,
+) -> RclPairedArchiveInputReceipt:
+    extractions = {item.result_id: item for item in source.extractions}
+    base = extractions.get(receipt.extraction_id)
+    amendment_id = parent.packet.capture.extraction_id
+    amendment = extractions.get(amendment_id) if amendment_id is not None else None
+    if base is None or amendment is None or amendment.observed_member_block_copy is None:
+        return receipt
+    observed = amendment.observed_member_block_copy
+    index = len(receipt.source_parts) - 1
+    if observed.physical_index != receipt.amendment_part.physical_index:
+        return receipt
+    by_slot = {item.physical_index: item.block_copy_witness for item in base.selected_parts}
+    base_rows = [
+        row
+        for part_index, part in enumerate(receipt.source_parts[:-1])
+        if (witness := by_slot.get(part.physical_index)) is not None
+        for row in _paired_whole_block_rows(
+            receipt, witness, part_index, base.result_id, part.physical_index, text
+        )
+    ]
+    amendment_rows = _paired_whole_block_rows(
+        receipt, observed.witness, index, amendment.result_id, observed.physical_index, text
+    )
+    if not base_rows or not amendment_rows:
+        return receipt
+    base_rows.sort(key=lambda row: row.start)
+    base_sha256 = _block_rows_sha256(base_rows)
+    amendment_sha256 = _block_rows_sha256(amendment_rows)
+    for length in range(min(32, max(len(base_rows), len(amendment_rows))), 0, -1):
+        try:
+            companion = PairedArchiveBlockCompanion(
+                base=_block_prefix(base_rows, min(length, len(base_rows)), base_sha256),
+                amendment=_block_prefix(
+                    amendment_rows, min(length, len(amendment_rows)), amendment_sha256
+                ),
+            )
+            return RclPairedArchiveInputReceipt.model_validate(
+                {**receipt.model_dump(), "paired_block_companion": companion}
+            )
+        except ValueError:
+            continue
+    return receipt
+
+
+def _paired_whole_block_rows(
+    receipt: RclPairedArchiveInputReceipt,
+    witness: BlockCopyWitness,
+    part_index: int,
+    extraction_id: str,
+    physical_index: int,
+    text: str,
+) -> list[PreparedBlockCopy]:
+    rows = []
+    for segment in receipt.segments:
+        if (
+            segment.part_index != part_index
+            or segment.source_start is None
+            or segment.source_end is None
+        ):
+            continue
+        for run_index, run in enumerate(witness.runs):
+            if not segment.source_start <= run.source_start < run.source_end <= segment.source_end:
+                continue
+            start = segment.start + run.source_start - segment.source_start
+            end = segment.start + run.source_end - segment.source_start
+            if input_text_sha256(text[start:end]) == run.text_sha256:
+                rows.append(
+                    PreparedBlockCopy(
+                        start=start,
+                        end=end,
+                        part_index=part_index,
+                        extraction_id=extraction_id,
+                        physical_index=physical_index,
+                        witness_id=witness.witness_id,
+                        run_index=run_index,
+                        text_sha256=run.text_sha256,
+                    )
+                )
+    return rows
+
+
+def _block_rows_sha256(rows: list[PreparedBlockCopy]) -> str:
+    return input_text_sha256("[" + ",".join(row.model_dump_json() for row in rows) + "]")
+
+
+def _block_prefix(
+    rows: list[PreparedBlockCopy], length: int, rows_sha256: str
+) -> PreparedBlockCompanion:
+    return PreparedBlockCompanion(
+        retention="complete" if length == len(rows) else "prefix",
+        observed_rows=len(rows),
+        rows_sha256=rows_sha256,
+        rows=tuple(rows[:length]),
+    )
+
+
 def with_block_companion[
     T: PrimaryInputReceipt
     | MultipartTextInputReceipt
@@ -932,17 +1034,11 @@ def _receipt_with_block_rows[
 ](receipt: T, rows: list[PreparedBlockCopy], *, complete_only: bool = False) -> T:
     if not rows:
         return receipt
-    encoded = "[" + ",".join(row.model_dump_json() for row in rows) + "]"
-    rows_hash = input_text_sha256(encoded)
+    rows_sha256 = _block_rows_sha256(rows)
     lengths = (len(rows),) if complete_only else range(min(32, len(rows)), 0, -1)
     for length in lengths:
         try:
-            companion = PreparedBlockCompanion(
-                retention="complete" if length == len(rows) else "prefix",
-                observed_rows=len(rows),
-                rows_sha256=rows_hash,
-                rows=tuple(rows[:length]),
-            )
+            companion = _block_prefix(rows, length, rows_sha256)
             return cast(
                 T,
                 type(receipt).model_validate(

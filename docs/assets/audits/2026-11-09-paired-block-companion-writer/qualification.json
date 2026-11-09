@@ -1,0 +1,116 @@
+{
+  "comparison": {
+    "12/100000": {
+      "candidate": {
+        "request_sha256": "73696fbbe6883f186ac419dbc0afa851e57f110607c5c917c6aec47f057f867f",
+        "size_delta": {
+          "queued": {
+            "sql_bytes": 3961,
+            "gzip_bytes": 969
+          },
+          "finalized": {
+            "sql_bytes": 3961,
+            "gzip_bytes": 883
+          },
+          "submitted": {
+            "sql_bytes": 3961,
+            "gzip_bytes": 854
+          }
+        },
+        "companion": null,
+        "changed_extraction_artifacts": [
+          "8f1dd7f69eaf8741cc2646fea2a6b4f20d642ed205b2eab605bd3edce79375ab"
+        ],
+        "fallback": "legacy no receipt"
+      }
+    },
+    "12/1500000": {
+      "candidate": {
+        "request_sha256": "5bbe16bcaaa8428261fc4e9dacbedac8a2f97565d67b73811f2f1ee30b958be2",
+        "size_delta": {
+          "queued": {
+            "sql_bytes": 7845,
+            "gzip_bytes": 1795
+          },
+          "finalized": {
+            "sql_bytes": 7845,
+            "gzip_bytes": 1741
+          },
+          "submitted": {
+            "sql_bytes": 7845,
+            "gzip_bytes": 1694
+          }
+        },
+        "companion": {
+          "base": {
+            "observed": 11,
+            "retained": 5
+          },
+          "amendment": {
+            "observed": 11,
+            "retained": 5
+          }
+        },
+        "changed_extraction_artifacts": [
+          "8f1dd7f69eaf8741cc2646fea2a6b4f20d642ed205b2eab605bd3edce79375ab"
+        ],
+        "fallback": null
+      },
+      "rollback": {
+        "request_sha256": "5bbe16bcaaa8428261fc4e9dacbedac8a2f97565d67b73811f2f1ee30b958be2",
+        "size_delta": {
+          "queued": {
+            "sql_bytes": 3961,
+            "gzip_bytes": 954
+          },
+          "finalized": {
+            "sql_bytes": 3961,
+            "gzip_bytes": 905
+          },
+          "submitted": {
+            "sql_bytes": 3961,
+            "gzip_bytes": 882
+          }
+        },
+        "companion": null,
+        "changed_extraction_artifacts": [
+          "8f1dd7f69eaf8741cc2646fea2a6b4f20d642ed205b2eab605bd3edce79375ab"
+        ],
+        "fallback": "bare paired"
+      }
+    },
+    "14/1500000": {
+      "candidate": {
+        "request_sha256": "5bbe16bcaaa8428261fc4e9dacbedac8a2f97565d67b73811f2f1ee30b958be2",
+        "size_delta": {
+          "queued": {
+            "sql_bytes": 7845,
+            "gzip_bytes": 1791
+          },
+          "finalized": {
+            "sql_bytes": 7845,
+            "gzip_bytes": 1733
+          },
+          "submitted": {
+            "sql_bytes": 7845,
+            "gzip_bytes": 1694
+          }
+        },
+        "companion": {
+          "base": {
+            "observed": 11,
+            "retained": 5
+          },
+          "amendment": {
+            "observed": 11,
+            "retained": 5
+          }
+        },
+        "changed_extraction_artifacts": [
+          "8f1dd7f69eaf8741cc2646fea2a6b4f20d642ed205b2eab605bd3edce79375ab"
+        ],
+        "fallback": null
+      }
+    }
+  }
+}
