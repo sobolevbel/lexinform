@@ -551,11 +551,14 @@ class PhysicalInventoryReader:
             if record.total(field, len(slots)) != expected:
                 raise ValueError("execution order does not retain every observed local event")
 
-    def capture(self, row: sqlite3.Row) -> PhysicalCapture:
-        record = _capture_row(row)
-        return self.verify_capture(record)
+    def capture(
+        self, row: sqlite3.Row, *, extraction_parent: sqlite3.Row | None = None
+    ) -> PhysicalCapture:
+        return self.verify_capture(_capture_row(row), extraction_parent=extraction_parent)
 
-    def verify_capture(self, record: PhysicalCapture) -> PhysicalCapture:
+    def verify_capture(
+        self, record: PhysicalCapture, *, extraction_parent: sqlite3.Row | None = None
+    ) -> PhysicalCapture:
         recipe = self.read(record.recipe_id)
         inventory = self.read(record.inventory_id)
         execution = self.read(record.execution_id)
@@ -579,18 +582,27 @@ class PhysicalInventoryReader:
             if unit.graph != inventory.metadata_id:
                 raise PhysicalInventoryRowError("physical_capture_owner_mismatch")
         if record.extraction_id is not None:
-            parent = self.connection.execute(
-                "SELECT * FROM extraction_results WHERE extraction_id=?", (record.extraction_id,)
-            ).fetchone()
+            parent = extraction_parent
+            if parent is None:
+                parent = self.connection.execute(
+                    "SELECT * FROM extraction_results WHERE extraction_id=?",
+                    (record.extraction_id,),
+                ).fetchone()
             if parent is None:
                 raise PhysicalInventoryRowError("physical_capture_extraction_missing")
             try:
                 extraction = ExtractionResult.model_validate_json(parent["result_json"])
                 if (
                     extraction.result_id,
+                    parent["extraction_id"],
                     extraction.artifact_sha256,
                     parent["artifact_sha256"],
-                ) != (record.extraction_id, record.artifact_sha256, record.artifact_sha256):
+                ) != (
+                    record.extraction_id,
+                    record.extraction_id,
+                    record.artifact_sha256,
+                    record.artifact_sha256,
+                ):
                     raise ValueError(
                         "physical capture extraction has a different actual artifact owner"
                     )
@@ -613,6 +625,26 @@ class PhysicalInventoryReader:
                 seen.add(identity)
                 pending.extend(physical_references(self.read(identity)))
         return seen
+
+
+def _capture_extraction_parents(
+    connection: sqlite3.Connection, captures: tuple[sqlite3.Row, ...]
+) -> dict[str, sqlite3.Row]:
+    identities = tuple(
+        dict.fromkeys(row["extraction_id"] for row in captures if row["extraction_id"] is not None)
+    )
+    if identities:
+        placeholders = ",".join("?" for _ in identities)
+        with suppress(sqlite3.Error):
+            return {
+                row["extraction_id"]: row
+                for row in connection.execute(
+                    "SELECT extraction_id, artifact_sha256, result_json FROM extraction_results"
+                    f" WHERE extraction_id IN ({placeholders})",
+                    identities,
+                )
+            }
+    return {}
 
 
 def physical_inventory_issues(
@@ -638,9 +670,10 @@ def physical_inventory_issues(
     for batch in batched(captures, _PARENT_LOOKUP_BATCH_SIZE, strict=False):
         if prefetch:
             reader.prefetch_artifacts(row["artifact_sha256"] for row in batch)
+        extractions = _capture_extraction_parents(connection, batch) if prefetch else {}
         for row in batch:
             try:
-                reader.capture(row)
+                reader.capture(row, extraction_parent=extractions.get(row["extraction_id"]))
             except PhysicalInventoryRowError as exc:
                 yield exc.code, "physical_captures/" + row["capture_id"]
 

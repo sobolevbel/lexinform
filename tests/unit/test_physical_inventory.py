@@ -241,6 +241,55 @@ def test_missing_or_wrong_kind_references_are_rejected_atomically(
         assert repo.dump() == before
 
 
+@pytest.mark.parametrize("defect", ["none", "missing", "invalid"])
+def test_restore_batches_capture_extraction_parents(
+    repo: SqliteBillRepository, defect: str
+) -> None:
+    data = docx("USTAWA o pobycie cudzoziemców")
+    result = extractor().extract_document_with_provenance(data).result
+    value = case(result.artifact_sha256)
+    save(repo, value)
+    repo.save_extraction_result(result, recorded_at=NOW)
+    capture = PhysicalCapture.of(
+        artifact_sha256=result.artifact_sha256,
+        recipe_id=value.recipe.metadata_id,
+        inventory_id=value.graph.metadata_id,
+        execution_id=value.order.metadata_id,
+        extraction_id=result.result_id,
+    )
+    repo.save_physical_capture(capture, recorded_at=NOW)
+    with closing(sqlite3.connect(":memory:")) as connection:
+        connection.executescript(repo.dump())
+        connection.row_factory = sqlite3.Row
+        if defect == "missing":
+            connection.execute(
+                "DELETE FROM extraction_results WHERE extraction_id=?", (result.result_id,)
+            )
+        elif defect == "invalid":
+            connection.execute(
+                "UPDATE extraction_results SET result_json='{}' WHERE extraction_id=?",
+                (result.result_id,),
+            )
+        expected = tuple(physical_inventory_issues(connection))
+        statements: list[str] = []
+        connection.set_trace_callback(statements.append)
+
+        actual = tuple(physical_inventory_issues(connection, prefetch=True))
+
+    assert actual == expected
+    if defect == "none":
+        assert actual == ()
+        assert (
+            sum("FROM extraction_results WHERE extraction_id IN" in sql for sql in statements) == 1
+        )
+        assert not any("FROM extraction_results WHERE extraction_id=" in sql for sql in statements)
+    else:
+        reason = "missing" if defect == "missing" else "mismatch"
+        assert actual == (
+            (f"physical_capture_extraction_{reason}", f"physical_captures/{capture.capture_id}"),
+        )
+
+
 def test_known_extraction_association_requires_its_real_outer_body(
     repo: SqliteBillRepository,
 ) -> None:

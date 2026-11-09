@@ -1591,12 +1591,12 @@ def read_reanalysis_baseline(
 
 
 def _input_snapshot_checks(
-    connection: sqlite3.Connection, *, include_results: bool
+    connection: sqlite3.Connection, *, include_results: bool, include_requests: bool
 ) -> Iterator[InputSnapshotCheck]:
     tables = {
         row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")
     }
-    if "llm_batch_intents" in tables:
+    if include_requests and "llm_batch_intents" in tables:
         for row in _rows(connection, "SELECT * FROM llm_batch_intents"):
             meta = _object(row["meta_json"])
             request = _object(row["request_json"])
@@ -1703,7 +1703,7 @@ def _input_snapshot_checks(
                 yield InputSnapshotCheck(ref, has_receipt, frozen, "invalid_input_intent_snapshot")
             else:
                 yield InputSnapshotCheck(ref, has_receipt, frozen)
-    if "llm_batch_items" in tables:
+    if include_requests and "llm_batch_items" in tables:
         for row in _rows(connection, "SELECT * FROM llm_batch_items"):
             raw = _object(row["meta_json"])
             if raw is None:
@@ -1804,17 +1804,21 @@ def _input_snapshot_checks(
 
 
 def input_snapshot_checks(
-    connection: sqlite3.Connection, *, include_results: bool = True
+    connection: sqlite3.Connection, *, include_results: bool = True, include_requests: bool = True
 ) -> Iterator[InputSnapshotCheck]:
     try:
-        yield from _input_snapshot_checks(connection, include_results=include_results)
+        yield from _input_snapshot_checks(
+            connection, include_results=include_results, include_requests=include_requests
+        )
     except IndexError, KeyError, sqlite3.Error:
         yield InputSnapshotCheck("input_snapshots", False, False, "invalid_input_snapshot_layout")
 
 
 def validate_input_snapshots(
-    connection: sqlite3.Connection, *, include_results: bool = True
+    connection: sqlite3.Connection, *, include_results: bool = True, include_requests: bool = True
 ) -> None:
-    for check in input_snapshot_checks(connection, include_results=include_results):
+    for check in input_snapshot_checks(
+        connection, include_results=include_results, include_requests=include_requests
+    ):
         if check.code is not None:
             raise ValueError(check.code) from None

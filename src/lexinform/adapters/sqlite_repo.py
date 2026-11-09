@@ -1481,9 +1481,10 @@ class SqliteBillRepository:
             validate_senate_inspections(scratch)
             validate_physical_inventory(scratch)
             DocumentSourceRows(scratch).validate_editions()
-            validate_source_omissions(scratch)
-            validate_catalog_attempts(scratch)
-            validate_input_snapshots(scratch)
+            if version < SCHEMA_VERSION:
+                validate_source_omissions(scratch)
+                validate_catalog_attempts(scratch)
+            validate_input_snapshots(scratch, include_requests=version < SCHEMA_VERSION)
             validate_primary_claim_receipts(scratch)
             validate_projected_applications(scratch)
             validate_content_sources(scratch)
