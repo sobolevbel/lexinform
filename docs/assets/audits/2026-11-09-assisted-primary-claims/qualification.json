@@ -1,0 +1,119 @@
+{
+  "scope": "Assisted source review against exact frozen text. Draft assessments are kept apart from blind human judgments.",
+  "claims": 96,
+  "comparisons_excluded_prior_input_unavailable": 8,
+  "assessments": {
+    "Подтверждено": 46,
+    "Подтверждено с оговоркой": 41,
+    "Не подтверждено": 9
+  },
+  "human_confirmed_after_draft": 11,
+  "independent_blind_votes": 0,
+  "cases": [
+    {
+      "case": "case-01",
+      "source_sha256": "4e65ecca9eadf5304fda125ba3f5aa4fc9ccf16436e2aaec8136731231c94c1b",
+      "draft_sha256": "1e7e2aa6ab759ace9d378cbc0549bfa6d9f7270e2a24640d362d04cb8fa973ea",
+      "claims": 11,
+      "assessments": {
+        "Подтверждено": 8,
+        "Подтверждено с оговоркой": 3
+      }
+    },
+    {
+      "case": "case-02",
+      "source_sha256": "dcd8198dc98d25a31e5d107d1d4a1cabc7db4fd6feb6fa8894b7d99083974c57",
+      "draft_sha256": "b33238fa65a5f3ab5cccf94aba35ef49bea4dc6474c423c12500dc0fded13b2c",
+      "claims": 5,
+      "assessments": {
+        "Подтверждено с оговоркой": 1,
+        "Подтверждено": 4
+      }
+    },
+    {
+      "case": "case-03",
+      "source_sha256": "a82f55ab2df72eb51c415f0672848b47d535688397e649c4419250fab586708c",
+      "draft_sha256": "579e1d47e6e7bfbfec1848090a065ce0d424751c32d99dfee6167c3d5fe21911",
+      "claims": 10,
+      "assessments": {
+        "Подтверждено с оговоркой": 1,
+        "Не подтверждено": 4,
+        "Подтверждено": 5
+      }
+    },
+    {
+      "case": "case-04",
+      "source_sha256": "3e4a0ea990a2cfba91d534077a98ae64f1500afd31ccf734e6b17e3a87278786",
+      "draft_sha256": "a7ea143583835cf6b28b5189c89cc171c9c6e058e0501ab8a94a0365ee8d62e6",
+      "claims": 10,
+      "assessments": {
+        "Подтверждено с оговоркой": 4,
+        "Подтверждено": 5,
+        "Не подтверждено": 1
+      }
+    },
+    {
+      "case": "case-05",
+      "source_sha256": "452a076c91c8de5f7907c1ce1d153a8e12d493b522cc146d729fe66c66ca385f",
+      "draft_sha256": "5fdbff52f8a6309c7c0a42191a942de8af56625e4064ce731c609cbab010faf1",
+      "claims": 12,
+      "assessments": {
+        "Подтверждено с оговоркой": 6,
+        "Подтверждено": 5,
+        "Не подтверждено": 1
+      }
+    },
+    {
+      "case": "case-06",
+      "source_sha256": "f403a630d82c30fc0702cf6c5e9c5ba94ce1e91d56ce1e08963ce9089530e4b1",
+      "draft_sha256": "77575baccd1fda1e145438e4f0609327360a1c70bcbe057dc637f6b08947e5b5",
+      "claims": 10,
+      "assessments": {
+        "Подтверждено с оговоркой": 4,
+        "Не подтверждено": 2,
+        "Подтверждено": 4
+      }
+    },
+    {
+      "case": "case-07",
+      "source_sha256": "35a3d93fafc38e0471e7d4f11f56bc255584bf8d0aabfb7b66c8e1f2f43e2719",
+      "draft_sha256": "fa542ff48bd9afe8267ee4f8e760374b71cb11d900ff65b9f346dd48d9152bba",
+      "claims": 9,
+      "assessments": {
+        "Подтверждено": 3,
+        "Подтверждено с оговоркой": 6
+      }
+    },
+    {
+      "case": "case-08",
+      "source_sha256": "4e280ddab76fca9915d9c60deb63db46c5c8318d667ed184ba58318cd2895fc8",
+      "draft_sha256": "ebb95a484df38d80695b0c0478d75bb6ce5af0ff164d49d6bf526d74e8b849fc",
+      "claims": 10,
+      "assessments": {
+        "Подтверждено": 4,
+        "Подтверждено с оговоркой": 6
+      }
+    },
+    {
+      "case": "case-09",
+      "source_sha256": "f3fc91c434a4b85e90b94668e31d2254fabdcdd5f33d93b6ace9e9672b3d7500",
+      "draft_sha256": "5d833d7ab8440c57a3ce22d98b3361a5dafb73bf3c79dbdfac5f7812ba1f812a",
+      "claims": 10,
+      "assessments": {
+        "Подтверждено с оговоркой": 7,
+        "Подтверждено": 2,
+        "Не подтверждено": 1
+      }
+    },
+    {
+      "case": "case-10",
+      "source_sha256": "42ba1f9d959483b59b4213589788cd33c6b984cf0136c657127234cf64bac7c9",
+      "draft_sha256": "15f494dfa5be0a28efcd21cace9ffd7e38530120d2ca380dd4be0334365909c1",
+      "claims": 9,
+      "assessments": {
+        "Подтверждено с оговоркой": 3,
+        "Подтверждено": 6
+      }
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "state_sha": "f8147040199c42f9c3358113dd48c7400621104b",
+  "previous_state_sha": "eb968cd68c9fb7c07d7f7472c7c2487e9005925d",
+  "scheduled_run_id": 42583553746,
+  "run_code_sha": "8038261e7a0280557d34a569b8a0c2ed22b19e81",
+  "input_sql_sha256": "68f5b9e1f29af5d28b0bf68b5d2c2797c5efaa6cad38565d89d80463353dd632",
+  "restored_database_sha256": "a52d716f03b731ab4c368129b5e056dbf594272218926d3e0d0d8c7dd53232bd",
+  "opt_in_census_sha256": "3e9e2aecedc0fcbf7fb42e69f2a6fc9104d43259cdc5efb61e083d2e978bea60",
+  "primary_census": {
+    "consumed_projection_unavailable": 4,
+    "exact_retained_cycle": 1,
+    "frozen_paid_reference_unavailable": 3,
+    "frozen_plan_unavailable": 27,
+    "frozen_render_context_unavailable": 13,
+    "prepared_receipt_unavailable": 1,
+    "publication_outside_direct_original_scope": 1,
+    "recorded_send_unavailable": 1
+  },
+  "secondary_count": 5,
+  "consultation_review_outcomes": [
+    {
+      "publication_status": "queued",
+      "status": "not_observed",
+      "reason": "recorded_send_unavailable"
+    },
+    {
+      "publication_status": "queued",
+      "status": "not_observed",
+      "reason": "recorded_send_unavailable"
+    }
+  ],
+  "previous_default_outcomes_equal": true,
+  "new_complete_cycles_observed": false
+}

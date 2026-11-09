@@ -1,0 +1,79 @@
+{
+  "status": "codex_draft",
+  "queue_sha256": "dfb933090c83125f5c50e54eb2439eb526f53ec4d00acda3995c13cb50b1436f",
+  "cases": [
+    {
+      "id": "rpw:RPW/35839/2026",
+      "pdf_sha256": "329539aadf99800a14356f195cb98e8500ef19db649d27fd7dbd92b1e32c8f01",
+      "normative_text_pages": [
+        2,
+        3
+      ],
+      "pages_without_text_layer": [
+        1
+      ],
+      "answers": {
+        "independent_initiative": "yes",
+        "role": "bill",
+        "belongs_to": "none",
+        "required_annexes": "none",
+        "draft_date": "2026-09-29",
+        "scan_norm_pages": "none"
+      },
+      "reason": "Комиссия по физической культуре, спорту и туризму вносит самостоятельный проект о спорте. На стр. 2 прямо указано «Projekt z dnia 29 września 2026 r.».",
+      "annex_reason": "Пояснение, оценка последствий и подписи не содержат нормативного приложения, нужного для чтения проекта."
+    },
+    {
+      "id": "rpw:RPW/35996/2026",
+      "pdf_sha256": "227421e09b4969e8ecdffd12051f550e6fadfd79f0e4583b8c22c3f636db1e14",
+      "normative_text_pages": [
+        2,
+        3,
+        4
+      ],
+      "pages_without_text_layer": [
+        1,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26
+      ],
+      "answers": {
+        "independent_initiative": "yes",
+        "role": "bill",
+        "belongs_to": "none",
+        "required_annexes": "none",
+        "draft_date": "unknown",
+        "scan_norm_pages": "none"
+      },
+      "reason": "Депутаты PiS вносят самостоятельный проект о налогах. 26 октября — дата письма. Полная дата самого проекта в заголовке отсутствует.",
+      "annex_reason": "Пояснение, оценка последствий и подписи не содержат нормативного приложения, нужного для чтения проекта."
+    },
+    {
+      "id": "rpw:RPW/36776/2026",
+      "pdf_sha256": "e937169dfb1ea770dd3e0e7545bc8815c49bfe045e06e2e34c957ab43d381725",
+      "normative_text_pages": [
+        4,
+        5
+      ],
+      "pages_without_text_layer": [
+        1,
+        2,
+        3
+      ],
+      "answers": {
+        "independent_initiative": "yes",
+        "role": "bill",
+        "belongs_to": "none",
+        "required_annexes": "none",
+        "draft_date": "unknown",
+        "scan_norm_pages": "none"
+      },
+      "reason": "Депутаты Lewica вносят самостоятельный проект о могилах ветеранов. 30 октября — дата письма. В заголовке проекта указан только 2026 год.",
+      "annex_reason": "Пояснение, оценка последствий и подписи не содержат нормативного приложения, нужного для чтения проекта."
+    }
+  ]
+}

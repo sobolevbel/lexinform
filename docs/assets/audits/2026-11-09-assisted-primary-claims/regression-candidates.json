@@ -1,0 +1,68 @@
+{
+  "status": "draft",
+  "cases": [
+    {
+      "case": "case-03",
+      "number": 2,
+      "category": "amount_reference_period",
+      "claim_sha256": "46502ee279d4f52f6eb16583acffc2b838698491f653113aa67eeac2114465d3",
+      "source_sha256": "a82f55ab2df72eb51c415f0672848b47d535688397e649c4419250fab586708c"
+    },
+    {
+      "case": "case-03",
+      "number": 4,
+      "category": "condition_and_affected_person",
+      "claim_sha256": "94a9512b61071686e6262ff396f7c0aff83ec62109e2c35465b96d0a0d41b25f",
+      "source_sha256": "a82f55ab2df72eb51c415f0672848b47d535688397e649c4419250fab586708c"
+    },
+    {
+      "case": "case-03",
+      "number": 5,
+      "category": "distinct_procedural_consequences",
+      "claim_sha256": "51c34091131680fb831451d224d70f4aba267d6395aee392454d69e757272440",
+      "source_sha256": "a82f55ab2df72eb51c415f0672848b47d535688397e649c4419250fab586708c"
+    },
+    {
+      "case": "case-03",
+      "number": 10,
+      "category": "condition_and_procedural_consequence",
+      "claim_sha256": "d5f133083ff197f9c002b37fcc6ea145bb5743b06676535be8fb774a0a4c86fd",
+      "source_sha256": "a82f55ab2df72eb51c415f0672848b47d535688397e649c4419250fab586708c"
+    },
+    {
+      "case": "case-04",
+      "number": 10,
+      "category": "unsupported_remedy_and_wrong_responsible_party",
+      "claim_sha256": "f93867585daae120fdcbef7ebb3e6ef6d314a8a2f8087d751336cf7f1bfaba2c",
+      "source_sha256": "3e4a0ea990a2cfba91d534077a98ae64f1500afd31ccf734e6b17e3a87278786"
+    },
+    {
+      "case": "case-05",
+      "number": 11,
+      "category": "legal_reference_hierarchy",
+      "claim_sha256": "fd8283eca2da3d8d98b8d4a09e4934d55354f1a9e1884e87ebbe56d3e00d6754",
+      "source_sha256": "452a076c91c8de5f7907c1ce1d153a8e12d493b522cc146d729fe66c66ca385f"
+    },
+    {
+      "case": "case-06",
+      "number": 2,
+      "category": "scope_of_legal_equivalence",
+      "claim_sha256": "988b4d08c5e64245412150c582ce7594afd40f4bb66c8f091760c92ceb3db28f",
+      "source_sha256": "f403a630d82c30fc0702cf6c5e9c5ba94ce1e91d56ce1e08963ce9089530e4b1"
+    },
+    {
+      "case": "case-06",
+      "number": 10,
+      "category": "scope_of_legal_equivalence_and_transition",
+      "claim_sha256": "6beb249c7155752fc9195dbf36cd4279e9eb3bc92662a7ea7663e1bb019b30e1",
+      "source_sha256": "f403a630d82c30fc0702cf6c5e9c5ba94ce1e91d56ce1e08963ce9089530e4b1"
+    },
+    {
+      "case": "case-09",
+      "number": 10,
+      "category": "deadline_trigger",
+      "claim_sha256": "a3af2154f15abef5b9f904f24387a6f94cb8c9c61f741e13d5fa91c3701c42e5",
+      "source_sha256": "f3fc91c434a4b85e90b94668e31d2254fabdcdd5f33d93b6ace9e9672b3d7500"
+    }
+  ]
+}
