@@ -284,9 +284,14 @@ class DocxTextExtractor:
     def extract_consultation_rows(
         self, data: bytes
     ) -> tuple[tuple[WordTextBlock, str | None], ...]:
+        return self._consultation_word_input(data)[1]
+
+    def _consultation_word_input(
+        self, data: bytes
+    ) -> tuple[WordTextExtraction, tuple[tuple[WordTextBlock, str | None], ...]]:
         extraction = self.extract_blocks(data)
         if extraction.body_state != "read":
-            return ()
+            return extraction, ()
         with _physical_zip(data) as archive:
             xml = _read_xml(archive, "word/document.xml")
             numbering = None
@@ -295,10 +300,11 @@ class DocxTextExtractor:
                     definition = _read_xml(archive, "word/numbering.xml")
                     if not _declares_entities(definition):
                         numbering = ET.fromstring(definition)
-        return consultation_word_rows(extraction, ET.fromstring(xml), numbering)
+        return extraction, consultation_word_rows(extraction, ET.fromstring(xml), numbering)
 
     def consultation_row_spans(self, data: bytes, text: str) -> tuple[ConsultationRow, ...]:
-        return bind_consultation_rows(text, self.extract_consultation_rows(data))
+        extraction, rows = self._consultation_word_input(data)
+        return bind_consultation_rows(text, extraction, rows)
 
     def consultation_archive_row_spans(
         self, data: bytes, parts: tuple[DocumentPart, ...]

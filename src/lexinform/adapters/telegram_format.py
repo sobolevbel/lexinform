@@ -108,6 +108,7 @@ from lexinform.models import (
     wykaz_entry_number,
 )
 from lexinform.models.content import ContentHistoryPage
+from lexinform.models.reviews import consultation_response_excerpt
 from lexinform.pricing import cost_usd, format_tokens, format_usd
 from lexinform.publication_titles import publication_title
 from lexinform.telegram_text import split_html
@@ -1141,8 +1142,16 @@ class MessageFormatter:
                     f"{esc(lb.consultation_proposed_by)}: {esc(', '.join(finding.proposers))}"
                 )
             if finding.evidence and not (finding.theme and finding.reason):
-                quoted = finding.evidence.quote.rsplit("\t", 1)[-1]
-                if finding.evidence.source_label and len(quoted) > 420:
+                response_source = next(
+                    (
+                        doc
+                        for doc in record.context.documents
+                        if doc.identity == finding.evidence.document_id
+                    ),
+                    None,
+                )
+                quoted = consultation_response_excerpt(finding.evidence, response_source)
+                if finding.evidence.locator.startswith("word-xml:") and len(quoted) > 420:
                     quoted = quoted[:420].rstrip() + "…"
                 lines.append(f"<i>“{esc(quoted)}”</i>")
             if finding.respondent:

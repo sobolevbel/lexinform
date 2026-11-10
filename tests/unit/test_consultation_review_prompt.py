@@ -208,3 +208,68 @@ def test_numbered_consultation_citation_requires_its_own_complete_row() -> None:
         incomplete = candidate.model_copy(update={"evidence": invalid})
         (rejected,) = validate_review(review(incomplete), source).consultation_findings
         assert rejected.evidence is None and rejected.outcome == "unknown"
+
+
+def test_word_response_uses_the_physical_cell_with_internal_tabs() -> None:
+    lead = "611\tKonfederacja Lewiatan\tProponowana zmiana\t"
+    response = "Uwaga niezasadna. Inny mechanizm:\t12 miesięcy od dnia wejścia w życie ustawy."
+    text = lead + response
+    locator = "word-xml:word/document.xml:0/10/617"
+    original = context(text)
+    source = original.documents[0].model_copy(
+        update={
+            "consultation_rows": (
+                ConsultationRow(
+                    locator=locator, label="611", start=0, end=len(text), response_offset=len(lead)
+                ),
+            )
+        }
+    )
+    source_context = original.model_copy(update={"documents": (source,)})
+    candidate = finding(outcome="rejected").model_copy(
+        update={
+            "evidence": EvidenceCitation(document_id=source.identity, locator=locator, quote=""),
+            "reason": "Ведомство отказало и указало другой механизм.",
+        }
+    )
+
+    (validated,) = validate_review(review(candidate), source_context).consultation_findings
+    assert validated.outcome == "rejected" and validated.reason == candidate.reason
+    assert validated.evidence is not None and validated.evidence.quote == text
+
+
+def test_word_narrative_decision_requires_a_complete_authoritative_paragraph() -> None:
+    text = (
+        "Konfederacja Lewiatan zgłosiła uwagę do art. 16. "
+        "Uwaga nie została uwzględniona. Zachowano termin 90 dni."
+    )
+    locator = "word-xml:word/document.xml:0/51"
+    original = context(text)
+    source = original.documents[0].model_copy(
+        update={
+            "consultation_rows": (
+                ConsultationRow(locator=locator, kind="paragraph", start=0, end=len(text)),
+            )
+        }
+    )
+    source_context = original.model_copy(update={"documents": (source,)})
+    candidate = finding(outcome="rejected").model_copy(
+        update={
+            "evidence": EvidenceCitation(document_id=source.identity, locator=locator, quote=""),
+            "proposers": ("Konfederacja Lewiatan",),
+        }
+    )
+    (validated,) = validate_review(review(candidate), source_context).consultation_findings
+    assert validated.outcome == "rejected" and validated.proposers == candidate.proposers
+    assert validated.evidence is not None and validated.evidence.quote == text
+    fragment = candidate.model_copy(
+        update={
+            "evidence": EvidenceCitation(
+                document_id=source.identity,
+                locator=locator,
+                quote="Uwaga nie została uwzględniona.",
+            )
+        }
+    )
+    (unverified,) = validate_review(review(fragment), source_context).consultation_findings
+    assert unverified.outcome == "unknown" and unverified.evidence is None

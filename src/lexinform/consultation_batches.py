@@ -57,6 +57,19 @@ def _count_tokens(text: str) -> int:
     return len(tiktoken.get_encoding("o200k_base").encode_ordinary(text))
 
 
+def consultation_evidence_segment(
+    source: ReviewDocument, span: ConsultationRow
+) -> dict[str, str | None]:
+    segment = {
+        "text": source.text[span.start : span.end],
+        "locator": span.locator,
+        "label": span.label,
+    }
+    if span.kind == "paragraph":
+        segment["kind"] = "paragraph"
+    return segment
+
+
 @dataclass(frozen=True)
 class _Unit:
     doc: int
@@ -65,10 +78,9 @@ class _Unit:
     row: ConsultationRow | None = None
 
     def payload(self, source: ReviewDocument) -> dict[str, str | None]:
-        text = source.text[self.start : self.end]
         if self.row is None:
-            return {"text": text}
-        return {"text": text, "locator": self.row.locator, "label": self.row.label}
+            return {"text": source.text[self.start : self.end]}
+        return consultation_evidence_segment(source, self.row)
 
 
 def _prose(index: int, text: str, start: int, end: int) -> Iterator[_Unit]:
@@ -124,12 +136,12 @@ def _target_references(
 ) -> dict[int, set[int]]:
     labels: dict[tuple[int, str, str], list[int]] = {}
     for index, unit in enumerate(units):
-        if unit.row is not None and unit.row.label:
+        if unit.row is not None and unit.row.kind == "row" and unit.row.label:
             table = unit.row.locator.rsplit("/", 1)[0]
             labels.setdefault((unit.doc, table, unit.row.label), []).append(index)
     refs: dict[int, set[int]] = {}
     for index, unit in enumerate(units):
-        if unit.row is None:
+        if unit.row is None or unit.row.kind != "row":
             continue
         table = unit.row.locator.rsplit("/", 1)[0]
         text = sources[unit.doc].text[unit.start : unit.end]

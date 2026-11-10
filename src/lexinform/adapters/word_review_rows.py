@@ -1,9 +1,9 @@
 import re
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from xml.etree import ElementTree as ET
 
 from lexinform.models.documents import WordTextBlock, WordTextExtraction
-from lexinform.models.reviews import ConsultationRow
+from lexinform.models.reviews import ConsultationRow, consultation_paragraph_decision
 from lexinform.sections import PAGE_BREAK
 from lexinform.word_projection import legacy_word_text
 
@@ -102,12 +102,24 @@ def _paragraph_numbers(
 
 
 def bind_consultation_rows(
-    text: str, rows: tuple[tuple[WordTextBlock, str | None], ...]
+    text: str, extraction: WordTextExtraction, rows: tuple[tuple[WordTextBlock, str | None], ...]
 ) -> tuple[ConsultationRow, ...]:
+    blocks = {block.block_id: block for block in extraction.blocks}
+    labels = {row.block_id: label for row, label in rows}
+    cells: dict[tuple[int, ...], list[str]] = {}
+    for block in extraction.blocks:
+        if block.kind == "table_cell":
+            cells.setdefault(block.path[:-1], []).append(block.text)
     bound: list[ConsultationRow] = []
     cursor = 0
-    for row, label in rows:
-        content = legacy_word_text((row.text,))
+    for identity in extraction.legacy_blocks:
+        block = blocks[identity]
+        if block.kind == "table_cell":
+            continue
+        paragraph = block.kind == "paragraph"
+        if paragraph and consultation_paragraph_decision(block.text) is None:
+            continue
+        content = legacy_word_text((block.text,))
         if not content.strip():
             continue
         start = text.find(content, cursor)
@@ -125,10 +137,35 @@ def bind_consultation_rows(
                 and not content.endswith(PAGE_BREAK)
             )
         ):
+            if paragraph:
+                continue
             return ()
-        bound.append(ConsultationRow(locator=row.block_id, label=label, start=start, end=end))
+        bound.append(
+            ConsultationRow(
+                locator=identity,
+                label=labels.get(identity),
+                start=start,
+                end=end,
+                kind="paragraph" if paragraph else "row",
+                response_offset=(
+                    None
+                    if paragraph
+                    else _response_offset(block.text, content, cells.get(block.path, ()))
+                ),
+            )
+        )
         cursor = end
     return tuple(bound)
+
+
+def _response_offset(raw: str, text: str, cells: Sequence[str]) -> int | None:
+    if len(cells) < 2 or raw != "\t".join(cells):
+        return None
+    response = legacy_word_text((cells[-1],))
+    offset = len(text) - len(response)
+    if response.strip() and offset > 0 and text.endswith("\t" + response):
+        return offset
+    return None
 
 
 def consultation_word_rows(

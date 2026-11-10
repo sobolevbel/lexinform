@@ -33,6 +33,10 @@ class ConsultationRow(BaseModel):
     label: str | None = None
     start: int = Field(ge=0)
     end: int = Field(gt=0)
+    kind: Literal["row", "paragraph"] = Field(
+        default="row", exclude_if=lambda value: value == "row"
+    )
+    response_offset: int | None = Field(default=None, ge=0, exclude_if=lambda value: value is None)
 
 
 class ReviewDocument(BaseModel):
@@ -69,6 +73,11 @@ class ReviewDocument(BaseModel):
                 or not row.locator.startswith("word-xml:")
                 or row.locator in locators
                 or not end <= row.start < row.end <= len(self.text)
+                or (
+                    row.kind == "paragraph"
+                    and (row.label is not None or row.response_offset is not None)
+                )
+                or (row.response_offset is not None and row.response_offset >= row.end - row.start)
             ):
                 raise ValueError("Consultation rows must identify distinct spans in the response")
             locators.add(row.locator)
@@ -380,13 +389,44 @@ def citation_document_in(
 
 
 _ACCEPTANCE_ASSERTION = re.compile(
-    r"(?<!не )\bподтвержда(?:ет|ют) принятие\b"
+    r"(?<!не )\bподтвержда(?:ет|ют) (?:его |е[её] )?принятие\b"
     r"|\b(?:замечание|предложение) (?:было )?(?:принято|учтено)\b"
-    r"|\bconfirms? acceptance\b"
+    r"|\bconfirms? (?:its )?acceptance\b"
     r"|\b(?:the )?(?:proposal|comment) (?:was |is )?accepted\b"
-    r"|\bподдержанная часть\b",
+    r"|\b(?:поддержанная часть|официальный статус принятия|принятие направлено"
+    r"|официально поддержан[аоы]?|поддержано проведение)\b",
     re.IGNORECASE,
 )
+
+
+def consultation_paragraph_decision(text: str) -> Literal["accepted", "rejected"] | None:
+    """Recognize unambiguous ministry decision wording in a complete Word paragraph."""
+    paragraph = _normalized(text)
+    explicit = {
+        bool(match[1])
+        for match in re.finditer(r"(?:^|[.!?] )uwaga (nie )?została uwzględniona\b", paragraph)
+    }
+    if len(explicit) == 1:
+        return "rejected" if True in explicit else "accepted"
+    if not explicit and (
+        re.search(r"\bzgłosi(?:ł|ła|li|ły) uwagę\b", paragraph)
+        and paragraph.endswith(", która została uwzględniona.")
+    ):
+        return "accepted"
+    return None
+
+
+def consultation_response_excerpt(citation: EvidenceCitation, source: ReviewDocument | None) -> str:
+    if source is not None:
+        row = next(
+            (row for row in source.consultation_rows if row.locator == citation.locator), None
+        )
+        if row is not None:
+            if row.kind == "paragraph":
+                return source.text[row.start : row.end]
+            if row.response_offset is not None:
+                return source.text[row.start + row.response_offset : row.end]
+    return citation.quote.rsplit("\t", 1)[-1]
 
 
 def consultation_response_label(
@@ -482,15 +522,14 @@ def validate_review(
                 citation = citation.model_copy(update={"quote": matches[0]})
                 finding = finding.model_copy(update={"evidence": citation})
         evidence = citation_document(finding.evidence, context, {"response"})
-        if evidence is not None and finding.evidence is not None:
-            source_label = next(
-                (
-                    row.label
-                    for row in evidence.consultation_rows
-                    if row.locator == finding.evidence.locator
-                ),
+        source_row = None
+        if evidence is not None and citation is not None:
+            source_row = next(
+                (row for row in evidence.consultation_rows if row.locator == citation.locator),
                 None,
             )
+        if evidence is not None and finding.evidence is not None:
+            source_label = source_row.label if source_row is not None else None
             if source_label != finding.evidence.source_label:
                 finding = finding.model_copy(
                     update={
@@ -511,7 +550,11 @@ def validate_review(
             if table_rows and not any(quoted == " ".join(row.split()) for row in table_rows):
                 evidence = None
         outcome = finding.outcome
-        quote = _normalized(finding.evidence.quote.rsplit("\t", 1)[-1]) if finding.evidence else ""
+        quote = (
+            _normalized(consultation_response_excerpt(finding.evidence, evidence))
+            if finding.evidence is not None
+            else ""
+        )
         locator = _normalized(finding.evidence.locator) if finding.evidence else ""
         decision_lead = quote.removeprefix(locator).lstrip(" .:–-")
         decision_lead = decision_lead.split(".", maxsplit=1)[0]
@@ -541,6 +584,9 @@ def validate_review(
             r"do wiadomości|do protokołu|do dalszej analizy|propon\w*|powinn\w*", decision_lead
         ):
             supported = False
+        if consultation_labels and source_row is not None and source_row.kind == "paragraph":
+            response_label = None
+            supported = consultation_paragraph_decision(quote) == outcome
         if response_label is not None or not supported:
             outcome = "unknown"
         if response_label is None and not supported:
