@@ -5,13 +5,14 @@ import pytest
 from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.pdf_text import PypdfTextExtractor
-from lexinform.errors import LlmUnavailableError
+from lexinform.errors import LlmUnavailableError, SejmApiUnavailableError
 from lexinform.models import (
     AmendmentInputReceipt,
     Attachment,
     BatchRequest,
     BillStatus,
     PrintInfo,
+    ProcessDetail,
     PublicationKind,
 )
 from tests.fakes import FakeTextExtractor
@@ -75,7 +76,9 @@ def test_recoverable_archive_failure_is_not_a_terminal_text_verdict(workers: int
 
 
 @pytest.mark.parametrize("restore", [False, True])
-def test_late_senate_attachment_is_revisited_without_another_stage_change(restore: bool) -> None:
+def test_late_senate_attachment_is_revisited_without_another_stage_change(
+    restore: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
     resolution = (FIXTURES / "senate_3213_resolution.txt").read_text()
     world = world_with_sources({"3213.docx": resolution})
     del world.gateway.files["https://api.test/3213.docx"]
@@ -98,7 +101,14 @@ def test_late_senate_attachment_is_revisited_without_another_stage_change(restor
         world.repo.restore(world.repo.dump())
     world.gateway.files["https://api.test/3213.docx"] = b"3213.docx"
     world.clock.advance(days=1)
-    world.run()
+
+    def unavailable(term: int, number: str) -> ProcessDetail:
+        raise SejmApiUnavailableError("live process unavailable")
+
+    with monkeypatch.context() as outage:
+        outage.setattr(world.gateway, "get_process", unavailable)
+        report = world.run()
+    assert any("live process unavailable" in error for error in report.errors)
 
     assert len(world.llm.amendment_contexts) == 1
     assert world.llm.amendment_contexts[0].text == resolution

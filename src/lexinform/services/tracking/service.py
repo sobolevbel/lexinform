@@ -406,7 +406,8 @@ class StatusTrackingService:
         self._poster.start_run(keep_attempts=keep_delivery_attempts)
         if publish and not self._retry_failed(result):
             return self._finish(result)
-        if not self._pre_print.reconcile(result, publish=publish):
+        self._retry_documents(result, publish=publish, may_wait=may_wait)
+        if result.fatal_error is not None or not self._pre_print.reconcile(result, publish=publish):
             return self._finish(result)
         tracked = self._list_tracked(changed_since)
         everyone = tracked if changed_since is None else self._list_tracked()
@@ -434,7 +435,6 @@ class StatusTrackingService:
         if quiet and result.fatal_error is None:
             quiet = [self._repo.get(b.term, b.number) or b for b in quiet]
             self._check_processes(quiet, result, publish=False, may_wait=may_wait, deliver=False)
-        self._retry_documents(result, publish=publish, may_wait=may_wait)
         self._flush_updates(result, publish=publish)
         self._remind_and_refresh(everyone, result, publish=publish)
         self._log_outcome(result, changed_since)
