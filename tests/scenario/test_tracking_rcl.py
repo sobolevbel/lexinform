@@ -1308,3 +1308,41 @@ def test_link_refuses_a_druk_as_the_entry() -> None:
     assert outcome.status is OutcomeStatus.ERROR and "RCL project or an RPW entry" in (
         outcome.note or ""
     )
+
+
+def test_new_late_consultation_report_queues_review_once_without_an_opinion_notice() -> None:
+    world = World(
+        batch=True,
+        batch_kinds=frozenset({"consultation_review"}),
+        consultation_reviews_enabled=True,
+    )
+    old_report = rcl_document(990, "Raport z konsultacji.pdf")
+    new_report = rcl_document(991, "Raport z konsultacji i opiniowania.pdf")
+    old_folder = rcl_folder(990, "Projekt", old_report)
+    existing = rcl_project(
+        stages=(
+            *rcl_project().stages,
+            rcl_stage(8, "Komitet do Spraw Europejskich", "reached", old_folder),
+        )
+    )
+    project = _followed_project(world, existing)
+    assert not world.bill(RCL).review_work
+    now = world.clock.now().date()
+    next_folder = rcl_folder(990, "Projekt", old_report, new_report)
+    world.add_rcl_project(
+        _moved(
+            project,
+            *project.stages[:-1],
+            rcl_stage(8, "Komitet do Spraw Europejskich", "reached", next_folder, modified=now),
+            modified=now,
+        )
+    )
+
+    report = world.run()
+    (work,) = world.bill(RCL).review_work
+    assert work.purpose == "consultation_review"
+    assert report.consultation_results_posted == 0
+
+    world.clock.advance(days=1)
+    world.run()
+    assert [item.memo_key for item in world.bill(RCL).review_work] == [work.memo_key]

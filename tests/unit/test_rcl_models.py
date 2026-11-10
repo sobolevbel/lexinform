@@ -15,7 +15,7 @@ from lexinform.models import (
     rcl_project_id,
     rcl_stages,
 )
-from lexinform.models.rcl import StageState
+from lexinform.models.rcl import StageState, consultation_response_candidates
 
 
 def _doc(doc_id: int, name: str) -> RclDocument:
@@ -432,3 +432,49 @@ def test_the_fallback_refuses_a_bill_whose_name_says_pismo() -> None:
     stage = _stage(3, "Konsultacje publiczne", "reached", folder)
 
     assert stage.consultation_letter() is None
+
+
+def test_consultation_response_candidates_include_late_reports_and_exclude_positions() -> None:
+    report = _doc(2, "KSE TRYB OBIEGOWY - Raport z konsultacji i opiniowania (UC104).pdf")
+    project = _project(
+        _stage(
+            3,
+            "Konsultacje publiczne",
+            "reached",
+            RclFolder(id=1, name="Odniesienie się do uwag", documents=(_doc(1, "Odpowiedź.docx"),)),
+            RclFolder(
+                id=2,
+                name="Stanowiska zgłoszone",
+                documents=(
+                    _doc(3, "Uwagi.pdf"),
+                    _doc(7, "Raport z konsultacji.pdf"),
+                    _doc(8, "UC104_Raport z konsultacji.docx").model_copy(
+                        update={"author": "Minister Spraw Wewnętrznych i Administracji"}
+                    ),
+                ),
+            ),
+        ),
+        _stage(
+            8,
+            "Komitet do Spraw Europejskich",
+            "active",
+            RclFolder(
+                id=3,
+                name="Projekt",
+                documents=(
+                    report,
+                    _doc(4, "Uzasadnienie.docx"),
+                    _doc(9, "KSE - zał. 1 do raportu z konsultacji i opiniowania.pdf"),
+                ),
+            ),
+            RclFolder(id=4, name="Odniesienie się do uwag", documents=(_doc(5, "Uwagi KSE.docx"),)),
+        ).model_copy(update={"loose_documents": (report,)}),
+        _stage(
+            9,
+            "Rada Ministrów",
+            "not_started",
+            RclFolder(id=5, name="Projekt", documents=(_doc(6, "Raport z konsultacji.pdf"),)),
+        ),
+    )
+
+    assert [document.id for document in consultation_response_candidates(project)] == [1, 8, 2, 9]

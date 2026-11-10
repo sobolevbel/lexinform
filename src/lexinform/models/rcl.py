@@ -521,6 +521,33 @@ def process_summary(project: RclProject, *, term: int) -> ProcessSummary:
     )
 
 
+_CONSULTATION_REPORT_NAME = re.compile(
+    r"\b(?:raport|zał(?:ącznik|\.)\s*(?:\d+\s*)?do\s+raportu)\s+z\s+"
+    r"(?:przeprowadzonych\s+)?konsult(?:acji\b|\.)",
+    re.I,
+)
+
+
+def consultation_response_candidates(project: RclProject) -> tuple[RclDocument, ...]:
+    """Collect filed consultation replies and explicitly named reports on any reached stage."""
+    candidates: dict[int, RclDocument] = {}
+    for stage in project.reached_stages:
+        for folder in stage.folders:
+            for document in folder.documents:
+                if (stage.is_consultation and folder.kind == "response") or (
+                    (
+                        folder.kind not in ("letters", "positions")
+                        or document.author == project.applicant
+                    )
+                    and _CONSULTATION_REPORT_NAME.search(document.name.replace("_", " "))
+                ):
+                    candidates.setdefault(document.id, document)
+        for document in stage.loose_documents or ():
+            if _CONSULTATION_REPORT_NAME.search(document.name.replace("_", " ")):
+                candidates.setdefault(document.id, document)
+    return tuple(candidates.values())
+
+
 def rcl_fingerprint(project: RclProject) -> str:
     """What counts as a change worth an update: stages reached or activated, the folders that
     got their first documents (consultation opened, opinions published), a new text version,

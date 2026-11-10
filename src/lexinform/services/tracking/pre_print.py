@@ -183,6 +183,7 @@ class PrePrintReconciler:
             with self._repo.atomic():
                 self._repo.save_submission(bill.term, bill.number, sub)
                 self._consultations.prepare_results(news)
+                self._consultations.review_documents(news, result)
             self._consultations.results_published(news, result, publish=publish)
             return
         with self._repo.atomic():

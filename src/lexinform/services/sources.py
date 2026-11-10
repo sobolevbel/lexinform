@@ -10,7 +10,6 @@ import hashlib
 import logging
 import re
 from datetime import UTC, datetime
-from typing import Literal
 from urllib.parse import urlparse
 
 from lexinform.commission_reviews import commission_sources, parliamentary_commission_sources
@@ -39,7 +38,7 @@ from lexinform.models import (
     submission_pdf_url,
     third_reading_kept_the_text,
 )
-from lexinform.models.rcl import text_rank, text_role
+from lexinform.models.rcl import consultation_response_candidates, text_rank, text_role
 from lexinform.models.sejm import (
     SejmAdoptionOrigin,
     SejmCommitteeDraftOrigin,
@@ -531,26 +530,16 @@ class RclTextSource:
             return self._commission_sources(bill)
         if purpose != "consultation_review":
             return ()
-        stages = [stage for stage in project.stages if stage.is_consultation and stage.reached]
-        responses = [
-            document
-            for stage in stages
-            for document in stage.documents("response")
-            if document.readable
-        ]
-        positions = [
-            document
-            for stage in stages
-            for document in stage.documents("positions")
-            if document.readable
-        ]
-        documents = responses or positions
-        role: Literal["response", "position"] = "response" if responses else "position"
+        documents = tuple(
+            document for document in consultation_response_candidates(project) if document.readable
+        )
+        if not documents:
+            return ()
         result = tuple(
             ReviewSource(
                 identity=f"rcl/{document.id}",
                 document=TextDocument(url=document.url, kind="rcl"),
-                role=role,
+                role="response",
                 author=document.author or "",
             )
             for document in documents

@@ -52,7 +52,6 @@ class ConsultationReminder:
         return self._poster.prepare_message(bill, PublicationKind.CONSULTATION_RESULTS)
 
     def results_published(self, bill: Bill, result: TrackingResult, *, publish: bool) -> bool:
-        self.review_documents(bill, result)
         publication = self.prepare_results(bill)
         if publication is None or not publish:
             return True

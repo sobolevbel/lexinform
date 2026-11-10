@@ -29,6 +29,7 @@ from lexinform.models import (
     rcl_fingerprint,
     rcl_stages,
 )
+from lexinform.models.rcl import consultation_response_candidates
 from lexinform.ports import BillRepository, Clock, SejmGateway
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.analysis_applications import apply_analysis
@@ -149,14 +150,6 @@ class RclWatcher:
                         self._consultations.results_published(
                             fresh.model_copy(update={"rcl": project}), result, publish=publish
                         )
-                    elif (
-                        self._consultations is not None
-                        and project.consultation is not None
-                        and project.consultation.results_published
-                    ):
-                        self._consultations.review_documents(
-                            fresh.model_copy(update={"rcl": project}), result
-                        )
                 except ServiceUnavailableError as exc:
                     result.abort(exc, failed=True)
                     return False
@@ -260,12 +253,25 @@ class RclWatcher:
             fresh = self._repo.get(bill.term, bill.number) or bill
             if change is not None and deliver:
                 self._poster.prepare(fresh, change)
-            if deliver and self._results_due(bill, project) and self._consultations is not None:
-                self._consultations.prepare_results(fresh)
+            if deliver and self._consultations is not None:
+                if self._results_due(bill, project):
+                    self._consultations.prepare_results(fresh)
+                if self._new_consultation_response(bill, project):
+                    self._consultations.review_documents(fresh, result)
             self._repo.save_observed_process(
                 bill.term, bill.number, observe(fresh, closure_date=fresh.observed_closure_date)
             )
         return change
+
+    @staticmethod
+    def _new_consultation_response(bill: Bill, project: RclProject) -> bool:
+        if bill.rcl is None:
+            return False
+        known = {document.id for document in consultation_response_candidates(bill.rcl)}
+        return any(
+            document.id not in known and document.readable
+            for document in consultation_response_candidates(project)
+        )
 
     def _detect_change(
         self,
