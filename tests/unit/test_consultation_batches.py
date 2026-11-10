@@ -8,10 +8,11 @@ import tiktoken
 from lexinform.adapters.llm_openai import OpenAiAnalyzer
 from lexinform.consultation_batches import (
     CONSULTATION_SYNTHESIS_RESERVE,
+    consultation_archive_fingerprint,
     consultation_synthesis_context,
     plan_consultation_parts,
 )
-from lexinform.models import DocumentReview, ReviewContext, ReviewDocument
+from lexinform.models import DocumentPart, DocumentReview, ReviewContext, ReviewDocument
 from lexinform.models.batch import BatchRequest, DocumentReviewQuestion
 from lexinform.models.reviews import (
     ConsultationDraftChange,
@@ -100,6 +101,52 @@ def test_consultation_parts_keep_cross_partition_references_and_exact_source_row
         assert json.loads(request.payload_json)["body"]["max_output_tokens"] == 5000
         estimates.append(request.estimated_cost_usd)
     assert 0 < sum(estimates) < 2.0
+
+
+def test_consultation_archives_deduplicate_repackaged_reports_without_losing_revisions() -> None:
+    def member(name: str, text: str) -> DocumentPart:
+        digest = hashlib.sha256(text.encode()).hexdigest()
+        return DocumentPart(members=(name,), text=text, sha256=digest, text_sha256=digest)
+
+    report = member("report.docx", "Raport z konsultacji")
+    answer = member("answer.docx", "Uwaga została uwzględniona")
+    revised = member("answer.docx", "Uwaga nie została uwzględniona")
+    renamed = answer.model_copy(update={"members": ("copy.docx",)})
+    incomplete = answer.model_copy(update={"losses": ("missing page",)})
+    first_key = consultation_archive_fingerprint((report, answer))
+    alias_key = consultation_archive_fingerprint((renamed, report))
+    revision_key = consultation_archive_fingerprint((report, revised))
+
+    assert first_key and alias_key == first_key and revision_key != first_key
+    assert consultation_archive_fingerprint((report, incomplete)) is None
+    assert consultation_archive_fingerprint((report, answer, answer)) != first_key
+
+    def source(identity: str, parts: tuple[DocumentPart, ...]) -> ReviewDocument:
+        text = "\n\n".join(part.text for part in parts)
+        digest = hashlib.sha256(text.encode()).hexdigest()
+        return ReviewDocument(
+            identity=identity,
+            url=f"https://rcl.test/{identity}.zip",
+            role="response",
+            text=text,
+            sha256=digest,
+            normalized_sha256=digest,
+            consultation_archive_fingerprint=consultation_archive_fingerprint(parts),
+        )
+
+    root = review_context().model_copy(
+        update={
+            "documents": (
+                source("first", (report, answer)),
+                source("alias", (renamed, report)),
+                source("revision", (report, revised)),
+            )
+        }
+    )
+    (part,) = plan_consultation_parts(root, 10)
+
+    assert [item.identity for item in part.documents] == ["first", "revision"]
+    assert "Uwaga nie została uwzględniona" in part.documents[1].text
 
 
 def test_synthesis_only_returns_ranked_ids_from_verified_candidates() -> None:

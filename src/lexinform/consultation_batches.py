@@ -10,6 +10,7 @@ from datetime import datetime
 import tiktoken
 
 from lexinform.document_fingerprints import text_digest
+from lexinform.models.documents import DocumentPart
 from lexinform.models.reviews import (
     ConsultationCandidate,
     ConsultationFinding,
@@ -82,12 +83,28 @@ def _units(index: int, source: ReviewDocument) -> Iterator[_Unit]:
     yield from _prose(index, source.text, cursor, len(source.text))
 
 
+def consultation_archive_fingerprint(parts: tuple[DocumentPart, ...]) -> str | None:
+    """Identify an exact collection of complete report members independent of packaging."""
+    if len(parts) < 2 or any(
+        not (part.members and part.sha256 and part.text_sha256 and part.text.strip()) or part.losses
+        for part in parts
+    ):
+        return None
+    members = sorted((part.sha256, part.text_sha256) for part in parts)
+    return hashlib.sha256(json.dumps(members).encode()).hexdigest()
+
+
 def _sources(context: ReviewContext) -> tuple[ReviewDocument, ...]:
     result = []
     seen: set[tuple[str, str]] = set()
+    archives: set[str] = set()
     for document in context.documents:
         if document.role != "response" or not document.text.strip():
             continue
+        if document.complete and (archive := document.consultation_archive_fingerprint):
+            if archive in archives:
+                continue
+            archives.add(archive)
         if digest := document.member_sha256 or document.file_sha256:
             key = (digest, document.sha256)
             if key in seen:

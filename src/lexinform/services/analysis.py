@@ -28,6 +28,7 @@ from lexinform.consultation_batches import (
     CONSULTATION_REVIEW_BUDGET,
     CONSULTATION_SYNTHESIS_RESERVE,
     ConsultationInputTooLargeError,
+    consultation_archive_fingerprint,
     consultation_draft_pair,
     consultation_rollout_allows,
     consultation_synthesis_context,
@@ -2267,6 +2268,11 @@ class AnalysisService:
             body=source.body,
             forum=source.forum,
             consultation_rows=file.consultation_rows if source.role == "response" else (),
+            consultation_archive_fingerprint=(
+                consultation_archive_fingerprint(file.selection.parts)
+                if source.role == "response" and admission == "complete"
+                else None
+            ),
             source_members=tuple(
                 " / ".join(part.members) for part in file.selection.parts if part.members
             ),

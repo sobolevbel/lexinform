@@ -51,6 +51,9 @@ class ReviewDocument(BaseModel):
     body: str = ""
     forum: ReviewForum = "unknown"
     member_sha256: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    consultation_archive_fingerprint: str | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     source_members: tuple[str, ...] = Field(default=(), exclude_if=lambda value: not value)
     consultation_rows: tuple[ConsultationRow, ...] = Field(
         default=(), exclude_if=lambda value: not value
