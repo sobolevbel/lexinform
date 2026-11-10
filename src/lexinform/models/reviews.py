@@ -359,6 +359,16 @@ def citation_document_in(
     )
 
 
+_ACCEPTANCE_ASSERTION = re.compile(
+    r"(?<!не )\bподтвержда(?:ет|ют) принятие\b"
+    r"|\b(?:замечание|предложение) (?:было )?(?:принято|учтено)\b"
+    r"|\bconfirms? acceptance\b"
+    r"|\b(?:the )?(?:proposal|comment) (?:was |is )?accepted\b"
+    r"|\bподдержанная часть\b",
+    re.IGNORECASE,
+)
+
+
 def consultation_response_label(
     lead: str,
 ) -> Literal["justified", "partly_justified", "outside_scope", "moot", "explained"] | None:
@@ -490,12 +500,14 @@ def validate_review(
             if consultation_labels and evidence is not None
             else None
         )
-        negative = bool(
+        explicitly_unjustified = consultation_labels and bool(
+            re.match(r"^uwaga niezasadna\b", decision_lead)
+        )
+        negative = explicitly_unjustified or bool(
             re.search(
                 r"\bnie\s+(?:uwzględnion\w*|przyjęt\w*)|\bnieuwzględnion\w*|\bodrzucon\w*",
                 decision_lead,
             )
-            or (consultation_labels and re.match(r"^uwaga niezasadna\b", decision_lead))
         )
         partial = bool(re.search(r"częściowo|częściow\w* uwzględn|w części", decision_lead))
         positive = bool(re.search(r"\buwzględnion\w*|\bprzyjęt\w*", decision_lead))
@@ -505,7 +517,7 @@ def validate_review(
             or (outcome == "partial" and partial)
             or (outcome == "accepted" and positive and not negative and not partial)
         )
-        if re.search(
+        if not explicitly_unjustified and re.search(
             r"do wiadomości|do protokołu|do dalszej analizy|propon\w*|powinn\w*", decision_lead
         ):
             supported = False
@@ -531,6 +543,13 @@ def validate_review(
             if evidence is not None
             else ()
         )
+        reason = finding.reason if supported or response_label else ""
+        impact = finding.practical_impact if evidence is not None else ""
+        if consultation_labels and outcome == "unknown":
+            if _ACCEPTANCE_ASSERTION.search(" ".join(reason.split())):
+                reason = ""
+            if _ACCEPTANCE_ASSERTION.search(" ".join(impact.split())):
+                impact = ""
         findings.append(
             finding.model_copy(
                 update={
@@ -539,9 +558,9 @@ def validate_review(
                     "text_evidence": finding.text_evidence if changed else None,
                     "comparison_evidence": finding.comparison_evidence if changed else None,
                     "proposers": names,
-                    "practical_impact": finding.practical_impact if evidence is not None else "",
+                    "practical_impact": impact,
                     "response_label": response_label,
-                    "reason": finding.reason if supported or response_label else "",
+                    "reason": reason,
                     "affected_groups": finding.affected_groups
                     if supported or response_label
                     else (),

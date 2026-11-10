@@ -5,7 +5,7 @@ from lexinform.models import ReviewContext, ReviewPurpose
 
 
 def review_prompt_version(purpose: ReviewPurpose) -> str:
-    return "consultation-review-v3" if purpose == "consultation_review" else "document-review-v1"
+    return "consultation-review-v4" if purpose == "consultation_review" else "document-review-v1"
 
 
 def review_system(language: str, purpose: ReviewPurpose = "consultation_review") -> str:
@@ -47,8 +47,12 @@ def review_system(language: str, purpose: ReviewPurpose = "consultation_review")
         "If segments includes a table row, cite its exact locator and leave quote empty; "
         "the full row is attached from the source. Labels belong to that row's original table. "
         "For each material proposal give a short theme, the named proposers verbatim, the "
-        "official reply and the practical impact. If consultation_partition is set, return at most "
-        "four material proposals. Report text_change "
+        "official reply and the practical impact. Uwaga zasadna or Uwaga częściowo zasadna "
+        "assesses the merits and leaves outcome unknown. Report any steps stated by the authority "
+        "as its account. Keep reason about the official reply and practical_impact about the "
+        "proposal's conditional effects. Neither field may upgrade a response to acceptance "
+        "or claim that a proposal was incorporated. If consultation_partition is set, return "
+        "at most four material proposals. Report text_change "
         "only with comparison_evidence and text_evidence from the same provision in dated "
         "before and after drafts, plus an official accepted or partial response. "
         if purpose == "consultation_review"
@@ -81,14 +85,16 @@ def review_prompt(context: ReviewContext, *, version: str | None = None) -> str:
     if context.purpose == "consultation_review" and version in (
         "consultation-review-v2",
         "consultation-review-v3",
+        "consultation-review-v4",
     ):
+        structured_rows = version in ("consultation-review-v3", "consultation-review-v4")
         originals: dict[tuple[str, str], str] = {}
         for source, document in zip(context.documents, payload["documents"], strict=True):
-            if version == "consultation-review-v3":
+            if structured_rows:
                 document.pop("consultation_rows", None)
             if source.role != "response" or not source.text:
                 continue
-            file_digest = source.member_sha256 if version == "consultation-review-v3" else None
+            file_digest = source.member_sha256 if structured_rows else None
             if digest := file_digest or source.file_sha256:
                 key = (digest, source.sha256)
                 original = originals.setdefault(key, source.identity)
@@ -96,7 +102,7 @@ def review_prompt(context: ReviewContext, *, version: str | None = None) -> str:
                     del document["text"]
                     document["same_text_as"] = original
                     continue
-            if version == "consultation-review-v3" and source.consultation_rows:
+            if structured_rows and source.consultation_rows:
                 segments: list[dict[str, str | None]] = []
                 cursor = 0
                 for row in source.consultation_rows:

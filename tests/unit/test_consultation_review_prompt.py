@@ -151,8 +151,35 @@ def test_official_justification_does_not_claim_the_proposal_was_incorporated() -
     assert confirmed.text_change is None
 
 
+def test_neutral_consultation_response_cannot_claim_acceptance_in_reader_explanations() -> None:
+    quote = (
+        "Pkt 1. Uwaga zasadna. W projekcie wprowadzono przepisy dotyczące automatycznej refundacji."
+    )
+    candidate = finding(quote=quote, outcome="unknown").model_copy(
+        update={
+            "reason": "Замечание было принято.",
+            "practical_impact": "Ответ подтверждает принятие замечания и введение автоматизации.",
+        }
+    )
+    (validated,) = validate_review(review(candidate), context(quote)).consultation_findings
+
+    assert validated.response_label == "justified"
+    assert not validated.reason and not validated.practical_impact
+    assert validated.evidence == candidate.evidence
+
+    conditional = candidate.model_copy(
+        update={
+            "reason": "Ответ не подтверждает принятие замечания.",
+            "practical_impact": "Автоматизация могла бы уменьшить нагрузку на врачей.",
+        }
+    )
+    (validated,) = validate_review(review(conditional), context(quote)).consultation_findings
+    assert validated.reason == conditional.reason
+    assert validated.practical_impact == conditional.practical_impact
+
+
 def test_official_unjustified_label_supports_rejection() -> None:
-    quote = "Pkt 1. Uwaga niezasadna. Projektodawca podtrzymuje stanowisko."
+    quote = "Pkt 1. Uwaga niezasadna Konsekwencja odrzucenia zmian proponowanych do art. 25."
     candidate = finding(quote=quote, outcome="rejected")
     (confirmed,) = validate_review(review(candidate), context(quote)).consultation_findings
     assert confirmed.outcome == "rejected"
