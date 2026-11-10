@@ -234,6 +234,11 @@ class Container:
                 capture_consultation_rows=(
                     docx.consultation_row_spans if self.extractor is None else None
                 ),
+                capture_consultation_archive_rows=(
+                    docx.consultation_archive_row_spans
+                    if self.extractor is None and self.settings.consultation_reviews_enabled
+                    else None
+                ),
                 enrich_word_grid=(
                     partial(enrich_word_horizontal_source, docx) if self.extractor is None else None
                 ),

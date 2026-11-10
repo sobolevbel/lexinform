@@ -300,6 +300,54 @@ class DocxTextExtractor:
     def consultation_row_spans(self, data: bytes, text: str) -> tuple[ConsultationRow, ...]:
         return bind_consultation_rows(text, self.extract_consultation_rows(data))
 
+    def consultation_archive_row_spans(
+        self, data: bytes, parts: tuple[DocumentPart, ...]
+    ) -> tuple[ConsultationRow, ...]:
+        rows: list[ConsultationRow] = []
+        offset = 0
+        remaining = _MAX_ARCHIVE_BYTES
+        for index, part in enumerate(parts):
+            if not part.text.strip():
+                continue
+            if part.members and part.members[-1].casefold().endswith((".docx", ".docm")):
+                with (
+                    suspend_physical_walk_capture(),
+                    suppress(ValueError, KeyError, RuntimeError, ET.ParseError, zipfile.BadZipFile),
+                ):
+                    member = data
+                    for name in part.members:
+                        with _physical_zip(member) as archive:
+                            entries = [
+                                entry for entry in archive.infolist() if entry.filename == name
+                            ]
+                            if len(entries) != 1:
+                                raise ValueError("Ambiguous consultation archive member")
+                            (entry,) = entries
+                            limit = min(remaining, 32_000_000)
+                            if entry.file_size > limit:
+                                raise ValueError(
+                                    "Consultation archive member exceeds its read budget"
+                                )
+                            remaining -= entry.file_size
+                            member = _read_member(archive, entry, member, limit)
+                    if hashlib.sha256(member).hexdigest() == part.sha256:
+                        for row in self.consultation_row_spans(member, part.text):
+                            locator = row.locator
+                            if len(parts) > 1:
+                                path = locator.removeprefix("word-xml:")
+                                locator = f"word-xml:member-{index}/{path}"
+                            rows.append(
+                                row.model_copy(
+                                    update={
+                                        "locator": locator,
+                                        "start": offset + row.start,
+                                        "end": offset + row.end,
+                                    }
+                                )
+                            )
+            offset += len(part.text) + 2
+        return tuple(rows)
+
     def extract_with_field_ranges(self, data: bytes) -> WordFieldExtraction:
         fields = WordFieldRanges()
         return fields.finish(self._blocks(data, fields=fields))

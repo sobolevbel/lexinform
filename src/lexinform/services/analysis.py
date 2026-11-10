@@ -2266,7 +2266,7 @@ class AnalysisService:
             author=source.author,
             body=source.body,
             forum=source.forum,
-            consultation_rows=file.consultation_rows,
+            consultation_rows=file.consultation_rows if source.role == "response" else (),
             source_members=tuple(
                 " / ".join(part.members) for part in file.selection.parts if part.members
             ),

@@ -498,6 +498,10 @@ class TextLoader:
         enrich_word_grid: Callable[[bytes, DocumentExtraction], DocumentExtraction] | None = None,
         capture_consultation_rows: Callable[[bytes, str], tuple[ConsultationRow, ...]]
         | None = None,
+        capture_consultation_archive_rows: Callable[
+            [bytes, tuple[DocumentPart, ...]], tuple[ConsultationRow, ...]
+        ]
+        | None = None,
         enrich_odt_rows: Callable[[bytes, DocumentExtraction], DocumentExtraction] | None = None,
         verify_rcl_comment_table: Callable[[bytes, DocumentExtraction], bool] | None = None,
         enrich_rcl_observed_blocks: Callable[
@@ -516,6 +520,7 @@ class TextLoader:
         self._cache_size = cache_size
         self._capture_word_formulas = capture_word_formulas
         self._capture_consultation_rows = capture_consultation_rows
+        self._capture_consultation_archive_rows = capture_consultation_archive_rows
         self._native_enrichments = tuple(
             enrich for enrich in (enrich_word_grid, enrich_odt_rows) if enrich is not None
         )
@@ -1077,11 +1082,7 @@ class TextLoader:
 
     def _read_consultation_archive(self, url: str) -> LoadedFile:
         archive = self.read(url)
-        parts = tuple(
-            part
-            for part in archive.selection.observed_parts
-            if part.members and is_consultation_report_name(part.members[-1])
-        )
+        parts = self._consultation_archive_parts(archive.selection)
         text = "\n\n".join(part.text for part in parts if part.text.strip())
         incomplete = archive.archive_unpack_blocked or any(
             not part.text.strip() or part.losses for part in parts
@@ -1102,6 +1103,14 @@ class TextLoader:
                 observed_parts=archive.selection.observed_parts,
                 rejected=("consultation archive has incomplete members",) if incomplete else (),
             ),
+        )
+
+    @staticmethod
+    def _consultation_archive_parts(selection: DocumentSelection) -> tuple[DocumentPart, ...]:
+        return tuple(
+            part
+            for part in selection.observed_parts
+            if part.members and is_consultation_report_name(part.members[-1])
         )
 
     def read_bounded(self, url: str, *, max_bytes: int) -> LoadedFile:
@@ -2230,7 +2239,14 @@ class TextLoader:
                         "%s yielded almost no text (%d chars, %d pages)", url, len(text), pages
                     )
                 rows: tuple[ConsultationRow, ...] = ()
-                if consultation_rows and has_text and self._capture_consultation_rows is not None:
+                if self._capture_consultation_archive_rows is not None and urlparse(
+                    url
+                ).path.casefold().endswith(".zip"):
+                    parts = self._consultation_archive_parts(selection)
+                    if parts:
+                        with suppress(Exception):
+                            rows = self._capture_consultation_archive_rows(data, parts)
+                elif consultation_rows and has_text and self._capture_consultation_rows is not None:
                     with suppress(Exception):
                         rows = self._capture_consultation_rows(data, text)
                 loaded = LoadedFile(
