@@ -137,3 +137,22 @@ def test_consultation_incorporation_requires_two_dated_versions_of_the_same_prov
     (confirmed,) = validate_review(review(proven), combined).consultation_findings
     assert confirmed.text_change == proposed.text_change
     assert confirmed.comparison_evidence == proven.comparison_evidence
+
+
+def test_official_justification_does_not_claim_the_proposal_was_incorporated() -> None:
+    quote = "Pkt 1. Uwaga częściowo zasadna. Projektodawca przeanalizuje uwagę."
+    candidate = finding(quote=quote, outcome="partial").model_copy(
+        update={"reason": "Ведомство обещало изучить замечание."}
+    )
+    (confirmed,) = validate_review(review(candidate), context(quote)).consultation_findings
+    assert confirmed.response_label == "partly_justified"
+    assert confirmed.outcome == "unknown"
+    assert confirmed.reason == candidate.reason
+    assert confirmed.text_change is None
+
+
+def test_official_unjustified_label_supports_rejection() -> None:
+    quote = "Pkt 1. Uwaga niezasadna. Projektodawca podtrzymuje stanowisko."
+    candidate = finding(quote=quote, outcome="rejected")
+    (confirmed,) = validate_review(review(candidate), context(quote)).consultation_findings
+    assert confirmed.outcome == "rejected"

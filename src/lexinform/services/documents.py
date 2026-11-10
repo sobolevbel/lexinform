@@ -1090,6 +1090,11 @@ class TextLoader:
             archive,
             text=text or None,
             pages=sum(part.pages for part in parts),
+            consultation_archive_no_report=(
+                not parts
+                and bool(archive.selection.observed_parts)
+                and not archive.archive_unpack_blocked
+            ),
             selection=DocumentSelection(
                 question="consultation_response",
                 state="unverified" if text else "unsupported",

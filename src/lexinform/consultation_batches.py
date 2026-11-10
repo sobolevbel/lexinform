@@ -307,7 +307,7 @@ def consultation_synthesis_context(
                 id=candidate_id,
                 theme=finding.theme[:120],
                 proposal=finding.proposal[:720],
-                outcome=finding.outcome,
+                outcome=finding.response_label or finding.outcome,
                 practical_impact=finding.practical_impact[:500],
             )
         )

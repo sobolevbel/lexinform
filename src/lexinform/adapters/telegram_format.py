@@ -1134,7 +1134,7 @@ class MessageFormatter:
             if finding.theme and finding.theme != previous_theme:
                 blocks.append(f"<b>{esc(finding.theme)}</b>")
             previous_theme = finding.theme
-            label = lb.consultation_outcomes[finding.outcome]
+            label = lb.consultation_outcomes[finding.response_label or finding.outcome]
             lines = [f"<b>{esc(label)}</b> · {esc(finding.proposal)}"]
             if finding.proposers:
                 lines.append(

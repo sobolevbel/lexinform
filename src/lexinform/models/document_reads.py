@@ -186,6 +186,7 @@ class LoadedFile:
     )
     first_pdf_page: PdfPageText | None = field(default=None, compare=False, repr=False)
     consultation_rows: tuple[ConsultationRow, ...] = field(default=(), compare=False, repr=False)
+    consultation_archive_no_report: bool = field(default=False, compare=False, repr=False)
     complete_pdf_pages: int | None = field(default=None, compare=False, repr=False)
     word_formula_source: WordFormulaSource | None = field(default=None, compare=False, repr=False)
     native_complete_standalone: bool = field(default=False, compare=False, repr=False)

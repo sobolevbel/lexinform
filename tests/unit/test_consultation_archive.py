@@ -33,3 +33,25 @@ def test_consultation_archive_selects_report_without_project_or_osr() -> None:
     assert read.text == answer
     assert [part.members for part in read.selection.parts] == [("raport_z_konsultacji.docx",)]
     assert len(read.selection.observed_parts) == 3
+    assert not read.consultation_archive_no_report
+
+
+def test_ordinary_draft_archive_is_not_a_missing_consultation_report() -> None:
+    output = io.BytesIO()
+    with ZipFile(output, "w") as package:
+        package.writestr("projekt.docx", docx("USTAWA. Art. 1. Zmienia się przepisy ustawy."))
+    raw = output.getvalue()
+
+    def download(url: str, *, max_bytes: int | None = None) -> bytes:
+        return raw
+
+    loader = TextLoader(
+        {"rcl.test": download},
+        DocumentTextExtractor(PypdfTextExtractor(), DocxTextExtractor(), DocTextExtractor()),
+        max_bytes=1_000_000,
+    )
+    read = loader.read_consultation_response(
+        TextDocument(url="https://rcl.test/late-project.zip", kind="rcl")
+    )
+    assert read.consultation_archive_no_report
+    assert read.text is None

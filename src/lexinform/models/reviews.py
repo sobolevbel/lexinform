@@ -175,6 +175,9 @@ class ConsultationFinding(BaseModel):
     theme: str = Field(default="", exclude_if=lambda value: not value)
     proposers: tuple[str, ...] = Field(default=(), exclude_if=lambda value: not value)
     practical_impact: str = Field(default="", exclude_if=lambda value: not value)
+    response_label: (
+        Literal["justified", "partly_justified", "outside_scope", "moot", "explained"] | None
+    ) = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class EffectiveRule(BaseModel):
@@ -353,6 +356,22 @@ def citation_document_in(
     )
 
 
+def consultation_response_label(
+    lead: str,
+) -> Literal["justified", "partly_justified", "outside_scope", "moot", "explained"] | None:
+    if re.match(r"uwaga częściowo zasadna\b", lead):
+        return "partly_justified"
+    if re.match(r"uwaga zasadna\b", lead):
+        return "justified"
+    if re.match(r"(?:uwaga )?(?:wykracza )?poza zakresem\b", lead):
+        return "outside_scope"
+    if re.match(r"uwaga bezprzedmiotowa\b", lead):
+        return "moot"
+    if re.match(r"uwaga wyjaśniona\b", lead):
+        return "explained"
+    return None
+
+
 def _compared_provision(
     prior: EvidenceCitation | None, current: EvidenceCitation | None, context: ReviewContext
 ) -> bool:
@@ -374,7 +393,9 @@ def _compared_provision(
     )
 
 
-def validate_review(review: DocumentReview, context: ReviewContext) -> DocumentReview:
+def validate_review(
+    review: DocumentReview, context: ReviewContext, *, consultation_labels: bool = True
+) -> DocumentReview:
     if review.purpose != context.purpose:
         raise ValueError("document review purpose does not match its request")
     if context.consultation_candidates:
@@ -461,11 +482,17 @@ def validate_review(review: DocumentReview, context: ReviewContext) -> DocumentR
         locator = _normalized(finding.evidence.locator) if finding.evidence else ""
         decision_lead = quote.removeprefix(locator).lstrip(" .:–-")
         decision_lead = decision_lead.split(".", maxsplit=1)[0]
+        response_label = (
+            consultation_response_label(decision_lead)
+            if consultation_labels and evidence is not None
+            else None
+        )
         negative = bool(
             re.search(
                 r"\bnie\s+(?:uwzględnion\w*|przyjęt\w*)|\bnieuwzględnion\w*|\bodrzucon\w*",
                 decision_lead,
             )
+            or (consultation_labels and re.match(r"^uwaga niezasadna\b", decision_lead))
         )
         partial = bool(re.search(r"częściowo|częściow\w* uwzględn|w części", decision_lead))
         positive = bool(re.search(r"\buwzględnion\w*|\bprzyjęt\w*", decision_lead))
@@ -479,8 +506,9 @@ def validate_review(review: DocumentReview, context: ReviewContext) -> DocumentR
             r"do wiadomości|do protokołu|do dalszej analizy|propon\w*|powinn\w*", decision_lead
         ):
             supported = False
-        if not supported:
+        if response_label is not None or not supported:
             outcome = "unknown"
+        if response_label is None and not supported:
             unresolved.append(f"Outcome unconfirmed: {finding.proposal}")
         changed = (
             finding.text_change
@@ -509,8 +537,11 @@ def validate_review(review: DocumentReview, context: ReviewContext) -> DocumentR
                     "comparison_evidence": finding.comparison_evidence if changed else None,
                     "proposers": names,
                     "practical_impact": finding.practical_impact if evidence is not None else "",
-                    "reason": finding.reason if supported else "",
-                    "affected_groups": finding.affected_groups if supported else (),
+                    "response_label": response_label,
+                    "reason": finding.reason if supported or response_label else "",
+                    "affected_groups": finding.affected_groups
+                    if supported or response_label
+                    else (),
                     "evidence": finding.evidence if evidence is not None else None,
                     "respondent": evidence.author
                     if evidence is not None and evidence.author
@@ -714,6 +745,7 @@ def _validate_commission(review: DocumentReview, context: ReviewContext) -> Docu
                 unresolved=(),
             ),
             response_context,
+            consultation_labels=False,
         ).consultation_findings[0]
         response = citation_document(
             item.evidence, context, {"commission_response", "commission_minutes"}

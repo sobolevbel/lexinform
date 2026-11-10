@@ -2236,6 +2236,8 @@ class AnalysisService:
         self, source: ReviewSource, document: TextDocument, file: LoadedFile
     ) -> ReviewDocument | None:
         """Build the existing review result without changing admission or its fingerprints."""
+        if file.consultation_archive_no_report:
+            return None
         text = file.text or ""
         admission = review_admission(
             file.selection,

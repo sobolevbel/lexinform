@@ -330,6 +330,11 @@ RU = Labels(
         "rejected": "Предложение отклонено",
         "partial": "Принято частично",
         "unknown": "Решение по предложению не подтверждено",
+        "justified": "Замечание признано обоснованным",
+        "partly_justified": "Замечание признано частично обоснованным",
+        "outside_scope": "Вне рамок проекта",
+        "moot": "Ведомство считает замечание утратившим предмет",
+        "explained": "Ведомство дало разъяснение",
     },
     consultation_text_unconfirmed="Включение изменения в текст не подтверждено.",
     document_review_incomplete=(
@@ -1078,6 +1083,11 @@ EN = Labels(
         "rejected": "Proposal rejected",
         "partial": "Partially accepted",
         "unknown": "Proposal outcome is not confirmed",
+        "justified": "Remark considered justified",
+        "partly_justified": "Remark considered partly justified",
+        "outside_scope": "Outside the scope of the draft",
+        "moot": "The ministry considers the remark moot",
+        "explained": "The ministry provided an explanation",
     },
     consultation_text_unconfirmed="Incorporation into the text is not confirmed.",
     document_review_incomplete=(
