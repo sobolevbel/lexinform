@@ -4736,16 +4736,19 @@ class SqliteBillRepository:
         row = self._conn.execute(
             """
             WITH intent AS (
-                SELECT state, created_at AS since FROM llm_batch_intents WHERE custom_id=:id
+                SELECT state, created_at AS since, 0 AS output_limited
+                FROM llm_batch_intents WHERE custom_id=:id
             ), latest_submission AS (
                 SELECT CASE WHEN i.consumed_at IS NOT NULL OR b.status = 'failed'
                             THEN 'failed' ELSE 'open' END AS state,
-                       COALESCE(json_extract(i.meta_json, '$.queued_at'), b.submitted_at) AS since
+                       COALESCE(json_extract(i.meta_json, '$.queued_at'), b.submitted_at) AS since,
+                       COALESCE(json_extract(i.result_json, '$.incomplete_reason')
+                                = 'max_output_tokens', 0) AS output_limited
                 FROM llm_batch_items i JOIN llm_batches b USING (batch_id)
                 WHERE i.custom_id=:id AND NOT EXISTS (SELECT 1 FROM intent)
                 ORDER BY b.submitted_at DESC, i.rowid DESC LIMIT 1
             )
-            SELECT state, since,
+            SELECT state, since, output_limited,
                    (SELECT count(*) FROM llm_batch_items WHERE custom_id=:id) AS submissions
             FROM (SELECT * FROM intent UNION ALL SELECT * FROM latest_submission)
             """,
@@ -4757,6 +4760,7 @@ class SqliteBillRepository:
             state=row["state"],
             since=datetime.fromisoformat(row["since"]),
             submissions=row["submissions"],
+            output_limited=bool(row["output_limited"]),
         )
 
     def computation_owner_terms(self, number: str, kind: BatchKind) -> tuple[int, ...]:

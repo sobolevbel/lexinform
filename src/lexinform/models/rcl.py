@@ -528,22 +528,34 @@ _CONSULTATION_REPORT_NAME = re.compile(
 )
 
 
+def is_consultation_report_name(name: str) -> bool:
+    return bool(_CONSULTATION_REPORT_NAME.search(name.replace("_", " ")))
+
+
 def consultation_response_candidates(project: RclProject) -> tuple[RclDocument, ...]:
     """Collect filed consultation replies and explicitly named reports on any reached stage."""
     candidates: dict[int, RclDocument] = {}
     for stage in project.reached_stages:
         for folder in stage.folders:
             for document in folder.documents:
-                if (stage.is_consultation and folder.kind == "response") or (
-                    (
-                        folder.kind not in ("letters", "positions")
-                        or document.author == project.applicant
+                if (
+                    (stage.is_consultation and folder.kind == "response")
+                    or (
+                        (
+                            folder.kind not in ("letters", "positions")
+                            or document.author == project.applicant
+                        )
+                        and is_consultation_report_name(document.name)
                     )
-                    and _CONSULTATION_REPORT_NAME.search(document.name.replace("_", " "))
+                    or (
+                        folder.kind == "project"
+                        and document.extension == "zip"
+                        and (stage.is_review_body or stage.group == "council")
+                    )
                 ):
                     candidates.setdefault(document.id, document)
         for document in stage.loose_documents or ():
-            if _CONSULTATION_REPORT_NAME.search(document.name.replace("_", " ")):
+            if is_consultation_report_name(document.name):
                 candidates.setdefault(document.id, document)
     return tuple(candidates.values())
 

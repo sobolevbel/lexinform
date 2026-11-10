@@ -7,7 +7,7 @@ what `.env.example` and the operator's documentation say about it.
 from pathlib import Path
 from typing import Annotated, Literal
 
-from pydantic import Field, field_validator
+from pydantic import AwareDatetime, Field, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 from lexinform.models.batch import BatchKind
@@ -183,9 +183,18 @@ class Settings(BaseSettings):
         description="Enable analysis and delivery of consultation document reviews; disabled"
         " while corpus quality checks are pending. Existing work and results are retained.",
     )
+    consultation_reviews_after: AwareDatetime | None = Field(
+        default=None,
+        description="Only start or deliver new partitioned RCL reviews on or after this instant.",
+    )
     llm_batch_max_wait_hours: float = Field(
         default=6, gt=0, description="Legacy setting; waiting never enables synchronous calls."
     )
+
+    @field_validator("consultation_reviews_after", mode="before")
+    @classmethod
+    def parse_consultation_reviews_after(cls, value: object) -> object:
+        return None if value == "" else value
 
     @field_validator("llm_batch_kinds", mode="before")
     @classmethod

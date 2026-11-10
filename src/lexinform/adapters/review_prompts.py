@@ -5,7 +5,7 @@ from lexinform.models import ReviewContext, ReviewPurpose
 
 
 def review_prompt_version(purpose: ReviewPurpose) -> str:
-    return "consultation-review-v2" if purpose == "consultation_review" else "document-review-v1"
+    return "consultation-review-v3" if purpose == "consultation_review" else "document-review-v1"
 
 
 def review_system(language: str, purpose: ReviewPurpose = "consultation_review") -> str:
@@ -44,6 +44,13 @@ def review_system(language: str, purpose: ReviewPurpose = "consultation_review")
         )
     consultation = (
         "An entry with same_text_as repeats the source identified there; cite the original entry. "
+        "If segments includes a table row, cite its exact locator and leave quote empty; "
+        "the full row is attached from the source. Labels belong to that row's original table. "
+        "For each material proposal give a short theme, the named proposers verbatim, the "
+        "official reply and the practical impact. If consultation_partition is set, return at most "
+        "four material proposals. Report text_change "
+        "only with comparison_evidence and text_evidence from the same provision in dated "
+        "before and after drafts, plus an official accepted or partial response. "
         if purpose == "consultation_review"
         else ""
     )
@@ -68,18 +75,45 @@ def review_system(language: str, purpose: ReviewPurpose = "consultation_review")
     )
 
 
-def review_prompt(context: ReviewContext) -> str:
+def review_prompt(context: ReviewContext, *, version: str | None = None) -> str:
+    version = version or review_prompt_version(context.purpose)
     payload = context.model_dump(mode="json")
-    if context.purpose == "consultation_review":
+    if context.purpose == "consultation_review" and version in (
+        "consultation-review-v2",
+        "consultation-review-v3",
+    ):
         originals: dict[tuple[str, str], str] = {}
         for source, document in zip(context.documents, payload["documents"], strict=True):
-            if source.role != "response" or not source.file_sha256 or not source.text:
+            if version == "consultation-review-v3":
+                document.pop("consultation_rows", None)
+            if source.role != "response" or not source.text:
                 continue
-            key = (source.file_sha256, source.sha256)
-            original = originals.setdefault(key, source.identity)
-            if original != source.identity:
+            file_digest = source.member_sha256 if version == "consultation-review-v3" else None
+            if digest := file_digest or source.file_sha256:
+                key = (digest, source.sha256)
+                original = originals.setdefault(key, source.identity)
+                if original != source.identity:
+                    del document["text"]
+                    document["same_text_as"] = original
+                    continue
+            if version == "consultation-review-v3" and source.consultation_rows:
+                segments: list[dict[str, str | None]] = []
+                cursor = 0
+                for row in source.consultation_rows:
+                    if row.start > cursor:
+                        segments.append({"text": source.text[cursor : row.start]})
+                    segments.append(
+                        {
+                            "locator": row.locator,
+                            "label": row.label,
+                            "text": source.text[row.start : row.end],
+                        }
+                    )
+                    cursor = row.end
+                if cursor < len(source.text):
+                    segments.append({"text": source.text[cursor:]})
                 del document["text"]
-                document["same_text_as"] = original
+                document["segments"] = segments
     return json.dumps(payload, ensure_ascii=False)
 
 
@@ -110,6 +144,15 @@ _FINDING = _object(
         "evidence": _NULL_CITATION,
         "text_change": {"type": ["string", "null"]},
         "text_evidence": _NULL_CITATION,
+    }
+)
+_CONSULTATION_FINDING = _object(
+    {
+        **_FINDING["properties"],
+        "theme": {"type": "string"},
+        "proposers": _strings(),
+        "practical_impact": {"type": "string"},
+        "comparison_evidence": _NULL_CITATION,
     }
 )
 _RULE = _object(
@@ -147,7 +190,7 @@ REVIEW_SCHEMA = _object(
         },
         "complete": {"type": "boolean"},
         "summary": {"type": "string"},
-        "consultation_findings": {"type": "array", "items": _FINDING},
+        "consultation_findings": {"type": "array", "items": _CONSULTATION_FINDING},
         "effective_rules": {"type": "array", "items": _RULE},
         "unresolved": _strings(),
         "commission_findings": {"type": "array", "items": _COMMISSION_FINDING},

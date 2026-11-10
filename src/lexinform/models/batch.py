@@ -268,6 +268,7 @@ class BatchRequest(BaseModel):
     model: str = ""
     prompt_version: str = ""
     estimated_cost_usd: float = 0.0
+    consultation_retry: bool = Field(default=False, exclude_if=lambda value: not value)
 
     @model_validator(mode="before")
     @classmethod
@@ -338,6 +339,7 @@ class BatchResult(BaseModel):
     cache_creation_input_tokens: int | None = None
     error: str | None = None
     context_exceeded: bool = False
+    incomplete_reason: str | None = Field(default=None, exclude_if=lambda value: value is None)
 
     @property
     def analysis(self) -> Analysis | None:
@@ -477,6 +479,7 @@ class BatchJob(BaseModel):
     state: Literal["queued", "submitting", "open", "failed"]
     since: dt.datetime
     submissions: int = 0
+    output_limited: bool = Field(default=False, exclude_if=lambda value: not value)
 
 
 class AmendmentRevisionTarget(BaseModel):

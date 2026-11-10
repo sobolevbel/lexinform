@@ -12,6 +12,7 @@ from lexinform.models.candidate_trace import (
 )
 from lexinform.models.documents import DocumentSelection, PdfPageText
 from lexinform.models.extractions import ExtractionResult, ObservedMemberBlockCopy
+from lexinform.models.reviews import ConsultationRow
 from lexinform.word_formula_placement import WordFormulaSource
 
 
@@ -184,6 +185,7 @@ class LoadedFile:
         default=None, compare=False, repr=False
     )
     first_pdf_page: PdfPageText | None = field(default=None, compare=False, repr=False)
+    consultation_rows: tuple[ConsultationRow, ...] = field(default=(), compare=False, repr=False)
     complete_pdf_pages: int | None = field(default=None, compare=False, repr=False)
     word_formula_source: WordFormulaSource | None = field(default=None, compare=False, repr=False)
     native_complete_standalone: bool = field(default=False, compare=False, repr=False)

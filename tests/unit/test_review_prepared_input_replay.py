@@ -8,6 +8,7 @@ from tools.replay_review_input import Provider, verify_review_input
 from lexinform.adapters.llm_anthropic import AnthropicAnalyzer
 from lexinform.adapters.llm_openai import OpenAiAnalyzer
 from lexinform.models.batch import BatchRequest, DocumentReviewQuestion
+from lexinform.models.reviews import ConsultationRow
 from tests.scenario.test_document_reviews import FINAL, context
 
 
@@ -125,3 +126,57 @@ def test_review_verifier_rejects_matching_envelope_with_invalid_source_hash(
 ) -> None:
     with pytest.raises(ValueError, match="recorded hash"):
         verify_review_input(review_request(provider, wrong_source_hash=True), provider)
+
+
+def test_frozen_review_verifies_word_rows_and_aliases() -> None:
+    fixture = context()
+    response = fixture.documents[0]
+    source = response.model_copy(
+        update={
+            "file_sha256": "d" * 64,
+            "consultation_rows": (
+                ConsultationRow(
+                    locator="word-xml:word/document.xml:0/1/2",
+                    label="1",
+                    start=0,
+                    end=len(response.text),
+                ),
+            ),
+        }
+    )
+    alias = source.model_copy(update={"identity": "doc/2"})
+    fixture = fixture.model_copy(update={"documents": (source, alias)})
+    request = BatchRequest(
+        custom_id="offline-word-review",
+        term=10,
+        number=fixture.number,
+        question=DocumentReviewQuestion(kind="consultation_review", ctx=fixture),
+    )
+    frozen = OpenAiAnalyzer(lambda: pytest.fail("SDK used"), model="gpt-6.1-sol").prepare_request(
+        request
+    )
+
+    proof = verify_review_input(frozen, "openai")
+
+    assert proof["version"] == "review-provider-text-v2"
+    fields = proof["documents"]
+    assert isinstance(fields, list), "the replay verifier returns ordered document fields"
+    assert [item["pointer"] for item in fields] == [
+        "/documents/0/segments",
+        "/documents/1/same_text_as",
+    ]
+    assert frozen.payload_json is not None, "the request is frozen before replay"
+    payload = json.loads(frozen.payload_json)
+    block = payload["body"]["input"][1]["content"][0]
+    prompt = json.loads(block["text"])
+    prompt["documents"][0]["segments"][0]["label"] = "2"
+    block["text"] = json.dumps(prompt)
+    encoded = json.dumps(payload)
+    bad = frozen.model_copy(
+        update={
+            "payload_json": encoded,
+            "payload_sha256": hashlib.sha256(encoded.encode()).hexdigest(),
+        }
+    )
+    with pytest.raises(ValueError, match="differs from its question"):
+        verify_review_input(bad, "openai")

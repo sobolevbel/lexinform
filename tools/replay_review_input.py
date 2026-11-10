@@ -17,15 +17,20 @@ def verify_review_input(request: BatchRequest, provider: Provider) -> dict[str, 
     if manifest is None:
         raise ValueError("Exact frozen provider request is unavailable")
     fields = verify_review_provider_fields(request, manifest)
+    projected = any(field != "text" for field in fields.document_fields)
     return {
-        "version": "review-provider-text-v1",
-        "coordinates": "decoded-review-json-field-python-string",
+        "version": "review-provider-text-v2" if projected else "review-provider-text-v1",
+        "coordinates": (
+            "decoded-review-source-text-python-string"
+            if projected
+            else "decoded-review-json-field-python-string"
+        ),
         "request_manifest": manifest.model_dump(mode="json"),
         "context_sha256": fields.context_sha256,
         "provider_prompt_pointer": fields.pointer,
         "documents": [
             {
-                "pointer": f"/documents/{index}/text",
+                "pointer": f"/documents/{index}/{fields.document_fields[index]}",
                 **document.model_dump(exclude={"chars"}),
                 "span": [0, document.chars],
             }

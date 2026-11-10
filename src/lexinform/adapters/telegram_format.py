@@ -1129,16 +1129,26 @@ class MessageFormatter:
             raise ValueError("consultation review is unavailable")
         lb = self._labels
         blocks = [self._reply_header(ICON["consultation"], lb.consultation_review_header, bill)]
+        previous_theme = ""
         for finding in record.review.consultation_findings:
+            if finding.theme and finding.theme != previous_theme:
+                blocks.append(f"<b>{esc(finding.theme)}</b>")
+            previous_theme = finding.theme
             label = lb.consultation_outcomes[finding.outcome]
             lines = [f"<b>{esc(label)}</b> · {esc(finding.proposal)}"]
-            if finding.evidence:
+            if finding.proposers:
+                lines.append(
+                    f"{esc(lb.consultation_proposed_by)}: {esc(', '.join(finding.proposers))}"
+                )
+            if finding.evidence and not (finding.theme and finding.reason):
                 quoted = finding.evidence.quote.rsplit("\t", 1)[-1]
                 lines.append(f"<i>“{esc(quoted)}”</i>")
             if finding.respondent:
                 lines.append(esc(finding.respondent))
             if finding.reason:
                 lines.append(esc(finding.reason))
+            if finding.practical_impact:
+                lines.append(f"{esc(lb.commission_impact)}: {esc(finding.practical_impact)}")
             if finding.affected_groups:
                 lines.append(esc("; ".join(finding.affected_groups)))
             if finding.text_change:
@@ -1155,7 +1165,20 @@ class MessageFormatter:
                     None,
                 )
                 if source is not None:
-                    lines.append(link(source.url, finding.evidence.locator))
+                    locator = finding.evidence.locator
+                    if locator.startswith("word-xml:"):
+                        row = next(
+                            (row for row in source.consultation_rows if row.locator == locator),
+                            None,
+                        )
+                        locator = (
+                            lb.consultation_remark_number.format(label=row.label)
+                            if row is not None and row.label
+                            else lb.document_review_source
+                        )
+                    if len(source.source_members) == 1:
+                        locator = f"{locator} · {source.source_members[0]}"
+                    lines.append(link(source.url, locator))
             blocks.append("\n".join(lines))
         if not record.review.complete:
             blocks.append(esc(lb.document_review_incomplete))

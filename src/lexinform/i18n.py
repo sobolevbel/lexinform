@@ -260,6 +260,8 @@ class Labels:
     commission_incorporation: str = ""
     commission_recommendation: str = ""
     consultation_review_header: str = ""
+    consultation_proposed_by: str = ""
+    consultation_remark_number: str = ""
     act_application_header: str = ""
     consultation_outcomes: dict[str, str] = field(default_factory=dict)
     consultation_text_unconfirmed: str = ""
@@ -320,6 +322,8 @@ RU = Labels(
     commission_incorporation="Подтверждено в новой редакции",
     commission_recommendation="Рекомендация комиссии; решение палаты этим не подтверждается",
     consultation_review_header="Что дали консультации",
+    consultation_proposed_by="Предложили",
+    consultation_remark_number="Замечание № {label}",
     act_application_header="Как применяется окончательный акт",
     consultation_outcomes={
         "accepted": "Предложение принято",
@@ -1066,6 +1070,8 @@ EN = Labels(
     commission_incorporation="Confirmed in the newer draft",
     commission_recommendation="Committee recommendation; this does not confirm a chamber decision",
     consultation_review_header="What consultations achieved",
+    consultation_proposed_by="Proposed by",
+    consultation_remark_number="Remark {label}",
     act_application_header="How the final act applies",
     consultation_outcomes={
         "accepted": "Proposal accepted",

@@ -231,6 +231,9 @@ class Container:
                     if self.extractor is None and self.rcl is not None
                     else None
                 ),
+                capture_consultation_rows=(
+                    docx.consultation_row_spans if self.extractor is None else None
+                ),
                 enrich_word_grid=(
                     partial(enrich_word_horizontal_source, docx) if self.extractor is None else None
                 ),
@@ -295,6 +298,7 @@ class Container:
                 self.clock,
                 channel_id=self.channel_id(),
                 max_attempts=self.settings.max_publish_attempts,
+                consultation_reviews_after=self.settings.consultation_reviews_after,
             ),
         )
 
@@ -481,6 +485,7 @@ class Container:
             batch_sync_within_days=self.settings.llm_batch_sync_within_days,
             batch_kinds=self.settings.llm_batch_kinds,
             consultation_reviews_enabled=self.settings.consultation_reviews_enabled,
+            consultation_reviews_after=self.settings.consultation_reviews_after,
             commission_reviews_enabled=self.settings.commission_reviews_enabled,
             batch_models={
                 "amendments": self.settings.llm_amendments_model,
@@ -856,6 +861,7 @@ class Container:
                 daily_hour=self.settings.attention_daily_hour,
                 delivery_attempts=self._delivery_attempts(dry_run),
                 consultation_reviews_enabled=self.settings.consultation_reviews_enabled,
+                consultation_reviews_after=self.settings.consultation_reviews_after,
                 commission_reviews_enabled=self.settings.commission_reviews_enabled,
                 checkpoint=self.state_checkpoint(dry_run=dry_run),
             ),

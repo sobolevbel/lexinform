@@ -10,12 +10,13 @@ stages before its own and releases them (their rows become `sent` with its messa
 
 import logging
 from collections.abc import Callable, Sequence
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from enum import StrEnum
 from functools import partial
 from zoneinfo import ZoneInfo
 
 from lexinform.attention import assess_attention
+from lexinform.consultation_batches import CONSULTATION_DELIVERY_PREFIX, consultation_rollout_allows
 from lexinform.content_sources import (
     SOURCE_CONTEXT_INVALID,
     SourceContextInvalidError,
@@ -179,6 +180,7 @@ class Poster:
         daily_hour: int = 18,
         delivery_attempts: set[int] | None = None,
         consultation_reviews_enabled: bool = False,
+        consultation_reviews_after: datetime | None = None,
         commission_reviews_enabled: bool = False,
         checkpoint: StateCheckpoint | None = None,
     ) -> None:
@@ -200,6 +202,7 @@ class Poster:
         self._told_windows: dict[tuple[int, str, str, date], tuple[int, int]] = {}
         self._attempted = delivery_attempts if delivery_attempts is not None else set[int]()
         self._consultation_reviews_enabled = consultation_reviews_enabled
+        self._consultation_reviews_after = consultation_reviews_after
         self._commission_reviews_enabled = commission_reviews_enabled
         self._checkpoint = checkpoint
         self._sittings: dict[int, Publication] = {}
@@ -1340,7 +1343,14 @@ class Poster:
         return root is not None and (
             (
                 root.kind is PublicationKind.CONSULTATION_REVIEW
-                and not self._consultation_reviews_enabled
+                and (
+                    not self._consultation_reviews_enabled
+                    or not consultation_rollout_allows(
+                        self._consultation_reviews_after,
+                        root.created_at,
+                        partitioned=(root.ref or "").startswith(CONSULTATION_DELIVERY_PREFIX),
+                    )
+                )
             )
             or (
                 root.kind is PublicationKind.COMMISSION_REVIEW

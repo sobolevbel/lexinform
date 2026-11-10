@@ -23,6 +23,13 @@ from lexinform.commission_reviews import COMMISSION_ROLES
 from lexinform.committee_draft import committee_draft_selection
 from lexinform.committee_recommendation import CommitteeRecommendationOrigin
 from lexinform.concurrency import fan_out
+from lexinform.consultation_batches import (
+    CONSULTATION_MODEL,
+    CONSULTATION_REVIEW_BUDGET,
+    ConsultationInputTooLargeError,
+    consultation_rollout_allows,
+    plan_consultation_parts,
+)
 from lexinform.document_admissibility import analysis_admission, review_admission
 from lexinform.document_fingerprints import text_digest as text_digest
 from lexinform.document_input import (
@@ -84,6 +91,7 @@ from lexinform.models import (
     ChangeContext,
     ChangedPassage,
     ComputationResult,
+    ConsultationFinding,
     DigestItemMeta,
     DocumentDigest,
     DocumentPart,
@@ -377,6 +385,7 @@ class AnalysisOptions:
     batch_sync_within_days: int = 0
     batch_kinds: frozenset[BatchKind] = frozenset({"analysis", "reanalysis"})
     consultation_reviews_enabled: bool = False
+    consultation_reviews_after: datetime | None = None
     commission_reviews_enabled: bool = False
     batch_models: dict[BatchKind, str] = field(default_factory=dict)
     batch_max_wait: timedelta = timedelta(hours=6)
@@ -678,6 +687,17 @@ class AnalysisService:
         self._context_rejections = repo.context_rejected_batch_ids()
         self._read_since_last_run = True
 
+    def _consultation_intent_allowed(self, intent: BatchIntent) -> bool:
+        question = intent.request.question
+        if question.kind != "consultation_review":
+            return True
+        return self._options.consultation_reviews_enabled and consultation_rollout_allows(
+            self._options.consultation_reviews_after,
+            intent.created_at,
+            partitioned=isinstance(question, DocumentReviewQuestion)
+            and question.ctx.consultation_partition is not None,
+        )
+
     def start_run(self, *, dry_run: bool = False) -> None:
         self._dry_run = dry_run
         self._restored_collected = {b.batch_id for b in self._repo.list_unforgotten_llm_batches()}
@@ -685,10 +705,7 @@ class AnalysisService:
         committed += sum(
             intent.request.estimated_cost_usd
             for intent in self._repo.list_queued_batch_intents()
-            if (
-                intent.request.question.kind != "consultation_review"
-                or self._options.consultation_reviews_enabled
-            )
+            if self._consultation_intent_allowed(intent)
             and (
                 intent.request.question.kind != "commission_review"
                 or self.review_enabled("commission_review")
@@ -926,10 +943,7 @@ class AnalysisService:
                 i.request.question.kind != "commission_review"
                 or self.review_enabled("commission_review")
             )
-            and (
-                i.request.question.kind != "consultation_review"
-                or self._options.consultation_reviews_enabled
-            )
+            and self._consultation_intent_allowed(i)
             and (
                 self._options.require_batch
                 or i.request.question.kind == "explanation"
@@ -2202,6 +2216,8 @@ class AnalysisService:
         requested = document
         if document.compare_versions:
             document, file = self._loader.select_document(document)
+        elif source.role == "response":
+            file = self._loader.read_consultation_response(document)
         else:
             file = self._loader.read_document(document)
         read = self._loader.capture_source_read(requested, document, file)
@@ -2242,6 +2258,15 @@ class AnalysisService:
             author=source.author,
             body=source.body,
             forum=source.forum,
+            consultation_rows=file.consultation_rows,
+            source_members=tuple(
+                " / ".join(part.members) for part in file.selection.parts if part.members
+            ),
+            member_sha256=(
+                file.selection.parts[0].sha256
+                if len(file.selection.parts) == 1 and file.selection.parts[0].members
+                else None
+            ),
         )
 
     def review_exhausted(self, term: int, context: ReviewContext) -> bool:
@@ -2278,15 +2303,126 @@ class AnalysisService:
             is not None
         ):
             return False
-        job = self._repo.batch_job(self._review_request_key(key))
+        job = self._repo.batch_job(
+            key if context.consultation_partition else self._review_request_key(key)
+        )
         return (
             job is not None
             and job.state == "failed"
-            and job.submissions >= SECONDARY_BATCH_SUBMISSIONS
+            and job.submissions
+            >= (1 if context.consultation_partition else SECONDARY_BATCH_SUBMISSIONS)
         )
 
     def _review_request_key(self, key: str) -> str:
         return "overflow:" + key if key in self._context_rejections else key
+
+    def request_partitioned_consultation(
+        self, bill: Bill, context: ReviewContext, *, requested_at: datetime
+    ) -> DocumentReviewRecord | Waiting:
+        if not self.review_enabled("consultation_review"):
+            return Waiting(self._clock.now())
+        parts = plan_consultation_parts(context, bill.term)
+        if not parts:
+            raise ConsultationInputTooLargeError("No readable official consultation response")
+        backend = self._batch_resolver("openai") if self._batch_resolver else self._batch
+        if backend is None:
+            raise LlmUnavailableError("OpenAI consultation batch backend is unavailable")
+        requests = tuple(
+            backend.prepare_request(
+                BatchRequest(
+                    custom_id=part.memo_key(bill.term),
+                    term=bill.term,
+                    number=bill.number,
+                    question=DocumentReviewQuestion(kind="consultation_review", ctx=part),
+                    model=CONSULTATION_MODEL,
+                )
+            )
+            for part in parts
+        )
+        limit = min(
+            self._options.max_bill_cost_usd or CONSULTATION_REVIEW_BUDGET,
+            CONSULTATION_REVIEW_BUDGET,
+        )
+        estimate = sum(request.estimated_cost_usd for request in requests)
+        if estimate > limit:
+            raise ConsultationInputTooLargeError(
+                f"Consultation review costs up to ${estimate:.2f}, above its ${limit:.2f} limit"
+            )
+        retry_budget = limit - estimate
+        retries: dict[str, BatchRequest] = {}
+        for part, first in zip(parts, requests, strict=True):
+            retry = backend.prepare_request(
+                BatchRequest(
+                    custom_id=first.custom_id,
+                    term=bill.term,
+                    number=bill.number,
+                    question=DocumentReviewQuestion(kind="consultation_review", ctx=part),
+                    model=CONSULTATION_MODEL,
+                    consultation_retry=True,
+                )
+            )
+            if retry.estimated_cost_usd <= retry_budget:
+                retries[first.custom_id] = retry
+                retry_budget -= retry.estimated_cost_usd
+
+        records: list[DocumentReviewRecord] = []
+        failures: list[str] = []
+        waiting = False
+        for index, (part, request) in enumerate(zip(parts, requests, strict=True), 1):
+            if self.review_exhausted(bill.term, part):
+                job = self._repo.batch_job(request.custom_id)
+                candidate_retry = retries.get(request.custom_id)
+                if (
+                    job is None
+                    or job.submissions != 1
+                    or not job.output_limited
+                    or candidate_retry is None
+                ):
+                    failures.append(f"Consultation part {index} failed.")
+                    continue
+                request = candidate_retry
+            result = self.request_document_review(
+                bill, part, requested_at=requested_at, prepared_request=request
+            )
+            if isinstance(result, Waiting):
+                waiting = True
+            else:
+                records.append(result)
+        if waiting:
+            return Waiting(self._clock.now())
+        if not records:
+            raise ConsultationInputTooLargeError("Every consultation batch part failed")
+        findings: dict[tuple[str, str, str], ConsultationFinding] = {}
+        for record in records:
+            for finding in record.review.consultation_findings:
+                evidence = finding.evidence
+                if evidence is not None:
+                    findings.setdefault(
+                        (evidence.document_id, evidence.locator, finding.proposal.casefold()),
+                        finding,
+                    )
+        report = validate_review(
+            DocumentReview(
+                purpose="consultation_review",
+                complete=not failures and all(record.review.complete for record in records),
+                summary="",
+                consultation_findings=tuple(findings.values()),
+                effective_rules=(),
+                unresolved=tuple(failures)
+                + tuple(item for record in records for item in record.review.unresolved),
+            ),
+            context,
+        )
+        return DocumentReviewRecord(
+            review=report,
+            context=context,
+            model=CONSULTATION_MODEL,
+            prompt_version=records[0].prompt_version,
+            created_at=self._clock.now(),
+            part_computation_ids=tuple(
+                record.computation_id for record in records if record.computation_id is not None
+            ),
+        )
 
     def request_document_review(
         self,
@@ -2295,6 +2431,7 @@ class AnalysisService:
         *,
         local_read: LocalReadTiming | None = None,
         requested_at: datetime | None = None,
+        prepared_request: BatchRequest | None = None,
     ) -> DocumentReviewRecord | Waiting:
         if context.number != bill.number:
             raise ValueError("document review context belongs to a different bill")
@@ -2307,7 +2444,14 @@ class AnalysisService:
             )
         if (
             context.purpose == "consultation_review"
-            and not self._options.consultation_reviews_enabled
+            and (
+                not self._options.consultation_reviews_enabled
+                or not consultation_rollout_allows(
+                    self._options.consultation_reviews_after,
+                    requested_at or self._clock.now(),
+                    partitioned=context.consultation_partition is not None,
+                )
+            )
         ) or (context.purpose == "commission_review" and not self.review_enabled(context.purpose)):
             return Waiting(self._clock.now())
         key = context.memo_key(bill.term)
@@ -2341,7 +2485,9 @@ class AnalysisService:
             return _reused(historical)
         model = self._options.batch_models.get(context.purpose, "")
         provider = provider_of(model)
-        request_key = self._review_request_key(key)
+        request_key = key if prepared_request is not None else self._review_request_key(key)
+        if prepared_request is not None:
+            model, provider = prepared_request.model, "openai"
         if request_key != key:
             model, provider = self._options.overflow_model, self._options.overflow_provider
         job = self._repo.batch_job(request_key)
@@ -2349,10 +2495,20 @@ class AnalysisService:
             return Waiting(job.since)
         if job is not None and job.submissions >= SECONDARY_BATCH_SUBMISSIONS:
             raise RuntimeError("document review batch failed; submission limit reached")
+        if (
+            job is not None
+            and context.consultation_partition is not None
+            and (
+                prepared_request is None
+                or not prepared_request.consultation_retry
+                or not job.output_limited
+            )
+        ):
+            return Waiting(job.since)
         backend = self._batch_resolver(provider) if self._batch_resolver else self._batch
         if not model or backend is None:
             raise LlmUnavailableError("document review batch backend is unavailable")
-        request = backend.prepare_request(
+        request = prepared_request or backend.prepare_request(
             BatchRequest(
                 custom_id=request_key,
                 term=bill.term,

@@ -1,7 +1,9 @@
 from dataclasses import replace
+from datetime import timedelta
 
 import pytest
 
+from lexinform.consultation_batches import CONSULTATION_DELIVERY_PREFIX
 from lexinform.container import Container
 from lexinform.models import (
     DeliveryPlan,
@@ -190,3 +192,45 @@ def test_paused_review_delivery_and_parts_keep_payload_status_and_attempts(
     assert w.bill("3039").consultation_review == record
     assert not w.publisher.texts(PublicationKind.CONSULTATION_REVIEW)
     assert not w.publisher.texts(PublicationKind.MESSAGE_PART)
+
+
+def test_production_cutover_keeps_old_work_intents_and_deliveries_frozen() -> None:
+    w = followed_world()
+    now = w.clock.now()
+    ctx = context()
+    old = ReviewWork(
+        memo_key=ctx.memo_key(TERM),
+        purpose="consultation_review",
+        context=ctx,
+        since=now,
+        baseline_day=now.date(),
+    )
+    w.repo.save_review_work(TERM, "3039", (old,))
+    assert isinstance(w.analysis.request_document_review(w.bill("3039"), ctx), Waiting)
+    (intent,) = w.repo.list_queued_batch_intents()
+    cutoff = now + timedelta(seconds=1)
+    w.clock.advance(days=1)
+    container = replace(
+        w.container,
+        settings=w.container.settings.model_copy(update={"consultation_reviews_after": cutoff}),
+        analysis_options_override=None,
+    )
+    analysis = container.analysis_service()
+    analysis.start_run()
+    container.document_reviews(dry_run=False).advance(TrackingResult(), publish=False)
+    analysis.submit_queued_batches()
+    assert w.bill("3039").review_work == (old,)
+    assert w.repo.list_queued_batch_intents() == [intent]
+    publication = Publication(
+        term=TERM,
+        number="3039",
+        kind=PublicationKind.CONSULTATION_REVIEW,
+        status=PublicationStatus.QUEUED,
+        channel_id="-100123",
+        created_at=w.clock.now(),
+    )
+    poster = container.poster(dry_run=False)
+    assert poster.delivery_paused(publication)
+    assert not poster.delivery_paused(
+        publication.model_copy(update={"ref": CONSULTATION_DELIVERY_PREFIX + "test"})
+    )

@@ -8,6 +8,11 @@ from lexinform.commission_reviews import (
     commission_source_fingerprint,
     legacy_filed_commission_baseline,
 )
+from lexinform.consultation_batches import (
+    CONSULTATION_DELIVERY_PREFIX,
+    ConsultationInputTooLargeError,
+    consultation_rollout_allows,
+)
 from lexinform.errors import ServiceUnavailableError, StateCheckpointError
 from lexinform.local_timing import LocalReadTiming
 from lexinform.models import (
@@ -42,6 +47,7 @@ class DocumentReviews:
         *,
         channel_id: str,
         max_attempts: int,
+        consultation_reviews_after: datetime | None = None,
     ) -> None:
         self._repo = repo
         self._texts = texts
@@ -50,6 +56,7 @@ class DocumentReviews:
         self._clock = clock
         self._channel_id = channel_id
         self._max_attempts = max_attempts
+        self._consultation_reviews_after = consultation_reviews_after
 
     def observe_commissions(self, bills: list[Bill], result: TrackingResult) -> None:
         if not self._analysis.review_enabled("commission_review"):
@@ -96,6 +103,10 @@ class DocumentReviews:
         force_check: bool = False,
     ) -> None:
         if not self._analysis.review_enabled(purpose):
+            return
+        if purpose == "consultation_review" and not consultation_rollout_allows(
+            self._consultation_reviews_after, self._clock.now(), partitioned=bill.is_rcl
+        ):
             return
         fresh = self._repo.get(bill.term, bill.number) or bill
         source_fingerprint = ""
@@ -160,6 +171,11 @@ class DocumentReviews:
             source_fingerprint=source_fingerprint,
             act_eli=bill.act.eli if bill.act is not None else None,
             comparison_document=comparison_document,
+            partitioned_consultation=(
+                purpose == "consultation_review"
+                and bill.is_rcl
+                and self._consultation_reviews_after is not None
+            ),
         )
         if purpose == "commission_review":
             pending = next((item for item in fresh.review_work if item.purpose == purpose), None)
@@ -179,10 +195,19 @@ class DocumentReviews:
     def advance(self, result: TrackingResult, *, publish: bool) -> None:
         for bill in self._repo.list_review_work():
             for work in bill.review_work:
-                if work.abandoned:
+                if work.abandoned or (
+                    work.purpose == "consultation_review"
+                    and not consultation_rollout_allows(
+                        self._consultation_reviews_after,
+                        work.since,
+                        partitioned=work.partitioned_consultation,
+                    )
+                ):
                     continue
-                if work.context is not None and self._analysis.review_exhausted(
-                    bill.term, work.context
+                if (
+                    not work.partitioned_consultation
+                    and work.context is not None
+                    and self._analysis.review_exhausted(bill.term, work.context)
                 ):
                     log.info("document review %s for %s abandoned", work.purpose, bill.number)
                     self._replace_work(bill, work, abandoned(work, self._clock.now()))
@@ -248,16 +273,27 @@ class DocumentReviews:
                                 for item in fresh.review_work
                             ),
                         )
-                    record = self._analysis.request_document_review(
-                        bill,
-                        context,
-                        local_read=local_reads[-1] if local_reads else None,
-                        requested_at=work.since,
-                    )
+                    if work.partitioned_consultation:
+                        record = self._analysis.request_partitioned_consultation(
+                            bill, context, requested_at=work.since
+                        )
+                    else:
+                        record = self._analysis.request_document_review(
+                            bill,
+                            context,
+                            local_read=local_reads[-1] if local_reads else None,
+                            requested_at=work.since,
+                        )
                     if isinstance(record, Waiting):
                         result.waiting += 1
                         continue
                     self._apply(bill, work, record)
+                except ConsultationInputTooLargeError as exc:
+                    stopped = abandoned(work, self._clock.now()).model_copy(
+                        update={"limitation": str(exc)}
+                    )
+                    self._replace_work(bill, work, stopped)
+                    log.warning("Consultation review %s stopped: %s", bill.number, exc)
                 except StateCheckpointError:
                     raise
                 except ServiceUnavailableError as exc:
@@ -371,16 +407,17 @@ class DocumentReviews:
         }[purpose]
         with self._repo.atomic():
             self._repo.save_document_review(bill.term, bill.number, record)
-            record_secondary_application(
-                self._repo,
-                bill.term,
-                bill.number,
-                record.computation_id,
-                target=ResultApplicationTarget(
-                    kind="document_review", ref=f"{purpose}/{work.source_key or work.memo_key}"
-                ),
-                now=self._clock.now(),
-            )
+            for computation_id in record.part_computation_ids or (record.computation_id,):
+                record_secondary_application(
+                    self._repo,
+                    bill.term,
+                    bill.number,
+                    computation_id,
+                    target=ResultApplicationTarget(
+                        kind="document_review", ref=f"{purpose}/{work.source_key or work.memo_key}"
+                    ),
+                    now=self._clock.now(),
+                )
             meaningful = bool(
                 record.review.consultation_findings or new_findings or record.review.effective_rules
             )
@@ -391,7 +428,11 @@ class DocumentReviews:
                 self._poster.prepare_message(
                     snapshot,
                     kind,
-                    ref=work.memo_key,
+                    ref=(
+                        CONSULTATION_DELIVERY_PREFIX + work.memo_key
+                        if work.partitioned_consultation
+                        else work.memo_key
+                    ),
                     today=self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date(),
                 )
             self._repo.save_review_work(

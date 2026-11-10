@@ -50,6 +50,7 @@ from lexinform.adapters.review_prompts import (
     review_system,
 )
 from lexinform.analysis_records import RecordFactory, UsageFields
+from lexinform.consultation_batches import CONSULTATION_INPUT_LIMIT, ConsultationInputTooLargeError
 from lexinform.errors import BatchNotSubmittedError, LlmContextExceededError, LlmUnavailableError
 from lexinform.models import (
     Amendments,
@@ -76,7 +77,7 @@ from lexinform.models import (
 )
 from lexinform.models.batch import BatchAnswer, batch_output_model
 from lexinform.models.report import CallKind
-from lexinform.pricing import estimate_batch_reservation
+from lexinform.pricing import batch_reservation, estimate_batch_reservation
 from lexinform.settings import OpenAiEffort
 
 log = logging.getLogger(__name__)
@@ -388,6 +389,39 @@ class OpenAiAnalyzer:
             "act_application": ("document_review", REVIEW_SCHEMA),
             "name": ("bill_name", _BILL_NAME_SCHEMA),
         }[request.call_kind]
+        partitioned = isinstance(ctx, ReviewContext) and ctx.consultation_partition is not None
+        retry = partitioned and request.consultation_retry
+        cap = 7_500 if retry else 5_000
+        max_output = cap if partitioned else self._max_output_tokens
+        effort = "low" if retry else "medium" if partitioned else self._effort
+        if partitioned:
+            encoding = _encoding(model)
+            system_tokens = len(encoding.encode_ordinary(system))
+            input_tokens = (
+                len(encoding.encode_ordinary(prompt))
+                + len(encoding.encode_ordinary(json.dumps(schema, ensure_ascii=False)))
+                + system_tokens
+                + 64
+            )
+            if input_tokens > CONSULTATION_INPUT_LIMIT:
+                raise ConsultationInputTooLargeError(
+                    "A consultation request exceeds its input limit"
+                )
+            reservation = batch_reservation(
+                model,
+                input_tokens=input_tokens + input_tokens // 8 + system_tokens // 4 + 512,
+                max_output_tokens=max_output,
+            )
+        else:
+            tokens = self.count_input_tokens(ctx) if isinstance(ctx, BillContext) else None
+            reservation = estimate_batch_reservation(
+                model,
+                counted_tokens=tokens,
+                prompt_chars=len(prompt),
+                system_chars=len(system),
+                scan_pages=scan.pages if scan is not None else 0,
+                max_output_tokens=max_output,
+            )
         payload = {
             "custom_id": request.custom_id,
             "method": "POST",
@@ -395,8 +429,8 @@ class OpenAiAnalyzer:
             "body": {
                 "model": model,
                 **_cache_options(model, system, schema_name),
-                "reasoning": None if self._effort == "none" else {"effort": self._effort},
-                "max_output_tokens": self._max_output_tokens,
+                "reasoning": None if effort == "none" else {"effort": effort},
+                "max_output_tokens": max_output,
                 "input": [
                     _system_message(model, system),
                     {"role": "user", "content": _content(prompt, scan)},
@@ -411,21 +445,13 @@ class OpenAiAnalyzer:
                 },
             },
         }
-        tokens = self.count_input_tokens(ctx) if isinstance(ctx, BillContext) else None
         return request.freeze(
             payload_json=json.dumps(payload, ensure_ascii=False),
             model=model,
             prompt_version=review_prompt_version(ctx.purpose)
             if isinstance(ctx, ReviewContext)
             else PROMPT_VERSION,
-            estimated_cost_usd=estimate_batch_reservation(
-                model,
-                counted_tokens=tokens,
-                prompt_chars=len(prompt),
-                system_chars=len(system),
-                scan_pages=scan.pages if scan is not None else 0,
-                max_output_tokens=self._max_output_tokens,
-            ),
+            estimated_cost_usd=reservation,
         )
 
     def submit(self, requests: Sequence[BatchRequest]) -> str:
@@ -544,6 +570,13 @@ class OpenAiAnalyzer:
             cache_creation_input_tokens=usage.cache_write_tokens or 0,
         )
         try:
+            if response.status == "incomplete":
+                return answer.model_copy(
+                    update={
+                        "error": "response is incomplete",
+                        "incomplete_reason": getattr(response.incomplete_details, "reason", None),
+                    }
+                )
             if response.status != "completed":
                 raise LlmError(f"response is {response.status}")
             analysis = _parsed_output(response, output_model)

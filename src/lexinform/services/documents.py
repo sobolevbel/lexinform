@@ -113,7 +113,8 @@ from lexinform.models.document_reads import (
 )
 from lexinform.models.document_reads import LoadedFile as LoadedFile
 from lexinform.models.extractions import DocumentExtraction, ObservedMemberBlockCopy
-from lexinform.models.rcl import RclProject
+from lexinform.models.rcl import RclProject, is_consultation_report_name
+from lexinform.models.reviews import ConsultationRow
 from lexinform.models.scan_input import MAX_SCAN_BYTES, MAX_SCAN_PAGES
 from lexinform.models.source_omissions import SourceOmissionOwner
 from lexinform.observation_order import ObservationOrder
@@ -180,6 +181,7 @@ class _CachedDocument:
     file: LoadedFile
     observation: PhysicalWalkObservation | None = None
     archive: ArchiveRootObservation | None = None
+    consultation_rows_requested: bool = False
 
 
 _ARCHIVE_READ_SINK: ContextVar[
@@ -494,6 +496,8 @@ class TextLoader:
         capture_word_formulas: Callable[[bytes, DocumentExtraction], WordFormulaSource | None]
         | None = None,
         enrich_word_grid: Callable[[bytes, DocumentExtraction], DocumentExtraction] | None = None,
+        capture_consultation_rows: Callable[[bytes, str], tuple[ConsultationRow, ...]]
+        | None = None,
         enrich_odt_rows: Callable[[bytes, DocumentExtraction], DocumentExtraction] | None = None,
         verify_rcl_comment_table: Callable[[bytes, DocumentExtraction], bool] | None = None,
         enrich_rcl_observed_blocks: Callable[
@@ -511,6 +515,7 @@ class TextLoader:
         self._cache: dict[str, _CachedDocument] = {}
         self._cache_size = cache_size
         self._capture_word_formulas = capture_word_formulas
+        self._capture_consultation_rows = capture_consultation_rows
         self._native_enrichments = tuple(
             enrich for enrich in (enrich_word_grid, enrich_odt_rows) if enrich is not None
         )
@@ -1056,6 +1061,44 @@ class TextLoader:
                 sink = scope[3]
         return self._read_entry(url, sink).file
 
+    def read_consultation_response(self, document: TextDocument) -> LoadedFile:
+        path = urlparse(document.url).path.casefold()
+        if path.endswith(".zip"):
+            return self._read_consultation_archive(document.url)
+        if (
+            self._capture_consultation_rows is None
+            or document.required_urls
+            or document.extra_urls
+            or document.normative_urls
+            or not path.endswith((".docx", ".docm"))
+        ):
+            return self.read_document(document)
+        return self._read_entry(document.url, consultation_rows=True).file
+
+    def _read_consultation_archive(self, url: str) -> LoadedFile:
+        archive = self.read(url)
+        parts = tuple(
+            part
+            for part in archive.selection.observed_parts
+            if part.members and is_consultation_report_name(part.members[-1])
+        )
+        text = "\n\n".join(part.text for part in parts if part.text.strip())
+        incomplete = archive.archive_unpack_blocked or any(
+            not part.text.strip() or part.losses for part in parts
+        )
+        return replace(
+            archive,
+            text=text or None,
+            pages=sum(part.pages for part in parts),
+            selection=DocumentSelection(
+                question="consultation_response",
+                state="unverified" if text else "unsupported",
+                parts=parts,
+                observed_parts=archive.selection.observed_parts,
+                rejected=("consultation archive has incomplete members",) if incomplete else (),
+            ),
+        )
+
     def read_bounded(self, url: str, *, max_bytes: int) -> LoadedFile:
         return self._read_entry(url, max_bytes=max_bytes).file
 
@@ -1065,9 +1108,12 @@ class TextLoader:
         archive_sink: Callable[[ArchiveRootObservation], None] | None = None,
         *,
         max_bytes: int | None = None,
+        consultation_rows: bool = False,
     ) -> _CachedDocument:
         with self._lock:
             cached = self._cache.get(url)
+            if cached is not None and consultation_rows and not cached.consultation_rows_requested:
+                cached = None
             if (
                 cached is not None
                 and max_bytes is not None
@@ -1095,7 +1141,9 @@ class TextLoader:
             observe_read_timing(self, "cache_reuse")
             return cached
         try:
-            fetched = self._fetch(url, archive_sink, max_bytes=max_bytes)
+            fetched = self._fetch(
+                url, archive_sink, max_bytes=max_bytes, consultation_rows=consultation_rows
+            )
         except BaseException as error:
             self._observe_source_failure(error)
             raise
@@ -2066,6 +2114,7 @@ class TextLoader:
         archive_sink: Callable[[ArchiveRootObservation], None] | None = None,
         *,
         max_bytes: int | None = None,
+        consultation_rows: bool = False,
     ) -> _CachedDocument:
         downloaded = self._download(url, max_bytes=max_bytes)
         if downloaded is None:
@@ -2175,8 +2224,13 @@ class TextLoader:
                     log.warning(
                         "%s yielded almost no text (%d chars, %d pages)", url, len(text), pages
                     )
+                rows: tuple[ConsultationRow, ...] = ()
+                if consultation_rows and has_text and self._capture_consultation_rows is not None:
+                    with suppress(Exception):
+                        rows = self._capture_consultation_rows(data, text)
                 loaded = LoadedFile(
                     text if has_text else None,
+                    consultation_rows=rows,
                     pages=pages,
                     sha256=digest,
                     selection=selection,
@@ -2204,7 +2258,10 @@ class TextLoader:
             except Exception:
                 archive = None
         return _CachedDocument(
-            loaded, invocation.observation if invocation is not None else None, archive
+            loaded,
+            invocation.observation if invocation is not None else None,
+            archive,
+            consultation_rows,
         )
 
     def _download(self, url: str, *, max_bytes: int | None = None) -> _DownloadedDocument | None:

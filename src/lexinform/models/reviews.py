@@ -25,6 +25,15 @@ DocumentRole = Literal[
 ReviewForum = Literal["government", "sejm", "senate", "unknown"]
 
 
+class ConsultationRow(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    locator: str
+    label: str | None = None
+    start: int = Field(ge=0)
+    end: int = Field(gt=0)
+
+
 class ReviewDocument(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -40,6 +49,27 @@ class ReviewDocument(BaseModel):
     draft_date: dt.date | None = None
     body: str = ""
     forum: ReviewForum = "unknown"
+    member_sha256: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    source_members: tuple[str, ...] = Field(default=(), exclude_if=lambda value: not value)
+    consultation_rows: tuple[ConsultationRow, ...] = Field(
+        default=(), exclude_if=lambda value: not value
+    )
+
+    @model_validator(mode="after")
+    def consultation_rows_are_bound(self) -> Self:
+        end = 0
+        locators: set[str] = set()
+        for row in self.consultation_rows:
+            if (
+                self.role != "response"
+                or not row.locator.startswith("word-xml:")
+                or row.locator in locators
+                or not end <= row.start < row.end <= len(self.text)
+            ):
+                raise ValueError("Consultation rows must identify distinct spans in the response")
+            locators.add(row.locator)
+            end = row.end
+        return self
 
 
 class ReviewContext(BaseModel):
@@ -53,6 +83,7 @@ class ReviewContext(BaseModel):
     promulgation_date: dt.date | None = None
     canonical_date: dt.date | None = None
     comparison_sha256: str | None = None
+    consultation_partition: str | None = Field(default=None, exclude_if=lambda value: value is None)
     source_observation_ids: tuple[ReviewSourceObservationId | None, ...] = Field(
         default=(), exclude_if=lambda value: not value
     )
@@ -86,6 +117,8 @@ class ReviewContext(BaseModel):
             "canonical_date": str(self.canonical_date),
             "comparison_sha256": self.comparison_sha256,
         }
+        if self.consultation_partition is not None:
+            facts["consultation_partition"] = self.consultation_partition
         if self.purpose == "commission_review" and any(
             doc.body or doc.forum != "unknown" for doc in self.documents
         ):
@@ -117,6 +150,12 @@ class ConsultationFinding(BaseModel):
     evidence: EvidenceCitation | None
     text_change: str | None
     text_evidence: EvidenceCitation | None
+    comparison_evidence: EvidenceCitation | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    theme: str = Field(default="", exclude_if=lambda value: not value)
+    proposers: tuple[str, ...] = Field(default=(), exclude_if=lambda value: not value)
+    practical_impact: str = Field(default="", exclude_if=lambda value: not value)
 
 
 class EffectiveRule(BaseModel):
@@ -178,6 +217,7 @@ class DocumentReviewRecord(BaseModel):
     checked_at: dt.datetime | None = None
     source_fingerprint: str = ""
     canonical_dates: tuple[dt.date, ...] = ()
+    part_computation_ids: tuple[str, ...] = Field(default=(), exclude_if=lambda value: not value)
 
 
 class ReviewWork(BaseModel):
@@ -195,6 +235,7 @@ class ReviewWork(BaseModel):
     act_eli: str | None = None
     comparison_document: ReviewDocument | None = None
     source_fingerprint: str = ""
+    partitioned_consultation: bool = Field(default=False, exclude_if=lambda value: not value)
 
     @property
     def abandoned(self) -> bool:
@@ -242,6 +283,24 @@ def citation_document_in(
     if citation is None or not citation.quote.strip() or not citation.locator.strip():
         return None
     locator = citation.locator.strip()
+    if locator.startswith("word-xml:"):
+        return next(
+            (
+                document
+                for document in documents
+                if document.identity == citation.document_id
+                and document.role == "response"
+                and "response" in roles
+                and any(
+                    row.locator == locator
+                    and 0 <= row.start < row.end <= len(document.text)
+                    and " ".join(document.text[row.start : row.end].split())
+                    == " ".join(citation.quote.split())
+                    for row in document.consultation_rows
+                )
+            ),
+            None,
+        )
     if not re.match(
         r"(?:art\.?\s*\d+|§\s*\d+|pkt\.?\s*\d+|lp\.?\s*\d+|\d+[.)]?\s+\S)",
         locator,
@@ -264,6 +323,26 @@ def citation_document_in(
     )
 
 
+def _compared_provision(finding: ConsultationFinding, context: ReviewContext) -> bool:
+    prior, current = finding.comparison_evidence, finding.text_evidence
+    before = citation_document(prior, context, {"comparison_text"})
+    after = citation_document(current, context, {"project_text"})
+    return (
+        before is not None
+        and after is not None
+        and before.complete
+        and after.complete
+        and before.normalized_sha256 == context.comparison_sha256
+        and before.draft_date is not None
+        and after.draft_date is not None
+        and after.draft_date > before.draft_date
+        and prior is not None
+        and current is not None
+        and _normalized(prior.locator).rstrip(".") == _normalized(current.locator).rstrip(".")
+        and _normalized(prior.quote) != _normalized(current.quote)
+    )
+
+
 def validate_review(review: DocumentReview, context: ReviewContext) -> DocumentReview:
     if review.purpose != context.purpose:
         raise ValueError("document review purpose does not match its request")
@@ -275,8 +354,24 @@ def validate_review(review: DocumentReview, context: ReviewContext) -> DocumentR
     if not any(document.role == required_role for document in context.documents):
         unresolved.append("Official response/final act unavailable; source coverage is incomplete.")
     for finding in review.consultation_findings:
+        citation = finding.evidence
+        if citation is not None and citation.locator.startswith("word-xml:") and not citation.quote:
+            matches = [
+                doc.text[row.start : row.end]
+                for doc in context.documents
+                if doc.role == "response" and doc.identity == citation.document_id
+                for row in doc.consultation_rows
+                if row.locator == citation.locator and 0 <= row.start < row.end <= len(doc.text)
+            ]
+            if len(matches) == 1:
+                citation = citation.model_copy(update={"quote": matches[0]})
+                finding = finding.model_copy(update={"evidence": citation})
         evidence = citation_document(finding.evidence, context, {"response"})
-        if evidence is not None and finding.evidence is not None:
+        if (
+            evidence is not None
+            and finding.evidence is not None
+            and not finding.evidence.locator.startswith("word-xml:")
+        ):
             quoted = " ".join(finding.evidence.quote.split())
             table_rows = [
                 row for row in _response_rows(evidence.text) if quoted in " ".join(row.split())
@@ -309,23 +404,23 @@ def validate_review(review: DocumentReview, context: ReviewContext) -> DocumentR
         if not supported:
             outcome = "unknown"
             unresolved.append(f"Outcome unconfirmed: {finding.proposal}")
-        text_evidence = citation_document(finding.text_evidence, context, {"project_text"})
-        comparison = next(
-            (
-                doc
-                for doc in context.documents
-                if doc.role == "comparison_text"
-                and doc.normalized_sha256 == context.comparison_sha256
-            ),
-            None,
-        )
         changed = (
             finding.text_change
-            if text_evidence is not None
-            and comparison is not None
-            and finding.text_evidence is not None
-            and _normalized(finding.text_evidence.quote) not in _normalized(comparison.text)
+            if supported
+            and outcome in {"accepted", "partial"}
+            and _compared_provision(finding, context)
             else None
+        )
+        names = (
+            tuple(
+                name
+                for name in finding.proposers
+                if name.strip()
+                and finding.evidence is not None
+                and _has_locator(finding.evidence.quote, name)
+            )
+            if evidence is not None
+            else ()
         )
         findings.append(
             finding.model_copy(
@@ -333,6 +428,9 @@ def validate_review(review: DocumentReview, context: ReviewContext) -> DocumentR
                     "outcome": outcome,
                     "text_change": changed,
                     "text_evidence": finding.text_evidence if changed else None,
+                    "comparison_evidence": finding.comparison_evidence if changed else None,
+                    "proposers": names,
+                    "practical_impact": finding.practical_impact if evidence is not None else "",
                     "reason": finding.reason if supported else "",
                     "affected_groups": finding.affected_groups if supported else (),
                     "evidence": finding.evidence if evidence is not None else None,
@@ -417,7 +515,7 @@ def validate_review(review: DocumentReview, context: ReviewContext) -> DocumentR
 
 def review_signature(review: DocumentReview) -> str:
     findings = [
-        finding.model_dump(exclude={"evidence", "text_evidence"})
+        finding.model_dump(exclude={"evidence", "text_evidence", "comparison_evidence"})
         for finding in review.consultation_findings
     ]
     rules = [
@@ -589,24 +687,10 @@ def _validate_commission(review: DocumentReview, context: ReviewContext) -> Docu
             and re.search(r"wniosk\w*\s+mniejszości", item.recommendation_evidence.quote, re.I)
             is None
         )
-        before = citation_document(item.comparison_evidence, context, {"comparison_text"})
-        after = citation_document(item.text_evidence, context, {"project_text"})
         incorporated = (
             supported
             and checked.outcome in {"accepted", "partial"}
-            and before is not None
-            and after is not None
-            and before.complete
-            and after.complete
-            and before.normalized_sha256 == context.comparison_sha256
-            and before.draft_date is not None
-            and after.draft_date is not None
-            and after.draft_date > before.draft_date
-            and item.comparison_evidence is not None
-            and item.text_evidence is not None
-            and _normalized(item.comparison_evidence.locator).rstrip(".")
-            == _normalized(item.text_evidence.locator).rstrip(".")
-            and _normalized(item.comparison_evidence.quote) != _normalized(item.text_evidence.quote)
+            and _compared_provision(item, context)
         )
         if not supported and not (recommended and item.recommendation):
             unresolved.append(f"Commission outcome unconfirmed: {item.proposal}")

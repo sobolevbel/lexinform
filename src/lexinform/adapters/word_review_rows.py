@@ -3,6 +3,9 @@ from collections.abc import Iterator
 from xml.etree import ElementTree as ET
 
 from lexinform.models.documents import WordTextBlock, WordTextExtraction
+from lexinform.models.reviews import ConsultationRow
+from lexinform.sections import PAGE_BREAK
+from lexinform.word_projection import legacy_word_text
 
 _NS = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 _LITERAL = re.compile(r"\s*([0-9]+)[.)]?\s*\Z")
@@ -96,6 +99,36 @@ def _paragraph_numbers(
         elif identity in parents:
             labels[address] = f"{parents[identity]}/{label}"
     return labels
+
+
+def bind_consultation_rows(
+    text: str, rows: tuple[tuple[WordTextBlock, str | None], ...]
+) -> tuple[ConsultationRow, ...]:
+    bound: list[ConsultationRow] = []
+    cursor = 0
+    for row, label in rows:
+        content = legacy_word_text((row.text,))
+        if not content.strip():
+            continue
+        start = text.find(content, cursor)
+        end = start + len(content)
+        if (
+            start < 0
+            or (
+                start
+                and text[start - 1] not in ("\n", PAGE_BREAK)
+                and not content.startswith(PAGE_BREAK)
+            )
+            or (
+                end < len(text)
+                and text[end] not in ("\n", PAGE_BREAK)
+                and not content.endswith(PAGE_BREAK)
+            )
+        ):
+            return ()
+        bound.append(ConsultationRow(locator=row.block_id, label=label, start=start, end=end))
+        cursor = end
+    return tuple(bound)
 
 
 def consultation_word_rows(

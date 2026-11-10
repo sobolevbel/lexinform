@@ -45,7 +45,7 @@ from lexinform.adapters.odt_table_capture import capture_odt_tables
 from lexinform.adapters.word_block_copies import PlainWordCopies, current_plain_word_copies
 from lexinform.adapters.word_field_ranges import WordFieldExtraction, WordFieldRanges
 from lexinform.adapters.word_grid_capture import capture_word_grid_merges
-from lexinform.adapters.word_review_rows import consultation_word_rows
+from lexinform.adapters.word_review_rows import bind_consultation_rows, consultation_word_rows
 from lexinform.archive_policy_capture import native_archive_policy_sink
 from lexinform.document_candidates import select_document_parts
 from lexinform.extraction_records import (
@@ -111,6 +111,7 @@ from lexinform.models.physical_inventory import (
     PhysicalOmittedCount,
 )
 from lexinform.models.rcl import READABLE_EXTENSIONS, text_rank
+from lexinform.models.reviews import ConsultationRow
 from lexinform.models.word_field_ranges import WordFieldPrefix
 from lexinform.models.word_grid_merges import WordVerticalGridMerges
 from lexinform.models.word_notes import (
@@ -295,6 +296,9 @@ class DocxTextExtractor:
                     if not _declares_entities(definition):
                         numbering = ET.fromstring(definition)
         return consultation_word_rows(extraction, ET.fromstring(xml), numbering)
+
+    def consultation_row_spans(self, data: bytes, text: str) -> tuple[ConsultationRow, ...]:
+        return bind_consultation_rows(text, self.extract_consultation_rows(data))
 
     def extract_with_field_ranges(self, data: bytes) -> WordFieldExtraction:
         fields = WordFieldRanges()

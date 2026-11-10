@@ -62,7 +62,7 @@ from lexinform.ports import BillRepository, Clock
 from lexinform.primary_projections import primary_record_sha256
 from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
 
-FORMATTER_VERSION = "telegram-format-v2"
+FORMATTER_VERSION = "telegram-format-v3"
 
 
 def restore_content_delivery(repo: BillRepository, content: ContentVersion) -> DeliveryPlan:

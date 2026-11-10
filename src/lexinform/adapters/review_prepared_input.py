@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from pydantic import JsonValue
 
+from lexinform.adapters.review_prompts import review_prompt
 from lexinform.json_storage import canonical_json, read_json
 from lexinform.models.batch import (
     BatchItemMeta,
@@ -26,6 +27,7 @@ class ReviewProviderFields:
     context_sha256: str
     pointer: str
     documents: tuple[ReviewPreparedDocument, ...]
+    document_fields: tuple[str, ...]
 
 
 def _user_prompt(payload: JsonValue, provider: BatchProvider) -> tuple[str, str]:
@@ -83,13 +85,28 @@ def verify_review_provider_fields(
         raise ValueError("Exact frozen provider request is unavailable")
     manifest.require_request(request.call_kind, request.payload_sha256)
     pointer, prompt = _user_prompt(read_json(payload), manifest.provider)
-    canonical_context = canonical_json(context.model_dump(mode="json"))
-    if canonical_json(read_json(prompt)) != canonical_context:
+    expected = review_prompt(context, version=request.prompt_version)
+    decoded = read_json(prompt)
+    if canonical_json(decoded) != canonical_json(read_json(expected)):
         raise ValueError("Frozen provider review context differs from its question")
+    if not isinstance(decoded, dict) or not isinstance(documents := decoded.get("documents"), list):
+        raise ValueError("Frozen provider review document list is missing")
+    document_fields: list[str] = []
+    for document in documents:
+        if not isinstance(document, dict):
+            raise ValueError("Frozen provider review document is invalid")
+        document_fields.append(
+            "same_text_as"
+            if "same_text_as" in document
+            else "segments"
+            if "segments" in document
+            else "text"
+        )
     return ReviewProviderFields(
         review_context_sha256(context),
         pointer,
         tuple(ReviewPreparedDocument.from_document(document) for document in context.documents),
+        tuple(document_fields),
     )
 
 
