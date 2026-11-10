@@ -1414,6 +1414,18 @@ class SqliteBillRepository:
         for version, script in enumerate(MIGRATIONS[current:], start=current + 1):
             self._conn.executescript(f"BEGIN;{script}PRAGMA user_version = {version};COMMIT;")
 
+    def copy_to_memory(self) -> SqliteBillRepository:
+        """Copy the current database into an independent connection with foreign keys enabled."""
+        if self._conn.in_transaction:
+            raise ValueError("Cannot copy a database inside a transaction")
+        replica = SqliteBillRepository(":memory:")
+        try:
+            self._conn.backup(replica._conn)
+        except BaseException:
+            replica.close()
+            raise
+        return replica
+
     def close(self) -> None:
         self._conn.close()
 

@@ -11,7 +11,7 @@ from lexinform.models import (
     PublicationKind,
     PublicationStatus,
 )
-from tests.scenario.test_source_context_delivery import queued
+from tests.source_context_cases import queued
 
 
 def test_reserved_upsert_mark_and_group_mutation_preserve_all_rows(

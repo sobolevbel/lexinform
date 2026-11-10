@@ -22,8 +22,8 @@ from lexinform.models.reviews import (
     EvidenceCitation,
     validate_review,
 )
-from tests.scenario.test_document_reviews import context as review_context
-from tests.scenario.test_document_reviews import finding as review_finding
+from tests.document_review_cases import context as review_context
+from tests.document_review_cases import finding as review_finding
 
 
 def test_consultation_parts_keep_cross_partition_references_and_exact_source_rows() -> None:

@@ -11,6 +11,7 @@ from lexinform.models import Publication, PublicationKind, PublicationStatus
 from lexinform.ports import PublishResult
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.content_inspection import inspect_content
+from tests.checkpoint_backends import snapshot_git
 from tests.checkpoint_state import saved_state
 from tests.fakes import make_analysis, make_comparison
 from tests.harness import CHANNEL, TERM, World
@@ -24,6 +25,9 @@ class RunnerLost(BaseException):
 
 
 def git(directory: Path, *args: str) -> str:
+    snapshot = snapshot_git(directory, args)
+    if snapshot is not None:
+        return snapshot
     result = subprocess.run(
         ["git", "-C", str(directory), *args], check=True, capture_output=True, text=True
     )

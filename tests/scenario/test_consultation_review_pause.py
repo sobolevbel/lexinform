@@ -17,8 +17,8 @@ from lexinform.services.analysis import Waiting
 from lexinform.services.pipeline import RunOptions
 from lexinform.services.tracking_result import TrackingResult
 from lexinform.settings import Settings
+from tests.document_review_cases import context, finding, review
 from tests.harness import TERM, World
-from tests.scenario.test_document_reviews import context, finding, review
 
 
 def followed_world(*, max_run_cost_usd: float = 0.0) -> World:

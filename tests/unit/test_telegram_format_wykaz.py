@@ -197,3 +197,28 @@ def test_a_plan_card_does_not_claim_an_entry_into_force() -> None:
 
     assert "текста проекта ещё нет" in text
     assert "Вступление в силу" not in text
+
+
+def test_a_compound_ministry_label_uses_the_officials_named_in_the_entry() -> None:
+    entry = wykaz_entry(
+        organ="MC/ME",
+        person="Sekretarz Stanu w Ministerstwie Cyfryzacji; w Ministerstwie Edukacji Narodowej",
+    )
+
+    text = MessageFormatter("ru").new_bill(wykaz_bill(entry), None, today=TODAY).text
+
+    assert "https://www.gov.pl/web/cyfryzacja/kontakt" in text
+    assert "https://www.gov.pl/web/edukacja/kontakt" in text
+    assert "Ministerstwo Energii" not in text
+
+
+def test_an_unresolved_compound_ministry_label_links_the_register_entry() -> None:
+    entry = wykaz_entry(organ="MC/ME", person="")
+
+    text = MessageFormatter("ru").new_bill(wykaz_bill(entry), None, today=TODAY).text
+
+    assert (
+        f'<a href="{entry.web_url}">проверьте, кто отвечает за проект, в записи правительства</a>'
+        in text
+    )
+    assert "/kontakt" not in text

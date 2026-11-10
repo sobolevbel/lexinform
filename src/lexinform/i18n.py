@@ -115,6 +115,8 @@ class Labels:
     action_senate: str
     action_senate_many: str
     action_senate_pending: str
+    senate_print_number: str
+    senate_receipt_unconfirmed: str
     action_senate_in_polish: str
     path: str
     action_send_opinion: str
@@ -168,6 +170,9 @@ class Labels:
     action_in_polish: str
     action_rcl_comment: str
     action_rcl_window_closed: str
+    action_rcl_letter_route: str
+    action_rcl_project_route: str
+    action_rcl_additional: str
     action_in_force: str
     rcl_results_hint: str
     rcl_received_by_sejm: str
@@ -187,6 +192,7 @@ class Labels:
     wykaz_metadata_note: str
     wykaz_organ_unknown: str
     action_wykaz_interest: str
+    action_wykaz_check_contacts: str
     action_ministry_site: str
     action_rcl_interest: str
     link_wykaz_entry: str
@@ -468,9 +474,9 @@ RU = Labels(
     action_now="Что можно сделать сейчас",
     action_senate="направить мнение в комиссию Сената —",
     action_senate_many="направить мнение в комиссии Сената —",
-    action_senate_pending=(
-        "Данные о комиссии и маршруте подачи пока не подтверждены; проверьте страницу Сената."
-    ),
+    action_senate_pending="Данные о комиссии и маршруте подачи пока не подтверждены",
+    senate_print_number="сенатский druk nr {number}",
+    senate_receipt_unconfirmed="Дата поступления в Сенат не подтверждена",
     action_senate_in_polish="(на польском, с номером сенатского druk nr {number})",
     path="Путь",
     action_send_opinion="заполнить анкету",
@@ -540,6 +546,9 @@ RU = Labels(
     action_email_ministry="направить замечания на {email}",
     action_in_polish="(на польском, с номером {wykaz})",
     action_rcl_comment="оставить комментарий через форму на RCL",
+    action_rcl_letter_route="уточните способ подачи замечаний в письме о консультациях",
+    action_rcl_project_route="поищите способ подачи замечаний на странице проекта",
+    action_rcl_additional="Дополнительно:",
     action_rcl_window_closed=(
         "публичные консультации уже закрыты, но пока проект в правительстве остаётся:"
     ),
@@ -572,6 +581,7 @@ RU = Labels(
         "Оценка по описанию из плана работ правительства: текста проекта ещё не существует."
     ),
     wykaz_organ_unknown="профильное министерство",
+    action_wykaz_check_contacts="проверьте, кто отвечает за проект, в записи правительства",
     action_wykaz_interest=(
         "можно заявить интерес к работам над проектом (zgłoszenie zainteresowania): закон"
         " допускает это с публикации плана — письмом органу, который готовит проект: {organ}"
@@ -792,9 +802,9 @@ RU = Labels(
         "president": "подпись Президента (до 21 дня), затем публикация в Dziennik Ustaw",
         "president_overdue": "подпись Президента, затем публикация в Dziennik Ustaw",
         "president_after_senate_silence": (
-            "Сенат не принял решения за 30 дней — по ст. 121 ч. 2 Конституции закон считается"
-            " принятым в редакции Сейма и уходит к Президенту (подпись до 21 дня), затем"
-            " публикация в Dziennik Ustaw. В базе Сейма передача Президенту ещё не отмечена"
+            "Если Сенат не принял решения в срок ({senate_days} дн.), закон считается принятым"
+            " в редакции Сейма. Следующий шаг — передача Президенту ({president_days} дн. на"
+            " решение с момента передачи). Передача пока не подтверждена"
         ),
         "president_after_veto": (
             "подпись Президента — после отклонения вето у него 7 дней и права на вето или"
@@ -942,7 +952,7 @@ RU = Labels(
         "senate_amendments": "пока ничего — Сейм решает по поправкам Сената",
         "senate_rejection": "пока ничего — Сейм решает, отклонить ли решение Сената",
         "president": "пока ничего — закон у Президента",
-        "president_after_senate_silence": "пока ничего — закон у Президента",
+        "president_after_senate_silence": "пока дождитесь подтверждения следующего этапа",
         "president_after_veto": "пока ничего — Президент обязан подписать закон в 7 дней",
         "publication": "пока ничего — ждём публикации в Dziennik Ustaw",
         "in_force": "пока ничего — закон принят, остаётся подготовиться к вступлению в силу",
@@ -1223,9 +1233,9 @@ EN = Labels(
     action_now="What you can do now",
     action_senate="send an opinion to the Senate committee —",
     action_senate_many="send an opinion to the Senate committees —",
-    action_senate_pending=(
-        "The committee and submission route are not confirmed; check the Senate page."
-    ),
+    action_senate_pending="The committee and submission route are still unconfirmed",
+    senate_print_number="Senate print no. {number}",
+    senate_receipt_unconfirmed="The date of receipt by the Senate is unconfirmed",
     action_senate_in_polish="(in Polish, quoting Senate print no. {number})",
     path="Path",
     action_send_opinion="fill in the survey form (ankieta)",
@@ -1294,6 +1304,9 @@ EN = Labels(
     action_email_ministry="send comments to {email}",
     action_in_polish="(in Polish, quoting {wykaz})",
     action_rcl_comment="leave a comment through the RCL form",
+    action_rcl_letter_route="check the consultation letter for how to submit comments",
+    action_rcl_project_route="check the project page for instructions on submitting comments",
+    action_rcl_additional="Other ways to take part:",
     action_rcl_window_closed=(
         "the public consultation has closed; while the draft is still with the government there"
         " remains:"
@@ -1326,6 +1339,7 @@ EN = Labels(
     wykaz_planned="adoption by the government: Q{quarter} {year}",
     wykaz_metadata_note=("Scored from the register entry: the draft text does not exist yet."),
     wykaz_organ_unknown="the responsible ministry",
+    action_wykaz_check_contacts="check the government register entry for the responsible body",
     action_wykaz_interest=(
         "you may register an interest in work on the draft (zgłoszenie zainteresowania): the law"
         " permits this once the plan is published — by letter to the body drafting it: {organ}"
@@ -1555,9 +1569,9 @@ EN = Labels(
         ),
         "president_overdue": "the President's signature, then publication in Dziennik Ustaw",
         "president_after_senate_silence": (
-            "the Senate let its 30 days pass — under art. 121 ust. 2 the act counts as passed in"
-            " the Sejm's wording and goes to the President (signature within 21 days), then"
-            " publication in Dziennik Ustaw. The Sejm has not recorded the hand-over yet"
+            "if the Senate took no decision within {senate_days} days, the act is deemed adopted"
+            " in the Sejm's wording. The next step is referral to the President, who has"
+            " {president_days} days from referral to decide. The referral is still unconfirmed"
         ),
         "president_after_veto": (
             "the President's signature — once the veto is overridden he has 7 days and no"
@@ -1679,7 +1693,7 @@ EN = Labels(
         "senate_amendments": "nothing yet — the Sejm decides on the Senate's amendments",
         "senate_rejection": "nothing yet — the Sejm decides whether to throw out the rejection",
         "president": "nothing yet — the act is with the President",
-        "president_after_senate_silence": "nothing yet — the act is with the President",
+        "president_after_senate_silence": "wait for confirmation of the next step",
         "president_after_veto": "nothing yet — the President must sign within 7 days",
         "publication": "nothing yet — waiting for publication in Dziennik Ustaw",
         "in_force": "nothing yet — the act is passed, prepare for its entry into force",

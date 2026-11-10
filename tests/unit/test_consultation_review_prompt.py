@@ -5,7 +5,7 @@ from hashlib import sha256
 from lexinform.adapters.review_prompts import review_prompt
 from lexinform.models import DocumentReview, ReviewContext, ReviewDocument
 from lexinform.models.reviews import ConsultationRow, EvidenceCitation, validate_review
-from tests.scenario.test_document_reviews import context, finding, review
+from tests.document_review_cases import context, finding, review
 
 
 def test_consultation_prompt_keeps_duplicate_source_metadata_without_repeating_its_text() -> None:

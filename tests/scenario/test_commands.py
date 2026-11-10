@@ -6,6 +6,7 @@ from typing import Any
 
 import pytest
 
+from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.errors import LlmUnavailableError
 from lexinform.models import (
     FAILING_CHECK_MIN,
@@ -1289,3 +1290,40 @@ def test_a_bill_the_sejm_has_just_passed_still_gets_a_card() -> None:
     (_, outcome), *_ = w.replier.replies
     assert outcome.status is OutcomeStatus.ANALYSED and outcome.message_id == 101
     assert [b.number for b, _ in w.publisher.new_bills] == ["2172"]
+
+
+def test_show_joint_reply_uses_the_primary_prints_current_stage() -> None:
+    w = World()
+    w.add_bill("1929", TITLE, stages=COMMITTEE_STAGES)
+    w.run()
+    w.add_bill("1933", TITLE, stages=COMMITTEE_STAGES)
+    w.touch("1933", w.clock.now(), prints_considered_jointly=("1929",))
+    w.run()
+    w.clock.advance(days=1)
+    w.set_stages(
+        "1929",
+        (
+            *COMMITTEE_STAGES,
+            Stage(
+                stage_name="Ustawę przekazano Prezydentowi do podpisu",
+                stage_type="ToPresident",
+                date=w.clock.now().date(),
+            ),
+        ),
+    )
+    w.touch("1929", w.clock.now(), passed=True)
+    w.run()
+    incoming = w.command("/show 1933")
+
+    _commands_only(w)
+
+    _, outcome = w.replier.replies[-1]
+    text = (
+        MessageFormatter("ru", today=lambda: w.clock.now().date())
+        .command_reply(incoming, outcome)
+        .text
+    )
+    assert outcome.bill is not None and outcome.bill.number == "1933"
+    assert 'joint process: <a href="' in text and 'nr=1929">druk nr 1929' in text
+    assert "Закон передан Президенту" in text
+    assert "направить мнение в комиссию" not in text

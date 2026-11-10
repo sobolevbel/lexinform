@@ -17,21 +17,21 @@ from lexinform.ports import BillRepository
 log = logging.getLogger(__name__)
 
 
-def primary_of(repo: BillRepository, bill: Bill, channel_id: str) -> tuple[Bill, int] | None:
-    """The bill `bill` is considered jointly with that already has a card in this channel and is
-    still followed, with the card's message id; None when `bill` gets its own card.
-
-    A print that was withdrawn or rejected is not one of them: its thread is over, and the bill
-    gets a card of its own.
-    """
+def primary_of(
+    repo: BillRepository, bill: Bill, channel_id: str, *, include_closed: bool = False
+) -> tuple[Bill, int] | None:
+    """Find a sent joint card, including ended processes only for historical inspection."""
     for number in bill.summary.prints_considered_jointly:
         card = repo.get_publication(bill.term, number, PublicationKind.NEW_BILL, channel_id)
         if card is None or card.status is not PublicationStatus.SENT or card.message_id is None:
             continue
         other = repo.get(bill.term, number)
-        if other is None or other.discontinued_at is not None:
+        if other is None:
             continue
-        if other.summary.closure_date is not None and not other.summary.passed:
+        if not include_closed and (
+            other.discontinued_at is not None
+            or (other.summary.closure_date is not None and not other.summary.passed)
+        ):
             continue
         return other, card.message_id
     return None

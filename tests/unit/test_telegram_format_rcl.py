@@ -165,7 +165,7 @@ def test_card_names_the_ministry_the_letter_deadline_and_both_ways_to_react() ->
     )
     assert (
         "Что можно сделать сейчас:</b> направить замечания на dep.prawny@mswia.gov.pl до "
-        "8 сент 2026 (на польском, с номером UC164); "
+        "8 сент 2026 (на польском, с номером UC164); Дополнительно: "
         f'<a href="{COMMENT_FORM}">оставить комментарий через форму на RCL</a>' in text
     )
     # RCL names the minister, the table the ministry: the zgłoszenie still gets its address.
@@ -372,3 +372,15 @@ def test_the_consultation_reminder_says_how_to_write_as_the_card_does() -> None:
     assert_telegram_html(text)
     assert "замечания на e-mail dep.prawny@mswia.gov.pl" in text
     assert "(на польском, с номером UC164)" in text
+
+
+def test_open_consultation_without_email_leads_with_its_letter() -> None:
+    project = rcl_project(consultation=RCL_CONSULTATION.model_copy(update={"email": None}))
+
+    text = MessageFormatter("ru").new_bill(rcl_bill(project), None, today=TODAY).text
+
+    assert (
+        f'<a href="{CONSULTATION_LETTER.url}">уточните способ подачи замечаний'
+        " в письме о консультациях</a> до"
+    ) in text
+    assert "Дополнительно: <a" in text

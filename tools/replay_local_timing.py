@@ -10,9 +10,9 @@ from typing import Any, Never, cast
 
 from pypdf import PdfWriter
 from tests.computations import KINDS
+from tests.document_review_cases import context as technical_review_context
 from tests.fakes import FakePublisher, FakeSejmGateway, make_analysis
 from tests.harness import summary
-from tests.scenario.test_document_reviews import context as technical_review_context
 
 from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor

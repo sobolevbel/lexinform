@@ -18,6 +18,7 @@ from lexinform.models import (
     RunMode,
 )
 from lexinform.services.pipeline import RunOptions
+from tests.document_review_cases import finding, review
 from tests.fakes import FakeTextExtractor, make_analysis
 from tests.harness import (
     CONSULTATION_FOLDERS,
@@ -38,7 +39,6 @@ from tests.harness import (
     submission_url,
     summary,
 )
-from tests.scenario.test_document_reviews import finding, review
 
 RM_DATE = dt.date(2026, 9, 8)
 """The day the project was handed to the Sejm on the fake RCL page."""

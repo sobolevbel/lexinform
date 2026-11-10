@@ -236,13 +236,19 @@ Layout:
   `w.command`, `w.gateway.submissions`), acts (`w.run(...)`) and asserts on the `RunReport`, the
   publisher's records and the database (`w.bill`, `w.publication`, `w.card_id`).
 - `tests/settings.py` validates scenario constructor inputs and production defaults without
-  environment sources. `tests/database.py` restores a cached empty SQL dump produced by the
-  real migrations into a separate in-memory connection for each caller; migration tests still
-  construct and migrate their own repositories. An autouse fixture closes factory connections
-  after each test. `tests/checkpoint_state.py` restores actual
+  environment sources. `tests/database.py` copies a genuinely migrated empty SQLite template
+  into an independent in-memory connection for each caller; migration and restore tests still
+  exercise their actual paths. Autouse fixtures close factory connections after each test and
+  the template at session teardown. `tests/checkpoint_state.py` restores actual
   checkpoint dumps for assertions without building another pipeline, and closes the connection.
 - `tests/fixtures/sejm/`: recorded API responses. Refresh with `curl` when the API changes
   (commands below) and keep them small.
+- Checkpoint contract matrices use independent SQL/manifest snapshots alongside real Git anchors.
+  Every selected function keeps a Git case; crash, unknown-outcome and lost-runner matrices keep
+  all Git variants. Adapter, CLI and ownership-race tests always use real Git. Run
+  `make test ARGS="--checkpoint-transport=git"` to replay every original case through Git.
+  The explicit module allowlist lives in `tests/checkpoint_backends.py`; unsupported snapshot
+  operations fail rather than silently falling back to another transport.
 - Adapter tests use `httpx2.MockTransport` (`test_sejm_api`, `test_telegram_client`) or a stub
   client (`test_llm_anthropic`); no network in the unit suite.
 

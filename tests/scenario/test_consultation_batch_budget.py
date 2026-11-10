@@ -3,8 +3,8 @@ import pytest
 from lexinform.consultation_batches import ConsultationInputTooLargeError
 from lexinform.models import BatchResult, LlmBatch, LlmBatchItem, ReviewContext
 from lexinform.services.analysis import Waiting
+from tests.document_review_cases import context, finding, review
 from tests.harness import World
-from tests.scenario.test_document_reviews import context, finding, review
 
 
 def test_consultation_preflight_refuses_the_plan_before_saving_any_batch_intent() -> None:

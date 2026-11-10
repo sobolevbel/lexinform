@@ -10,9 +10,9 @@ from lexinform.models import (
     ReviewResultRecord,
 )
 from lexinform.services.computation_reuse import matching_review
+from tests.commission_cases import context as commission_context
 from tests.computations import retained_result
-from tests.scenario.test_commission_reviews import context as commission_context
-from tests.scenario.test_document_reviews import context
+from tests.document_review_cases import context
 
 
 def paid_review(source: ReviewContext) -> ComputationResult:
