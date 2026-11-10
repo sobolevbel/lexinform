@@ -668,3 +668,36 @@ def test_a_sitting_is_stored_for_a_bill_without_a_card() -> None:
 
     assert _refs(w) == [SITTING_REF]
     assert report.agenda_posted == 0 and w.publisher.agendas == []
+
+
+def test_a_renumbered_sitting_with_the_same_broadcast_is_reported_as_a_move() -> None:
+    w = _referred_bill()
+    w.gateway.committee_sittings["ASW"] = (_sitting(138),)
+    w.run()
+    w.gateway.committee_sittings["ASW"] = (_sitting(150, dt.date(2026, 9, 22)),)
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert (report.agenda_cancelled, report.agenda_posted) == (0, 1)
+    _, item, _ = w.publisher.agendas[-1]
+    assert item.sitting_number == 150
+    assert "Заседание перенесено с 17 сент 2026" in w.publisher.texts(PublicationKind.AGENDA)[-1]
+
+
+def test_a_different_broadcast_in_the_same_slot_is_a_new_sitting() -> None:
+    w = _referred_bill()
+    w.gateway.committee_sittings["ASW"] = (_sitting(138),)
+    w.run()
+    replacement = _sitting(150).model_copy(
+        update={"video_url": "https://sejm.gov.pl/Sejm10.nsf/transmisje_arch.xsp?unid=2"}
+    )
+    w.gateway.committee_sittings["ASW"] = (replacement,)
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert (report.agenda_cancelled, report.agenda_posted) == (1, 1)
+    _, item, _ = w.publisher.agendas[-1]
+    assert item.sitting_number == 150
+    assert "Заседание перенесено" not in w.publisher.texts(PublicationKind.AGENDA)[-1]

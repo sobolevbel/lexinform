@@ -673,8 +673,9 @@ class CommandOutcome(BaseModel):
     `note` is the reason, the error, or why the card was not posted, and `message_id` the card
     just posted (or posted again). `print_info` and `joint_primary` belong to a `/preview`: the
     message is rendered with the links the channel would get, and as the reply it would be when
-    the bill joins the thread of the print named there. `found` are the matches of a `/find` and
-    `snapshot` the answer to a `/status`. The rest is what running the command took: when the
+    the bill joins the thread of the print named there. `/show` uses `joint_primary` for the
+    current stage and actions of a published joint reply. `found` are the matches of a `/find`
+    and `snapshot` the answer to a `/status`. The rest is what running the command took: when the
     run that answered it started, how long the command itself took, and the model tokens it
     spent (empty when the model was not called).
     """

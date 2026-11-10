@@ -285,22 +285,15 @@ def next_phase(bill: Bill, *, today: dt.date) -> Phase | None:
                 "deadline_exact": days is not None,
             }
         )
-    phase = _after_senate_silence(bill, phase, today)
+    phase = _after_senate_silence(phase, today)
     return phase.model_copy(update={"since": _phase_started(bill)})
 
 
-def _after_senate_silence(bill: Bill, phase: Phase, today: dt.date) -> Phase:
-    """Art. 121 ust. 2: thirty days gone with no uchwała from the Senate and the act counts as
-    adopted in the wording the Sejm passed, so it is with the President.
-
-    The term is *zawity* — the Senate can neither extend nor suspend it — so the step has really
-    moved on. No deadline of its own: the President's 21 days run from a receipt the API does not
-    date. This is the one place the bot names a step the Sejm has not published, so the wording
-    says so, and it unwinds on the next run if the listing was merely behind.
-    """
+def _after_senate_silence(phase: Phase, today: dt.date) -> Phase:
+    """Retain receipt certainty when inferring the next phase after the Senate deadline."""
     if phase.key != "senate" or not deadline_overdue(phase, today):
         return phase
-    return Phase(key="president_after_senate_silence")
+    return Phase(key="president_after_senate_silence", deadline_exact=phase.deadline_exact)
 
 
 def _phase_started(bill: Bill) -> dt.date | None:

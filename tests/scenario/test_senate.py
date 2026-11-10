@@ -4,6 +4,7 @@ import datetime as dt
 
 import pytest
 
+from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import SenateAct, SenateCommittee, Stage, next_phase
 from tests.harness import COMMITTEE_STAGES, World
 
@@ -155,3 +156,35 @@ def test_the_senate_being_down_stops_only_its_own_part() -> None:
 
     assert any(e.startswith("tracking: senate: ") for e in report.errors)
     assert "маршруте подачи пока не подтверждены" in _card(w)
+
+
+def test_a_known_senate_act_without_contacts_links_the_act_and_its_print() -> None:
+    w = _passed()
+    w.senate.put("o cudzoziemcach", _act(committees=()))
+    w.run()
+
+    assert f'<a href="{ACT_URL}">закон на сайте Сената (сенатский druk nr 849)</a>' in _card(w)
+
+
+@pytest.mark.parametrize("urgent, exact", [(False, False), (True, True)])
+def test_senate_silence_keeps_the_procedure_and_receipt_certainty(
+    urgent: bool, exact: bool
+) -> None:
+    w = _passed()
+    bill = w.bill("3039")
+    bill = bill.model_copy(
+        update={
+            "summary": bill.summary.model_copy(
+                update={"urgency_status": "URGENT" if urgent else "NORMAL"}
+            ),
+            "senate": _act() if exact else None,
+        }
+    )
+
+    text = MessageFormatter("ru").new_bill(bill, None, today=dt.date(2026, 10, 20)).text
+
+    assert f"в срок ({14 if urgent else 30} дн.)" in text
+    assert f"({7 if urgent else 21} дн. на решение с момента передачи)" in text
+    assert "Передача пока не подтверждена" in text
+    assert ("Дата поступления в Сенат не подтверждена" in text) is not exact
+    assert "закон у Президента" not in text
