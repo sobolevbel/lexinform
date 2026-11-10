@@ -44,6 +44,8 @@ from lexinform.adapters.llm_prompts import (
     openai_system_prompt,
 )
 from lexinform.adapters.review_prompts import (
+    CONSULTATION_SYNTHESIS_SCHEMA,
+    CONSULTATION_SYNTHESIS_SYSTEM,
     REVIEW_SCHEMA,
     review_prompt,
     review_prompt_version,
@@ -389,6 +391,9 @@ class OpenAiAnalyzer:
             "act_application": ("document_review", REVIEW_SCHEMA),
             "name": ("bill_name", _BILL_NAME_SCHEMA),
         }[request.call_kind]
+        if isinstance(ctx, ReviewContext) and ctx.consultation_candidates:
+            system = CONSULTATION_SYNTHESIS_SYSTEM
+            schema_name, schema = "consultation_synthesis", CONSULTATION_SYNTHESIS_SCHEMA
         partitioned = isinstance(ctx, ReviewContext) and ctx.consultation_partition is not None
         retry = partitioned and request.consultation_retry
         cap = 7_500 if retry else 5_000

@@ -3,6 +3,7 @@ import datetime as dt
 import hashlib
 import json
 import re
+from collections import Counter
 from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -72,6 +73,16 @@ class ReviewDocument(BaseModel):
         return self
 
 
+class ConsultationCandidate(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    id: str
+    theme: str
+    proposal: str
+    outcome: str
+    practical_impact: str
+
+
 class ReviewContext(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -84,6 +95,9 @@ class ReviewContext(BaseModel):
     canonical_date: dt.date | None = None
     comparison_sha256: str | None = None
     consultation_partition: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    consultation_candidates: tuple[ConsultationCandidate, ...] = Field(
+        default=(), exclude_if=lambda value: not value
+    )
     source_observation_ids: tuple[ReviewSourceObservationId | None, ...] = Field(
         default=(), exclude_if=lambda value: not value
     )
@@ -119,6 +133,10 @@ class ReviewContext(BaseModel):
         }
         if self.consultation_partition is not None:
             facts["consultation_partition"] = self.consultation_partition
+        if self.consultation_candidates:
+            facts["consultation_candidates"] = [
+                candidate.model_dump(mode="json") for candidate in self.consultation_candidates
+            ]
         if self.purpose == "commission_review" and any(
             doc.body or doc.forum != "unknown" for doc in self.documents
         ):
@@ -139,6 +157,7 @@ class EvidenceCitation(BaseModel):
     document_id: str
     locator: str
     quote: str
+    source_label: str | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class ConsultationFinding(BaseModel):
@@ -186,6 +205,13 @@ class CommissionFinding(ConsultationFinding):
     recommendation_evidence: EvidenceCitation | None = None
 
 
+class ConsultationDraftChange(BaseModel):
+    candidate_id: str
+    text_change: str
+    comparison_evidence: EvidenceCitation
+    text_evidence: EvidenceCitation
+
+
 class DocumentReview(BaseModel):
     purpose: ReviewPurpose
     complete: bool
@@ -194,6 +220,10 @@ class DocumentReview(BaseModel):
     effective_rules: tuple[EffectiveRule, ...]
     unresolved: tuple[str, ...]
     commission_findings: tuple[CommissionFinding, ...] = ()
+    selected_candidates: tuple[str, ...] = Field(default=(), exclude_if=lambda value: not value)
+    compared_changes: tuple[ConsultationDraftChange, ...] = Field(
+        default=(), exclude_if=lambda value: not value
+    )
 
 
 class DocumentReviewRecord(BaseModel):
@@ -323,8 +353,9 @@ def citation_document_in(
     )
 
 
-def _compared_provision(finding: ConsultationFinding, context: ReviewContext) -> bool:
-    prior, current = finding.comparison_evidence, finding.text_evidence
+def _compared_provision(
+    prior: EvidenceCitation | None, current: EvidenceCitation | None, context: ReviewContext
+) -> bool:
     before = citation_document(prior, context, {"comparison_text"})
     after = citation_document(current, context, {"project_text"})
     return (
@@ -346,6 +377,36 @@ def _compared_provision(finding: ConsultationFinding, context: ReviewContext) ->
 def validate_review(review: DocumentReview, context: ReviewContext) -> DocumentReview:
     if review.purpose != context.purpose:
         raise ValueError("document review purpose does not match its request")
+    if context.consultation_candidates:
+        selected = review.selected_candidates
+        known = {candidate.id for candidate in context.consultation_candidates}
+        if (
+            not 1 <= len(selected) <= 6
+            or len(set(selected)) != len(selected)
+            or not set(selected) <= known
+            or review.consultation_findings
+            or review.commission_findings
+            or review.effective_rules
+        ):
+            raise ValueError("Consultation synthesis must select distinct known proposals")
+        outcomes = {
+            candidate.id: candidate.outcome for candidate in context.consultation_candidates
+        }
+        counts = Counter(change.candidate_id for change in review.compared_changes)
+        confirmed = tuple(
+            change
+            for change in review.compared_changes
+            if change.candidate_id in selected
+            and counts[change.candidate_id] == 1
+            and outcomes[change.candidate_id] in ("accepted", "partial")
+            and change.text_change.strip()
+            and _compared_provision(change.comparison_evidence, change.text_evidence, context)
+        )
+        return review.model_copy(
+            update={"summary": "", "unresolved": (), "compared_changes": confirmed}
+        )
+    if review.selected_candidates or review.compared_changes:
+        raise ValueError("Only consultation synthesis can select candidates")
     if context.purpose == "commission_review":
         return _validate_commission(review, context)
     findings: list[ConsultationFinding] = []
@@ -367,6 +428,23 @@ def validate_review(review: DocumentReview, context: ReviewContext) -> DocumentR
                 citation = citation.model_copy(update={"quote": matches[0]})
                 finding = finding.model_copy(update={"evidence": citation})
         evidence = citation_document(finding.evidence, context, {"response"})
+        if evidence is not None and finding.evidence is not None:
+            source_label = next(
+                (
+                    row.label
+                    for row in evidence.consultation_rows
+                    if row.locator == finding.evidence.locator
+                ),
+                None,
+            )
+            if source_label != finding.evidence.source_label:
+                finding = finding.model_copy(
+                    update={
+                        "evidence": finding.evidence.model_copy(
+                            update={"source_label": source_label}
+                        )
+                    }
+                )
         if (
             evidence is not None
             and finding.evidence is not None
@@ -408,7 +486,7 @@ def validate_review(review: DocumentReview, context: ReviewContext) -> DocumentR
             finding.text_change
             if supported
             and outcome in {"accepted", "partial"}
-            and _compared_provision(finding, context)
+            and _compared_provision(finding.comparison_evidence, finding.text_evidence, context)
             else None
         )
         names = (
@@ -690,7 +768,7 @@ def _validate_commission(review: DocumentReview, context: ReviewContext) -> Docu
         incorporated = (
             supported
             and checked.outcome in {"accepted", "partial"}
-            and _compared_provision(item, context)
+            and _compared_provision(item.comparison_evidence, item.text_evidence, context)
         )
         if not supported and not (recommended and item.recommendation):
             unresolved.append(f"Commission outcome unconfirmed: {item.proposal}")

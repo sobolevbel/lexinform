@@ -7,7 +7,9 @@ import pytest
 
 from lexinform.adapters import review_content_evidence
 from lexinform.models import (
+    Bill,
     BillStatus,
+    DocumentReviewRecord,
     Publication,
     PublicationKind,
     PublicationStatus,
@@ -16,11 +18,12 @@ from lexinform.models import (
     TextDocument,
 )
 from lexinform.models.original_delivery_content import OriginalDeliveryEvidence
+from lexinform.models.reviews import ConsultationRow, EvidenceCitation, validate_review
 from lexinform.services.tracking_result import TrackingResult
 from tests.checkpoint_state import saved_state
 from tests.harness import CHANNEL, TERM, World, rcl_document, summary
 from tests.scenario.test_commission_review_content_reader import with_content
-from tests.scenario.test_document_reviews import finding, review
+from tests.scenario.test_document_reviews import context, finding, review
 
 NUMBER = "RCL/12282650"
 
@@ -169,3 +172,42 @@ def test_consultation_writer_preserves_html_with_missing_and_invalid_application
     normal.repo.restore(dump)
     assert normal.repo.dump() == dump
     assert normal.repo.get_publication_content(queued.id) == linked
+
+
+def test_word_row_remark_survives_compact_delivery_snapshot() -> None:
+    world = World(consultation_reviews_enabled=True, reader_attention="off")
+    world.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    world.run()
+    locator = "word-xml:word/document.xml:0/1/2"
+    source_context = context("Stowarzyszenie\tDokumenty\tUwaga uwzględniona.")
+    source = source_context.documents[0]
+    source = source.model_copy(
+        update={
+            "consultation_rows": (
+                ConsultationRow(locator=locator, label="93", start=0, end=len(source.text)),
+            )
+        }
+    )
+    source_context = source_context.model_copy(update={"documents": (source,)})
+    original = finding().model_copy(
+        update={
+            "evidence": EvidenceCitation(document_id=source.identity, locator=locator, quote="")
+        }
+    )
+    record = DocumentReviewRecord(
+        review=validate_review(review(original), source_context),
+        context=source_context,
+        created_at=world.clock.now(),
+    )
+    bill = world.bill("3039").model_copy(update={"consultation_review": record})
+    poster = world.container.poster(dry_run=False)
+
+    publication = poster.prepare_message(bill, PublicationKind.CONSULTATION_REVIEW, ref="test")
+
+    assert publication.delivery is not None, "consultation review freezes a delivery plan"
+    frozen = Bill.model_validate_json(publication.delivery.bill_json)
+    assert frozen.consultation_review is not None, "the snapshot retains review evidence"
+    assert not frozen.consultation_review.context.documents[0].text
+    assert not frozen.consultation_review.context.documents[0].consultation_rows
+    assert poster.deliver(publication)
+    assert "Замечание № 93" in world.publisher.texts(PublicationKind.CONSULTATION_REVIEW)[0]

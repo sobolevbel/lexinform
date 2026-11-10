@@ -26,8 +26,11 @@ from lexinform.concurrency import fan_out
 from lexinform.consultation_batches import (
     CONSULTATION_MODEL,
     CONSULTATION_REVIEW_BUDGET,
+    CONSULTATION_SYNTHESIS_RESERVE,
     ConsultationInputTooLargeError,
+    consultation_draft_pair,
     consultation_rollout_allows,
+    consultation_synthesis_context,
     plan_consultation_parts,
 )
 from lexinform.document_admissibility import analysis_admission, review_admission
@@ -386,6 +389,7 @@ class AnalysisOptions:
     batch_kinds: frozenset[BatchKind] = frozenset({"analysis", "reanalysis"})
     consultation_reviews_enabled: bool = False
     consultation_reviews_after: datetime | None = None
+    consultation_review_projects: frozenset[str] = frozenset()
     commission_reviews_enabled: bool = False
     batch_models: dict[BatchKind, str] = field(default_factory=dict)
     batch_max_wait: timedelta = timedelta(hours=6)
@@ -696,6 +700,8 @@ class AnalysisService:
             intent.created_at,
             partitioned=isinstance(question, DocumentReviewQuestion)
             and question.ctx.consultation_partition is not None,
+            number=intent.request.number,
+            projects=self._options.consultation_review_projects,
         )
 
     def start_run(self, *, dry_run: bool = False) -> None:
@@ -2343,7 +2349,9 @@ class AnalysisService:
             self._options.max_bill_cost_usd or CONSULTATION_REVIEW_BUDGET,
             CONSULTATION_REVIEW_BUDGET,
         )
-        estimate = sum(request.estimated_cost_usd for request in requests)
+        needs_synthesis = len(parts) > 1 or consultation_draft_pair(context) is not None
+        synthesis_reserve = CONSULTATION_SYNTHESIS_RESERVE if needs_synthesis else 0.0
+        estimate = sum(request.estimated_cost_usd for request in requests) + synthesis_reserve
         if estimate > limit:
             raise ConsultationInputTooLargeError(
                 f"Consultation review costs up to ${estimate:.2f}, above its ${limit:.2f} limit"
@@ -2401,12 +2409,52 @@ class AnalysisService:
                         (evidence.document_id, evidence.locator, finding.proposal.casefold()),
                         finding,
                     )
+        ranked = tuple(findings.values())
+        if ranked and needs_synthesis:
+            synthesis, by_id = consultation_synthesis_context(context, bill.term, ranked)
+        else:
+            synthesis, by_id = None, {}
+        if synthesis is not None and (len(ranked) > 1 or synthesis.documents):
+            synth_request = backend.prepare_request(
+                BatchRequest(
+                    custom_id=synthesis.memo_key(bill.term),
+                    term=bill.term,
+                    number=bill.number,
+                    question=DocumentReviewQuestion(kind="consultation_review", ctx=synthesis),
+                    model=CONSULTATION_MODEL,
+                )
+            )
+            if synth_request.estimated_cost_usd > synthesis_reserve or self.review_exhausted(
+                bill.term, synthesis
+            ):
+                failures.append("Final consultation selection unavailable.")
+                ranked = ranked[:6]
+            else:
+                final = self.request_document_review(
+                    bill, synthesis, requested_at=requested_at, prepared_request=synth_request
+                )
+                if isinstance(final, Waiting):
+                    return final
+                records.append(final)
+                changes = {change.candidate_id: change for change in final.review.compared_changes}
+                ranked = tuple(
+                    by_id[key].model_copy(
+                        update={
+                            "text_change": changes[key].text_change,
+                            "comparison_evidence": changes[key].comparison_evidence,
+                            "text_evidence": changes[key].text_evidence,
+                        }
+                    )
+                    if key in changes
+                    else by_id[key]
+                    for key in final.review.selected_candidates
+                )
         report = validate_review(
             DocumentReview(
                 purpose="consultation_review",
                 complete=not failures and all(record.review.complete for record in records),
                 summary="",
-                consultation_findings=tuple(findings.values()),
+                consultation_findings=ranked,
                 effective_rules=(),
                 unresolved=tuple(failures)
                 + tuple(item for record in records for item in record.review.unresolved),
@@ -2450,6 +2498,8 @@ class AnalysisService:
                     self._options.consultation_reviews_after,
                     requested_at or self._clock.now(),
                     partitioned=context.consultation_partition is not None,
+                    number=bill.number,
+                    projects=self._options.consultation_review_projects,
                 )
             )
         ) or (context.purpose == "commission_review" and not self.review_enabled(context.purpose)):

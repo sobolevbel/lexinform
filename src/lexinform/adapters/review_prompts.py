@@ -196,3 +196,32 @@ REVIEW_SCHEMA = _object(
         "commission_findings": {"type": "array", "items": _COMMISSION_FINDING},
     }
 )
+
+
+CONSULTATION_SYNTHESIS_SYSTEM = (
+    "Select at most six distinct, material proposals from the supplied validated consultation "
+    "candidates. Return their exact IDs in selected_candidates, with highest practical impact "
+    "first and related themes adjacent. Prefer implications for status, rights, application "
+    "requirements, deadlines, exceptions and costs. Keep separately material opposing outcomes. "
+    "When two dated draft excerpts are provided, add a compared_changes item only for a "
+    "selected accepted or partial proposal and only when exact quotes from both excerpts "
+    "prove a change to the same provision that addresses the proposal. Otherwise leave "
+    "compared_changes empty. Set summary empty, complete true, and all other arrays empty."
+)
+CONSULTATION_SYNTHESIS_SCHEMA = _object(
+    {
+        **REVIEW_SCHEMA["properties"],
+        "selected_candidates": _strings(),
+        "compared_changes": {
+            "type": "array",
+            "items": _object(
+                {
+                    "candidate_id": {"type": "string"},
+                    "text_change": {"type": "string"},
+                    "comparison_evidence": _CITATION,
+                    "text_evidence": _CITATION,
+                }
+            ),
+        },
+    }
+)

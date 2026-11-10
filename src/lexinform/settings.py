@@ -187,9 +187,27 @@ class Settings(BaseSettings):
         default=None,
         description="Only start or deliver new partitioned RCL reviews on or after this instant.",
     )
+    consultation_review_projects: Annotated[frozenset[str], NoDecode] = Field(
+        default=frozenset(),
+        description="Comma-separated RCL project numbers eligible for a limited rollout.",
+    )
     llm_batch_max_wait_hours: float = Field(
         default=6, gt=0, description="Legacy setting; waiting never enables synchronous calls."
     )
+
+    @field_validator("consultation_review_projects", mode="before")
+    @classmethod
+    def parse_consultation_review_projects(cls, value: object) -> object:
+        if not isinstance(value, str):
+            return value
+        projects = frozenset(
+            part.strip().removeprefix("RCL/") for part in value.split(",") if part.strip()
+        )
+        if (value and not projects) or any(
+            not project.isascii() or not project.isdecimal() for project in projects
+        ):
+            raise ValueError("Consultation rollout projects must be RCL project numbers")
+        return frozenset(f"RCL/{project}" for project in projects)
 
     @field_validator("consultation_reviews_after", mode="before")
     @classmethod

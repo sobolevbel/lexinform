@@ -1,14 +1,26 @@
 import hashlib
 import json
+from datetime import date
 
 import pytest
 import tiktoken
 
 from lexinform.adapters.llm_openai import OpenAiAnalyzer
-from lexinform.consultation_batches import plan_consultation_parts
-from lexinform.models import ReviewContext, ReviewDocument
+from lexinform.consultation_batches import (
+    CONSULTATION_SYNTHESIS_RESERVE,
+    consultation_synthesis_context,
+    plan_consultation_parts,
+)
+from lexinform.models import DocumentReview, ReviewContext, ReviewDocument
 from lexinform.models.batch import BatchRequest, DocumentReviewQuestion
-from lexinform.models.reviews import ConsultationRow
+from lexinform.models.reviews import (
+    ConsultationDraftChange,
+    ConsultationRow,
+    EvidenceCitation,
+    validate_review,
+)
+from tests.scenario.test_document_reviews import context as review_context
+from tests.scenario.test_document_reviews import finding as review_finding
 
 
 def test_consultation_parts_keep_cross_partition_references_and_exact_source_rows() -> None:
@@ -82,3 +94,93 @@ def test_consultation_parts_keep_cross_partition_references_and_exact_source_row
         assert json.loads(request.payload_json)["body"]["max_output_tokens"] == 5000
         estimates.append(request.estimated_cost_usd)
     assert 0 < sum(estimates) < 2.0
+
+
+def test_synthesis_only_returns_ranked_ids_from_verified_candidates() -> None:
+    root = review_context()
+    findings = (
+        review_finding(),
+        review_finding().model_copy(update={"proposal": "Срок", "theme": "Документы"}),
+    )
+    ctx, originals = consultation_synthesis_context(root, 10, findings)
+    response = DocumentReview(
+        purpose="consultation_review",
+        complete=True,
+        summary="",
+        consultation_findings=(),
+        effective_rules=(),
+        unresolved=(),
+        selected_candidates=("2", "1"),
+    )
+    result = validate_review(response, ctx)
+    assert tuple(originals[key] for key in result.selected_candidates) == findings[::-1]
+    with pytest.raises(ValueError, match="distinct known proposals"):
+        validate_review(response.model_copy(update={"selected_candidates": ("3",)}), ctx)
+    analyzer = OpenAiAnalyzer(lambda: pytest.fail("preflight is offline"), model="gpt-6.1-sol")
+    request = analyzer.prepare_request(
+        BatchRequest(
+            custom_id=ctx.memo_key(10),
+            term=10,
+            number=ctx.number,
+            question=DocumentReviewQuestion(kind="consultation_review", ctx=ctx),
+        )
+    )
+    assert request.payload_json is not None, "the final selection request is frozen"
+    body = json.loads(request.payload_json)["body"]
+    assert "selected_candidates" in body["text"]["format"]["schema"]["required"]
+    assert request.estimated_cost_usd < CONSULTATION_SYNTHESIS_RESERVE
+
+
+def test_synthesis_checks_only_selected_proposals_against_dated_articles() -> None:
+    before = (
+        review_context(
+            "Art. 3. Wniosek składa się w terminie 14 dni.\nArt. 4. Inny przepis.",
+            role="comparison_text",
+        )
+        .documents[0]
+        .model_copy(update={"identity": "before", "draft_date": date(2026, 1, 1)})
+    )
+    after = (
+        review_context(
+            "Art. 3. Wniosek składa się w terminie 30 dni.\nArt. 4. Inny przepis.",
+            role="project_text",
+        )
+        .documents[0]
+        .model_copy(update={"identity": "after", "draft_date": date(2026, 2, 1)})
+    )
+    original = review_context()
+    root = original.model_copy(
+        update={
+            "documents": (*original.documents, before, after),
+            "comparison_sha256": before.normalized_sha256,
+        }
+    )
+    proposed = review_finding(quote="Pkt 1. Uwaga uwzględniona. Zmiana art. 3.")
+    synthesis, _ = consultation_synthesis_context(root, 10, (proposed,))
+    old, new = synthesis.documents
+    assert "Art. 4" not in old.text and "Art. 4" not in new.text
+    change = ConsultationDraftChange(
+        candidate_id="1",
+        text_change="Срок увеличили с 14 до 30 дней",
+        comparison_evidence=EvidenceCitation(
+            document_id="before", locator="Art. 3", quote=old.text
+        ),
+        text_evidence=EvidenceCitation(document_id="after", locator="Art. 3", quote=new.text),
+    )
+    result = DocumentReview(
+        purpose="consultation_review",
+        complete=True,
+        summary="",
+        consultation_findings=(),
+        effective_rules=(),
+        unresolved=(),
+        selected_candidates=("1",),
+        compared_changes=(change,),
+    )
+    assert validate_review(result, synthesis).compared_changes == (change,)
+    wrong = change.model_copy(
+        update={"text_evidence": change.text_evidence.model_copy(update={"quote": old.text})}
+    )
+    assert not validate_review(
+        result.model_copy(update={"compared_changes": (wrong,)}), synthesis
+    ).compared_changes

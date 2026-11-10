@@ -10,14 +10,23 @@ from datetime import datetime
 import tiktoken
 
 from lexinform.document_fingerprints import text_digest
-from lexinform.models.reviews import ConsultationRow, ReviewContext, ReviewDocument
+from lexinform.models.reviews import (
+    ConsultationCandidate,
+    ConsultationFinding,
+    ConsultationRow,
+    ReviewContext,
+    ReviewDocument,
+)
 
 CONSULTATION_INPUT_LIMIT = 64_000
 CONSULTATION_REVIEW_BUDGET = 2.0
+CONSULTATION_SYNTHESIS_RESERVE = 0.12
 CONSULTATION_MODEL = "gpt-6.1-sol"
 CONSULTATION_DELIVERY_PREFIX = "consultation-parts:"
 _ENVELOPE_TOKENS = 4_000
 _PROSE_BREAK = re.compile(r"\f|\n[^\S\n\f]*\n")
+_ARTICLE = re.compile(r"^[ \t]*Art\.[ \t]*([1-9][0-9]*[a-z]?)\.(?=\s|$)", re.I | re.M)
+_ARTICLE_MENTION = re.compile(r"\bart\.\s*([1-9][0-9]*[a-z]?)\b", re.I)
 _REFERENCE = re.compile(r"\b(?:pkt|lp)\.?\s*(\d+)\s+(?:tego\s+)?(?:raportu|tabeli)\b", re.I)
 
 
@@ -26,9 +35,16 @@ class ConsultationInputTooLargeError(ValueError):
 
 
 def consultation_rollout_allows(
-    cutoff: datetime | None, when: datetime, *, partitioned: bool
+    cutoff: datetime | None,
+    when: datetime,
+    *,
+    partitioned: bool,
+    number: str,
+    projects: frozenset[str],
 ) -> bool:
-    return cutoff is None or (partitioned and when.utcoffset() is not None and when >= cutoff)
+    return (not projects or number in projects) and (
+        cutoff is None or (partitioned and when.utcoffset() is not None and when >= cutoff)
+    )
 
 
 def _count_tokens(text: str) -> int:
@@ -192,3 +208,107 @@ def plan_consultation_parts(
             )
         )
     return tuple(result)
+
+
+def consultation_draft_pair(context: ReviewContext) -> tuple[ReviewDocument, ReviewDocument] | None:
+    before = [
+        doc
+        for doc in context.documents
+        if doc.role == "comparison_text"
+        and doc.normalized_sha256 == context.comparison_sha256
+        and doc.complete
+    ]
+    after = [doc for doc in context.documents if doc.role == "project_text" and doc.complete]
+    if len(before) != 1 or len(after) != 1:
+        return None
+    prior, current = before[0], after[0]
+    if (
+        prior.draft_date is None
+        or current.draft_date is None
+        or prior.draft_date >= current.draft_date
+    ):
+        return None
+    return prior, current
+
+
+def _article_excerpts(text: str) -> dict[str, str]:
+    matches = list(_ARTICLE.finditer(text))
+    counts: dict[str, int] = {}
+    for match in matches:
+        number = match[1].lower()
+        counts[number] = counts.get(number, 0) + 1
+    return {
+        match[1].lower(): text[match.start() : end].strip()
+        for index, match in enumerate(matches)
+        if counts[match[1].lower()] == 1
+        and (end := matches[index + 1].start() if index + 1 < len(matches) else len(text))
+        - match.start()
+        <= 8_000
+    }
+
+
+def _comparison_excerpts(
+    context: ReviewContext, findings: tuple[ConsultationFinding, ...]
+) -> tuple[ReviewDocument, ...]:
+    drafts = consultation_draft_pair(context)
+    if drafts is None:
+        return ()
+    old, new = (_article_excerpts(doc.text) for doc in drafts)
+    articles = dict.fromkeys(
+        match[1].lower()
+        for finding in findings
+        if finding.evidence is not None and finding.outcome in ("accepted", "partial")
+        for match in _ARTICLE_MENTION.finditer(finding.evidence.quote)
+    )
+    relevant = [
+        article
+        for article in articles
+        if article in old and article in new and old[article] != new[article]
+    ][:6]
+    if not relevant:
+        return ()
+    result = []
+    for source, excerpts in zip(drafts, (old, new), strict=True):
+        text = "\n\n".join(excerpts[article] for article in relevant)
+        result.append(
+            source.model_copy(
+                update={
+                    "text": text,
+                    "sha256": hashlib.sha256(text.encode()).hexdigest(),
+                    "normalized_sha256": text_digest(text),
+                }
+            )
+        )
+    return tuple(result)
+
+
+def consultation_synthesis_context(
+    context: ReviewContext, term: int, findings: tuple[ConsultationFinding, ...]
+) -> tuple[ReviewContext, dict[str, ConsultationFinding]]:
+    selected: dict[str, ConsultationFinding] = {}
+    candidates: list[ConsultationCandidate] = []
+    for index, finding in enumerate(findings, 1):
+        candidate_id = str(index)
+        selected[candidate_id] = finding
+        candidates.append(
+            ConsultationCandidate(
+                id=candidate_id,
+                theme=finding.theme[:120],
+                proposal=finding.proposal[:720],
+                outcome=finding.outcome,
+                practical_impact=finding.practical_impact[:500],
+            )
+        )
+    drafts = _comparison_excerpts(context, findings)
+    return (
+        ReviewContext(
+            number=context.number,
+            title=context.title,
+            purpose="consultation_review",
+            documents=drafts,
+            comparison_sha256=drafts[0].normalized_sha256 if drafts else None,
+            consultation_partition=f"{context.memo_key(term)}/synthesis",
+            consultation_candidates=tuple(candidates),
+        ),
+        selected,
+    )

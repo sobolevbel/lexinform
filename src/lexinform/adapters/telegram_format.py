@@ -1142,6 +1142,8 @@ class MessageFormatter:
                 )
             if finding.evidence and not (finding.theme and finding.reason):
                 quoted = finding.evidence.quote.rsplit("\t", 1)[-1]
+                if finding.evidence.source_label and len(quoted) > 420:
+                    quoted = quoted[:420].rstrip() + "…"
                 lines.append(f"<i>“{esc(quoted)}”</i>")
             if finding.respondent:
                 lines.append(esc(finding.respondent))
@@ -1153,6 +1155,20 @@ class MessageFormatter:
                 lines.append(esc("; ".join(finding.affected_groups)))
             if finding.text_change:
                 lines.append(esc(finding.text_change))
+                for citation in (finding.comparison_evidence, finding.text_evidence):
+                    if citation is not None:
+                        draft = next(
+                            (
+                                doc
+                                for doc in record.context.documents
+                                if doc.identity == citation.document_id
+                            ),
+                            None,
+                        )
+                        if draft is not None and draft.draft_date is not None:
+                            lines.append(
+                                link(draft.url, f"{citation.locator} · {draft.draft_date}")
+                            )
             else:
                 lines.append(esc(lb.consultation_text_unconfirmed))
             if finding.evidence:
@@ -1167,13 +1183,11 @@ class MessageFormatter:
                 if source is not None:
                     locator = finding.evidence.locator
                     if locator.startswith("word-xml:"):
-                        row = next(
-                            (row for row in source.consultation_rows if row.locator == locator),
-                            None,
-                        )
                         locator = (
-                            lb.consultation_remark_number.format(label=row.label)
-                            if row is not None and row.label
+                            lb.consultation_remark_number.format(
+                                label=finding.evidence.source_label
+                            )
+                            if finding.evidence.source_label
                             else lb.document_review_source
                         )
                     if len(source.source_members) == 1:

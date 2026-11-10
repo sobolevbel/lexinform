@@ -1,7 +1,7 @@
 import pytest
 
 from lexinform.consultation_batches import ConsultationInputTooLargeError
-from lexinform.models import BatchResult, LlmBatch, LlmBatchItem
+from lexinform.models import BatchResult, LlmBatch, LlmBatchItem, ReviewContext
 from lexinform.services.analysis import Waiting
 from tests.harness import World
 from tests.scenario.test_document_reviews import context, finding, review
@@ -111,3 +111,73 @@ def test_consultation_retries_an_output_limit_only_once_within_the_reservation()
     ):
         world.analysis.request_partitioned_consultation(bill, source, requested_at=now)
     assert not world.repo.list_queued_batch_intents()
+
+
+def test_consultation_synthesis_waits_for_all_parts_and_only_applies_the_selected_facts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    world = World(
+        batch=True,
+        analysis_model="gpt-6.1-sol",
+        batch_kinds=frozenset({"consultation_review"}),
+        consultation_reviews_enabled=True,
+    )
+    world.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    world.run()
+    original = context()
+    response = original.documents[0]
+    alternative = response.model_copy(update={"identity": "doc/2"})
+    source = original.model_copy(update={"documents": (response, alternative)})
+
+    def split(ctx: ReviewContext, term: int) -> tuple[ReviewContext, ...]:
+        return tuple(
+            ctx.model_copy(
+                update={
+                    "documents": (doc,),
+                    "consultation_partition": f"{ctx.memo_key(term)}/{index}",
+                }
+            )
+            for index, doc in enumerate(ctx.documents, 1)
+        )
+
+    monkeypatch.setattr("lexinform.services.analysis.plan_consultation_parts", split)
+    first = finding()
+    assert first.evidence is not None, "the fixture cites a source"
+    second = first.model_copy(
+        update={
+            "proposal": "Документы на карту",
+            "evidence": first.evidence.model_copy(update={"document_id": "doc/2"}),
+        }
+    )
+    answer = review(first).model_copy(update={"consultation_findings": (first, second)})
+    world.batch.secondary_script[("3039", "consultation_review")] = answer
+    bill = world.bill("3039")
+    now = world.clock.now()
+
+    assert isinstance(
+        world.analysis.request_partitioned_consultation(bill, source, requested_at=now), Waiting
+    )
+    world.run()
+    world.batch.resolve()
+    world.run()
+    assert isinstance(
+        world.analysis.request_partitioned_consultation(bill, source, requested_at=now), Waiting
+    )
+    (synthesis,) = world.repo.list_queued_batch_intents()
+    assert isinstance(synthesis.request.ctx, ReviewContext), "the queued review is typed"
+    assert [candidate.id for candidate in synthesis.request.ctx.consultation_candidates] == [
+        "1",
+        "2",
+    ]
+    world.batch.secondary_script[("3039", "consultation_review")] = answer.model_copy(
+        update={"consultation_findings": (), "selected_candidates": ("2",)}
+    )
+    world.run()
+    world.batch.resolve()
+    world.run()
+
+    record = world.analysis.request_partitioned_consultation(bill, source, requested_at=now)
+    assert not isinstance(record, Waiting)
+    assert record.review.consultation_findings[0].proposal == second.proposal
+    assert len(record.review.consultation_findings) == 1
+    assert len(record.part_computation_ids) == 3

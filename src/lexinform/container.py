@@ -299,6 +299,7 @@ class Container:
                 channel_id=self.channel_id(),
                 max_attempts=self.settings.max_publish_attempts,
                 consultation_reviews_after=self.settings.consultation_reviews_after,
+                consultation_review_projects=self.settings.consultation_review_projects,
             ),
         )
 
@@ -486,6 +487,7 @@ class Container:
             batch_kinds=self.settings.llm_batch_kinds,
             consultation_reviews_enabled=self.settings.consultation_reviews_enabled,
             consultation_reviews_after=self.settings.consultation_reviews_after,
+            consultation_review_projects=self.settings.consultation_review_projects,
             commission_reviews_enabled=self.settings.commission_reviews_enabled,
             batch_models={
                 "amendments": self.settings.llm_amendments_model,
@@ -862,6 +864,7 @@ class Container:
                 delivery_attempts=self._delivery_attempts(dry_run),
                 consultation_reviews_enabled=self.settings.consultation_reviews_enabled,
                 consultation_reviews_after=self.settings.consultation_reviews_after,
+                consultation_review_projects=self.settings.consultation_review_projects,
                 commission_reviews_enabled=self.settings.commission_reviews_enabled,
                 checkpoint=self.state_checkpoint(dry_run=dry_run),
             ),

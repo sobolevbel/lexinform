@@ -48,6 +48,7 @@ class DocumentReviews:
         channel_id: str,
         max_attempts: int,
         consultation_reviews_after: datetime | None = None,
+        consultation_review_projects: frozenset[str] = frozenset(),
     ) -> None:
         self._repo = repo
         self._texts = texts
@@ -57,6 +58,7 @@ class DocumentReviews:
         self._channel_id = channel_id
         self._max_attempts = max_attempts
         self._consultation_reviews_after = consultation_reviews_after
+        self._consultation_review_projects = consultation_review_projects
 
     def observe_commissions(self, bills: list[Bill], result: TrackingResult) -> None:
         if not self._analysis.review_enabled("commission_review"):
@@ -105,7 +107,11 @@ class DocumentReviews:
         if not self._analysis.review_enabled(purpose):
             return
         if purpose == "consultation_review" and not consultation_rollout_allows(
-            self._consultation_reviews_after, self._clock.now(), partitioned=bill.is_rcl
+            self._consultation_reviews_after,
+            self._clock.now(),
+            partitioned=bill.is_rcl,
+            number=bill.number,
+            projects=self._consultation_review_projects,
         ):
             return
         fresh = self._repo.get(bill.term, bill.number) or bill
@@ -201,6 +207,8 @@ class DocumentReviews:
                         self._consultation_reviews_after,
                         work.since,
                         partitioned=work.partitioned_consultation,
+                        number=bill.number,
+                        projects=self._consultation_review_projects,
                     )
                 ):
                     continue

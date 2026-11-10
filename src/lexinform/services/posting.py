@@ -120,7 +120,10 @@ def _delivery_bill_json(bill: Bill, kind: PublicationKind) -> str:
         if any(document.text for document in documents):
             context = review.context.model_copy(
                 update={
-                    "documents": tuple(doc.model_copy(update={"text": ""}) for doc in documents)
+                    "documents": tuple(
+                        doc.model_copy(update={"text": "", "consultation_rows": ()})
+                        for doc in documents
+                    )
                 }
             )
             bill = bill.model_copy(
@@ -181,6 +184,7 @@ class Poster:
         delivery_attempts: set[int] | None = None,
         consultation_reviews_enabled: bool = False,
         consultation_reviews_after: datetime | None = None,
+        consultation_review_projects: frozenset[str] = frozenset(),
         commission_reviews_enabled: bool = False,
         checkpoint: StateCheckpoint | None = None,
     ) -> None:
@@ -203,6 +207,7 @@ class Poster:
         self._attempted = delivery_attempts if delivery_attempts is not None else set[int]()
         self._consultation_reviews_enabled = consultation_reviews_enabled
         self._consultation_reviews_after = consultation_reviews_after
+        self._consultation_review_projects = consultation_review_projects
         self._commission_reviews_enabled = commission_reviews_enabled
         self._checkpoint = checkpoint
         self._sittings: dict[int, Publication] = {}
@@ -1349,6 +1354,8 @@ class Poster:
                         self._consultation_reviews_after,
                         root.created_at,
                         partitioned=(root.ref or "").startswith(CONSULTATION_DELIVERY_PREFIX),
+                        number=root.number,
+                        projects=self._consultation_review_projects,
                     )
                 )
             )
