@@ -63,6 +63,12 @@ def test_consultation_parts_keep_cross_partition_references_and_exact_source_row
 
     assert len(parts) > 1
     assert len({part.memo_key(10) for part in parts}) == len(parts)
+    draft = review_context("Art. 1. Nowa wersja projektu.", role="project_text").documents[0]
+    revised = root.model_copy(update={"documents": (*root.documents, draft)})
+    revised_parts = plan_consultation_parts(
+        revised, 10, lambda text: len(tokenizer.encode_ordinary(text)), input_limit=4260
+    )
+    assert revised_parts == parts
     assert {
         row.label for part in parts for doc in part.documents for row in doc.consultation_rows
     } == {"1", "2", "3"}

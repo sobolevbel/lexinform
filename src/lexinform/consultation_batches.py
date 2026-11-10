@@ -187,7 +187,19 @@ def plan_consultation_parts(
     if selected:
         groups.append(selected)
 
-    root_key = context.memo_key(term)
+    root_key = hashlib.sha256(
+        json.dumps(
+            [
+                context.number,
+                None if context.number.startswith("RCL/") else term,
+                [
+                    (source.identity, source.url, source.sha256, source.file_sha256)
+                    for source in sources
+                ],
+            ],
+            ensure_ascii=False,
+        ).encode()
+    ).hexdigest()
     result = []
     for index, group in enumerate(groups, 1):
         by_doc: dict[int, list[_Unit]] = {}

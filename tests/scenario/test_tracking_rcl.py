@@ -4,6 +4,7 @@ import datetime as dt
 from dataclasses import replace
 
 from lexinform.adapters.telegram_format import MessageFormatter
+from lexinform.consultation_batches import CONSULTATION_DELIVERY_PREFIX
 from lexinform.models import (
     SILENCED_BY_OPERATOR,
     ApplicantType,
@@ -12,9 +13,11 @@ from lexinform.models import (
     ChangeReview,
     OutcomeStatus,
     PublicationKind,
+    PublicationStatus,
     RclProject,
     RunMode,
 )
+from lexinform.services.pipeline import RunOptions
 from tests.fakes import FakeTextExtractor, make_analysis
 from tests.harness import (
     CONSULTATION_FOLDERS,
@@ -35,6 +38,7 @@ from tests.harness import (
     submission_url,
     summary,
 )
+from tests.scenario.test_document_reviews import finding, review
 
 RM_DATE = dt.date(2026, 9, 8)
 """The day the project was handed to the Sejm on the fake RCL page."""
@@ -1346,3 +1350,61 @@ def test_new_late_consultation_report_queues_review_once_without_an_opinion_noti
     world.clock.advance(days=1)
     world.run()
     assert [item.memo_key for item in world.bill(RCL).review_work] == [work.memo_key]
+
+
+def test_limited_consultation_rollout_delivers_new_report_through_the_normal_pipeline() -> None:
+    extractor = FakeTextExtractor()
+    world = World(
+        analysis_model="gpt-6.1-sol",
+        batch=True,
+        batch_kinds=frozenset({"consultation_review"}),
+        consultation_reviews_enabled=True,
+        reader_attention="off",
+        extractor=extractor,
+    )
+    project = _followed_project(world)
+    now = world.clock.now()
+    active = replace(
+        world.container,
+        settings=world.container.settings.model_copy(
+            update={
+                "consultation_reviews_after": now,
+                "consultation_review_projects": frozenset({RCL}),
+            }
+        ),
+        analysis_options_override=None,
+    )
+    report_file = rcl_document(998, "Raport z konsultacji publicznych.pdf", created=now.date())
+    stage = rcl_stage(
+        8,
+        "Komitet do Spraw Europejskich",
+        "reached",
+        rcl_folder(998, "Projekt", report_file),
+        modified=now.date(),
+    )
+    world.add_rcl_project(_moved(project, *project.stages[:-1], stage, modified=now.date()))
+    raw = b"%PDF-consultation-results"
+    extractor.by_content[raw] = "Pkt 1. Uwaga uwzględniona.\n" + "Opis przebiegu konsultacji. " * 80
+    world.rcl.files[report_file.url] = raw
+    item = finding()
+    assert item.evidence is not None, "the consultation fixture cites a source"
+    world.batch.secondary_script[(RCL, "consultation_review")] = review(
+        item.model_copy(
+            update={"evidence": item.evidence.model_copy(update={"document_id": "rcl/998"})}
+        )
+    )
+    pipeline = active.pipeline(dry_run=False)
+    opts = RunOptions(term=TERM, since=now - dt.timedelta(days=2), discover=False, wykaz=False)
+
+    pipeline.run(opts)
+
+    (work,) = world.bill(RCL).review_work
+    assert work.partitioned_consultation
+    assert len(world.batch.submitted) == 1
+    world.batch.resolve()
+    report = pipeline.run(opts)
+
+    assert report.consultation_reviews_posted == 1
+    publication = world.publication(RCL, PublicationKind.CONSULTATION_REVIEW)
+    assert publication is not None and publication.status is PublicationStatus.SENT
+    assert publication.ref and publication.ref.startswith(CONSULTATION_DELIVERY_PREFIX)

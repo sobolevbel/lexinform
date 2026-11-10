@@ -149,6 +149,10 @@ Command reference and the relay: `docs/operator-commands.md`.
   or row; incorporation needs dated before/after citations; pending contexts and the original
   comparison snapshot are immutable. Preserve pending review work, comparison snapshots and
   canonical history for the same ELI.
+  Consultation rollout requires the enable flag, a cutoff timestamp and an explicit RCL allowlist.
+  Pre-cutover work and delivery roots stay frozen; already submitted requests can still be collected.
+  The review reserves first passes, eligible output-limit retries and final selection before queueing.
+  Selection only reorders verified candidate IDs; dated draft excerpts must prove incorporation.
 - **Amendment revisions** use the original message's saved bill, change and date (never rebuilt from
   the current bill): queue the batch with its immutable edit target, then a separate
   `amendments_revision` delivery; the original event and publication stay as audit history; repeated
