@@ -44,9 +44,9 @@ from lexinform.adapters.llm_prompts import (
     openai_system_prompt,
 )
 from lexinform.adapters.review_prompts import (
-    REVIEW_PROMPT_VERSION,
     REVIEW_SCHEMA,
     review_prompt,
+    review_prompt_version,
     review_system,
 )
 from lexinform.analysis_records import RecordFactory, UsageFields
@@ -415,7 +415,7 @@ class OpenAiAnalyzer:
         return request.freeze(
             payload_json=json.dumps(payload, ensure_ascii=False),
             model=model,
-            prompt_version=REVIEW_PROMPT_VERSION
+            prompt_version=review_prompt_version(ctx.purpose)
             if isinstance(ctx, ReviewContext)
             else PROMPT_VERSION,
             estimated_cost_usd=estimate_batch_reservation(

@@ -32,7 +32,7 @@ from lexinform.adapters.llm_prompts import (
     system_prompt,
     triage_system_prompt,
 )
-from lexinform.adapters.review_prompts import REVIEW_PROMPT_VERSION, review_prompt, review_system
+from lexinform.adapters.review_prompts import review_prompt, review_prompt_version, review_system
 from lexinform.analysis_records import RecordFactory, UsageFields
 from lexinform.errors import BatchNotSubmittedError, LlmUnavailableError
 from lexinform.models import (
@@ -367,7 +367,7 @@ class AnthropicAnalyzer:
         return request.freeze(
             payload_json=json.dumps(payload, ensure_ascii=False),
             model=model,
-            prompt_version=REVIEW_PROMPT_VERSION
+            prompt_version=review_prompt_version(ctx.purpose)
             if isinstance(ctx, ReviewContext)
             else PROMPT_VERSION,
             estimated_cost_usd=estimate_batch_reservation(
