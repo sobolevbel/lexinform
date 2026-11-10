@@ -7,7 +7,11 @@ from lexinform.committee_recommendation import (
     CommitteeRecommendationOrigin,
     official_recommendation_stages,
 )
-from lexinform.errors import SenateUnavailableError, ServiceUnavailableError
+from lexinform.errors import (
+    SejmApiUnavailableError,
+    SenateUnavailableError,
+    ServiceUnavailableError,
+)
 from lexinform.models import (
     AmendmentRevisionTarget,
     Attachment,
@@ -67,31 +71,34 @@ def amendments_source(
         report = TextDocument(url=stage.report_file, kind="committee_amendments")
         return AmendmentsSource(report, stage.proposal)
     assert senate.print_number is not None, "a Senate position with amendments has its print"
+    info = None
+    document = None
+    sejm_outage = None
     try:
-        info = gateway.get_print(term, senate.print_number)
-    except ServiceUnavailableError:
-        raise
-    except Exception as exc:
-        log.warning("Senate print %s unavailable: %s", senate.print_number, exc)
-        info = None
-    document = (
-        analysis.senate_amendments_document(
-            info,
-            senate,
-            titles=titles,
-            passed_on=adoption_before_senate(stages, info.document_date or senate.date),
-            owner=owner,
-        )
-        if info is not None
-        else None
-    )
+        try:
+            info = gateway.get_print(term, senate.print_number)
+        except ServiceUnavailableError:
+            raise
+        except Exception as exc:
+            log.warning("Senate print %s unavailable: %s", senate.print_number, exc)
+        if info is not None:
+            document = analysis.senate_amendments_document(
+                info,
+                senate,
+                titles=titles,
+                passed_on=adoption_before_senate(stages, info.document_date or senate.date),
+                owner=owner,
+            )
+    except SejmApiUnavailableError as exc:
+        sejm_outage = exc
+        log.warning("Sejm source for Senate print %s unavailable: %s", senate.print_number, exc)
     number = process_number or (owner.number if owner is not None else None)
     if document is None and senate_gateway is not None and senate.date is not None and number:
         try:
             match = senate_gateway.amendment_resolution(number, senate.date)
         except SenateUnavailableError as exc:
             log.warning("Senate resolution for druk %s unavailable: %s", number, exc)
-            return None
+            match = None
         if match is not None:
             info = None
             title, url = match
@@ -114,6 +121,8 @@ def amendments_source(
                 owner=owner,
             )
     if document is None:
+        if sejm_outage is not None:
+            raise sejm_outage
         return None
     if senate is stage:
         return AmendmentsSource(document)

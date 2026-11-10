@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.errors import LlmUnavailableError
+from lexinform.errors import LlmUnavailableError, SejmApiUnavailableError
 from lexinform.models import (
     Attachment,
     BillStatus,
@@ -22,7 +22,7 @@ from lexinform.models import (
     flatten_stages,
 )
 from lexinform.ports import PublishResult
-from tests.fakes import FakeTextExtractor, make_analysis
+from tests.fakes import FakeSejmGateway, FakeTextExtractor, make_analysis
 from tests.harness import COMMITTEE_STAGES, ELI, REFERRED, START, TERM, World, act, print_url
 
 
@@ -623,32 +623,45 @@ WITH_A_REPORT = WITH_REPORT + (
 )
 
 
-@pytest.mark.parametrize("fallback", [False, True])
-def test_senate_amendments_are_summarised_from_the_senate_print(fallback: bool) -> None:
+@pytest.mark.parametrize("source", ["sejm", "missing", "timeout"])
+def test_senate_amendments_are_summarised_from_the_senate_print(
+    source: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
     fixture = Path(__file__).parents[1] / "fixtures/sejm/senate_3213_resolution.txt"
     resolution = (
         fixture.read_text()
         .replace("13 października 2026", "20 września 2026")
         .replace("o asystencji osobistej osób z niepełnosprawnościami", "o cudzoziemcach")
     )
+    if source == "timeout":
+        download = FakeSejmGateway.download
+
+        def fail_sejm_attachment(
+            gateway: FakeSejmGateway, address: str, *, max_bytes: int | None = None
+        ) -> bytes:
+            if address == SENATE_PRINT_URL:
+                raise SejmApiUnavailableError("simulated attachment timeout")
+            return download(gateway, address, max_bytes=max_bytes)
+
+        monkeypatch.setattr(FakeSejmGateway, "download", fail_sejm_attachment)
     w = World(
         extractor=FakeTextExtractor(by_content={b"%PDF-senat": resolution}),
         text_budget_chars=60_000,
     )
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=REFERRED)
     w.run()
-    if fallback:
-        url = "https://www.senat.gov.pl/download/gfx/senat/pl/senatuchwaly/5957/plik/893uch.pdf"
-        adopted_on = dt.date(2026, 9, 20)
-        w.senate.resolutions["3039", adopted_on] = ("Ustawa o cudzoziemcach", url)
-    else:
-        url = SENATE_PRINT_URL
+    url = SENATE_PRINT_URL
+    if source != "missing":
         w.gateway.prints["2994"] = PrintInfo(
             term=10,
             number="2994",
             title="Uchwała Senatu",
             attachments=(Attachment(print_number="2994", name="2994.pdf", url=SENATE_PRINT_URL),),
         )
+    if source != "sejm":
+        url = "https://www.senat.gov.pl/download/gfx/senat/pl/senatuchwaly/5957/plik/893uch.pdf"
+        adopted_on = dt.date(2026, 9, 20)
+        w.senate.resolutions["3039", adopted_on] = ("Ustawa o cudzoziemcach", url)
     w.gateway.files[url] = b"%PDF-senat"
     w.set_stages("3039", SENATE_AMENDED)
     w.clock.advance(days=1)
