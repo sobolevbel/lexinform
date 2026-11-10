@@ -5,8 +5,8 @@ import pytest
 from lexinform.local_timing import LocalReadTiming
 from lexinform.models import Bill, DocumentReviewRecord, ReviewContext, ReviewPurpose, ReviewSource
 from lexinform.services.tracking_result import TrackingResult
+from tests.document_review_cases import FINAL, context, finding, review
 from tests.harness import TERM, World
-from tests.scenario.test_document_reviews import FINAL, context, finding, review
 
 
 def test_consultation_work_retains_comparison_across_restore_and_later_review(

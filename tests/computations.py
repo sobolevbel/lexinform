@@ -15,7 +15,14 @@ from lexinform.models import (
     computation_id,
 )
 from lexinform.models.batch import BatchKind
+from lexinform.models.reviews import ReviewPurpose
 from tests.fakes import make_amendments, make_analysis, make_comparison, make_digest, make_name
+
+REVIEW_PURPOSES: tuple[ReviewPurpose, ...] = (
+    "consultation_review",
+    "commission_review",
+    "act_application",
+)
 
 Record = (
     AnalysisRecord

@@ -2,9 +2,9 @@ import pytest
 
 from lexinform.models import BillStatus, ReviewInputReference, ReviewPurpose
 from lexinform.services.analysis import Waiting
+from tests.commission_cases import context as commission_context
+from tests.document_review_cases import context
 from tests.harness import RCL, World, summary
-from tests.scenario.test_commission_reviews import context as commission_context
-from tests.scenario.test_document_reviews import context
 from tests.scenario.test_secondary_computation_history import KINDS, Kind, ask, prepared_world
 
 

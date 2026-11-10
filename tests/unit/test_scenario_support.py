@@ -44,3 +44,31 @@ def test_cached_schema_matches_real_migrations_and_keeps_data_and_foreign_keys_i
         assert second.get(10, "3039") is None
         with pytest.raises(sqlite3.IntegrityError):
             second.save_applicability_observation(captured())
+
+
+def test_memory_copy_retains_rows_and_version_but_has_its_own_transactions(
+    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+) -> None:
+    original = repo.upsert_summary(process_3039, now=now)
+    before = repo.dump()
+    with closing(repo.copy_to_memory()) as copied:
+        assert copied.dump() == before
+        copied.begin()
+        copied.upsert_summary(process_3039.model_copy(update={"number": "3040"}), now=now)
+        assert copied.get(10, "3040") is not None
+        assert repo.get(10, "3040") is None
+        copied.rollback()
+        assert copied.dump() == before
+        copied.restore(copied.dump())
+        assert copied.get(10, "3039") == original
+    assert repo.dump() == before
+
+
+def test_memory_copy_refuses_an_open_transaction_without_changing_it(
+    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+) -> None:
+    with repo.atomic():
+        repo.upsert_summary(process_3039, now=now)
+        with pytest.raises(ValueError, match="inside a transaction"):
+            repo.copy_to_memory()
+    assert repo.get(10, "3039") is not None

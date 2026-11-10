@@ -39,10 +39,10 @@ from lexinform.services.documents import TextLoader
 from lexinform.services.sources import MetadataOnlySource
 from lexinform.services.tracking.rollover import TermRollover
 from lexinform.services.tracking_result import TrackingResult
+from tests.commission_cases import context as commission_context
+from tests.document_review_cases import context as consultation_context
 from tests.fakes import FakeBatchBackend, FakeLlm, FakePublisher, FixedClock
 from tests.harness import summary
-from tests.scenario.test_commission_reviews import context as commission_context
-from tests.scenario.test_document_reviews import context as consultation_context
 from tests.unit.test_physical_extraction import extractor
 
 

@@ -18,9 +18,9 @@ from lexinform.models import (
 from lexinform.models.original_delivery_content import OriginalDeliveryEvidence
 from lexinform.services.tracking_result import TrackingResult
 from tests.checkpoint_state import saved_state
+from tests.document_review_cases import finding, review
 from tests.harness import CHANNEL, TERM, World, rcl_document, summary
 from tests.scenario.test_commission_review_content_reader import with_content
-from tests.scenario.test_document_reviews import finding, review
 
 NUMBER = "RCL/12282650"
 

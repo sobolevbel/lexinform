@@ -23,8 +23,8 @@ from lexinform.models.reviews import ReviewPurpose
 from lexinform.primary_projections import PrimaryProjectionError
 from lexinform.review_memos import read_review_memo, resolve_review_memo, review_record_sha256
 from lexinform.services.computation_reuse import review_memo
-from tests.scenario.test_commission_reviews import context as commission_context
-from tests.scenario.test_document_reviews import context
+from tests.commission_cases import context as commission_context
+from tests.document_review_cases import context
 from tests.unit.test_government_review_reuse import prepared, replace_and_clean
 from tests.unit.test_review_computation_reuse import paid_review as original_paid_review
 

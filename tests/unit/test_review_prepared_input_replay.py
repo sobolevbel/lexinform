@@ -8,7 +8,7 @@ from tools.replay_review_input import Provider, verify_review_input
 from lexinform.adapters.llm_anthropic import AnthropicAnalyzer
 from lexinform.adapters.llm_openai import OpenAiAnalyzer
 from lexinform.models.batch import BatchRequest, DocumentReviewQuestion
-from tests.scenario.test_document_reviews import FINAL, context
+from tests.document_review_cases import FINAL, context
 
 
 def review_request(provider: Provider, *, wrong_source_hash: bool = False) -> BatchRequest:

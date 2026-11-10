@@ -1,0 +1,64 @@
+{
+  "date": "2026-11-04",
+  "base": "740e9f67",
+  "baseline": {
+    "tests": 7947,
+    "seconds": 281.61
+  },
+  "hybrid_control": {
+    "tests": 8199,
+    "seconds": 211.86
+  },
+  "final_gate": {
+    "tests": 8199,
+    "seconds": 328.2,
+    "status": "passed",
+    "context": "Concurrent full pytest-cov in doc-note-links worktree; host load reached 19 on eight cores; timing is not a performance comparison."
+  },
+  "coverage_of_cases": {
+    "original_logical_cases": 7947,
+    "snapshot_cases": 641,
+    "additional_git_anchors": 252,
+    "unchanged_cases": 7306,
+    "missing": 0,
+    "extra_logical_cases": 0,
+    "git_replay_collected": 7947
+  },
+  "preserved_complete_module_sha256": {
+    "tests/scenario/test_card_edit_multipart.py": "5af7bc5eee74af7d987f3ab60c8dca176a54c9c34195d45eff08804ac606c144",
+    "tests/scenario/test_card_revision_reader.py": "9ccd9ab9bb499c18e0e6b8341f30f80c7bb17887a567fb7310232db67780684a",
+    "tests/scenario/test_digest_remote_checkpoints.py": "c16b35a7fa1e37f2ac6ba6cb87c89851f9b9980714811a51b26a1bf0bc10ec5a",
+    "tests/scenario/test_group_remote_checkpoints.py": "5fd1e8118d155de7ea1d5b13e8062eb84c37dac035a593182e14c556fefbb641",
+    "tests/scenario/test_legacy_digest_freeze.py": "6ac3e3d657c02b39e76947487c1965503e3a0976bcfc640853b28fe0e8781fd0",
+    "tests/scenario/test_legacy_notice_freeze.py": "fea01204d22b3a2c7ea22dafcb3eeb81bf31c6f3fd50921175a7e3c5246bcba0",
+    "tests/scenario/test_legacy_reply_multipart.py": "110c9a155c599daced76d9df07ced98a2ba30167d87c839ca0957531b38c61c1",
+    "tests/scenario/test_legacy_reply_parent.py": "5e8f90e02e2ddc286de3ad5d2073d44b97f7c00baa087b94d820c14a9d2e43bc",
+    "tests/scenario/test_legacy_sitting_group_freeze.py": "66d1639fdfe47051aa0caa7d072a881f6c8ead4e58bc3461d0529a0ab050650d",
+    "tests/scenario/test_legacy_status_edit_freeze.py": "ec167985082ade09fad74e63c2aa504a633cc96582b7779b55a750c3c516f475",
+    "tests/scenario/test_legacy_status_reply_freeze.py": "8b7169311134c9f6ae2936d5392c03c38f888e66f88a36013df57c36327f621c",
+    "tests/scenario/test_long_sitting_remote_checkpoints.py": "a3e0f489a7942b59347e257eec8c2f0cdecaa09ba3546ffe485ae29f334000c7",
+    "tests/scenario/test_notice_remote_checkpoints.py": "64c1a2bfb199d0323776082d2d8a78e41400e1f74c250e2499a7e5a7254d6364",
+    "tests/scenario/test_review_remote_checkpoints.py": "6fb7f4d14b3621ca3f19e65c0b6bd3bdbca3b8ef6d1584b61e2a41a388100c05",
+    "tests/scenario/test_update_edit_remote_checkpoints.py": "06c744ced97d50da89ed90ade536a344d3db6d3ee76a5bfe295b8115d20ac50a",
+    "tests/scenario/test_update_remote_checkpoints.py": "2bec94a6f71b258c32191e2515975e4475162412e7eaf7121a7bcccedd963b8a"
+  },
+  "real_git_helper_fallback_body": "identical AST after the explicit snapshot dispatch",
+  "fault_checks": {
+    "pending_checkpoint_after_send": "detected by snapshot many_grow card test",
+    "receipt_checkpoint_removed": "detected by snapshot many_grow card test"
+  },
+  "fault_driver_source": "import ast\nimport inspect\nimport os\nimport textwrap\nimport lexinform.services.card_edits as edits\nimport lexinform.services.publications as publications\n\n\ndef pytest_sessionstart(session):\n    fault = os.environ.get('CARD_TEST_FAULT')\n    if not fault:\n        return\n    module = edits if fault.startswith('card_') else publications\n    name = 'edit_card' if module is edits else 'send_publications'\n    original = getattr(module, name)\n    tree = ast.parse(textwrap.dedent(inspect.getsource(original)))\n    function = tree.body[0]\n    if fault == 'card_projection_before_send':\n        index = next(i for i,n in enumerate(function.body) if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='sent' for t in n.targets))\n        function.body[index:index] = ast.parse('repo.set_card_digest(owner.id, desired)').body\n    elif fault == 'card_duplicate_edit_target':\n        nodes = [n for n in ast.walk(function) if isinstance(n,ast.keyword) and n.arg=='edit_message_id']\n        assert len(nodes)==1\n        target = next(n for n in ast.walk(nodes[0]) if isinstance(n,ast.Subscript) and isinstance(n.value,ast.Name) and n.value.id=='targets')\n        target.slice=ast.Constant(value=0)\n    elif fault == 'delivery_uncertain_as_failed':\n        count=0\n        for n in ast.walk(function):\n            if isinstance(n,ast.Attribute) and isinstance(n.value,ast.Name) and n.value.id=='PublicationStatus' and n.attr=='UNKNOWN':\n                n.attr='FAILED';count+=1\n        assert count==1\n    elif fault == 'delivery_pending_checkpoint_after_send':\n        before=next(n for n in function.body if isinstance(n,ast.If) and ast.unparse(n.test)=='checkpoint is not None')\n        function.body.remove(before)\n        attempt=next(n for n in function.body if isinstance(n,ast.Try))\n        attempt.body.insert(1,before)\n    elif fault == 'delivery_receipt_checkpoint_removed':\n        after=function.body[-2]\n        assert isinstance(after,ast.If) and ast.unparse(after.test)=='checkpoint is not None'\n        function.body.remove(after)\n    else:\n        raise ValueError(fault)\n    namespace=dict(vars(module))\n    exec(compile(ast.fix_missing_locations(tree),'<fault:'+fault+'>','exec'),namespace)\n    setattr(module,name,namespace[name])\n",
+  "limits": [
+    "Local shared-host observations, not a universal speed guarantee.",
+    "First hybrid timing had a pytest plugin-registration warning; registration was corrected before the final gate.",
+    "The built-in pending-checkpoint fault moves a source guard in this revision; it was not counted. The included driver selects the checkpoint explicitly.",
+    "Snapshot transport models successful acknowledged snapshots; Git configuration, ownership races, lease and filesystem transport belong to real Git tests.",
+    "All failure/lost-runner/unknown Git parameter variants and at least one Git variant per selected function remain."
+  ],
+  "commands": [
+    "make format",
+    "make check ARGS=\"--junitxml=/tmp/hybrid.xml --durations=20\"",
+    "make test ARGS=\"--checkpoint-transport=git\"",
+    "PYTHONPATH=\"$PWD:/private/tmp\" CARD_TEST_FAULT=delivery_pending_checkpoint_after_send uv run pytest -n 0 -p lexinform_card_faults tests/scenario/test_card_edit_multipart.py -k \"snapshot and every_multipart and many_grow\" --maxfail=1"
+  ]
+}

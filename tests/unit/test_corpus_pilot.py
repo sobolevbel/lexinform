@@ -5,12 +5,13 @@ import os
 import shutil
 from collections.abc import Iterator
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 from typing import Any
 
 import httpx2 as httpx
 import pytest
-from tools import corpus_pilot
+from tools import corpus_pilot, corpus_runs
 from tools.corpus_artifacts import digest
 from tools.corpus_http import fetch
 from tools.corpus_pilot import (
@@ -28,9 +29,27 @@ from tools.corpus_pilot import (
     receipt_charge,
 )
 from tools.corpus_runs import verify
+from tools.corpus_runtime import capture_code, source_fingerprints
 
 from tests.harness import rcl_document, rcl_folder, rcl_project, rcl_stage
 from tests.unit.test_physical_extraction import docx
+
+
+@pytest.fixture(autouse=True)
+def pilot_runtime(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest
+) -> Path | None:
+    if getattr(request, "param", "small") == "project":
+        return None
+    root = tmp_path / "runtime"
+    for relative in ("uv.lock", "src/example.py", "tests/example.py", "tools/example.py"):
+        path = root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("fixture = True\n")
+    for module in (corpus_pilot, corpus_runs):
+        monkeypatch.setattr(module, "source_fingerprints", partial(source_fingerprints, root=root))
+        monkeypatch.setattr(module, "capture_code", partial(capture_code, root=root))
+    return root
 
 
 @dataclass(frozen=True)
@@ -152,8 +171,10 @@ def final_id(staged: Path) -> str:
     return f"final-{digest((staged / 'manifest.json').read_bytes())}"
 
 
+@pytest.mark.parametrize("pilot_runtime", ["small", "project"], indirect=True)
 def test_pilot_seals_dispositions_before_offline_finalization_without_publishing(
     tmp_path: Path,
+    pilot_runtime: Path | None,
 ) -> None:
     fixture = pilot_fixture(tmp_path)
     before = corpus_bytes(fixture.corpus)
@@ -902,3 +923,24 @@ def test_finalizer_rejects_alternate_destinations_and_preserves_partial_output(
 def test_receipt_budget_rejects_invalid_completion_or_counts(receipt: dict[str, Any]) -> None:
     with pytest.raises(ValueError):
         receipt_charge(receipt, 0)
+
+
+def test_pilot_detects_source_tree_drift_before_the_next_request(
+    tmp_path: Path, pilot_runtime: Path | None
+) -> None:
+    assert pilot_runtime is not None, "the default runtime fixture provides an isolated source tree"
+    fixture = pilot_fixture(tmp_path)
+    calls: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(str(request.url))
+        (pilot_runtime / "src/example.py").write_text("fixture = False\n")
+        return httpx.Response(200, content=docx("Art. 1."))
+
+    with (
+        httpx.Client(transport=httpx.MockTransport(handler)) as client,
+        pytest.raises(ValueError, match="[Cc]ode changed"),
+    ):
+        pilot(fixture.corpus, fixture.plan, fixture.pin, fixture.root, "pilot", client)
+    assert len(calls) == 1
+    assert not (fixture.root / "pilot/children/slot-101").exists()

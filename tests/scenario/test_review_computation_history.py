@@ -14,16 +14,11 @@ from lexinform.models import (
 )
 from lexinform.models.reviews import ReviewPurpose
 from lexinform.services.analysis import Waiting
+from tests.commission_cases import context as commission_context
+from tests.computations import REVIEW_PURPOSES as PURPOSES
+from tests.document_review_cases import FINAL, context
 from tests.fakes import FakeLlm
 from tests.harness import World
-from tests.scenario.test_commission_reviews import context as commission_context
-from tests.scenario.test_document_reviews import FINAL, context
-
-PURPOSES: tuple[ReviewPurpose, ...] = (
-    "consultation_review",
-    "commission_review",
-    "act_application",
-)
 
 
 def queued_review(
