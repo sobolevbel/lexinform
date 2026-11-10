@@ -45,6 +45,7 @@ from lexinform.adapters.odt_table_capture import capture_odt_tables
 from lexinform.adapters.word_block_copies import PlainWordCopies, current_plain_word_copies
 from lexinform.adapters.word_field_ranges import WordFieldExtraction, WordFieldRanges
 from lexinform.adapters.word_grid_capture import capture_word_grid_merges
+from lexinform.adapters.word_review_rows import consultation_word_rows
 from lexinform.archive_policy_capture import native_archive_policy_sink
 from lexinform.document_candidates import select_document_parts
 from lexinform.extraction_records import (
@@ -278,6 +279,22 @@ class DocxTextExtractor:
 
     def extract_blocks(self, data: bytes) -> WordTextExtraction:
         return self._blocks(data)
+
+    def extract_consultation_rows(
+        self, data: bytes
+    ) -> tuple[tuple[WordTextBlock, str | None], ...]:
+        extraction = self.extract_blocks(data)
+        if extraction.body_state != "read":
+            return ()
+        with _physical_zip(data) as archive:
+            xml = _read_xml(archive, "word/document.xml")
+            numbering = None
+            if "word/numbering.xml" in archive.namelist():
+                with suppress(ET.ParseError, ValueError):
+                    definition = _read_xml(archive, "word/numbering.xml")
+                    if not _declares_entities(definition):
+                        numbering = ET.fromstring(definition)
+        return consultation_word_rows(extraction, ET.fromstring(xml), numbering)
 
     def extract_with_field_ranges(self, data: bytes) -> WordFieldExtraction:
         fields = WordFieldRanges()
