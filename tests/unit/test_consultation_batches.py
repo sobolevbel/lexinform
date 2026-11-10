@@ -261,3 +261,32 @@ def test_synthesis_checks_only_selected_proposals_against_dated_articles() -> No
     assert not validate_review(
         result.model_copy(update={"compared_changes": (wrong,)}), synthesis
     ).compared_changes
+
+
+def test_synthesis_selects_a_quoted_amended_article_without_the_next_provision() -> None:
+    old_text = (
+        "Art. 2. W ustawie wprowadza się zmiany:\n"
+        "„Art. 106. Pobyt w okresie obowiązywania decyzji jest legalny.\n"
+        "Art. 107. Inny przepis.”"
+    )
+    new_text = old_text.replace("obowiązywania decyzji", "wskazanym w decyzji")
+    before = (
+        review_context(old_text, role="comparison_text")
+        .documents[0]
+        .model_copy(update={"identity": "before", "draft_date": date(2025, 12, 23)})
+    )
+    after = (
+        review_context(new_text, role="project_text")
+        .documents[0]
+        .model_copy(update={"identity": "after", "draft_date": date(2026, 1, 19)})
+    )
+    root = review_context().model_copy(
+        update={"documents": (before, after), "comparison_sha256": before.normalized_sha256}
+    )
+    accepted = review_finding(quote="Pkt 2. Zmiana art. 106. Uwaga uwzględniona.")
+
+    synthesis, _ = consultation_synthesis_context(root, 10, (accepted,))
+    old, new = synthesis.documents
+
+    assert old.text == "„Art. 106. Pobyt w okresie obowiązywania decyzji jest legalny."
+    assert new.text == "„Art. 106. Pobyt w okresie wskazanym w decyzji jest legalny."

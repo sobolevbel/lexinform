@@ -5,7 +5,7 @@ from lexinform.models import ReviewContext, ReviewPurpose
 
 
 def review_prompt_version(purpose: ReviewPurpose) -> str:
-    return "consultation-review-v4" if purpose == "consultation_review" else "document-review-v1"
+    return "consultation-review-v5" if purpose == "consultation_review" else "document-review-v1"
 
 
 def review_system(language: str, purpose: ReviewPurpose = "consultation_review") -> str:
@@ -86,8 +86,9 @@ def review_prompt(context: ReviewContext, *, version: str | None = None) -> str:
         "consultation-review-v2",
         "consultation-review-v3",
         "consultation-review-v4",
+        "consultation-review-v5",
     ):
-        structured_rows = version in ("consultation-review-v3", "consultation-review-v4")
+        structured_rows = version != "consultation-review-v2"
         originals: dict[tuple[str, str], str] = {}
         for source, document in zip(context.documents, payload["documents"], strict=True):
             if structured_rows:
@@ -211,7 +212,10 @@ CONSULTATION_SYNTHESIS_SYSTEM = (
     "requirements, deadlines, exceptions and costs. Keep separately material opposing outcomes. "
     "When two dated draft excerpts are provided, add a compared_changes item only for a "
     "selected accepted or partial proposal and only when exact quotes from both excerpts "
-    "prove a change to the same provision that addresses the proposal. Otherwise leave "
+    "prove a change to the same provision that addresses the proposal. Use the same legal article "
+    "locator in both citations, for example Art. 106, with no draft date or enclosing amendment "
+    "item. Each quote must be an exact contiguous excerpt including that article heading and the "
+    "changed operative wording. Use the supplied dates as metadata only. Otherwise leave "
     "compared_changes empty. Set summary empty, complete true, and all other arrays empty."
 )
 CONSULTATION_SYNTHESIS_SCHEMA = _object(

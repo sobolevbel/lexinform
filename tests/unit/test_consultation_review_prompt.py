@@ -183,3 +183,28 @@ def test_official_unjustified_label_supports_rejection() -> None:
     candidate = finding(quote=quote, outcome="rejected")
     (confirmed,) = validate_review(review(candidate), context(quote)).consultation_findings
     assert confirmed.outcome == "rejected"
+
+
+def test_numbered_consultation_citation_requires_its_own_complete_row() -> None:
+    row = "2\tKonfederacja Lewiatan\tZmiana brzmienia art. 106\tUwaga uwzględniona."
+    source = context(f"Lp.\tAutor\tUwaga\tStanowisko\n{row}\n3\tIOM\tArt. 2\tUwaga odrzucona.")
+    candidate = finding().model_copy(
+        update={
+            "evidence": EvidenceCitation(
+                document_id=source.documents[0].identity, locator="2", quote=row
+            ),
+            "proposers": ("Konfederacja Lewiatan",),
+        }
+    )
+    (validated,) = validate_review(review(candidate), source).consultation_findings
+    assert validated.outcome == "accepted" and validated.proposers == candidate.proposers
+
+    citation = candidate.evidence
+    assert citation is not None, "the fixture cites consultation row 2"
+    for invalid in (
+        citation.model_copy(update={"locator": "3"}),
+        citation.model_copy(update={"quote": row.rsplit("\t", 1)[0]}),
+    ):
+        incomplete = candidate.model_copy(update={"evidence": invalid})
+        (rejected,) = validate_review(review(incomplete), source).consultation_findings
+        assert rejected.evidence is None and rejected.outcome == "unknown"

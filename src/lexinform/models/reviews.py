@@ -337,13 +337,23 @@ def citation_document_in(
             ),
             None,
         )
-    if not re.match(
-        r"(?:art\.?\s*\d+|§\s*\d+|pkt\.?\s*\d+|lp\.?\s*\d+|\d+[.)]?\s+\S)",
-        locator,
-        re.IGNORECASE,
-    ) and not (
-        allow_annex_locator
-        and re.fullmatch(r"załącznik\s+nr\s+[1-9]\d{0,2}[a-z]?", locator, re.IGNORECASE)
+    numbered_row = (
+        "response" in roles
+        and locator.isascii()
+        and locator.isdecimal()
+        and citation.quote.split("\t", 1)[0] == locator
+    )
+    if (
+        not re.match(
+            r"(?:art\.?\s*\d+|§\s*\d+|pkt\.?\s*\d+|lp\.?\s*\d+|\d+[.)]?\s+\S)",
+            locator,
+            re.IGNORECASE,
+        )
+        and not numbered_row
+        and not (
+            allow_annex_locator
+            and re.fullmatch(r"załącznik\s+nr\s+[1-9]\d{0,2}[a-z]?", locator, re.IGNORECASE)
+        )
     ):
         return None
     return next(
@@ -352,6 +362,16 @@ def citation_document_in(
             for document in documents
             if document.identity == citation.document_id
             and document.role in roles
+            and (
+                not numbered_row
+                or (
+                    document.role == "response"
+                    and any(
+                        _normalized(row) == _normalized(citation.quote)
+                        for row in _response_rows(document.text)
+                    )
+                )
+            )
             and " ".join(citation.quote.split()) in " ".join(document.text.split())
             and _has_locator(citation.quote, citation.locator)
         ),

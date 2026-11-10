@@ -3,6 +3,7 @@
 import hashlib
 import json
 import re
+from collections import Counter
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from datetime import datetime
@@ -27,7 +28,10 @@ CONSULTATION_MODEL = "gpt-6.1-sol"
 CONSULTATION_DELIVERY_PREFIX = "consultation-parts:"
 _ENVELOPE_TOKENS = 4_000
 _PROSE_BREAK = re.compile(r"\f|\n[^\S\n\f]*\n")
-_ARTICLE = re.compile(r"^[ \t]*Art\.[ \t]*([1-9][0-9]*[a-z]?)\.(?=\s|$)", re.I | re.M)
+_ARTICLE = re.compile(
+    r"^[ \t]*(?P<quoted>„[ \t]*)?Art\.[ \t]*(?P<number>[1-9][0-9]*[a-z]?)\.(?=\s|$)",
+    re.I | re.M,
+)
 _ARTICLE_MENTION = re.compile(r"\bart\.\s*([1-9][0-9]*[a-z]?)\b", re.I)
 _REFERENCE = re.compile(r"\b(?:pkt|lp)\.?\s*(\d+)\s+(?:tego\s+)?(?:raportu|tabeli)\b", re.I)
 
@@ -291,18 +295,19 @@ def consultation_draft_pair(context: ReviewContext) -> tuple[ReviewDocument, Rev
 
 def _article_excerpts(text: str) -> dict[str, str]:
     matches = list(_ARTICLE.finditer(text))
-    counts: dict[str, int] = {}
-    for match in matches:
-        number = match[1].lower()
-        counts[number] = counts.get(number, 0) + 1
-    return {
-        match[1].lower(): text[match.start() : end].strip()
-        for index, match in enumerate(matches)
-        if counts[match[1].lower()] == 1
-        and (end := matches[index + 1].start() if index + 1 < len(matches) else len(text))
-        - match.start()
-        <= 8_000
-    }
+    counts = Counter(match["number"].lower() for match in matches)
+    excerpts = {}
+    next_heading = next_plain_heading = len(text)
+    for match in reversed(matches):
+        number = match["number"].lower()
+        quoted = bool(match["quoted"])
+        end = next_heading if quoted else next_plain_heading
+        if counts[number] == 1 and end - match.start() <= 8_000:
+            excerpts[number] = text[match.start() : end].strip()
+        if not quoted:
+            next_plain_heading = match.start()
+        next_heading = match.start()
+    return excerpts
 
 
 def _comparison_excerpts(
