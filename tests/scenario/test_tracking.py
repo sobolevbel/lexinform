@@ -623,7 +623,8 @@ WITH_A_REPORT = WITH_REPORT + (
 )
 
 
-def test_senate_amendments_are_summarised_from_the_senate_print() -> None:
+@pytest.mark.parametrize("fallback", [False, True])
+def test_senate_amendments_are_summarised_from_the_senate_print(fallback: bool) -> None:
     fixture = Path(__file__).parents[1] / "fixtures/sejm/senate_3213_resolution.txt"
     resolution = (
         fixture.read_text()
@@ -636,13 +637,19 @@ def test_senate_amendments_are_summarised_from_the_senate_print() -> None:
     )
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=REFERRED)
     w.run()
-    w.gateway.prints["2994"] = PrintInfo(
-        term=10,
-        number="2994",
-        title="Uchwała Senatu",
-        attachments=(Attachment(print_number="2994", name="2994.pdf", url=SENATE_PRINT_URL),),
-    )
-    w.gateway.files[SENATE_PRINT_URL] = b"%PDF-senat"
+    if fallback:
+        url = "https://www.senat.gov.pl/download/gfx/senat/pl/senatuchwaly/5957/plik/893uch.pdf"
+        adopted_on = dt.date(2026, 9, 20)
+        w.senate.resolutions["3039", adopted_on] = ("Ustawa o cudzoziemcach", url)
+    else:
+        url = SENATE_PRINT_URL
+        w.gateway.prints["2994"] = PrintInfo(
+            term=10,
+            number="2994",
+            title="Uchwała Senatu",
+            attachments=(Attachment(print_number="2994", name="2994.pdf", url=SENATE_PRINT_URL),),
+        )
+    w.gateway.files[url] = b"%PDF-senat"
     w.set_stages("3039", SENATE_AMENDED)
     w.clock.advance(days=1)
 
@@ -654,7 +661,7 @@ def test_senate_amendments_are_summarised_from_the_senate_print() -> None:
     _, change, _ = w.publisher.updates[0]
     assert change.amendments is not None, "the Senate's resolution print is summarised"
     assert change.amendments.source_kind == "senate_amendments"
-    assert change.amendments.source_url == SENATE_PRINT_URL
+    assert change.amendments.source_url == url
     assert change.amendments.amendments.changes[0].startswith("Срок подачи заявления продлён")
     ctx = w.llm.amendment_contexts[-1]
     assert ctx.previous_summary and ctx.source_kind == "senate_amendments"
@@ -662,7 +669,7 @@ def test_senate_amendments_are_summarised_from_the_senate_print() -> None:
     text = MessageFormatter("ru").status_update(*w.publisher.updates[0][:2]).text
     assert text.startswith("📋 <b>Сенат внёс поправки — druk nr 3039</b>")
     assert "🆕 <b>Что меняют поправки Сената</b>\nСенат смягчил проект" in text
-    assert "• Убран сбор за дубликат" in text and 'href="' + SENATE_PRINT_URL in text
+    assert "• Убран сбор за дубликат" in text and 'href="' + url in text
     assert "#сенат #поправки #важность5 #легализация #kadencja10druk3039" in text
 
 
@@ -754,7 +761,7 @@ def test_additional_committee_report_is_summarised_with_its_proposal() -> None:
     assert "Что меняют поправки (по отчёту комиссии)" in text
 
 
-def test_unreadable_amendments_document_leaves_the_bare_event() -> None:
+def test_unreadable_amendments_document_waits_before_publishing() -> None:
     extractor = FakeTextExtractor()
     w = World(extractor=extractor)
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=WITH_REPORT, with_pdf=False)
@@ -767,9 +774,17 @@ def test_unreadable_amendments_document_leaves_the_bare_event() -> None:
 
     report = w.run()
 
-    assert report.updates == 1 and not report.errors
-    _, change, _ = w.publisher.updates[-1]
-    assert change.amendments is None and w.llm.amendment_contexts == []
+    assert report.updates == 0 and not report.errors
+    assert not w.publisher.updates and not w.llm.amendment_contexts
+    assert w.bill("3039").awaiting_batch_since is not None
+
+    extractor.error = None
+    w.clock.advance(days=1)
+    resumed = w.run()
+
+    assert resumed.updates == 1
+    assert w.publisher.updates[-1][1].amendments is not None
+    assert w.bill("3039").awaiting_batch_since is None
 
 
 VOTED = REFERRED + (

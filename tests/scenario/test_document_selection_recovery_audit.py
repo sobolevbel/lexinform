@@ -20,6 +20,7 @@ from tests.scenario.test_senate_document_selection import (
     FIXTURES,
     STAGE,
     SUBJECT,
+    publish_legacy_amendment_update,
     world_with_sources,
 )
 from tests.unit.test_physical_extraction import docx
@@ -79,7 +80,7 @@ def test_late_senate_attachment_is_revisited_without_another_stage_change(restor
     world = world_with_sources({"3213.docx": resolution})
     del world.gateway.files["https://api.test/3213.docx"]
 
-    world.run()
+    publish_legacy_amendment_update(world)
     assert not world.llm.amendment_contexts
     changes = world.repo.list_status_changes(10, "1929")
     saved_ids = [change.id for change in changes]
@@ -145,7 +146,7 @@ def test_late_batch_preserves_exact_input_when_the_source_disappears_before_queu
     )
     world.set_stages("1929", REFERRED + (STAGE,))
     world.clock.advance(days=1)
-    world.run()
+    publish_legacy_amendment_update(world)
     world.clock.advance(days=1)
     world.run()
     deferred = world.repo.list_document_work(due=world.clock.now() + dt.timedelta(days=7))

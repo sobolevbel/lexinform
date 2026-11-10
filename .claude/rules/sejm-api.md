@@ -119,6 +119,8 @@ paths:
   its e-mail in `data-cfemail` or `SendTo(...)`. The window is days; `SenateWatcher` reads it every run
   in phase `senate` (`bills.senate_json`, v31); the card says "committees, e-mail, before the sitting
   on …", then only the vote is left.
+- Senate resolution fallback uses the official sitting agenda topic with the exact Sejm print
+  and decision date, then validates the linked resolution contents. Acts can have identical titles.
 - Never `HEAD` an attachment (no `Content-Length`, 5–15 s on an unrendered file): stream the `GET`
   with `download(url, max_bytes=…)`. pypdf needs `pypdf[fonts]` (CFF fonts); its logger is capped at
   ERROR; ~1 s per 100 pages. A scan goes to the model as a PDF block: ≤ 32 MB request (≤ 24 MB file;

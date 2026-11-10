@@ -14,6 +14,7 @@ import re
 import time
 from collections.abc import Callable
 from datetime import date
+from threading import Lock
 
 import httpx2 as httpx
 from bs4 import BeautifulSoup, Tag
@@ -36,6 +37,8 @@ log = logging.getLogger(__name__)
 LISTING_PATH = "/prace/proces-legislacyjny-w-senacie/ustawy-uchwalone-przez-sejm/"
 # The Senate has thirty days and receives some twenty acts in a busy week.
 MAX_LISTING_PAGES = 5
+_SITTING_PATH = re.compile(r"/prace/posiedzenia/tematy,\d+,\d+\.html")
+_RESOLUTION_PATH = re.compile(r"/download/gfx/senat/pl/senatuchwaly/\d+/plik/[^/]+\.pdf")
 
 _MONTHS = {
     "stycznia": 1,
@@ -185,6 +188,32 @@ def _absolute(href: str) -> str:
     return href if href.startswith("http") else f"{SENATE_BASE_URL}{href}"
 
 
+def _amendment_topics(html: str, adopted_on: date) -> tuple[dict[str, set[tuple[str, str]]], str]:
+    soup = BeautifulSoup(html, "html.parser")
+    found: dict[str, set[tuple[str, str]]] = {}
+    for topic in soup.select(".temat-posiedzenia"):
+        outcome = topic.select_one(".kolor")
+        title = topic.select_one(".temat h3")
+        if (
+            outcome is None
+            or title is None
+            or _date(outcome) != adopted_on
+            or "wprowadził poprawk" not in outcome.get_text(" ", strip=True)
+        ):
+            continue
+        for link in topic.select(".uchwaly a[href]"):
+            href = str(link["href"])
+            if _RESOLUTION_PATH.fullmatch(href):
+                for anchor in topic.select(".druki-sejmowe a"):
+                    number = anchor.get_text(" ", strip=True)
+                    if number.isdecimal():
+                        found.setdefault(number, set()).add(
+                            (title.get_text(" ", strip=True), _absolute(href))
+                        )
+    next_page = soup.select_one("a.next-page[href]")
+    return found, str(next_page["href"]) if next_page else ""
+
+
 class SenateClient:
     def __init__(
         self,
@@ -210,6 +239,8 @@ class SenateClient:
         self._sleep = sleep
         # A client lives for one run: the listing and a committee are read once however many
         # acts ask for them.
+        self._resolution_lock = Lock()
+        self._resolution_topics: dict[date, dict[str, set[tuple[str, str]]]] = {}
         self._pages: dict[int, list[tuple[str, str]]] = {}
         self._committees: dict[int, SenateCommittee] = {}
 
@@ -227,6 +258,34 @@ class SenateClient:
         # A retyped title is taken only where no act carries the Sejm's own.
         best = min(found, key=lambda f: f[:2], default=None)
         return best[2] if best is not None else None
+
+    def amendment_resolution(self, number: str, adopted_on: date) -> tuple[str, str] | None:
+        with self._resolution_lock:
+            if adopted_on not in self._resolution_topics:
+                self._resolution_topics[adopted_on] = self._read_amendment_topics(adopted_on)
+            matches = self._resolution_topics[adopted_on].get(number, set())
+        return next(iter(matches)) if len(matches) == 1 else None
+
+    def _read_amendment_topics(self, adopted_on: date) -> dict[str, set[tuple[str, str]]]:
+        html = self._get(f"{self._base_url}/prace/posiedzenia/")
+        assert html is not None, "the sitting list is required"
+        soup = BeautifulSoup(html, "html.parser")
+        found: dict[str, set[tuple[str, str]]] = {}
+        seen: set[str] = set()
+        for meeting in soup.select(".container-posiedzenia"):
+            link = meeting.select_one("a.headline-anchor[href]")
+            last_date = _date(meeting.select_one(".date-container"))
+            if link is None or last_date is None or last_date < adopted_on:
+                continue
+            href = str(link["href"])
+            while _SITTING_PATH.fullmatch(href) and href not in seen:
+                seen.add(href)
+                html = self._get(f"{self._base_url}{href}")
+                assert html is not None, "a linked sitting page is required"
+                topics, href = _amendment_topics(html, adopted_on)
+                for number, matches in topics.items():
+                    found.setdefault(number, set()).update(matches)
+        return found
 
     def read_act(self, url: str) -> SenateAct:
         html = self._get(url)

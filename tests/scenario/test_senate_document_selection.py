@@ -45,6 +45,14 @@ def world_with_sources(files: dict[str, str], *, workers: int = 1) -> World:
     return world
 
 
+def publish_legacy_amendment_update(world: World) -> None:
+    with pytest.MonkeyPatch.context() as historical:
+        historical.setattr(
+            "lexinform.services.tracking.service._amendments_pending", lambda change: False
+        )
+        world.run()
+
+
 @pytest.mark.parametrize(
     "name",
     [
@@ -107,7 +115,8 @@ def test_unconfirmed_sources_never_reach_the_model(failure: str) -> None:
     report = w.run()
 
     assert not report.errors and not w.llm.amendment_contexts
-    assert w.repo.list_status_changes(10, "1929")[-1].amendments is None
+    assert not w.publisher.texts(PublicationKind.STATUS_UPDATE)
+    assert w.bill("1929").awaiting_batch_since is not None
 
 
 def test_wrong_word_cannot_hide_a_complete_pdf_for_the_correct_law() -> None:
@@ -262,7 +271,8 @@ def test_a_report_on_amendments_the_senate_did_not_confirm_gets_no_summary() -> 
     w.run()
 
     assert not w.llm.amendment_contexts
-    assert w.repo.list_status_changes(10, "1929")[-1].amendments is None
+    assert not w.publisher.texts(PublicationKind.STATUS_UPDATE)
+    assert w.bill("1929").awaiting_batch_since is not None
 
 
 @pytest.mark.parametrize("name", ["senate_9_3505_docx.txt", "senate_9_3506_docx.txt"])

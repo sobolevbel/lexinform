@@ -356,6 +356,7 @@ class StatusTrackingService:
         self._wykaz = _wykaz_watcher(wykaz, rcl_reader, repo, clock, poster, analysis, options)
         self._agenda = _agenda_watcher(gateway, repo, clock, poster, enricher, options)
         self._acts = acts
+        self._senate_gateway = senate
         self._senate = (
             SenateWatcher(senate, gateway, repo, clock, local_tz=options.local_tz)
             if senate is not None
@@ -835,6 +836,7 @@ class StatusTrackingService:
             titles=(detail.title_final or "", detail.title),
             owner=bill,
             process_number=detail.number,
+            senate_gateway=self._senate_gateway,
         )
 
     def _retry_documents(self, result: TrackingResult, *, publish: bool, may_wait: bool) -> None:
@@ -1072,6 +1074,12 @@ class StatusTrackingService:
                 self._repo.set_awaiting_batch(bill.term, bill.number, self._clock.now())
             result.waiting += 1
             return None
+        if deliver and change is not None and _amendments_pending(change):
+            if bill.awaiting_batch_since is None:
+                self._repo.set_awaiting_batch(bill.term, bill.number, self._clock.now())
+            result.waiting += 1
+            log.info("druk %s: update waits for an amendments summary", bill.number)
+            return None
         # Stored with the committees named, so the card can address them by name: the name is
         # not part of `_stage_key`, so writing it moves no fingerprint and announces nothing.
         named = self._enricher.name_committees(bill.term, detail.stages)
@@ -1294,6 +1302,14 @@ class StatusTrackingService:
             return record
         change.amendments = record
         return None
+
+
+def _amendments_pending(change: StatusChange) -> bool:
+    if amendments_stage(change.new_stages) is None:
+        return False
+    return change.amendments is None or not any(
+        item.strip() for item in change.amendments.amendments.changes
+    )
 
 
 def _log_change(bill: Bill, change: StatusChange) -> None:

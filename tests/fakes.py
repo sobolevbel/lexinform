@@ -477,6 +477,7 @@ class FakeSenateGateway:
     """`SenateGateway` over the acts the Senate lists, keyed by the Sejm's `titleFinal`."""
 
     acts: dict[str, SenateAct] = field(default_factory=dict)
+    resolutions: dict[tuple[str, date], tuple[str, str]] = field(default_factory=dict)
     outage: bool = False
     calls: list[str] = field(default_factory=list)
 
@@ -497,6 +498,9 @@ class FakeSenateGateway:
 
     def close(self) -> None:
         pass
+
+    def amendment_resolution(self, number: str, adopted_on: date) -> tuple[str, str] | None:
+        return self.resolutions.get((number, adopted_on))
 
     def put(self, title_final: str, act: SenateAct) -> None:
         """Make the Senate list this act, or show it as it now stands."""

@@ -53,7 +53,7 @@ from lexinform.adapters.wykaz_csv import WykazClient
 from lexinform.clock import SystemClock
 from lexinform.errors import StateCheckpointError
 from lexinform.keywords import KeywordPrefilter
-from lexinform.models import BatchProvider, provider_of
+from lexinform.models import SENATE_BASE_URL, BatchProvider, provider_of
 from lexinform.physical_observations import PhysicalObservationCollector
 from lexinform.ports import (
     BatchBackend,
@@ -195,6 +195,7 @@ class Container:
                 _host(self.settings.sejm_api_base_url): self.gateway.download,
                 "www.sejm.gov.pl": self.gateway.download,
                 "sejm.gov.pl": self.gateway.download,
+                _host(SENATE_BASE_URL): self.gateway.download,
             }
             orka = _host(self.settings.orka_base_url)
             if orka not in downloaders:
@@ -742,6 +743,7 @@ class Container:
                 self.analysis_service(),
                 channel_id=self.channel_id(),
                 clock=self.clock,
+                senate=self.senate,
             ),
         )
 

@@ -128,8 +128,8 @@ paths:
   parent and keep parent payloads while a continuation is unfinished (`message_part`,
   `DeliveryPlan.continuation_*`; see `docs/reference/database.md`).
 - **Amendments** (Senate resolution print; a committee report proposing poprawki) are summarised by
-  `AnalysisService.summarize_amendments` after the change row exists, stored as `amendments_json`;
-  failure degrades to the bare event. A report on the Senate's position is only votes ("pkt 1 –
+  `AnalysisService.summarize_amendments` before recording a reader update. Tracking retries until
+  the source and substantive summary are available. A report on the Senate's position is only votes ("pkt 1 –
   przyjąć"), so `amendments.amendments_source` reads the Senate's resolution with the report beside it
   (`AmendmentsContext.recommendation`) and gives no summary when the resolution cannot be confirmed
   (`senate_position_reported`).

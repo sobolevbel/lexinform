@@ -23,7 +23,12 @@ from tests.harness import CHANNEL, REFERRED, TERM, World
 from tests.scenario.test_card_remote_checkpoints import Mode, connect, git
 from tests.scenario.test_commands import _commands_only
 from tests.scenario.test_group_remote_checkpoints import restored
-from tests.scenario.test_senate_document_selection import FIXTURES, STAGE, SUBJECT
+from tests.scenario.test_senate_document_selection import (
+    FIXTURES,
+    STAGE,
+    SUBJECT,
+    publish_legacy_amendment_update,
+)
 
 MARKER = "Поздний разбор: сбор 200 PLN, повторное заявление не требуется."
 URL = "https://api.test/3213.docx"
@@ -72,7 +77,7 @@ def queued(mode: Mode = "on", *, long: bool = False) -> LateCase:
     )
     world.set_stages("1929", REFERRED + (frame, STAGE))
     world.clock.advance(days=1)
-    world.run()
+    publish_legacy_amendment_update(world)
     change = world.repo.list_status_changes(TERM, "1929")[-1]
     assert change.id is not None, "tracking stored the original Senate event"
     original = world.repo.get_update_publication(change.id, CHANNEL)

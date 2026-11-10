@@ -286,3 +286,46 @@ def test_an_unreachable_site_is_an_outage() -> None:
 
     with pytest.raises(SenateUnavailableError):
         _client(down).find_act(JAPAN, passed_on=dt.date(2026, 9, 18))
+
+
+def test_amendments_resolution_links_exact_print_in_paginated_sitting() -> None:
+    first = "/prace/posiedzenia/tematy,670,1.html"
+    second = "/prace/posiedzenia/tematy,670,2.html"
+    base = "/download/gfx/senat/pl/senatuchwaly"
+
+    def topic(number: str, href: str, day: int = 6) -> str:
+        return f"""
+        <div class="temat-posiedzenia">
+          <div class="temat"><h3>Ustawa o zmianie ustawy</h3></div>
+          <div class="kolor">Senat w dniu {day} listopada 2026 r. wprowadził poprawki</div>
+          <div class="druki-sejmowe"><a>{number}</a></div>
+          <div class="uchwaly"><a href="{href}"></a></div>
+        </div>
+        """
+
+    pages = {
+        "/prace/posiedzenia/": f"""
+        <div class="container-posiedzenia">
+          <div class="date-container">4, 5 i 6 listopada 2026 r.</div>
+          <a class="headline-anchor" href="{first}"></a>
+        </div>
+        """,
+        first: topic("3141", f"{base}/5958/plik/895uch.pdf")
+        + f'<a class="next-page" href="{second}"></a>',
+        second: topic("3157", f"{base}/5957/plik/893uch.pdf")
+        + topic("3157", f"{base}/5956/plik/892uch.pdf", day=5),
+    }
+    client = SenateClient("https://senat.test", transport=httpx.MockTransport(_site(pages)))
+    try:
+        adopted = dt.date(2026, 11, 6)
+        assert client.amendment_resolution("3141", adopted) == (
+            "Ustawa o zmianie ustawy",
+            f"https://www.senat.gov.pl{base}/5958/plik/895uch.pdf",
+        )
+        assert client.amendment_resolution("3157", adopted) == (
+            "Ustawa o zmianie ustawy",
+            f"https://www.senat.gov.pl{base}/5957/plik/893uch.pdf",
+        )
+        assert client.amendment_resolution("315", adopted) is None
+    finally:
+        client.close()

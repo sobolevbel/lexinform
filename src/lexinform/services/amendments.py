@@ -7,14 +7,16 @@ from lexinform.committee_recommendation import (
     CommitteeRecommendationOrigin,
     official_recommendation_stages,
 )
-from lexinform.errors import ServiceUnavailableError
+from lexinform.errors import SenateUnavailableError, ServiceUnavailableError
 from lexinform.models import (
     AmendmentRevisionTarget,
+    Attachment,
     Bill,
     CommandOutcome,
     DeliveryPlan,
     DigestItemMeta,
     OutcomeStatus,
+    PrintInfo,
     Publication,
     PublicationKind,
     PublicationStatus,
@@ -24,7 +26,7 @@ from lexinform.models import (
     amendments_stage,
     senate_position_reported,
 )
-from lexinform.ports import BillRepository, Clock, SejmGateway
+from lexinform.ports import BillRepository, Clock, SejmGateway, SenateGateway
 from lexinform.senate_documents import adoption_before_senate
 from lexinform.services.amendment_input_history import original_amendment_input
 from lexinform.services.analysis import AnalysisService, Waiting
@@ -53,6 +55,7 @@ def amendments_source(
     titles: tuple[str, ...],
     owner: Bill | None = None,
     process_number: str | None = None,
+    senate_gateway: SenateGateway | None = None,
 ) -> AmendmentsSource | None:
     """A report on the Senate's amendments lists only votes: the resolution is read with it."""
     senate = stage if stage.stage_type == "SenatePosition" else None
@@ -70,14 +73,46 @@ def amendments_source(
         raise
     except Exception as exc:
         log.warning("Senate print %s unavailable: %s", senate.print_number, exc)
-        return None
-    document = analysis.senate_amendments_document(
-        info,
-        senate,
-        titles=titles,
-        passed_on=adoption_before_senate(stages, info.document_date or senate.date),
-        owner=owner,
+        info = None
+    document = (
+        analysis.senate_amendments_document(
+            info,
+            senate,
+            titles=titles,
+            passed_on=adoption_before_senate(stages, info.document_date or senate.date),
+            owner=owner,
+        )
+        if info is not None
+        else None
     )
+    number = process_number or (owner.number if owner is not None else None)
+    if document is None and senate_gateway is not None and senate.date is not None and number:
+        try:
+            match = senate_gateway.amendment_resolution(number, senate.date)
+        except SenateUnavailableError as exc:
+            log.warning("Senate resolution for druk %s unavailable: %s", number, exc)
+            return None
+        if match is not None:
+            info = None
+            title, url = match
+            fallback = PrintInfo(
+                term=term,
+                number=senate.print_number,
+                title="Uchwała Senatu w sprawie ustawy " + title.removeprefix("Ustawa "),
+                document_date=senate.date,
+                attachments=(
+                    Attachment(
+                        print_number=senate.print_number, name=url.rsplit("/", 1)[-1], url=url
+                    ),
+                ),
+            )
+            document = analysis.senate_amendments_document(
+                fallback,
+                senate,
+                titles=titles,
+                passed_on=adoption_before_senate(stages, senate.date),
+                owner=owner,
+            )
     if document is None:
         return None
     if senate is stage:
@@ -86,7 +121,8 @@ def amendments_source(
     report = TextDocument(url=stage.report_file, kind="committee_amendments")
     origin = None
     if (
-        owner is not None
+        info is not None
+        and owner is not None
         and owner.number == process_number
         and owner.term == term == info.term
         and info.number == senate.print_number
@@ -113,12 +149,14 @@ class AmendmentsService:
         *,
         channel_id: str,
         clock: Clock,
+        senate: SenateGateway | None = None,
     ) -> None:
         self._repo = repo
         self._gateway = gateway
         self._analysis = analysis
         self._channel_id = channel_id
         self._clock = clock
+        self._senate = senate
 
     def request(
         self, bill: Bill, *, publication_id: int | None = None, force_id: str = ""
@@ -187,9 +225,13 @@ class AmendmentsService:
                     stage,
                     snapshot.stages,
                     term=bill.term,
-                    titles=(snapshot.summary.title,),
+                    titles=(
+                        snapshot.summary.title,
+                        snapshot.senate.title.removeprefix("Ustawa ") if snapshot.senate else "",
+                    ),
                     owner=bill,
                     process_number=snapshot.number,
+                    senate_gateway=self._senate,
                 )
             if source is None:
                 raise ValueError("Полный текст поправок Сената не подтверждён по содержимому")
