@@ -32,7 +32,7 @@ from lexinform.consultation_batches import (
     consultation_draft_pair,
     consultation_rollout_allows,
     consultation_synthesis_context,
-    plan_consultation_parts,
+    prepare_consultation_parts,
 )
 from lexinform.document_admissibility import analysis_admission, review_admission
 from lexinform.document_fingerprints import text_digest as text_digest
@@ -2335,38 +2335,26 @@ class AnalysisService:
     ) -> DocumentReviewRecord | Waiting:
         if not self.review_enabled("consultation_review"):
             return Waiting(self._clock.now())
-        parts = plan_consultation_parts(context, bill.term)
-        if not parts:
-            raise ConsultationInputTooLargeError("No readable official consultation response")
         backend = self._batch_resolver("openai") if self._batch_resolver else self._batch
         if backend is None:
             raise LlmUnavailableError("OpenAI consultation batch backend is unavailable")
-        requests = tuple(
-            backend.prepare_request(
-                BatchRequest(
-                    custom_id=part.memo_key(bill.term),
-                    term=bill.term,
-                    number=bill.number,
-                    question=DocumentReviewQuestion(kind="consultation_review", ctx=part),
-                    model=CONSULTATION_MODEL,
-                )
-            )
-            for part in parts
-        )
+        prepared = prepare_consultation_parts(context, bill.term, backend.prepare_request)
+        if not prepared:
+            raise ConsultationInputTooLargeError("No readable official consultation response")
         limit = min(
             self._options.max_bill_cost_usd or CONSULTATION_REVIEW_BUDGET,
             CONSULTATION_REVIEW_BUDGET,
         )
-        needs_synthesis = len(parts) > 1 or consultation_draft_pair(context) is not None
+        needs_synthesis = len(prepared) > 1 or consultation_draft_pair(context) is not None
         synthesis_reserve = CONSULTATION_SYNTHESIS_RESERVE if needs_synthesis else 0.0
-        estimate = sum(request.estimated_cost_usd for request in requests) + synthesis_reserve
+        estimate = sum(request.estimated_cost_usd for _, request in prepared) + synthesis_reserve
         if estimate > limit:
             raise ConsultationInputTooLargeError(
                 f"Consultation review costs up to ${estimate:.2f}, above its ${limit:.2f} limit"
             )
         retry_budget = limit - estimate
         retries: dict[str, BatchRequest] = {}
-        for part, first in zip(parts, requests, strict=True):
+        for part, first in prepared:
             retry = backend.prepare_request(
                 BatchRequest(
                     custom_id=first.custom_id,
@@ -2384,7 +2372,7 @@ class AnalysisService:
         records: list[DocumentReviewRecord] = []
         failures: list[str] = []
         waiting = False
-        for index, (part, request) in enumerate(zip(parts, requests, strict=True), 1):
+        for index, (part, request) in enumerate(prepared, 1):
             if self.review_exhausted(bill.term, part):
                 job = self._repo.batch_job(request.custom_id)
                 candidate_retry = retries.get(request.custom_id)

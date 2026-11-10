@@ -8,9 +8,11 @@ import tiktoken
 from lexinform.adapters.llm_openai import OpenAiAnalyzer
 from lexinform.consultation_batches import (
     CONSULTATION_SYNTHESIS_RESERVE,
+    ConsultationInputTooLargeError,
     consultation_archive_fingerprint,
     consultation_synthesis_context,
     plan_consultation_parts,
+    prepare_consultation_parts,
 )
 from lexinform.models import DocumentPart, DocumentReview, ReviewContext, ReviewDocument
 from lexinform.models.batch import BatchRequest, DocumentReviewQuestion
@@ -147,6 +149,28 @@ def test_consultation_archives_deduplicate_repackaged_reports_without_losing_rev
 
     assert [item.identity for item in part.documents] == ["first", "revision"]
     assert "Uwaga nie została uwzględniona" in part.documents[1].text
+
+
+def test_consultation_preflight_repacks_before_enqueuing_oversized_requests() -> None:
+    text = "\n\n".join(f"{index}. " + "uwaga " * 4_500 for index in range(15))
+    root = review_context(text)
+    tokenizer = tiktoken.get_encoding("o200k_base")
+    attempts: list[int] = []
+
+    def prepare(request: BatchRequest) -> BatchRequest:
+        question = request.question
+        assert isinstance(question, DocumentReviewQuestion), "this preflight prepares reviews"
+        tokens = len(tokenizer.encode_ordinary(question.ctx.text))
+        attempts.append(tokens)
+        if tokens > 49_000:
+            raise ConsultationInputTooLargeError("Serialized request exceeds limit")
+        return request
+
+    prepared = prepare_consultation_parts(root, 10, prepare)
+
+    assert attempts[0] > 49_000
+    assert all(tokens <= 49_000 for tokens in attempts[1:])
+    assert "".join(part.text for part, _ in prepared) == text
 
 
 def test_synthesis_only_returns_ranked_ids_from_verified_candidates() -> None:

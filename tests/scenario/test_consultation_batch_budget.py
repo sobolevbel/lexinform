@@ -129,7 +129,7 @@ def test_consultation_synthesis_waits_for_all_parts_and_only_applies_the_selecte
     alternative = response.model_copy(update={"identity": "doc/2"})
     source = original.model_copy(update={"documents": (response, alternative)})
 
-    def split(ctx: ReviewContext, term: int) -> tuple[ReviewContext, ...]:
+    def split(ctx: ReviewContext, term: int, *, input_limit: int) -> tuple[ReviewContext, ...]:
         return tuple(
             ctx.model_copy(
                 update={
@@ -140,7 +140,7 @@ def test_consultation_synthesis_waits_for_all_parts_and_only_applies_the_selecte
             for index, doc in enumerate(ctx.documents, 1)
         )
 
-    monkeypatch.setattr("lexinform.services.analysis.plan_consultation_parts", split)
+    monkeypatch.setattr("lexinform.consultation_batches.plan_consultation_parts", split)
     first = finding()
     assert first.evidence is not None, "the fixture cites a source"
     second = first.model_copy(

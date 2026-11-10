@@ -10,6 +10,7 @@ from datetime import datetime
 import tiktoken
 
 from lexinform.document_fingerprints import text_digest
+from lexinform.models.batch import BatchRequest, DocumentReviewQuestion
 from lexinform.models.documents import DocumentPart
 from lexinform.models.reviews import (
     ConsultationCandidate,
@@ -237,6 +238,34 @@ def plan_consultation_parts(
             )
         )
     return tuple(result)
+
+
+def prepare_consultation_parts(
+    context: ReviewContext, term: int, prepare: Callable[[BatchRequest], BatchRequest]
+) -> tuple[tuple[ReviewContext, BatchRequest], ...]:
+    """Shrink the packing limit once if a serialized request exceeds the provider limit."""
+    for input_limit in (CONSULTATION_INPUT_LIMIT, CONSULTATION_INPUT_LIMIT - 8_000):
+        parts = plan_consultation_parts(context, term, input_limit=input_limit)
+        try:
+            return tuple(
+                (
+                    part,
+                    prepare(
+                        BatchRequest(
+                            custom_id=part.memo_key(term),
+                            term=term,
+                            number=context.number,
+                            question=DocumentReviewQuestion(kind="consultation_review", ctx=part),
+                            model=CONSULTATION_MODEL,
+                        )
+                    ),
+                )
+                for part in parts
+            )
+        except ConsultationInputTooLargeError:
+            if input_limit != CONSULTATION_INPUT_LIMIT:
+                raise
+    raise AssertionError("Consultation preparation must return or raise within its two limits")
 
 
 def consultation_draft_pair(context: ReviewContext) -> tuple[ReviewDocument, ReviewDocument] | None:
