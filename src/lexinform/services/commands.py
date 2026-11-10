@@ -958,6 +958,15 @@ class CommandService:
             if outcome.bill is not None:
                 bill = self._lookup.continuation(outcome.bill, path)
                 outcome = outcome.model_copy(update={"bill": bill})
+            if not refresh:
+                channel = self._publishing.channel_id
+                reply = self._repo.get_publication(
+                    bill.term, bill.number, PublicationKind.JOINT_BILL, channel
+                )
+                if reply is not None and reply.status is PublicationStatus.SENT:
+                    primary = primary_of(self._repo, bill, channel, include_closed=True)
+                    if primary is not None:
+                        outcome = outcome.model_copy(update={"joint_primary": primary[0]})
         except BillNotFoundError as exc:
             return CommandOutcome(status=OutcomeStatus.ERROR, note=str(exc))
         if len(path) > 1:

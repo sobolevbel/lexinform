@@ -13,7 +13,14 @@ ministry's own site.
 
 from typing import NamedTuple
 
-__all__ = ["MINISTRIES", "Ministry", "ministry_contact_url", "ministry_name", "ministry_url"]
+__all__ = [
+    "MINISTRIES",
+    "Ministry",
+    "ministry_contact_url",
+    "ministry_name",
+    "ministry_url",
+    "wykaz_ministry_codes",
+]
 
 
 class Ministry(NamedTuple):
@@ -51,6 +58,20 @@ MINISTRIES: dict[str, Ministry] = {
     "MSZ": Ministry("Ministerstwo Spraw Zagranicznych", f"{_GOV}dyplomacja"),
     "MZ": Ministry("Ministerstwo Zdrowia", f"{_GOV}zdrowie"),
 }
+
+
+def wykaz_ministry_codes(organ: str, person: str) -> tuple[str, ...]:
+    """Resolve a compound register label only when its named officials identify all ministries."""
+    parts = organ.strip().split("/")
+    if len(parts) == 1:
+        return (parts[0],) if parts[0] else ()
+    officials = person.casefold()
+    named = tuple(
+        code
+        for code, ministry in MINISTRIES.items()
+        if ministry.name.replace("Ministerstwo ", "Ministerstwie ", 1).casefold() in officials
+    )
+    return named if len(named) == len(parts) else ()
 
 
 def ministry_name(organ: str) -> str:

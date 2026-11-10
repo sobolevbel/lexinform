@@ -404,13 +404,20 @@ def _keep_renumbered(item: AgendaItem, told: Sequence[AgendaItem]) -> AgendaItem
         and old.committee_code == item.committee_code
         and old.sitting_key != item.sitting_key
     ]
-    same = next((old for old in ours if _when_and_where(old) == when), None) or next(
+    same = next(
         (old for old in ours if old.sitting_number == item.sitting_number and _renumbered(old)),
         None,
-    )
+    ) or next((old for old in ours if _same_committee_sitting(old, item)), None)
     if same is None:
         return item
     return item.model_copy(update={"ref": f"{same.sitting_key}/{when}"})
+
+
+def _same_committee_sitting(old: AgendaItem, item: AgendaItem) -> bool:
+    """Within one committee, the archived broadcast identifies the sitting across moves."""
+    if old.video_url and item.video_url:
+        return old.video_url == item.video_url
+    return _when_and_where(old) == _when_and_where(item)
 
 
 def _when_and_where(item: AgendaItem) -> str:

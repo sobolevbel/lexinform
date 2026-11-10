@@ -304,12 +304,7 @@ def test_an_entry_the_sejm_stopped_listing_is_not_called_withdrawn(
 def test_a_senate_term_that_has_run_out_moves_the_bill_to_the_president(
     process_1962: ProcessDetail,
 ) -> None:
-    """Art. 121 ust. 2: the Senate saying nothing within its thirty days *is* an adoption, so
-    «срок истёк» said the opposite of what had happened — and the card went on inviting an
-    opinion to a committee that no longer had the act. Annotating the step was not enough either:
-    «рассмотрение в Сенате (до 30 дней) · 30 дней Сената истекли» said both things in one line.
-    The term is zawity, so the step has really moved on, and the wording says the Sejm has not
-    recorded the hand-over."""
+    """The card explains silence while distinguishing an estimate from a confirmed hand-over."""
     third_reading = next(
         i
         for i, st in enumerate(process_1962.stages)
@@ -321,12 +316,13 @@ def test_a_senate_term_that_has_run_out_moves_the_bill_to_the_president(
 
     text = MessageFormatter("ru").new_bill(bill_of(in_senate), None, today=TODAY).text
 
-    assert "закон считается принятым в редакции Сейма и уходит к Президенту" in text
-    assert "передача Президенту ещё не отмечена" in text
+    assert "Если Сенат не принял решения в срок (30 дн.), закон считается принятым" in text
+    assert "Передача пока не подтверждена" in text
+    assert "Дата поступления в Сенат не подтверждена" in text
     assert "рассмотрение в Сенате" not in text
     assert "16 авг 2026" not in text  # a date that is behind the reader promises nothing
     assert "комиссию Сената" not in text
-    assert "пока ничего — закон у Президента" in text
+    assert "пока дождитесь подтверждения следующего этапа" in text
 
 
 def test_a_step_that_outlived_its_usual_duration_says_how_long(

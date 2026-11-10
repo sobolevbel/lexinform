@@ -108,6 +108,13 @@ from lexinform.models import (
     wykaz_entry_number,
 )
 from lexinform.models.content import ContentHistoryPage
+from lexinform.models.ministries import wykaz_ministry_codes
+from lexinform.models.phases import (
+    PRESIDENT_DAYS,
+    PRESIDENT_DAYS_URGENT,
+    SENATE_DAYS,
+    SENATE_DAYS_URGENT,
+)
 from lexinform.pricing import cost_usd, format_tokens, format_usd
 from lexinform.publication_titles import publication_title
 from lexinform.telegram_text import split_html
@@ -1082,6 +1089,8 @@ class MessageFormatter:
             # The card says how to write to a ministry; this reply is the one a reader acts on,
             # three days before the window shuts and weeks below the card in the thread.
             project = bill.rcl
+            if not window.email:
+                where = self._rcl_submission_route(project.web_url, window)
             polish = lb.action_in_polish.format(wykaz=project.wykaz_number or project.number)
             where = f"{where} {esc(polish)}"
         until = (
@@ -2073,6 +2082,7 @@ class MessageFormatter:
                 self._bill_facts(
                     bill,
                     full=outcome.status in FULL_FACTS and outcome.explanation is None,
+                    joint_primary=outcome.joint_primary,
                 )
             )
         if outcome.message_id is not None:
@@ -2541,7 +2551,7 @@ class MessageFormatter:
         fix = f" → /delivery {pub.id}"
         return f"<b>{esc(pub.number)}</b> · {esc(pub.kind)} · {esc(pub.status)} since {age}{fix}"
 
-    def _bill_facts(self, bill: Bill, *, full: bool) -> str:
+    def _bill_facts(self, bill: Bill, *, full: bool, joint_primary: Bill | None = None) -> str:
         """The bill's title and link, its verdict, and (for /show) its status and last stage."""
         lines = [
             f"<b>{self._number_label(bill)}</b> · "
@@ -2552,22 +2562,29 @@ class MessageFormatter:
             lines.append(f"status: {esc(bill.status)} · prefilter hits: {esc(hits)}")
             if bill.last_error:
                 lines.append(f"last error: {esc(_clip(bill.last_error, 200))}")
-            last = bill.last_stage
-            if last is not None:
+            process = joint_primary or bill
+            today = self._today()
+            if joint_primary is not None:
+                primary_link = link(
+                    process_web_url(process.term, process.number), self._number_label(process)
+                )
+                lines.append(f"joint process: {primary_link}")
+            if (last := process.last_stage) is not None:
                 when = f"{last.date} " if last.date else ""
                 lines.append(f"last stage: {esc(when)}{esc(last.stage_name)}")
-            window = bill.consultation
-            if window is not None and window.end is not None:
-                lines.append(f"consultation until {window.end}")
-            last = bill.last_stage
-            if last is not None:
                 lines.append(
-                    self._field(ICON["stage"], self._labels.stage, self._current_stage(bill, last))
+                    self._field(
+                        ICON["stage"], self._labels.stage, self._current_stage(process, last)
+                    )
                 )
-            today = self._today()
             lines.extend(
                 line
-                for line in (self._next_step_line(bill, today), self._action_line(bill, today))
+                for line in (
+                    self._consultation_line(process, today),
+                    self._next_step_line(process, today),
+                    self._action_line(process, today),
+                    self._ended_line(process, today),
+                )
                 if line
             )
         record = bill.analysis
@@ -2841,12 +2858,15 @@ class MessageFormatter:
         if bill.wykaz is not None:
             entry = bill.wykaz
             who = applicant
-            if entry.organ:
-                # The register abbreviates the ministry and nothing else names it: a reader who
-                # has to write there needs the office's name and its site, not "MSWiA".
-                name = esc(ministry_name(entry.organ))
-                url = ministry_url(entry.organ)
-                who += f" — {link(url, name) if url else name}"
+            ministries = wykaz_ministry_codes(entry.organ or "", entry.person or "")
+            if ministries:
+                names = [
+                    link(url, ministry_name(code))
+                    if (url := ministry_url(code))
+                    else esc(ministry_name(code))
+                    for code in ministries
+                ]
+                who += f" — {', '.join(names)}"
             who += f" · {esc(lb.rcl_wykaz)}: {esc(entry.number)}"
             when = esc(self.fmt_date(entry.published_at.date()))
             return (
@@ -3164,7 +3184,11 @@ class MessageFormatter:
         text = template.format(
             date=self.fmt_date(phase.date) if phase.date else "",
             committee=committees,
+            senate_days=SENATE_DAYS_URGENT if urgent else SENATE_DAYS,
+            president_days=PRESIDENT_DAYS_URGENT if urgent else PRESIDENT_DAYS,
         ).strip()
+        if phase.key == "president_after_senate_silence" and not phase.deadline_exact:
+            text = f"{text}. {lb.senate_receipt_unconfirmed}"
         if urgent and shortened is None:
             text = f"{text} ({lb.urgent_mode})"  # the shortened wordings name the mode themselves
         when = self._when(bill, phase, today, urgent=urgent)
@@ -3335,10 +3359,19 @@ class MessageFormatter:
         they meet. Never art. 121's thirty days: the committees take the act within a week."""
         lb = self._labels
         act = bill.senate
-        if act is None or not act.committees or not any(c.email for c in act.committees):
-            return esc(lb.action_senate_pending)
+        if act is None:
+            return (
+                f"{esc(lb.action_senate_pending)} · {link(SENATE_BILLS_URL, lb.link_senate_bills)}"
+            )
         if act.committees_done(today):
             return None
+        if not any(c.email for c in act.committees):
+            number = (
+                f" ({lb.senate_print_number.format(number=act.print_number)})"
+                if act.print_number
+                else ""
+            )
+            return f"{esc(lb.action_senate_pending)} · {link(act.url, lb.link_senate_act + number)}"
         targets = [
             link(c.url, c.name) + (f" ({esc(c.email)})" if c.email else "") for c in act.committees
         ]
@@ -3362,11 +3395,22 @@ class MessageFormatter:
         if not entry.is_open:
             return []
         lb = self._labels
-        organ = ministry_name(entry.organ) if entry.organ else lb.wykaz_organ_unknown
-        action = esc(lb.action_wykaz_interest.format(organ=organ))
-        contacts = ministry_contact_url(entry.organ) if entry.organ else None
-        if contacts is not None:
-            action += f" · {link(contacts, lb.action_ministry_site)}"
+        codes = wykaz_ministry_codes(entry.organ or "", entry.person or "")
+        if not codes:
+            return [link(entry.web_url, lb.action_wykaz_check_contacts)]
+        contacts = [ministry_contact_url(code) for code in codes]
+        if len(codes) == 1:
+            organ = esc(ministry_name(codes[0]))
+        else:
+            organ = ", ".join(
+                link(url, ministry_name(code)) if url else esc(ministry_name(code))
+                for code, url in zip(codes, contacts, strict=True)
+            )
+        action = esc(lb.action_wykaz_interest).format(organ=organ)
+        if len(codes) == 1 and (url := contacts[0]) is not None:
+            action += f" · {link(url, lb.action_ministry_site)}"
+        elif not all(contacts):
+            action += f" · {link(entry.web_url, lb.action_wykaz_check_contacts)}"
         return [action]
 
     def _rcl_actions(self, bill: Bill, today: dt.date) -> list[str]:
@@ -3388,14 +3432,18 @@ class MessageFormatter:
         ):
             return []
         actions: list[str] = []
-        if window is not None and window.email and open_now:
-            polish = lb.action_in_polish.format(wykaz=project.wykaz_number or project.number)
-            text = esc(lb.action_email_ministry.format(email=window.email))
+        if window is not None and open_now:
+            if window.email:
+                polish = lb.action_in_polish.format(wykaz=project.wykaz_number or project.number)
+                text = esc(lb.action_email_ministry.format(email=window.email))
+            else:
+                polish = ""
+                text = self._rcl_submission_route(project.web_url, window)
             if window.end is not None:
                 text += f" {esc(lb.consultation_until)} {self.fmt_date(window.end)}"
-            else:
+            elif window.email:
                 text += f" ({esc(lb.consultation_deadline_in_letter)})"
-            actions.append(f"{text} {esc(polish)}")
+            actions.append(f"{text} {esc(polish)}".rstrip())
         if not (project.is_open and not project.sent_to_sejm):
             return actions
         organ = project.applicant or lb.wykaz_organ_unknown
@@ -3406,11 +3454,19 @@ class MessageFormatter:
         residual = [link(project.comment_url, lb.action_rcl_comment), interest]
         # A project that never had a public consultation (a quarter of them skip the stage) has
         # no window that shut, so there is nothing to say it did.
-        if window is None or open_now:
+        if open_now:
+            actions.append(f"{esc(lb.action_rcl_additional)} " + "; ".join(residual))
+        elif window is None:
             actions.extend(residual)
         else:
             actions.append(f"{esc(lb.action_rcl_window_closed)} " + "; ".join(residual))
         return actions
+
+    def _rcl_submission_route(self, project_url: str, window: ConsultationWindow) -> str:
+        lb = self._labels
+        if window.letter_url:
+            return link(window.letter_url, lb.action_rcl_letter_route)
+        return link(project_url, lb.action_rcl_project_route)
 
     def _upcoming(
         self, bill: Bill, today: dt.date, phase: Phase, *, kind: str | None = None
