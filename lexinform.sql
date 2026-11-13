@@ -3012,7 +3012,7 @@ INSERT INTO "commands" VALUES(79370161,'-1004460742180',800,'/queue','2026-11-13
 <code>/request 79370161</code>
 
 Ожидают: 0. Страница 1.',0,0);
-INSERT INTO "commands" VALUES(79370162,'-1004460742180',803,'/status','2026-11-13T17:36:55+00:00',NULL,'status: 43 bills followed','2026-11-13T17:38:23+00:00','{"update_id":79370162,"chat_id":"-1004460742180","message_id":803,"text":"/status","received_at":"2026-11-13T17:36:55Z","actor_id":null,"author_signature":null,"acknowledgement_id":804,"run_requested":false}','https://github.com/sobolevbel/lexinform/actions/runs/43474551055',NULL,NULL,NULL,'📊 <b>Состояние</b> · <code>/status</code>
+INSERT INTO "commands" VALUES(79370162,'-1004460742180',803,'/status','2026-11-13T17:36:55+00:00','2026-11-13T17:38:32+00:00','status: 43 bills followed','2026-11-13T17:38:23+00:00','{"update_id":79370162,"chat_id":"-1004460742180","message_id":803,"text":"/status","received_at":"2026-11-13T17:36:55Z","actor_id":null,"author_signature":null,"acknowledgement_id":804,"run_requested":false}','https://github.com/sobolevbel/lexinform/actions/runs/43474551055',NULL,NULL,NULL,'📊 <b>Состояние</b> · <code>/status</code>
 
 <code>/request 79370162</code>
 
