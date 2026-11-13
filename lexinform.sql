@@ -3012,7 +3012,23 @@ INSERT INTO "commands" VALUES(79370161,'-1004460742180',800,'/queue','2026-11-13
 <code>/request 79370161</code>
 
 Ожидают: 0. Страница 1.',0,0);
-INSERT INTO "commands" VALUES(79370162,'-1004460742180',803,'/status','2026-11-13T17:36:55+00:00',NULL,NULL,NULL,'{"update_id":79370162,"chat_id":"-1004460742180","message_id":803,"text":"/status","received_at":"2026-11-13T17:36:55Z","actor_id":null,"author_signature":null,"acknowledgement_id":804,"run_requested":false}','https://github.com/sobolevbel/lexinform/actions/runs/43474551055',NULL,NULL,NULL,NULL,0,0);
+INSERT INTO "commands" VALUES(79370162,'-1004460742180',803,'/status','2026-11-13T17:36:55+00:00',NULL,'status: 43 bills followed','2026-11-13T17:38:23+00:00','{"update_id":79370162,"chat_id":"-1004460742180","message_id":803,"text":"/status","received_at":"2026-11-13T17:36:55Z","actor_id":null,"author_signature":null,"acknowledgement_id":804,"run_requested":false}','https://github.com/sobolevbel/lexinform/actions/runs/43474551055',NULL,NULL,NULL,'📊 <b>Состояние</b> · <code>/status</code>
+
+<code>/request 79370162</code>
+
+43 bills followed
+
+📥 <b>bills</b>: skipped_text_prefilter 294 · analyzed 153 · linked 68 · skipped_closed 24 · skipped_prefilter 6 · batch_pending 2 · document_ambiguous 1 · document_unsupported 1
+📣 <b>posts</b>: sent 273 · queued 13 · skipped 4
+👁 <b>followed</b>: 43
+🏃 <b>runs</b>: 46 in 7 days · 1 card(s) · 9 update(s) · 11 with errors · ≈ $0.75 · last 13.11 17:36 UTC
+📄 <b>document work</b>: waiting 9
+⏳ <b>waiting</b>
+• <b>UD420</b> · document_ambiguous · <a href="https://legislacja.rcl.gov.pl/projekt/12412651">Projekt ustawy o zmianie ustawy o Rządowym Funduszu Rozwoju Dróg oraz niektórych innych u…</a>
+• <b>24</b> · document_unsupported · <a href="https://legislacja.rcl.gov.pl/projekt/12415804">projekt rozporządzenia Ministra Spraw Zagranicznych zmieniającego rozporządzenie w sprawi…</a>
+🧺 <b>batches</b>: 2 open
+• openai <code>batch_6af715637c3481908d12bd52de1c0022</code> · 1 request(s) · submitted since 13 нояб 2026
+• openai <code>batch_6af7181b24308190ab0cc637e20a270f</code> · 1 request(s) · submitted since 13 нояб 2026',0,0);
 CREATE TABLE computation_results (
         result_id TEXT PRIMARY KEY,
         provider TEXT NOT NULL,
