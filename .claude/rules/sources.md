@@ -37,6 +37,10 @@ paths:
 How RCL and the register are read (markup, catalogs, file formats, consultation letters, CSV
 columns, probes): `docs/rcl-scraping.md`.
 
+- **Only statutes enter the RCL bill workflow.** An explicit leading `rozporządzenie`, `uchwała`
+  or `zarządzenie` in the project title stops discovery, lookup and text sourcing before files or
+  model calls; `force` cannot override this. Unusual or unknown titles stay eligible. The listing's
+  `typeId=2` filter is not an admission guarantee; document-level exclusions remain separate.
 - **`/bills` rows are refreshed by tracking only.** Discovery saves new submissions and never
   overwrites an existing row; the reconciler (`tracking/pre_print.py`) re-reads `/bills` for pending
   RPW entries and those awaiting consultation results and compares (print assigned, withdrawn,

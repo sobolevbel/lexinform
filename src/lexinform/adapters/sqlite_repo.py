@@ -1155,6 +1155,24 @@ MIGRATIONS: tuple[str, ...] = (
     CREATE INDEX ix_commands_work ON commands(update_id)
       WHERE work_json IS NOT NULL OR final_answer_pending = 1;
     """,
+    """
+    UPDATE bills SET status = 'skipped_prefilter',
+        last_error = 'unsupported RCL project type: rozporządzenie; '
+          || 'only draft statutes (ustawa) are supported; previous: ' || last_error
+    WHERE status = 'document_unsupported' AND number LIKE 'RCL/%'
+      AND lower(trim(json_extract(rcl_json, '$.title'))) LIKE 'projekt rozporządzenia %'
+      AND last_error LIKE 'text prefilter: unsupported: %: regulation'
+      AND analysis_json IS NULL AND ready_analysis_json IS NULL AND analysis_attempts = 0
+      AND NOT EXISTS (SELECT 1 FROM publications p
+        WHERE p.term=bills.term AND p.number=bills.number)
+      AND NOT EXISTS (SELECT 1 FROM llm_batch_items i
+        WHERE i.term=bills.term AND i.number=bills.number)
+      AND NOT EXISTS (SELECT 1 FROM llm_batch_intents i
+        WHERE json_extract(i.request_json, '$.term')=bills.term
+          AND json_extract(i.request_json, '$.number')=bills.number)
+      AND NOT EXISTS (SELECT 1 FROM document_work w
+        WHERE w.term=bills.term AND w.number=bills.number);
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)

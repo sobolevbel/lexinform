@@ -773,3 +773,11 @@ execution. `executed_at` records the handler's outcome, and `handled_at` records
 technical reply. `work_json` tracks a pending result separately. Completed work retains its
 batch key or publication ID, and a frozen reply allows a known failed send to be retried without
 executing the command again. Legacy rows retain their prior timestamps and text.
+
+## Unsupported RCL project cleanup (v76)
+
+The data-only migration moves a never-analyzed RCL regulation from `document_unsupported` to
+`skipped_prefilter` only when its saved title begins `projekt rozporządzenia` and its saved text
+prefilter error ends `: regulation`. Existing analysis, attempts, ready results, publications,
+batch items/intents or document work prevent the transition. The previous error is appended to
+the explicit project-type reason; source metadata, documents and command history stay unchanged.

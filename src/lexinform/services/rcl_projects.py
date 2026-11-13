@@ -56,10 +56,13 @@ class RclProjectReader:
 
     def timeline(self, project_id: int) -> RclProject:
         """The project page alone: metadata and stage states, no folders."""
-        return self._rcl.get_project(project_id)
+        project = self._rcl.get_project(project_id)
+        project.require_supported_type()
+        return project
 
     def complete(self, project: RclProject) -> RclProject:
         """Every reached stage's catalog and the consultation letter."""
+        project.require_supported_type()
         for stage in project.reached_stages:
             project = project.with_stage(self._rcl.get_stage(project.id, stage.id))
         return project.model_copy(update={"consultation": self.consultation(project)})
@@ -94,7 +97,7 @@ class RclProjectReader:
 
     def refresh(self, stored: RclProject) -> RclProject:
         """The timeline again, and only the catalogs whose stage changed since `stored`."""
-        project = self._rcl.get_project(stored.id)
+        project = self.timeline(stored.id)
         known = {st.id: st for st in stored.stages}
         for stage in project.reached_stages:
             before = known.get(stage.id)

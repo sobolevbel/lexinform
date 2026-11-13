@@ -42,6 +42,16 @@ class StateCheckpointError(RuntimeError):
     exit_code = 75
 
 
+class UnsupportedRclProjectError(ValueError):
+    def __init__(self, number: str, kind: str) -> None:
+        self.number = number
+        self.kind = kind
+        super().__init__(
+            f"{number}: unsupported RCL project type: {kind}; "
+            "only draft statutes (ustawa) are supported"
+        )
+
+
 class PreparedInputParentError(ValueError):
     """An optional prepared-input receipt lacks corroborating parents before intent save."""
 

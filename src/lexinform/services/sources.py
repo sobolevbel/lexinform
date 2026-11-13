@@ -430,6 +430,7 @@ class RclTextSource:
         project = bill.rcl
         if project is None:
             return LocatedText()
+        project.require_supported_type()
         documents = project.text_documents()
         if "bill" not in documents:
             return LocatedText()

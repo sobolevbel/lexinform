@@ -20,7 +20,9 @@ from lexinform.errors import (
     OrkaUnreachableError,
     ServiceUnavailableError,
     StateCheckpointError,
+    UnsupportedRclProjectError,
 )
+from lexinform.i18n import labels_for
 from lexinform.log_context import log_context
 from lexinform.models import (
     DISPATCHED,
@@ -72,7 +74,7 @@ from lexinform.services.grouped_stage_date_approval import (
 )
 from lexinform.services.grouped_stage_date_candidate import GroupedStageBulletRenderer
 from lexinform.services.joint import primary_of
-from lexinform.services.lookup import BillLookup, BillNotFoundError
+from lexinform.services.lookup import BillLookup, BillNotFoundError, supported_bill
 from lexinform.services.publishing import PublishingService
 from lexinform.services.result_applications import record_secondary_application
 from lexinform.services.text_prefilter import TextPrefilterService
@@ -321,6 +323,13 @@ class CommandService:
             )
         except StateCheckpointError:
             raise
+        except UnsupportedRclProjectError as exc:
+            outcome = CommandOutcome(
+                status=OutcomeStatus.SKIPPED,
+                note=labels_for(self._language).unsupported_rcl_project.format(
+                    number=exc.number, kind=exc.kind
+                ),
+            )
         except ServiceUnavailableError as exc:
             result.fatal_error = exc.describe()
             log.error("aborting commands phase: %s", result.fatal_error)
@@ -1027,6 +1036,7 @@ class CommandService:
 
     def _unskip(self, bill: Bill) -> CommandOutcome:
         """Restoring a saved analysis must not schedule a new paid analysis."""
+        supported_bill(bill)
         if bill.status is BillStatus.ANALYZED:
             return CommandOutcome(
                 status=OutcomeStatus.QUEUED,

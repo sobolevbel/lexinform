@@ -18,7 +18,7 @@ from lexinform.models import (
 from lexinform.models.source_checks import observation_label, operator_observation
 from lexinform.ports import BillRepository, Clock, Publisher
 from lexinform.services.joint import primary_of
-from lexinform.services.lookup import BillLookup
+from lexinform.services.lookup import BillLookup, supported_bill
 from lexinform.services.publishing import PublishingResult, PublishingService
 
 _CLOSURE_NOTES = {
@@ -45,6 +45,8 @@ class BillOperations:
     publisher_for: Callable[[str], Publisher] | None = None
 
     def reset(self, bill: Bill, to: BillStatus) -> CommandOutcome:
+        if to in (BillStatus.ANALYSIS_PENDING, BillStatus.ANALYZED):
+            supported_bill(bill)
         if to is BillStatus.ANALYZED and bill.analysis is None:
             return CommandOutcome(
                 status=OutcomeStatus.ERROR,

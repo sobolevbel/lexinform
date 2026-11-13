@@ -75,6 +75,22 @@ configuration, consumed fixtures, runner or environment differ. It never adopts 
 recording as a verified cache. These six suites remain separate from default pytest and the
 external-corpus registry. Cross-run comparison remains a separate acceptance step.
 
+## RCL project type admission
+
+Replay project-title admission across the saved RCL project metadata and listing pages, with the
+production-state witness captured from `origin/state` at `f7f13bb1` (2026-11-13 17:38 UTC):
+
+```bash
+uv run --offline --frozen python -m tools.replay_rcl_project_scope \
+  --corpus /path/to/lexinform-corpus \
+  --witness tests/fixtures/rcl/project_12415804.json \
+  --output /new/report.json
+```
+
+Inputs and code are hashed, network/writes inside the corpus are blocked, and existing reports
+cannot be replaced. The report covers admission, not current RCL coverage or raw file extraction.
+The witness preserves saved RCL metadata; it was not fetched again from the live site.
+
 ## Standalone Flat OPC footnotes
 
 Verify exact note call, containing paragraph and inline definition paths on the RCL 12403303 bill

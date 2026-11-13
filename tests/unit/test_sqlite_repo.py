@@ -1082,6 +1082,7 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(
     assert publication.channel_id == "@legacy" and publication.message_id == 7
     assert "telegram_chat_id" not in publication.model_dump_json()
     assert revived.last_error == reason
+    assert revived.rcl is None
     assert repo.last_discovery_started_at() is not None  # v2 backfill: ok -> discovery_ok
     assert list(repo.iter_physical_captures()) == []
     assert repo.get_physical_metadata("a" * 64) is None

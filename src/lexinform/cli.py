@@ -30,7 +30,11 @@ from lexinform.adapters.telegram import TelegramBotClient, TelegramRunNotifier, 
 from lexinform.adapters.telegram_format import MessageFormatter, format_document_reads
 from lexinform.concurrency import fan_out
 from lexinform.container import Container, build_container
-from lexinform.errors import ServiceUnavailableError, StateCheckpointError
+from lexinform.errors import (
+    ServiceUnavailableError,
+    StateCheckpointError,
+    UnsupportedRclProjectError,
+)
 from lexinform.i18n import labels_for
 from lexinform.logging_setup import configure_logging
 from lexinform.models import (
@@ -1526,7 +1530,7 @@ def _or_exit[T](action: Callable[[], T]) -> T:
     """A bill nobody knows is a message and exit code 1, not a traceback."""
     try:
         return action()
-    except BillNotFoundError as exc:
+    except (BillNotFoundError, UnsupportedRclProjectError) as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(code=1) from None
 
@@ -1537,6 +1541,9 @@ def main() -> None:
     except StateCheckpointError as exc:
         typer.echo(str(exc), err=True)
         sys.exit(exc.exit_code)
+    except UnsupportedRclProjectError as exc:
+        typer.echo(str(exc), err=True)
+        sys.exit(1)
     except KeyboardInterrupt:
         sys.exit(130)
 

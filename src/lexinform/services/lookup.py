@@ -43,6 +43,12 @@ from lexinform.services.terms import TermResolver
 log = logging.getLogger(__name__)
 
 
+def supported_bill(bill: Bill) -> Bill:
+    if bill.rcl is not None:
+        bill.rcl.require_supported_type()
+    return bill
+
+
 class BillNotFoundError(LookupError):
     """Neither the database nor the source system knows the bill."""
 
@@ -128,14 +134,14 @@ class BillLookup:
         number = self.resolve_number(number)
         bill = self.find(number)
         if bill is not None:
-            return bill
+            return supported_bill(bill)
         return self._fetch(self._terms.current(), number)
 
     def load_ref(self, ref: BillRef) -> Bill:
         """The bill behind a reference; an RM number is resolved to its RCL project first."""
         bill = self.find_ref(ref)
         if bill is not None:
-            return bill
+            return supported_bill(bill)
         if ref.kind is RefKind.WYKAZ:
             return self.load(wykaz_number(ref.value))
         if ref.kind is RefKind.RM:
@@ -152,7 +158,7 @@ class BillLookup:
         """Read for a private explanation without enrolling an unknown bill in the pipeline."""
         stored = self.find_ref(ref)
         if stored is not None:
-            return self.continuation(stored)
+            return supported_bill(self.continuation(stored))
         term = ref.term if ref.term is not None else self._terms.current()
         number = ref.value
         if ref.kind is RefKind.RM:
@@ -167,7 +173,7 @@ class BillLookup:
     def _read(self, term: int, number: str) -> Bill:
         stored = self._repo.get(term, number)
         if stored is not None:
-            return self.continuation(stored)
+            return supported_bill(self.continuation(stored))
         now = self._clock.now()
         if is_rcl_number(number):
             project = self.read_rcl_project(number)

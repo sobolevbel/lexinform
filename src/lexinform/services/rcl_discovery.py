@@ -15,7 +15,7 @@ from contextlib import closing
 from dataclasses import dataclass, field
 
 from lexinform.concurrency import fan_out
-from lexinform.errors import ServiceUnavailableError
+from lexinform.errors import ServiceUnavailableError, UnsupportedRclProjectError
 from lexinform.keywords import KeywordPrefilter, accept_title_hits
 from lexinform.models import (
     BillStatus,
@@ -29,6 +29,7 @@ from lexinform.models import (
     rcl_stages,
     wykaz_number,
 )
+from lexinform.models.rcl import unsupported_project_kind
 from lexinform.ports import BillRepository, Clock, RclGateway
 from lexinform.services.predecessors import NOT_FOLLOWED
 from lexinform.services.rcl_projects import RclProjectReader
@@ -97,6 +98,11 @@ class RclDiscoveryService:
         new_rows: list[RclProjectSummary] = []
         for row in self._rcl.list_projects(modified_since=since.date()):
             result.seen += 1
+            kind = unsupported_project_kind(row.title)
+            if kind is not None:
+                result.rejected.append(f"{term}/{rcl_number(row.id)}")
+                log.info("%s", UnsupportedRclProjectError(rcl_number(row.id), kind))
+                continue
             self._remember_number(row)
             existing = self._repo.find_rcl(rcl_number(row.id))
             if existing is None:
@@ -125,6 +131,10 @@ class RclDiscoveryService:
             for outcome in outcomes:
                 try:
                     project = outcome.result()
+                except UnsupportedRclProjectError as exc:
+                    result.rejected.append(f"{term}/{exc.number}")
+                    log.info("%s", exc)
+                    continue
                 except ServiceUnavailableError:
                     raise
                 except Exception as exc:
@@ -162,6 +172,10 @@ class RclDiscoveryService:
             project = self._deepen(
                 self._reader.timeline(project_id), term=term, started=started, known=known
             )
+        except UnsupportedRclProjectError as exc:
+            result.rejected.append(f"{term}/{exc.number}")
+            log.info("%s", exc)
+            return
         except ServiceUnavailableError:
             raise
         except Exception as exc:
@@ -238,6 +252,8 @@ class RclDiscoveryService:
         return seen
 
     def _remember_number(self, row: RclProjectSummary) -> None:
+        if unsupported_project_kind(row.title) is not None:
+            return
         number = normalize_wykaz_number(row.wykaz_number)
         if number is not None:
             self._repo.remember_rcl_wykaz_number(number, row.id, row.created)

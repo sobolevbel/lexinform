@@ -13,6 +13,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
+from lexinform.errors import UnsupportedRclProjectError
 from lexinform.models.enums import BILL_DOCUMENT_TYPE, RCL_PREFIX, ApplicantType, DocumentType
 from lexinform.models.sejm import ProcessSummary, Stage
 
@@ -34,6 +35,18 @@ TextRole = Literal["bill", "justification", "osr"]
 StageGroup = Literal["opinions", "committees", "council", "sejm"]
 
 _STAGE_NAME = re.compile(r"^\s*(\d+)\.\s*(.+?)\s*$")
+_NON_BILL_TITLE = re.compile(r"^(?:projekt\s+)?(rozporządzeni[ae]|uchwał[ay]|zarządzeni[ae])\b")
+
+
+def unsupported_project_kind(title: str) -> str | None:
+    """Exclude explicit leading act types; unusual statute titles stay eligible."""
+    match = _NON_BILL_TITLE.match(title.strip().casefold())
+    if match is None:
+        return None
+    word = match[1]
+    if word.startswith("rozporządzeni"):
+        return "rozporządzenie"
+    return "uchwała" if word.startswith("uchwał") else "zarządzenie"
 
 
 def rcl_number(project_id: int) -> str:
@@ -278,6 +291,11 @@ class RclProject(BaseModel):
     consultation: RclConsultation | None = None
     consultation_attempts: int = 0
 
+    def require_supported_type(self) -> None:
+        kind = unsupported_project_kind(self.title)
+        if kind is not None:
+            raise UnsupportedRclProjectError(self.number, kind)
+
     @property
     def number(self) -> str:
         return rcl_number(self.id)
@@ -498,6 +516,7 @@ def process_summary(project: RclProject, *, term: int) -> ProcessSummary:
     `change_date` is the project's last modification at midnight UTC: discovery refreshes it from
     the list, and tracking picks up bills changed since the last run by it.
     """
+    project.require_supported_type()
     documents = project.text_documents()
     dated = [d.created for d in documents.values() if d.created]
     about = "; ".join([*project.keywords, *project.departments])
