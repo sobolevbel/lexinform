@@ -91,6 +91,7 @@ class CommandState(BaseModel):
     reply: str | None = None
     incoming: IncomingCommand | None = None
     workflow_url: str | None = None
+    publication_id: int | None = None
     work: CommandWork | None = None
     completed_work: CommandWork | None = None
     rendered_reply: str | None = None
@@ -1032,42 +1033,50 @@ def _checked(name: CommandName, key: str, option: Option, raw: str) -> tuple[str
     if option.kind is OptionKind.FLAG:
         return "true", ""
     if not raw:
-        return None, f"/{name}: {key} needs a value ({key}=…)"
+        return None, f"/{name}: укажите значение {key}=…"
     if option.kind is OptionKind.DATE:
         return (
             (dt.date.fromisoformat(raw).isoformat(), "")
             if _is_date(raw)
-            else (None, f"/{name}: {key} takes a date, not {raw!r}")
+            else (None, f"/{name}: для {key} нужна дата в формате YYYY-MM-DD, получено {raw!r}")
         )
     if option.kind is OptionKind.COUNT:
         if not raw.isascii() or not raw.isdigit() or len(raw) > 10:
-            return None, f"/{name}: {key} takes a number, not {raw!r}"
+            return None, f"/{name}: для {key} нужно целое число, получено {raw!r}"
         if not option.low <= int(raw) <= option.high:
-            return None, f"/{name}: {key} takes {option.low}–{option.high}, not {raw}"
+            return (
+                None,
+                f"/{name}: {key} должен быть от {option.low} до {option.high}, получено {raw}",
+            )
         return raw, ""
     if option.kind is OptionKind.CHAT:
         if _CHAT.match(raw):
             return raw, ""
-        return None, f"/{name}: {key} takes a chat id (-100…) or @name, not {raw!r}"
+        return None, f"/{name}: для {key} нужен ID чата (-100…) или @имя, получено {raw!r}"
     if option.kind is OptionKind.WEEK:
         try:
             week_bounds(raw.upper())
         except ValueError:
-            return None, f"/{name}: {key} takes an ISO week (2026-W38), not {raw!r}"
+            return None, f"/{name}: для {key} нужна неделя в формате 2026-W38, получено {raw!r}"
         return raw.upper(), ""
     if option.kind is OptionKind.PRINT:
         if raw.isascii() and raw.isdigit() and len(raw) <= 5 and int(raw) > 0:
             return str(int(raw)), ""
-        return None, f"/{name}: {key} takes a druk number (3281), not {raw!r}"
+        return None, f"/{name}: для {key} нужен номер druku (3281), получено {raw!r}"
     if option.kind is OptionKind.OBSERVATION:
         if raw.lower() in OBSERVATION_CHOICES:
             return raw.lower(), ""
-        return None, f"/{name}: {key} takes {', '.join(OBSERVATION_CHOICES)}, not {raw!r}"
+        return (
+            None,
+            f"/{name}: для {key} допустимы {', '.join(OBSERVATION_CHOICES)}, получено {raw!r}",
+        )
     try:
         return BillStatus(raw.lower()).value, ""
     except ValueError:
-        known = ", ".join(status.value for status in BillStatus)
-        return None, f"/{name}: {key} takes a status ({known}), not {raw!r}"
+        return (
+            None,
+            f"/{name}: неизвестный статус {raw!r} для {key}. Допустимые операции: /help reset",
+        )
 
 
 def _parse_options(name: CommandName, words: list[str]) -> tuple[dict[str, str], list[str], str]:
@@ -1108,7 +1117,7 @@ def parse_command(text: str) -> Command | None:
     head = words[0][1:].split("@", 1)[0].lower()
     name = _COMMAND_NAMES.get(head.replace("_", "-"))
     if name is None:
-        return Command(name=CommandName.HELP, error=f"unknown command /{head}")
+        return Command(name=CommandName.HELP, error=f"Неизвестная команда /{head}")
     spec = COMMANDS[name]
     if spec.arguments == "help":
         if len(words) == 1:
@@ -1134,17 +1143,17 @@ def parse_command(text: str) -> Command | None:
     if error:
         return Command(name=name, error=error)
     if (needed := spec.required) is not None and needed not in options:
-        return Command(name=name, error=f"/{name} needs {needed}=… ({needed} is not optional)")
+        return Command(name=name, error=f"/{name}: укажите {needed}=…")
     if spec.arguments == "query":
         query = " ".join(rest).strip()
         if len(query) < MIN_QUERY_CHARS:
             return Command(
-                name=name, error=f"/{name} needs at least {MIN_QUERY_CHARS} characters to look for"
+                name=name, error=f"/{name}: введите хотя бы {MIN_QUERY_CHARS} символа для поиска"
             )
         return Command(name=name, query=query, options=options)
     if spec.arguments == "bill":
         if not rest:
-            return Command(name=name, error=f"/{name} needs a bill number or a link")
+            return Command(name=name, error=f"/{name}: укажите номер проекта или ссылку")
         ref = parse_reference(" ".join(rest))
         if ref is None:
             # An option of another command is named rather than dropped in silence, which is how
@@ -1152,7 +1161,8 @@ def parse_command(text: str) -> Command | None:
             if len(rest) > 1 and parse_reference(rest[0]) is not None:
                 return _unknown_option(name, rest[1])
             return Command(
-                name=name, error=f"cannot read a bill number or a link in {' '.join(rest)!r}"
+                name=name,
+                error=f"Не удалось прочитать номер проекта или ссылку: {' '.join(rest)!r}",
             )
         return Command(name=name, ref=ref, options=options)
     if rest and name is not CommandName.HELP:
@@ -1291,7 +1301,8 @@ def _positive_id(raw: str) -> bool:
 def _parse_delivery(words: list[str]) -> Command:
     error = Command(
         name=CommandName.DELIVERY,
-        error="use /delivery ID [history [PAGE] | confirm MESSAGE_ID | retry | dismiss REASON]",
+        error="Используйте /delivery ID [history [PAGE] | confirm MESSAGE_ID | "
+        "retry | dismiss REASON]",
     )
     if not words or not _positive_id(words[0]):
         return error
@@ -1341,5 +1352,5 @@ def _unknown_option(name: CommandName, word: str) -> Command:
     known = ", ".join(dict.fromkeys(OPTIONS.get(name, {})))
     return Command(
         name=name,
-        error=f"/{name}: unknown option {word} — it takes {known or 'none'}",
+        error=f"/{name}: неизвестный параметр {word}. Допустимые: {known or 'нет'}",
     )

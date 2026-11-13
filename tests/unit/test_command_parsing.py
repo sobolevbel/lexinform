@@ -134,7 +134,7 @@ def test_an_unknown_command_asks_for_help() -> None:
     command = parse_command("/delete 3039")
 
     assert command is not None, "parse_command returns None only for text with no leading slash"
-    assert command.name is CommandName.HELP and command.error == "unknown command /delete"
+    assert command.name is CommandName.HELP and command.error == "Неизвестная команда /delete"
 
 
 def test_a_command_without_a_reference_says_so() -> None:
@@ -142,14 +142,14 @@ def test_a_command_without_a_reference_says_so() -> None:
 
     assert command is not None, "parse_command returns None only for text with no leading slash"
     assert command.name is CommandName.SHOW and command.ref is None
-    assert command.error == "/show needs a bill number or a link"
+    assert command.error == "/show: укажите номер проекта или ссылку"
 
 
 def test_an_unreadable_reference_is_reported_verbatim() -> None:
     command = parse_command("/skip the bill about visas")
 
     assert command is not None, "parse_command returns None only for text with no leading slash"
-    assert command.error == "cannot read a bill number or a link in 'the bill about visas'"
+    assert command.error == "Не удалось прочитать номер проекта или ссылку: 'the bill about visas'"
 
 
 def test_find_takes_words_and_not_a_bill() -> None:
@@ -164,7 +164,7 @@ def test_find_needs_something_to_look_for() -> None:
     command = parse_command("/find ab")
 
     assert command is not None, "parse_command returns None only for text with no leading slash"
-    assert command.error == "/find needs at least 3 characters to look for"
+    assert command.error == "/find: введите хотя бы 3 символа для поиска"
 
 
 def test_status_takes_no_arguments() -> None:
@@ -220,10 +220,16 @@ def test_a_run_option_is_checked_here_and_not_hours_later_by_the_workflow() -> N
     unknown = parse_command("/run turbo")
     missing = parse_command("/run since")
 
-    assert bad_date is not None and bad_date.error is not None and "date" in bad_date.error
-    assert bad_count is not None and bad_count.error is not None and "number" in bad_count.error
-    assert unknown is not None and unknown.error is not None and "unknown option" in unknown.error
-    assert missing is not None and missing.error is not None and "needs a value" in missing.error
+    assert bad_date is not None and bad_date.error is not None and "дата" in bad_date.error
+    assert (
+        bad_count is not None and bad_count.error is not None and "целое число" in bad_count.error
+    )
+    assert (
+        unknown is not None
+        and unknown.error is not None
+        and "неизвестный параметр" in unknown.error
+    )
+    assert missing is not None and missing.error is not None and "укажите значение" in missing.error
 
 
 def test_druk_label_names_the_kind() -> None:
@@ -341,7 +347,9 @@ def test_the_runs_own_options_reach_the_cli_as_flags() -> None:
 def test_a_count_outside_its_range_is_refused_here_too() -> None:
     command = parse_command("/run min_score=9")
 
-    assert command is not None and command.error == "/run: min_score takes 1–5, not 9"
+    assert (
+        command is not None and command.error == "/run: min_score должен быть от 1 до 5, получено 9"
+    )
 
 
 def test_index_rcl_numbers_has_no_default_date_to_fall_back_on() -> None:
@@ -349,7 +357,7 @@ def test_index_rcl_numbers_has_no_default_date_to_fall_back_on() -> None:
     command = parse_command("/index-rcl-numbers")
 
     assert command is not None, "parse_command returns None only for text with no leading slash"
-    assert command.error == "/index-rcl-numbers needs since=… (since is not optional)"
+    assert command.error == "/index-rcl-numbers: укажите since=…"
 
 
 def test_reset_takes_any_status_and_refuses_what_is_not_one() -> None:
@@ -359,7 +367,7 @@ def test_reset_takes_any_status_and_refuses_what_is_not_one() -> None:
 
     assert good is not None and good.options == {"to": "skipped_prefilter"}
     assert bare is not None and bare.error is None and bare.options == {}
-    assert bad is not None and bad.error is not None and "takes a status" in bad.error
+    assert bad is not None and bad.error is not None and "неизвестный статус" in bad.error
 
 
 def test_link_names_the_entry_and_the_druk_it_became() -> None:
@@ -369,8 +377,8 @@ def test_link_names_the_entry_and_the_druk_it_became() -> None:
 
     assert good is not None and good.error is None and good.options == {"to": "3281"}
     assert good.ref is not None and good.ref.value == "RCL/12398102"
-    assert bare is not None and bare.error is not None and "needs to=" in bare.error
-    assert bad is not None and bad.error is not None and "takes a druk number" in bad.error
+    assert bare is not None and bare.error is not None and "укажите to=" in bare.error
+    assert bad is not None and bad.error is not None and "нужен номер druku" in bad.error
 
 
 def test_observe_needs_a_mode_it_knows() -> None:
@@ -379,9 +387,9 @@ def test_observe_needs_a_mode_it_knows() -> None:
     bad = parse_command("/observe 3150 mode=quiet")
 
     assert good is not None and good.options == {"mode": "metadata"}
-    assert bare is not None and bare.error == "/observe needs mode=… (mode is not optional)"
+    assert bare is not None and bare.error == "/observe: укажите mode=…"
     assert bad is not None and bad.error == (
-        "/observe: mode takes full, metadata, off, auto, not 'quiet'"
+        "/observe: для mode допустимы full, metadata, off, auto, получено 'quiet'"
     )
 
 
@@ -392,7 +400,7 @@ def test_preview_sends_to_a_chat_and_not_to_anything_else() -> None:
 
     assert to_channel is not None and to_channel.options == {"to": "-1001234567"}
     assert to_name is not None and to_name.options == {"to": "@lexinform_test"}
-    assert nonsense is not None and nonsense.error is not None and "chat id" in nonsense.error
+    assert nonsense is not None and nonsense.error is not None and "ID чата" in nonsense.error
 
 
 def test_the_report_commands_take_a_window() -> None:
@@ -420,10 +428,10 @@ def test_an_option_of_another_command_is_answered_and_not_swallowed() -> None:
     command = parse_command("/show 3039 force")
 
     assert command is not None, "parse_command returns None only for text with no leading slash"
-    assert command.error == "/show: unknown option force — it takes none"
+    assert command.error == "/show: неизвестный параметр force. Допустимые: нет"
     assert parse_command("/analyze 3039 turbo") == Command(
         name=CommandName.ANALYZE,
-        error="/analyze: unknown option turbo — it takes force, recheck, reanalyze, allow_over_budget, publish, json",
+        error="/analyze: неизвестный параметр turbo. Допустимые: force, recheck, reanalyze, allow_over_budget, publish, json",
     )
 
 

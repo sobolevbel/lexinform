@@ -345,7 +345,7 @@ def test_help_and_errors_show_the_relevant_usage() -> None:
     notes = [o.note for _, o in w.replier.replies]
     assert statuses == [OutcomeStatus.HELP] * 4
     assert "/help all" in notes[0] and "/republish" not in notes[0]
-    assert "unknown command /delete" in notes[1] and "/help" in notes[1]
+    assert "Неизвестная команда /delete" in notes[1] and "/help" in notes[1]
     assert "/analyze BILL" in notes[2] and "/republish" not in notes[2]
     assert notes[3] == "not a command"
     assert report.commands_failed == 0

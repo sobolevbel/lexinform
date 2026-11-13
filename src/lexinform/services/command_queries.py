@@ -222,11 +222,10 @@ class CommandQueries:
             lines.append("Выполнение начато, итог пока неизвестен.")
         else:
             lines.append("Завершён с ошибкой." if state.failed else "Выполнение завершено.")
-        if state.completed_work is not None:
-            if state.completed_work.batch_key:
-                lines.append(f"Batch: {state.completed_work.batch_key}")
-            if state.completed_work.publication_id:
-                lines.append(f"/delivery {state.completed_work.publication_id}")
+        if state.completed_work is not None and state.completed_work.batch_key:
+            lines.append(f"Batch: {state.completed_work.batch_key}")
+        if state.publication_id is not None:
+            lines.append(f"/delivery {state.publication_id}")
         if state.executed_at is not None and (
             state.handled_at is None or state.final_answer_pending
         ):

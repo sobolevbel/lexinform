@@ -336,6 +336,8 @@ class CommandService:
                 outcome=outcome.line(),
                 at=self._clock.now(),
                 work=outcome.work,
+                publication_id=outcome.publication_id
+                or (outcome.delivery.id if outcome.delivery else None),
                 rendered_reply=self._replier.render(incoming, outcome),
                 failed=not outcome.ok,
             )

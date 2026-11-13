@@ -101,3 +101,17 @@ def test_interrupted_run_request_keeps_the_original_claim() -> None:
     assert not service.drain()
     assert len(calls) == 1 and not world.inbox.pending()
     assert "итог неизвестен" in world.replier.replies[-1][1].note
+
+
+def test_request_inspection_links_an_immediately_published_card() -> None:
+    world = World()
+    world.add_bill("3039", TITLE)
+    request = world.command("/analyze 3039")
+    _commands_only(world)
+    publication = world.publication("3039")
+    assert publication is not None and publication.id is not None
+
+    world.command(f"/request {request.update_id}")
+    _commands_only(world)
+
+    assert f"/delivery {publication.id}" in world.replier.replies[-1][1].note

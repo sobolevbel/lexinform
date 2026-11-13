@@ -96,7 +96,7 @@ def test_a_misspelled_run_option_is_answered_and_starts_nothing() -> None:
     filed = listener.poll_once()
 
     assert (filed, writer.filed, listener.offset) == (1, [], 2)
-    assert "unknown option turbo" in ack.started_notes[0]
+    assert "неизвестный параметр turbo" in ack.started_notes[0]
 
 
 def test_a_run_that_github_would_not_save_is_tried_again() -> None:

@@ -1146,6 +1146,7 @@ MIGRATIONS: tuple[str, ...] = (
     """
     ALTER TABLE commands ADD COLUMN incoming_json TEXT;
     ALTER TABLE commands ADD COLUMN workflow_url TEXT;
+    ALTER TABLE commands ADD COLUMN publication_id INTEGER;
     ALTER TABLE commands ADD COLUMN work_json TEXT;
     ALTER TABLE commands ADD COLUMN completed_work_json TEXT;
     ALTER TABLE commands ADD COLUMN rendered_reply TEXT;
@@ -7390,6 +7391,7 @@ class SqliteBillRepository:
             reply=row["reply"],
             incoming=incoming,
             workflow_url=row["workflow_url"],
+            publication_id=row["publication_id"],
             work=CommandWork.model_validate_json(row["work_json"]) if row["work_json"] else None,
             completed_work=CommandWork.model_validate_json(row["completed_work_json"])
             if row["completed_work_json"]
@@ -7415,7 +7417,7 @@ class SqliteBillRepository:
             "UPDATE commands SET executed_at = COALESCE(executed_at, ?), reply = ?, work_json = ?,"
             " completed_work_json = CASE WHEN ? AND ? IS NOT NULL"
             " THEN json_set(work_json, '$.publication_id', ?) WHEN ? THEN work_json"
-            " ELSE completed_work_json END,"
+            " ELSE completed_work_json END, publication_id = COALESCE(?, publication_id),"
             " rendered_reply = ?, failed = ?, final_answer_pending = ? WHERE update_id = ?",
             (
                 at.isoformat(),
@@ -7425,6 +7427,7 @@ class SqliteBillRepository:
                 publication_id,
                 publication_id,
                 final_answer_pending,
+                publication_id,
                 rendered_reply,
                 failed,
                 final_answer_pending,
