@@ -1654,6 +1654,7 @@ class BillRepository(Protocol):
         outcome: str,
         at: datetime,
         work: CommandWork | None = None,
+        publication_id: int | None = None,
         rendered_reply: str | None = None,
         failed: bool = False,
         final_answer_pending: bool = False,

@@ -348,7 +348,7 @@ def test_status_reply_shows_the_queues_the_posts_and_the_runs(process_3039: Proc
     assert "📥 <b>bills</b>: analyzed 43 · analysis_pending 1" in text
     assert "📣 <b>posts</b>: sent 120 · failed 1" in text
     assert "👁 <b>followed</b>: 17" in text
-    assert "🏃 <b>Прогоны</b>: 1 in 7 days · 2 card(s) · 3 update(s) · last " in text
+    assert "🏃 <b>runs</b>: 1 in 7 days · 2 card(s) · 3 update(s) · last " in text
     assert "⏳ <b>waiting</b>" in text and "analysis_pending" in text
 
 

@@ -588,8 +588,11 @@ class TelegramOperatorReplier:
                     buttons.append(("Карточка", f"preview:{ref}"))
                 if not command.text.startswith("/explain "):
                     buttons.append(("Разбор (batch)", f"explain:{ref}"))
-        if outcome.delivery is not None and outcome.delivery.id is not None:
-            buttons.append(("Доставка", f"delivery:{outcome.delivery.id}"))
+        publication = (
+            outcome.delivery.id if outcome.delivery is not None else outcome.publication_id
+        )
+        if publication is not None:
+            buttons.append(("Доставка", f"delivery:{publication}"))
         return tuple(buttons)
 
 

@@ -269,7 +269,13 @@ class BillOperations:
                 status=OutcomeStatus.ERROR, bill=bill, note="posting the card failed, see the log"
             )
         note = "" if posted.kind is PublicationKind.NEW_BILL else "as a reply under the joint print"
-        return CommandOutcome(status=status, bill=bill, message_id=posted.message_id, note=note)
+        return CommandOutcome(
+            status=status,
+            bill=bill,
+            message_id=posted.message_id,
+            publication_id=posted.id,
+            note=note,
+        )
 
     def card_label(self, bill: Bill) -> str | None:
         """`message 123` when the bill's card (or its reply under a joint print) is sent."""

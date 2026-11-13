@@ -800,8 +800,6 @@ class OutcomeStatus(StrEnum):
     DIGESTED = "digest"
     DELIVERY = "delivery"
     HELP = "help"
-    QUEUE = "queue"
-    REQUEST = "request"
     EXECUTED_EARLIER = "executed earlier"
     NOT_FOUND = "not_found"
     ERROR = "error"
@@ -887,6 +885,7 @@ class CommandOutcome(BaseModel):
     status: OutcomeStatus
     work: CommandWork | None = None
     rendered_reply: str | None = None
+    publication_id: int | None = None
     request_links: tuple[str, ...] = ()
     bill: Bill | None = None
     note: str = ""
@@ -973,7 +972,10 @@ Query = dict[str, list[str]]
 
 def _parse_url(value: str) -> BillRef | None:
     """The bill a link points at; each host writes the reference its own way."""
-    url = urlparse(value if "://" in value else f"https://{value}")
+    try:
+        url = urlparse(value if "://" in value else f"https://{value}")
+    except ValueError:
+        return None
     host = (url.hostname or "").lower()
     query = parse_qs(url.query)
     if host.endswith("legislacja.rcl.gov.pl"):
@@ -1032,7 +1034,11 @@ def _checked(name: CommandName, key: str, option: Option, raw: str) -> tuple[str
     if not raw:
         return None, f"/{name}: {key} needs a value ({key}=…)"
     if option.kind is OptionKind.DATE:
-        return (raw, "") if _is_date(raw) else (None, f"/{name}: {key} takes a date, not {raw!r}")
+        return (
+            (dt.date.fromisoformat(raw).isoformat(), "")
+            if _is_date(raw)
+            else (None, f"/{name}: {key} takes a date, not {raw!r}")
+        )
     if option.kind is OptionKind.COUNT:
         if not raw.isascii() or not raw.isdigit() or len(raw) > 10:
             return None, f"/{name}: {key} takes a number, not {raw!r}"

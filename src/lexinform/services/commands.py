@@ -439,6 +439,7 @@ class CommandService:
                         outcome=outcome.line(),
                         at=self._clock.now(),
                         work=outcome.work,
+                        publication_id=outcome.publication_id,
                         rendered_reply=self._replier.render(incoming, outcome),
                         failed=not outcome.ok,
                         final_answer_pending=True,
@@ -553,11 +554,12 @@ class CommandService:
             publish=publish and work.publish_allowed,
             may_wait=True,
         )
-        return (
-            None
-            if outcome.status is OutcomeStatus.QUEUED
-            else outcome.model_copy(update={"as_json": command.as_json})
-        )
+        if outcome.status is OutcomeStatus.QUEUED:
+            return None
+        card = self._publishing.card_of(bill)
+        if card is not None and card.id is not None:
+            outcome = outcome.model_copy(update={"publication_id": card.id})
+        return outcome.model_copy(update={"as_json": command.as_json})
 
     def _same_analysis(self, bill: Bill, work: CommandWork) -> bool:
         if bill.analysis_generation == work.generation:
@@ -565,12 +567,15 @@ class CommandService:
         if bill.analysis is None or bill.analysis.computation_id is None or work.generation is None:
             return False
         result = self._repo.get_computation_result(bill.analysis.computation_id)
+        if result is None or result.purpose != "analysis" or result.generation != work.generation:
+            return False
+        applied = self._repo.get_primary_projection_application(
+            result.result_id, bill.term, bill.number, work.generation
+        )
         return (
-            result is not None
-            and result.purpose == "analysis"
-            and result.generation == work.generation
+            applied is not None
+            and applied.projected_generation == bill.analysis_generation
             and bill.analysis_generation == work.generation + 1
-            and (work.batch_key is None or result.custom_id == work.batch_key)
         )
 
     def _work_delivery(self, work: CommandWork) -> CommandOutcome | None:
@@ -615,6 +620,7 @@ class CommandService:
             else OutcomeStatus.ERROR,
             note=f"Доставка {publication.id}: {publication.status.value}. "
             f"/delivery {publication.id}",
+            publication_id=publication.id,
             message_id=publication.message_id
             if publication.status is PublicationStatus.SENT
             else None,

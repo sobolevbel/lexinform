@@ -7406,18 +7406,24 @@ class SqliteBillRepository:
         outcome: str,
         at: datetime,
         work: CommandWork | None = None,
+        publication_id: int | None = None,
         rendered_reply: str | None = None,
         failed: bool = False,
         final_answer_pending: bool = False,
     ) -> None:
         self._conn.execute(
             "UPDATE commands SET executed_at = COALESCE(executed_at, ?), reply = ?, work_json = ?,"
-            " completed_work_json = CASE WHEN ? THEN work_json ELSE completed_work_json END,"
+            " completed_work_json = CASE WHEN ? AND ? IS NOT NULL"
+            " THEN json_set(work_json, '$.publication_id', ?) WHEN ? THEN work_json"
+            " ELSE completed_work_json END,"
             " rendered_reply = ?, failed = ?, final_answer_pending = ? WHERE update_id = ?",
             (
                 at.isoformat(),
                 outcome,
                 work.model_dump_json() if work else None,
+                final_answer_pending,
+                publication_id,
+                publication_id,
                 final_answer_pending,
                 rendered_reply,
                 failed,

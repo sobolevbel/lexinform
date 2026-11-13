@@ -172,7 +172,7 @@ class CommandListener:
         if parsed.error is not None or parsed.name is CommandName.HELP:
             note = parsed.error or command_help(parsed.help_topic, all_commands=parsed.help_all)
             if parsed.error is not None:
-                note += "\n" + command_help(parsed.name).splitlines()[0]
+                note = note[:300] + "\n" + command_help(parsed.name).splitlines()[0]
             self._say(lambda ack: ack.started(command, note))
             if callback_id is not None:
                 self._say(lambda ack: ack.pressed(callback_id, "Ошибка команды"))

@@ -252,9 +252,7 @@ jobs:
             uv run --frozen --no-dev lexinform commands --run-requests || STATUS=$?
             exit "$STATUS"
           fi
-          # The relay names one phase of a run the way the operator asked for it (/scan, /track,
-          # /collect-batches, /reprefilter, /index-rcl-numbers); the schedule and the button name
-          # nothing and get the whole day. `$INPUT_OPTIONS` splits into words: it is a flag list.
+          # The manual Actions form accepts a CLI phase and a list of its flags.
           COMMAND="${INPUT_COMMAND:-run}"
           ARGS=()
           if [ -n "${INPUT_OPTIONS:-}" ]; then ARGS+=($INPUT_OPTIONS); fi

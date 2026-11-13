@@ -125,7 +125,7 @@ def test_quiet_status_and_snapshot_bytes_are_unchanged() -> None:
         "7e3fdd0ea1e4a6607b581de18bf98aed6e51724cc7d4a5117da825118a5bdc01"
     )
     assert hashlib.sha256(render(StatusSnapshot()).encode()).hexdigest() == (
-        "9703e5fd3ba3a11afefcbed13525dcaf6f34ae73950ed471669a50e4e1253065"
+        "3c4541c5de833bacee562234ea9d3ca4b6ce9ea0c966bd5eadebb07b1eeed600"
     )
 
 
