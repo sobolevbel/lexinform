@@ -64,56 +64,20 @@ jobs:
 
   sejm-comparison:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 4
     strategy:
-      fail-fast: false
       matrix:
-        first: [production, curl, honest-httpx]
-        sample: [1, 2]
+        sample: [1, 2, 3, 4]
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v7
-      - name: Compare Sejm requests
-        env:
-          FIRST: ${{ matrix.first }}
+      - name: Record Sejm response headers and error signatures
         run: |
-          uv run --frozen --no-dev python -u - <<'PYCODE'
-          import os
-          import subprocess
-
-          import httpx2 as httpx
-
-          from lexinform.adapters.browser_identity import BROWSER_USER_AGENT
-
-          origin = "https://api.sejm.gov.pl"
-          paths = [
-              "/sejm/term",
-              "/sejm/term10/processes?limit=100&modifiedSince=2026-11-09T15%3A10%3A42&documentType=projekt+ustawy&offset=0",
-              "/sejm/term10/bills?limit=500&dateOfReceiptFrom=2026-11-01&offset=0",
-          ]
-          modes = ["production", "curl", "honest-httpx", "curl-http1", "curl-same-headers"]
-          first = os.environ["FIRST"]
-          modes.remove(first)
-          print("egress:", subprocess.check_output(["curl", "-fsS", "--max-time", "10", "https://api.ipify.org"], text=True))
-          for mode in [first, *modes]:
-              print("mode:", mode)
-              if mode.startswith("curl"):
-                  options = []
-                  if mode == "curl-http1":
-                      options.append("--http1.1")
-                  if mode == "curl-same-headers":
-                      options.extend(["--http1.1", "-A", BROWSER_USER_AGENT, "-H", "Accept: application/json"])
-                  for path in paths:
-                      subprocess.run(["curl", "-LsS", "--max-time", "10", "-o", "/dev/null", "-w", "%{response_code} HTTP/%{http_version} %{remote_ip} %{content_type} %{time_total}s\n", *options, origin + path], check=False)
-                  continue
-              identity = BROWSER_USER_AGENT if mode == "production" else "Lexinform (+https://github.com/sobolevbel/lexinform)"
-              with httpx.Client(timeout=10, headers={"Accept": "application/json", "User-Agent": identity}, follow_redirects=True) as client:
-                  for path in paths:
-                      try:
-                          response = client.get(origin + path)
-                          stream = response.extensions.get("network_stream")
-                          address = stream.get_extra_info("server_addr") if stream else None
-                          print(response.status_code, response.http_version, address, response.headers.get("content-type"), len(response.content), response.elapsed.total_seconds())
-                      except httpx.HTTPError as exc:
-                          print(type(exc).__name__, str(exc))
-          PYCODE
+          curl -fsS --max-time 8 https://api.ipify.org || true
+          echo
+          for route in sejm/term 'sejm/term10/bills?limit=1' 'eli/acts/DU/2026?limit=1' sejm.html; do
+            url="https://api.sejm.gov.pl/$route"
+            echo "$url"
+            code=$(curl -sS -D headers -o body --max-time 12 -w '%{http_code}' "$url")
+            echo "status=$code bytes=$(wc -c < body)"
+            grep -Ei '^(HTTP/|server:|via:|retry-after:|date:|content-type:|x-iinfo:|x-cache:|x-request-id:|x-correlation-id:|location:)' headers || true
+            if [ "$code" -ge 400 ]; then head -c 360 body; echo; fi
+          done
