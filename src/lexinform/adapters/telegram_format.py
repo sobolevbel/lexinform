@@ -429,6 +429,7 @@ class MessageFormatter:
         today = today or self._today()
 
         historical = bill.act is None and is_over(bill, today=today)
+        regulation = bill.rcl is not None and bill.rcl.is_regulation
         header = self._header(ICON["new_bill"], self._card_header(bill, today), bill)
         if self._attention_enabled and (state := self._norm_state(bill, today)):
             header += f"\n<i>{esc(state)}</i>"
@@ -441,13 +442,12 @@ class MessageFormatter:
                 esc(lb.category_labels.get(a.category, a.category)),
             )
         )
-        summary_label = (
-            lb.rejected_project_header
-            if historical
-            else lb.project_analysis_header
-            if bill.act is not None
-            else lb.about
-        )
+        summary_label = lb.rejected_project_header if historical else lb.about
+        if bill.act is not None:
+            if not regulation:
+                summary_label = lb.project_analysis_header
+            elif bill.analysis.source_url != bill.act.text_pdf_url:
+                summary_label = lb.rejected_project_header
         summary_block = f"{ICON['about']} <b>{esc(summary_label)}</b>\n{esc(a.summary.strip())}"
         if a.practical_impact.strip() and bill.act is None and not historical:
             summary_block = ""
@@ -460,9 +460,15 @@ class MessageFormatter:
         text = self._reader_blocks(
             [
                 header,
-                esc(lb.rejected_project_note) if historical else "",
+                (
+                    esc(lb.regulation_withdrawn)
+                    if bill.rcl is not None and bill.rcl.is_regulation
+                    else esc(lb.rejected_project_note)
+                )
+                if historical
+                else "",
                 self._intention_note(bill),
-                self._reader_context(bill),
+                "" if regulation and bill.act is not None else self._reader_context(bill),
                 self._consultation_line(bill, today),
                 self._action_line(bill, today),
             ],
@@ -478,6 +484,10 @@ class MessageFormatter:
 
     def _card_header(self, bill: Bill, today: dt.date) -> str:
         lb = self._labels
+        if bill.rcl is not None and bill.rcl.is_regulation:
+            return (
+                lb.published_regulation_header if bill.rcl.published_eli else lb.regulation_header
+            )
         if self._ended_line(bill, today):
             # Only when the card can also say *how* it ended: `next_phase` gives up on a stage
             # tree it does not recognise too, and "процесс завершён" over nothing is a guess.
@@ -505,7 +515,11 @@ class MessageFormatter:
         details: list[str] = []
         # Not on a plan's card: two blocks above it says there is no text yet, and a vacatio
         # legis can only be quoted from one — "не указано" there reads as a fact about the bill.
-        if bill.wykaz is None and not (bill.act is None and is_over(bill, today=today)):
+        if bill.act is not None and bill.rcl is not None and bill.rcl.is_regulation:
+            date = bill.act.entry_into_force
+            effective = self.fmt_date(date) if date else lb.entry_into_force_unknown
+            details.append(self._field(ICON["effective"], lb.effective_date, esc(effective)))
+        elif bill.wykaz is None and not (bill.act is None and is_over(bill, today=today)):
             effective = a.effective_date.strip() if a.effective_date else lb.effective_date_unknown
             details.append(self._field(ICON["effective"], lb.effective_date, esc(effective)))
         steps = "\n".join(
@@ -540,7 +554,7 @@ class MessageFormatter:
             # is behind it, and "текста ещё нет" was the one thing the line said.
             plan = lb.wykaz_stage_adopted if bill.wykaz.is_adopted else lb.wykaz_stage
             meta_lines.append(self._field(ICON["stage"], lb.stage, esc(plan)))
-        elif bill.rcl is not None:
+        elif bill.rcl is not None and not (act is not None and bill.rcl.is_regulation):
             meta_lines.append(self._field(ICON["stage"], lb.stage, esc(lb.rcl_no_stage)))
         elif bill.is_pre_print:
             meta_lines.append(self._field(ICON["stage"], lb.stage, esc(lb.pre_print_stage)))
@@ -821,7 +835,8 @@ class MessageFormatter:
         elif change.closure_detected and bill.wykaz is not None:
             closure = f"{ICON['closed']} {esc(lb.wykaz_process_closed)}"
         elif change.closure_detected and bill.rcl is not None:
-            closure = f"{ICON['closed']} {esc(lb.rcl_process_closed)}"
+            label = lb.regulation_withdrawn if bill.rcl.is_regulation else lb.rcl_process_closed
+            closure = f"{ICON['closed']} {esc(label)}"
         elif event == "veto_sustained":
             # The header names the outcome; the majority the Sejm needed is what explains it.
             closure = f"{ICON['closed']} {esc(lb.process_veto_sustained)}"
@@ -962,9 +977,10 @@ class MessageFormatter:
         # The moment a reader has to diarise the date, and the last one before the channel goes
         # quiet for the vacatio legis: without a sentence of the summary the notice was two dates
         # under a Polish act title, and the card it replies to is months up the thread.
+        regulation = bill.rcl is not None and bill.rcl.is_regulation
         summary_block = self._reader_context(bill)
         links_block = self._links(self._act_links(bill, act))
-        tags = self._tags(bill, f"#{lb.tag_published}")
+        tags = self._tags(bill, f"#{lb.tag_regulation if regulation else lb.tag_published}")
         text = self._reader_blocks(
             [header, facts],
             flexible=[summary_block],
@@ -1002,7 +1018,12 @@ class MessageFormatter:
             raise ValueError(f"bill {bill.number} has no entry-into-force date")
         # A missed run posts this late, and "from today" would then be the one thing that is not.
         on_the_day = act.entry_into_force == (today or self._today())
-        label = lb.in_force_header if on_the_day else lb.in_force_header_dated
+        regulation = bill.rcl is not None and bill.rcl.is_regulation
+        label = (
+            lb.in_force_header
+            if on_the_day
+            else (lb.regulation_in_force_dated if regulation else lb.in_force_header_dated)
+        )
         header = self._header(ICON["in_force"], label, bill, act.title)
         facts = (
             f"{ICON['journal']} {esc(act.display_address)} · {esc(lb.in_force_since)} "
@@ -1595,12 +1616,21 @@ class MessageFormatter:
 
     def _act_links(self, bill: Bill, act: ActInfo) -> list[str]:
         lb = self._labels
-        links = self._sejm_links(bill)
+        regulation = bill.rcl is not None and bill.rcl.is_regulation
+        if regulation and bill.rcl is not None:
+            links = [
+                link(bill.rcl.web_url, lb.link_rcl_project),
+                link(f"https://eli.gov.pl/eli/{act.eli}/ogl", lb.journal),
+            ]
+        else:
+            links = self._sejm_links(bill)
         isap = act.isap_url or bill.summary.isap_url
         if isap:
             links.append(link(isap, lb.link_isap))
         if act.text_pdf_url:
-            links.append(link(act.text_pdf_url, lb.link_act_pdf))
+            links.append(
+                link(act.text_pdf_url, lb.link_regulation_pdf if regulation else lb.link_act_pdf)
+            )
         return links
 
     def run_report(
@@ -2667,6 +2697,14 @@ class MessageFormatter:
 
     def _reader_context(self, bill: Bill) -> str:
         if bill.act is not None:
+            if bill.rcl is not None and bill.rcl.is_regulation:
+                if (
+                    bill.analysis is not None
+                    and bill.act.text_pdf_url
+                    and bill.analysis.source_url == bill.act.text_pdf_url
+                ):
+                    return esc(lead(bill.analysis.analysis.summary))
+                return ""
             record = bill.act_application_review
             if record is None or record.context.act_eli != bill.act.eli:
                 return esc(self._labels.document_review_incomplete)
@@ -2725,6 +2763,8 @@ class MessageFormatter:
             return states["published"]
         if is_over(bill, today=today):
             return states["ended"]
+        if bill.rcl is not None and bill.rcl.published_eli:
+            return states["published"]
         evidence = process_evidence(
             bill.stages, passed=bill.summary.passed, closed=bill.summary.closure_date is not None
         )
@@ -2819,7 +2859,9 @@ class MessageFormatter:
     def _number_tag(bill: Bill) -> str:
         """One tag per bill, unique across terms: print numbers restart with every kadencja,
         RPW numbers carry the year already, wykaz numbers (UC164) are unique per government."""
-        wykaz = bill.rcl.wykaz_number if bill.rcl is not None else None
+        wykaz = (
+            bill.rcl.wykaz_number if bill.rcl is not None and not bill.rcl.is_regulation else None
+        )
         return _number_tag(bill.term, bill.number, wykaz)
 
     @staticmethod
@@ -2864,7 +2906,8 @@ class MessageFormatter:
             project = bill.rcl
             who = f"{applicant} — {esc(project.applicant)}"
             if project.wykaz_number:
-                who += f" · {esc(lb.rcl_wykaz)}: {esc(project.wykaz_number)}"
+                register = lb.regulation_wykaz if project.is_regulation else lb.rcl_wykaz
+                who += f" · {esc(register)}: {esc(project.wykaz_number)}"
             when = f"{ICON['doc_date']} <b>{esc(lb.rcl_published)}:</b> "
             lines = f"{ICON['applicant']} <b>{esc(lb.applicant)}:</b> {who}\n{when}" + esc(
                 self.fmt_date(project.created)
@@ -2917,12 +2960,21 @@ class MessageFormatter:
         assert project is not None
         lb = self._labels
         links = [link(project.web_url, lb.link_rcl_project)]
+        if project.published_eli:
+            links.append(link(f"https://eli.gov.pl/eli/{project.published_eli}/ogl", lb.journal))
         documents = project.text_documents()
         record = bill.analysis
         main_url = record.source_url if record is not None else None
         if main_url:
             extension = urlsplit(main_url).path.rsplit(".", 1)[-1].upper()
-            links.append(link(main_url, f"{lb.link_bill_text} ({extension})"))
+            label = (
+                lb.link_regulation_pdf
+                if project.is_regulation
+                and bill.act is not None
+                and main_url == bill.act.text_pdf_url
+                else f"{lb.link_bill_text} ({extension})"
+            )
+            links.append(link(main_url, label))
         elif "bill" in documents:
             doc = documents["bill"]
             links.append(link(doc.url, f"{lb.link_bill_text} ({doc.extension.upper()})"))
@@ -2952,7 +3004,7 @@ class MessageFormatter:
 
     def _consultation_line(self, bill: Bill, today: dt.date) -> str:
         window = bill.consultation
-        if window is None:
+        if window is None or (bill.rcl is not None and bill.rcl.published_eli):
             return ""
         lb = self._labels
         # A date range, like a bare "until <date>", reads as an invitation; a consultation that
@@ -3097,7 +3149,7 @@ class MessageFormatter:
         elif bill.wykaz is not None:
             label = lb.wykaz_process_closed
         elif bill.rcl is not None:
-            label = lb.rcl_process_closed
+            label = lb.regulation_withdrawn if bill.rcl.is_regulation else lb.rcl_process_closed
         elif bill.summary.closure_date is not None and bill.summary.passed is False:
             label = lb.process_not_enacted
         else:
@@ -3143,7 +3195,11 @@ class MessageFormatter:
             current = PHASE_STEP.get(phase.key)
             if current is None:
                 return ""
-        steps = [s for s in PATH_STEPS if s not in GOVERNMENT_STEPS or government_path(road)]
+        steps = (
+            ["rcl", "journal", "in_force"]
+            if road.rcl is not None and road.rcl.is_regulation
+            else [s for s in PATH_STEPS if s not in GOVERNMENT_STEPS or government_path(road)]
+        )
         if current is not None and current not in steps:
             # The loop marks every step before `current` as done, so a step filtered out of the
             # line would mark the whole road done — "Dz.U. ✓ → в силе ✓" over a bill with no
@@ -3193,8 +3249,11 @@ class MessageFormatter:
         # names no term at all and suits both, with `urgent_mode` added below saying which it was.
         shortened = lb.urgent_step_labels.get(phase.key) if urgent and not overdue else None
         committees = self._committee_names(bill, phase.committees)
+        step = phase.key
+        if bill.rcl is not None and bill.rcl.is_regulation and step.startswith("rcl_"):
+            step = step.replace("rcl_", "regulation_", 1)
         template = shortened or self._step_template(
-            phase.key, named=bool(committees), overdue=overdue, dated=phase.date is not None
+            step, named=bool(committees), overdue=overdue, dated=phase.date is not None
         )
         if template is None:
             return ""
@@ -3461,7 +3520,7 @@ class MessageFormatter:
             elif window.email:
                 text += f" ({esc(lb.consultation_deadline_in_letter)})"
             actions.append(f"{text} {esc(polish)}".rstrip())
-        if not (project.is_open and not project.sent_to_sejm):
+        if project.is_regulation or not (project.is_open and not project.sent_to_sejm):
             return actions
         organ = project.applicant or lb.wykaz_organ_unknown
         interest = esc(lb.action_rcl_interest.format(organ=organ))

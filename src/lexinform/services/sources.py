@@ -38,7 +38,12 @@ from lexinform.models import (
     submission_pdf_url,
     third_reading_kept_the_text,
 )
-from lexinform.models.rcl import consultation_response_candidates, text_rank, text_role
+from lexinform.models.rcl import (
+    consultation_response_candidates,
+    regulation_annex_name,
+    text_rank,
+    text_role,
+)
 from lexinform.models.sejm import (
     SejmAdoptionOrigin,
     SejmCommitteeDraftOrigin,
@@ -80,6 +85,8 @@ def fetch_print(gateway: SejmGateway, bill: Bill) -> PrintInfo | None:
 def print_of_project(gateway: SejmGateway, project: RclProject, term: int) -> str | None:
     """The print number of a project that already went to the Sejm; None while it has not.
     The RM number the hand-over stage carries names the process (`ProcessSummary.rcl_num`)."""
+    if project.is_regulation:
+        return None
     if project.print_number:
         return project.print_number
     if not project.rm_number:
@@ -431,6 +438,12 @@ class RclTextSource:
         if project is None:
             return LocatedText()
         project.require_supported_type()
+        if project.is_regulation and bill.act is not None and bill.act.text_pdf_url:
+            return LocatedText(
+                document=TextDocument(
+                    url=bill.act.text_pdf_url, kind="rcl", regulation=True, compare_versions=True
+                )
+            )
         documents = project.text_documents()
         if "bill" not in documents:
             return LocatedText()
@@ -454,7 +467,7 @@ class RclTextSource:
                     matches,
                     key=lambda d: (
                         "nowy tekst" not in d.name.lower(),
-                        text_rank(d.name, d.extension),
+                        text_rank(d.name, d.extension, regulation=project.is_regulation),
                         d.url,
                     ),
                 ).url
@@ -463,7 +476,7 @@ class RclTextSource:
                     matches := [
                         d
                         for d in source_documents
-                        if text_role(d.name) == role
+                        if text_role(d.name, regulation=project.is_regulation) == role
                         and d.id != doc.id
                         and d.created == doc.created
                         and not _rcl_link_conflict(project, d)
@@ -473,13 +486,17 @@ class RclTextSource:
             return TextDocument(
                 url=doc.url,
                 kind="rcl",
+                regulation=project.is_regulation,
                 compare_versions=True,
                 normative_urls=tuple(
                     d.url
                     for d in source_documents
                     if d.id != doc.id
                     and d.created == doc.created
-                    and normative_name(d.name)
+                    and (
+                        normative_name(d.name)
+                        or (project.is_regulation and regulation_annex_name(d.name))
+                    )
                     and not _rcl_link_conflict(project, d)
                 ),
                 extra_urls=extras,
@@ -503,7 +520,10 @@ class RclTextSource:
             candidate(d)
             for d in sorted(available, key=lambda d: d.url)
             if d.id != main.id
-            and (text_role(d.name) == "bill" or "autopoprawka" in d.name.casefold())
+            and (
+                text_role(d.name, regulation=project.is_regulation) == "bill"
+                or "autopoprawka" in d.name.casefold()
+            )
         )
         if any(doc.id == main.id for doc in stage.loose_documents or ()):
             filed = project.model_copy(

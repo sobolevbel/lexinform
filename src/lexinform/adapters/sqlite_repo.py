@@ -5461,6 +5461,8 @@ class SqliteBillRepository:
         sql = f"""{followed}
               AND b.status != ? AND b.discontinued_at IS NULL
               AND (b.awaiting_batch_since IS NOT NULL
+                   OR (json_extract(b.rcl_json, '$.published_eli') IS NOT NULL
+                       AND b.act_json IS NULL)
                    OR b.closure_date IS NULL OR b.closure_date >= ?
                    OR ((b.passed = 1 OR b.passed IS NULL) AND b.act_json IS NULL
                        AND b.closure_date >= ?)
@@ -5487,7 +5489,16 @@ class SqliteBillRepository:
                    OR (b.passed = 1 AND b.act_json IS NULL)
                    OR b.awaiting_batch_since IS NOT NULL
                    OR b.status = ?
-                   OR b.number LIKE ?)
+                   OR b.number LIKE ?
+                   OR (json_extract(b.rcl_json, '$.published_eli') IS NOT NULL
+                       AND b.entry_into_force IS NULL)
+                   OR (b.act_json IS NULL
+                       AND json_extract(b.summary_json, '$.document_type')
+                           = 'projekt rozporządzenia'
+                       AND EXISTS (
+                           SELECT 1 FROM json_each(b.stages_json)
+                           WHERE json_extract(value, '$.stage_name') LIKE '%do ogłoszenia%'
+                       )))
             """
             since = changed_since if changed_since.tzinfo is None else changed_since.astimezone(UTC)
             params.extend(
@@ -5658,7 +5669,9 @@ class SqliteBillRepository:
     def list_rcl_awaiting_link(self) -> list[Bill]:
         rows = self._conn.execute(
             "SELECT * FROM bills WHERE number LIKE ? AND status != ?"
-            " AND json_extract(rcl_json, '$.print_number') IS NOT NULL ORDER BY term, number",
+            " AND json_extract(rcl_json, '$.print_number') IS NOT NULL"
+            " AND COALESCE(json_extract(summary_json, '$.document_type'), '')"
+            " != 'projekt rozporządzenia' ORDER BY term, number",
             (f"{RCL_PREFIX}%", BillStatus.LINKED.value),
         ).fetchall()
         return [self._row_to_bill(r) for r in rows]
@@ -5667,6 +5680,8 @@ class SqliteBillRepository:
         row = self._conn.execute(
             "SELECT 1 FROM bills WHERE number LIKE ? AND status != ? AND observation_basis = ?"
             " AND discontinued_at IS NULL AND json_extract(rcl_json, '$.print_number') IS NULL"
+            " AND COALESCE(json_extract(summary_json, '$.document_type'), '')"
+            " != 'projekt rozporządzenia'"
             " LIMIT 1",
             (f"{RCL_PREFIX}%", BillStatus.LINKED.value, ObservationBasis.TELEGRAM_THREAD.value),
         ).fetchone()
@@ -5784,6 +5799,8 @@ class SqliteBillRepository:
     def _find_rcl(self, path: str, value: str) -> Bill | None:
         row = self._conn.execute(
             f"SELECT * FROM bills WHERE json_extract(rcl_json, '{path}') = ?"
+            " AND COALESCE(json_extract(summary_json, '$.document_type'), '')"
+            " != 'projekt rozporządzenia'"
             " ORDER BY term DESC, number LIMIT 1",
             (value,),
         ).fetchone()

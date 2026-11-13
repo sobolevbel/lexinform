@@ -13,6 +13,7 @@ _ANNEX = re.compile(
     r"(?:(niniejszej|projektu)\s+)?ustawy\b(?!\s+z\s+dnia)",
     re.I,
 )
+_REGULATION_ANNEX = re.compile(_ANNEX.pattern.replace("ustawy", "rozporządzenia"), _ANNEX.flags)
 _FOREIGN_ANNEX = re.compile(r"załącznik.{0,40}do\s+(?:rozporządzenia|ustawy\s+z\s+dnia)", re.I)
 _ARTICLE = re.compile(r"\bArt\.\s*(\d+)\s*[.)]", re.I)
 _SUPPORT_NORM = re.compile(
@@ -50,15 +51,18 @@ class BundleEvidence:
     annexes_complete: bool
 
 
-def inspect_bundle(parts: tuple[DocumentPart, ...], *, fact_offset: int) -> BundleEvidence:
+def inspect_bundle(
+    parts: tuple[DocumentPart, ...], *, fact_offset: int, regulation: bool = False
+) -> BundleEvidence:
     facts: list[DocumentFact] = []
     links: list[DocumentLink] = []
     limitations: list[DocumentLimitation] = []
     complete = True
+    annex_pattern = _REGULATION_ANNEX if regulation else _ANNEX
     mains = [index for index, part in enumerate(parts) if part.role == "bill"]
     for main_index in mains:
         main = parts[main_index]
-        normative = trim_print(main.text).text
+        normative = trim_print(main.text, regulation=regulation).text
         normative = re.split(
             r"(?:^|[\n\f])\s*(?:UZASADNIENIE|OCENA SKUTKÓW REGULACJI|Nazwa projektu)\b",
             normative,
@@ -67,7 +71,7 @@ def inspect_bundle(parts: tuple[DocumentPart, ...], *, fact_offset: int) -> Bund
         )[0]
         required: dict[str, re.Match[str]] = {}
         known: list[tuple[int, int]] = []
-        for match in _ANNEX.finditer(normative):
+        for match in annex_pattern.finditer(normative):
             if match[2]:
                 required.setdefault(match[1] or "1", match)
                 known.append(match.span())
@@ -96,7 +100,7 @@ def inspect_bundle(parts: tuple[DocumentPart, ...], *, fact_offset: int) -> Bund
                 available_numbers.add(label[1] or "1")
             else:
                 unlabelled_annex = True
-            heading = _ANNEX.search(part.text[:1200])
+            heading = annex_pattern.search(part.text[:1200])
             foreign = _FOREIGN_ANNEX.search(part.text[:1200])
             status: Literal["unknown", "confirmed", "conflicting"] = "unknown"
             evidence: list[int] = []
@@ -122,7 +126,7 @@ def inspect_bundle(parts: tuple[DocumentPart, ...], *, fact_offset: int) -> Bund
                                     source + len(reference[0]),
                                 )
                             )
-            elif foreign and "rozporządzenia" in foreign[0].casefold():
+            elif foreign and not regulation and "rozporządzenia" in foreign[0].casefold():
                 status = "conflicting"
                 limitations.append("foreign_annex")
                 evidence.append(fact_offset + len(facts))

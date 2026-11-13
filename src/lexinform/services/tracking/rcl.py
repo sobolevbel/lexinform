@@ -12,11 +12,13 @@ from zoneinfo import ZoneInfo
 from lexinform.concurrency import fan_out
 from lexinform.errors import ServiceUnavailableError, StateCheckpointError
 from lexinform.models import (
+    ActInfo,
     Bill,
     BillStatus,
     CheckAspect,
     ObservationMode,
     PublicationKind,
+    PublicationStatus,
     RclProject,
     SourceOutcome,
     Stage,
@@ -30,11 +32,11 @@ from lexinform.models import (
     rcl_stages,
 )
 from lexinform.models.rcl import consultation_response_candidates
-from lexinform.ports import BillRepository, Clock, SejmGateway
+from lexinform.ports import BillRepository, Clock, EliGateway, SejmGateway
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.analysis_applications import apply_analysis
 from lexinform.services.posting import Poster
-from lexinform.services.rcl_projects import RclProjectReader
+from lexinform.services.rcl_projects import RclProjectReader, regulation_act
 from lexinform.services.sources import RclTextSource, print_of_project
 from lexinform.services.tracking.consultations import ConsultationReminder
 from lexinform.services.tracking.linking import Linker
@@ -55,6 +57,7 @@ class RclWatcher:
         gateway: SejmGateway,
         *,
         analysis: AnalysisService | None,
+        eli: EliGateway | None = None,
         max_print_lookups: int = 3,
         consultations: ConsultationReminder | None,
         local_tz: ZoneInfo = ZoneInfo("Europe/Warsaw"),
@@ -67,6 +70,7 @@ class RclWatcher:
         self._linker = linker
         self._gateway = gateway
         self._analysis = analysis
+        self._eli = eli
         self._max_print_lookups = max_print_lookups
         self._consultations = consultations
         self._local_tz = local_tz
@@ -124,8 +128,9 @@ class RclWatcher:
                     result.observed += 1
                 try:
                     project = outcome.result()
+                    act = self._read_act(bill, project, result)
                     results_due = self._results_due(bill, project)
-                    change = self._detect(bill, project, result, deliver=deliver)
+                    change = self._detect(bill, project, result, deliver=deliver, act=act)
                 except ServiceUnavailableError as exc:
                     self._checked(bill, ok=False, outage=True)
                     result.partial_errors.append(f"RCL: {exc.describe()}")
@@ -143,6 +148,12 @@ class RclWatcher:
                     continue
                 fresh = self._repo.get(bill.term, bill.number) or bill
                 try:
+                    if (
+                        publish
+                        and act is not None
+                        and not self._poster.posted(fresh, PublicationKind.ACT_PUBLISHED)
+                    ):
+                        result.count_post(self._poster.act_published(fresh), "acts_published")
                     if change is not None:
                         result.changed += 1
                         self._poster.tell(fresh, change, result, publish=publish)
@@ -212,15 +223,41 @@ class RclWatcher:
     def _refresh(self, bill: Bill) -> RclProject:
         """Network only: the project as RCL shows it now."""
         assert bill.rcl is not None, "check() refreshes only the bills that carry a project"
+        if bill.rcl.is_regulation and bill.act is not None:
+            return bill.rcl
         return self._reader.refresh(bill.rcl)
 
+    def _read_act(self, bill: Bill, project: RclProject, result: TrackingResult) -> ActInfo | None:
+        if not project.published_eli:
+            return None
+        if bill.act is not None and bill.act.eli == project.published_eli:
+            if bill.act.entry_into_force is not None:
+                return bill.act
+            previous = bill.act
+        else:
+            previous = None
+        try:
+            act = regulation_act(self._eli, project)
+        except ServiceUnavailableError as exc:
+            result.partial_errors.append(f"ELI: {exc.describe()}")
+            return previous
+        return act or previous
+
     def _detect(
-        self, bill: Bill, project: RclProject, result: TrackingResult, *, deliver: bool = True
+        self,
+        bill: Bill,
+        project: RclProject,
+        result: TrackingResult,
+        *,
+        deliver: bool = True,
+        act: ActInfo | None = None,
     ) -> StatusChange | None:
         """Source observations advance only with their delivery work after network preparation."""
         fresh = bill
         content_changed = False
-        document = self._texts.locate(bill.model_copy(update={"rcl": project})).document
+        document = self._texts.locate(
+            bill.model_copy(update={"rcl": project, "act": act or bill.act})
+        ).document
         if bill.status is BillStatus.REANALYSIS_READY and bill.ready_analysis is not None:
             document = bill.ready_analysis.located.document or document
         paid = deliver or bill.observation_mode is not ObservationMode.METADATA
@@ -231,9 +268,15 @@ class RclWatcher:
             and document is not None
             and document.url != bill.analysis.source_url
         ):
-            fresh, reanalysed = self._analysis.prepare_reanalysis(
-                bill, document, previous_document=self._texts.locate(bill).document
-            )
+            try:
+                fresh, reanalysed = self._analysis.prepare_reanalysis(
+                    bill, document, previous_document=self._texts.locate(bill).document
+                )
+            except ServiceUnavailableError as exc:
+                if act is None:
+                    raise
+                result.partial_errors.append(f"Regulation text: {exc.describe()}")
+                reanalysed = False
             if reanalysed and fresh.analysis is not None:
                 result.count_reanalysis(fresh.analysis)
                 content_changed = fresh.analysis.analysis.names_changes
@@ -249,8 +292,31 @@ class RclWatcher:
                 process_summary(project, term=bill.term), now=self._clock.now()
             )
             self._repo.save_stages(bill.term, bill.number, stages, new_fp)
+            if act is not None:
+                self._repo.save_act(bill.term, bill.number, act)
             change = self._detect_change(bill, project, stages, new_fp, content_changed)
             fresh = self._repo.get(bill.term, bill.number) or bill
+            if (
+                deliver
+                and act is not None
+                and not self._poster.posted(fresh, PublicationKind.ACT_PUBLISHED)
+            ):
+                card = self._poster.card(fresh)
+                original = (
+                    Bill.model_validate_json(card.delivery.bill_json)
+                    if card is not None and card.delivery is not None and card.delivery.bill_json
+                    else None
+                )
+                if (
+                    original is not None
+                    and original.act is not None
+                    and original.act.eli == act.eli
+                ):
+                    self._poster.record(
+                        fresh, PublicationKind.ACT_PUBLISHED, PublicationStatus.SKIPPED
+                    )
+                else:
+                    self._poster.prepare_message(fresh, PublicationKind.ACT_PUBLISHED)
             if change is not None and deliver:
                 self._poster.prepare(fresh, change)
             if deliver and self._consultations is not None:
@@ -302,6 +368,8 @@ class RclWatcher:
                 now.astimezone(self._local_tz).date(),
             )
         )
+        if project.published_eli:
+            new_stages = []
         if not (new_stages or content_changed or closure or consultation_opened):
             return None
         fresh = self._repo.get(bill.term, bill.number) or bill

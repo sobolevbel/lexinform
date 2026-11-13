@@ -159,6 +159,13 @@ class Labels:
     consultation_results_header: str
     consultation_results_hint: str
     rcl_header: str
+    regulation_header: str
+    published_regulation_header: str
+    regulation_withdrawn: str
+    regulation_wykaz: str
+    regulation_in_force_dated: str
+    link_regulation_pdf: str
+    tag_regulation: str
     rcl_wykaz: str
     rcl_published: str
     rcl_no_stage: str
@@ -305,7 +312,7 @@ class Labels:
 
 RU = Labels(
     unsupported_rcl_project="{number}: тип проекта «{kind}» пока не поддерживается. "
-    "Lexinform обрабатывает проекты законов (ustawa).",
+    "Lexinform обрабатывает проекты ustawa и rozporządzenie.",
     analysis_queued="Анализ поставлен в очередь. Результат будет обработан после завершения batch.",
     new_bill_header="Новый законопроект",
     finished_bill_header="Законопроект: процесс завершён",
@@ -536,6 +543,13 @@ RU = Labels(
         "поданные анкеты и их число видны на странице проекта на сайте Сейма"
     ),
     rcl_header="Правительственный проект (RCL)",
+    regulation_header="Проект подзаконного акта (rozporządzenie)",
+    published_regulation_header="Опубликованное rozporządzenie",
+    regulation_withdrawn="Проект rozporządzenia отозван.",
+    regulation_wykaz="номер в реестре проектов",
+    regulation_in_force_dated="Rozporządzenie вступило в силу",
+    link_regulation_pdf="Текст rozporządzenia (PDF)",
+    tag_regulation="rozporządzenie",
     rcl_wykaz="номер в wykazie prac RM",
     rcl_published="Опубликован на RCL",
     rcl_no_stage="проект опубликован на RCL, работа над ним ещё не началась",
@@ -814,6 +828,14 @@ RU = Labels(
             " обращение в трибунал больше нет (ст. 122 ч. 5), затем публикация в Dziennik Ustaw"
         ),
         "publication": "публикация в Dziennik Ustaw",
+        "regulation_publication": "публикация в Dziennik Ustaw",
+        "regulation_signature": "подписание уполномоченным органом",
+        "regulation_consultation": "общественные консультации до {date}",
+        "regulation_consultation_undated": "общественные консультации по проекту",
+        "regulation_opinions": "согласование проекта и рассмотрение замечаний",
+        "regulation_committees": "рассмотрение проекта правительственными комитетами",
+        "regulation_legal_commission": "завершение юридической проверки проекта",
+        "regulation_council": "завершение рассмотрения проекта перед подписанием",
         "in_force": "вступление в силу {date}",
         "in_force_unknown": "вступление в силу (дата пока не указана)",
         "veto": (
@@ -958,6 +980,7 @@ RU = Labels(
         "president_after_senate_silence": "пока дождитесь подтверждения следующего этапа",
         "president_after_veto": "пока ничего — Президент обязан подписать закон в 7 дней",
         "publication": "пока ничего — ждём публикации в Dziennik Ustaw",
+        "regulation_publication": "ждём официальной публикации в Dziennik Ustaw",
         "in_force": "пока ничего — закон принят, остаётся подготовиться к вступлению в силу",
         "in_force_unknown": "пока ничего — закон принят, дата вступления в силу ещё не известна",
         "veto": "пока ничего — решение за Сеймом",
@@ -1064,7 +1087,7 @@ RU = Labels(
 
 EN = Labels(
     unsupported_rcl_project="{number}: project type '{kind}' is not supported. "
-    "Lexinform handles draft statutes (ustawa).",
+    "Lexinform handles draft statutes and regulations (ustawa and rozporządzenie).",
     analysis_queued="Analysis queued. The result will be processed when the batch completes.",
     new_bill_header="New bill",
     finished_bill_header="Bill: the process is over",
@@ -1298,6 +1321,13 @@ EN = Labels(
         "the surveys submitted, and how many there were, are on the bill's page on the Sejm site"
     ),
     rcl_header="Government bill (RCL)",
+    regulation_header="Draft regulation (rozporządzenie)",
+    published_regulation_header="Published regulation",
+    regulation_withdrawn="The draft regulation was withdrawn.",
+    regulation_wykaz="work programme number",
+    regulation_in_force_dated="The regulation has entered into force",
+    link_regulation_pdf="Regulation text (PDF)",
+    tag_regulation="regulation",
     rcl_wykaz="wykaz prac RM number",
     rcl_published="Published on RCL",
     rcl_no_stage="published on RCL, work has not started yet",
@@ -1583,6 +1613,14 @@ EN = Labels(
             " veto or Tribunal left (art. 122 ust. 5), then publication in Dziennik Ustaw"
         ),
         "publication": "publication in Dziennik Ustaw",
+        "regulation_publication": "publication in Dziennik Ustaw",
+        "regulation_signature": "signature by the issuing authority",
+        "regulation_consultation": "public consultation until {date}",
+        "regulation_consultation_undated": "public consultation on the draft",
+        "regulation_opinions": "agreement on the draft and review of comments",
+        "regulation_committees": "review by government committees",
+        "regulation_legal_commission": "completion of legal review",
+        "regulation_council": "completion of review before signature",
         "in_force": "entry into force on {date}",
         "in_force_unknown": "entry into force (date not stated yet)",
         "veto": (
@@ -1701,6 +1739,7 @@ EN = Labels(
         "president_after_senate_silence": "wait for confirmation of the next step",
         "president_after_veto": "nothing yet — the President must sign within 7 days",
         "publication": "nothing yet — waiting for publication in Dziennik Ustaw",
+        "regulation_publication": "waiting for official publication in Dziennik Ustaw",
         "in_force": "nothing yet — the act is passed, prepare for its entry into force",
         "in_force_unknown": "nothing yet — the act is passed, the entry-into-force date is unknown",
         "veto": "nothing yet — the Sejm decides",

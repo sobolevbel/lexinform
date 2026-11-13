@@ -35,7 +35,7 @@ from lexinform.models import (
     RclStage,
     normalize_wykaz_number,
 )
-from lexinform.models.rcl import RCL_BASE_URL, StageState, parse_stage_label
+from lexinform.models.rcl import RCL_BASE_URL, StageState, is_regulation_title, parse_stage_label
 
 __all__ = [
     "ListPage",
@@ -50,6 +50,7 @@ __all__ = [
 log = logging.getLogger(__name__)
 
 BILLS_TYPE_ID = 2
+REGULATION_TYPE_IDS = (3, 4, 5, 7)
 _REJECTED_TITLE = "request rejected"
 _DOCUMENT_ID = re.compile(r"dokument(\d+)\.", re.IGNORECASE)
 _PROJECT_ID = re.compile(r"/projekt/(\d+)")
@@ -96,11 +97,21 @@ class RclClient:
         self._unreachable_since: str | None = None
 
     def list_projects(self, *, modified_since: date) -> Iterator[RclProjectSummary]:
+        seen: set[int] = set()
+        for type_id in (BILLS_TYPE_ID, *REGULATION_TYPE_IDS):
+            for row in self._list_type(type_id, modified_since):
+                if type_id != BILLS_TYPE_ID and not is_regulation_title(row.title):
+                    continue
+                if row.id not in seen:
+                    seen.add(row.id)
+                    yield row
+
+    def _list_type(self, type_id: int, modified_since: date) -> Iterator[RclProjectSummary]:
         page = 1
         previous_first: int | None = None
         while True:
             params: dict[str, str | int] = {
-                "typeId": BILLS_TYPE_ID,
+                "typeId": type_id,
                 "sKey": "modifiedDate",
                 "sOrder": "desc",
                 "pSize": self._page_size,
@@ -293,9 +304,13 @@ def parse_project(html: str, project_id: int, *, base_url: str = RCL_BASE_URL) -
     if created is None:
         raise RclPageError(f"project {project_id}: no creation date")
     modified = max([created, *(st.modified for st in stages if st.modified)])
+    title = _text(title_tag)
     return RclProject(
         id=project_id,
-        title=_text(title_tag),
+        title=title,
+        published_eli=_published_eli(fields.get("Odnośnik do publikatora"))
+        if is_regulation_title(title)
+        else None,
         applicant=_text(fields["Wnioskodawca"]) if "Wnioskodawca" in fields else "",
         wykaz_number=normalize_wykaz_number(_text(wykaz)) if wykaz else None,
         wykaz_url=_first_href(wykaz) if wykaz else None,
@@ -437,6 +452,23 @@ def _info_fields(info: Tag) -> dict[str, Tag]:
         if len(cells) >= 2:
             fields[_text(cells[0]).rstrip(":")] = cells[1]
     return fields
+
+
+def _published_eli(cell: Tag | None) -> str | None:
+    href = _first_href(cell) if cell is not None else None
+    if not href:
+        return None
+    url = urlparse(href)
+    if url.scheme not in ("http", "https"):
+        return None
+    identifier = r"(DU/[0-9]{4}/[1-9][0-9]*)"
+    if url.hostname in ("dziennikustaw.gov.pl", "www.dziennikustaw.gov.pl"):
+        match = re.fullmatch(rf"/{identifier}/?", url.path)
+    elif url.hostname == "eli.gov.pl":
+        match = re.fullmatch(rf"/eli/{identifier}/ogl/?", url.path)
+    else:
+        return None
+    return match[1] if match else None
 
 
 def _sejm_reference(soup: BeautifulSoup) -> tuple[str | None, str | None]:

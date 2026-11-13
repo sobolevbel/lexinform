@@ -145,6 +145,27 @@ those; the invariants that govern *when* they run are in `.claude/rules/sources.
   the plan was announced**.
 
 
+## Standalone regulations (verified 13 November 2026)
+
+- The RCL listing separates bills (`typeId=2`) and regulations by issuing authority
+  (`3` Council of Ministers, `4` Prime Minister, `5` ministers, `7` statutory committee chairs).
+  Each list has its own pagination and modification dates. An explicit regulation title is
+  required on the regulation lists because those lists can contain other document types.
+- [RCL's procedure](https://rcl.gov.pl/legislacja/rzadowy-proces-legislacyjny/opisy-procedur/projekt-rozporzadzenie-ministra/skierowanie-projektu-do-podpisu-3/)
+  leads from legal review to signature by the issuing authority and publication in Dziennik Ustaw.
+  The authoritative join is the project field `Odnośnik do publikatora`, verified on
+  [RCL/12400805](https://legislacja.rcl.gov.pl/projekt/12400805) → [Dz.U. 2025 poz. 1617](https://eli.gov.pl/eli/DU/2025/1617/ogl)
+  and [RCL/12412250](https://legislacja.rcl.gov.pl/projekt/12412250) → [Dz.U. 2026 poz. 1085](https://eli.gov.pl/eli/DU/2026/1085/ogl).
+  The second RCL project still says `otwarty`. Journal links in the legal basis and stage text
+  do not establish publication of this project.
+- The `Projekt` folder can name the draft `PROJEKT.DOCX` or
+  `Załącznik nr 1 - Projekt rozporządzenia.pdf`. The draft's own heading confirms the role and
+  normative annexes belong in its text. Conflicting editions remain ambiguous.
+- Ministry work programme numbers are displayed as source references. They can be bare and repeat
+  across ministries, so the RCL project identifier owns the thread. Discovery starts at RCL
+  rather than at a standalone ministerial announcement. Published regulations without an
+  RCL project or without the explicit journal link need a separate discovery source.
+
 ## Wykaz prac RM lessons (verified live, 12 Sept 2026)
 
 - The register page `gov.pl/web/premier/wplip-rm` renders client-side; the whole register is one

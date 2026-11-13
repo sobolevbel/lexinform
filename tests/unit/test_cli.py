@@ -931,7 +931,7 @@ def test_show_of_an_rcl_project_prints_its_timeline_and_texts(db: Path) -> None:
 @pytest.mark.parametrize("command", ["analyze", "explain", "reset"])
 def test_cli_refuses_a_saved_non_statute_without_a_traceback(db: Path, command: str) -> None:
     repo = SqliteBillRepository(db)
-    project = rcl_project(title="Projekt rozporządzenia w sprawie opłat konsularnych")
+    project = rcl_project(title="Projekt zarządzenia w sprawie opłat konsularnych")
     repo.save_rcl(10, project.number, project)
     repo.set_status(10, project.number, BillStatus.DOCUMENT_UNSUPPORTED)
     repo.close()
@@ -940,7 +940,7 @@ def test_cli_refuses_a_saved_non_statute_without_a_traceback(db: Path, command: 
     result = runner.invoke(app, [command, reference], env=_env(db))
 
     assert result.exit_code == (2 if command == "explain" else 1), result.output
-    assert "unsupported RCL project type: rozporządzenie" in result.output
+    assert "unsupported RCL project type: zarządzenie" in result.output
     assert "Traceback" not in result.output
 
 

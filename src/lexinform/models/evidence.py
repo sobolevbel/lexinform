@@ -119,7 +119,7 @@ def submission_evidence(submission: BillSubmission) -> DecisionEvidence:
 def rcl_evidence(project: RclProject) -> DecisionEvidence:
     if project.sent_to_sejm:
         outcome, state = SourceOutcome.SENT_TO_SEJM, DecisionState.KNOWN
-    elif not project.is_open:
+    elif project.is_over:
         outcome, state = SourceOutcome.WITHDRAWN, DecisionState.KNOWN
     else:
         outcome, state = SourceOutcome.ACTIVE, DecisionState.PENDING

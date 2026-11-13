@@ -20,6 +20,7 @@ from lexinform.sections import PAGE_BREAK, document_kind, trim_print
 from lexinform.text_projection import SourcePiece, TextProjection, project_pieces
 
 DOCUMENT_SELECTION_POLICY_VERSION = "document-selection-v24"
+REGULATION_SELECTION_POLICY_VERSION = "regulation-selection-v1"
 RCL_AMENDMENT_ARCHIVE_POLICY_VERSION = "document-selection-v25"
 ARCHIVE_EDITION_DIRECTORY_POLICY_VERSION = "document-selection-v27"
 RCL_COMMENT_TABLE_AMENDMENT_POLICY_VERSION = "document-selection-v28"
@@ -29,10 +30,10 @@ RCL_RESUBMISSION_POLICY_VERSION = "rcl-resubmitted-proposal-v1"
 
 
 def bill_selection(
-    selection: DocumentSelection, *, source_basis: tuple[str, ...]
+    selection: DocumentSelection, *, source_basis: tuple[str, ...], regulation: bool = False
 ) -> DocumentSelection:
-    parts = tuple(_part_role(part) for part in selection.parts)
-    bundle = inspect_bundle(parts, fact_offset=0)
+    parts = tuple(_part_role(part, regulation=regulation) for part in selection.parts)
+    bundle = inspect_bundle(parts, fact_offset=0, regulation=regulation)
     facts: list[DocumentFact] = list(bundle.facts)
     for index, part in enumerate(parts):
         if part.role != "bill":
@@ -52,8 +53,8 @@ def bill_selection(
                     quote="",
                 )
             )
-        article = re.search(r"Art\.\s*1\b", part.text)
-        if document_kind(part.text) == "bill" and article:
+        article = re.search(r"§\s*1\b" if regulation else r"Art\.\s*1\b", part.text)
+        if document_kind(part.text) == ("regulation" if regulation else "bill") and article:
             facts.append(span_fact("bill_structure", "bill", index, part, 0, article.end()))
         version = draft_version_span(part.text)
         if version:
@@ -121,7 +122,9 @@ def bill_selection(
     ):
         state = "ambiguous"
     normative = [
-        trim_print(part.text).text if part.role in ("bill", "normative_continuation") else part.text
+        trim_print(part.text, regulation=regulation).text
+        if part.role in ("bill", "normative_continuation")
+        else part.text
         for part in parts
         if part.role in ("bill", "normative_annex", "normative_continuation")
     ]
@@ -169,8 +172,10 @@ def bill_selection(
     )
 
 
-def _part_role(part: DocumentPart) -> DocumentPart:
+def _part_role(part: DocumentPart, *, regulation: bool = False) -> DocumentPart:
     kind = document_kind(part.text)
+    if regulation and part.role == "unknown" and kind == "regulation":
+        return part.model_copy(update={"role": "bill"})
     if part.role == "unknown" and kind in ("bill", "justification", "osr"):
         return part.model_copy(update={"role": kind})
     return part

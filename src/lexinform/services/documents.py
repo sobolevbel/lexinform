@@ -32,6 +32,7 @@ from lexinform.document_candidate_observations import CandidateObservations, wit
 from lexinform.document_candidates import (
     AmbiguousCandidates,
     select_candidate_versions,
+    select_regulation_archive,
 )
 from lexinform.document_composition import (
     CandidateFallback,
@@ -56,6 +57,7 @@ from lexinform.document_selection import (
     DOCUMENT_SELECTION_POLICY_VERSION,
     RCL_AMENDMENT_ARCHIVE_POLICY_VERSION,
     RCL_COMMENT_TABLE_AMENDMENT_POLICY_VERSION,
+    REGULATION_SELECTION_POLICY_VERSION,
 )
 from lexinform.errors import AttachmentTooLargeError, ServiceUnavailableError
 from lexinform.local_timing import observe_read_timing
@@ -132,7 +134,7 @@ from lexinform.ports import (
     TextExtractor,
 )
 from lexinform.required_part_capture import RequiredPartCapture
-from lexinform.sections import Kind, scan_page_window
+from lexinform.sections import Kind, document_kind, scan_page_window
 from lexinform.services.document_history import (
     DocumentSourceRead,
     PhysicalSourceRead,
@@ -1174,13 +1176,14 @@ class TextLoader:
 
     def _read_candidate(
         self,
-        url: str,
+        document: TextDocument,
         phase: Phase,
         index: int,
         attempts: ArchiveDispositionAccumulator | None,
     ) -> LoadedFile:
-        if attempts is None:
-            return self.read(url)
+        url = document.url
+        if document.regulation or attempts is None:
+            return self._read_primary(document)
         try:
             token = _ARCHIVE_READ_SINK.set(
                 (
@@ -1198,9 +1201,24 @@ class TextLoader:
             with suppress(Exception):
                 _ARCHIVE_READ_SINK.reset(token)
 
+    def _read_primary(self, document: TextDocument) -> LoadedFile:
+        file = self.read(document.url)
+        if (
+            not document.regulation
+            or not file.selection.observed_parts
+            or file.archive_unpack_blocked
+        ):
+            return file
+        if not all(part.members for part in file.selection.observed_parts):
+            return file
+        extracted = select_regulation_archive(file.selection)
+        return replace(file, text=extracted.text or None, selection=extracted.selection)
+
     def read_document(self, document: TextDocument) -> LoadedFile:
         """Read loose-file snapshots in the existing IO order."""
-        bundle = start_bundle(self.read(document.url), min_chars=MIN_TEXT_CHARS)
+        bundle = start_bundle(
+            self._read_primary(document), min_chars=MIN_TEXT_CHARS, regulation=document.regulation
+        )
         if isinstance(bundle, LoadedFile):
             return bundle
         scope = _COMPOSITION_SCOPE.get()
@@ -1325,7 +1343,7 @@ class TextLoader:
                     with suppress(Exception):
                         capture.exclude_support(phase, index, position, read_exclusion_reason(exc))
                 continue
-            composed = supporting_part(bundle, url, loaded)
+            composed = supporting_part(bundle, url, loaded, regulation=document.regulation)
             if attempt is not None and composed.missing != bundle.missing:
                 capture, phase, index = attempt
                 with suppress(Exception):
@@ -1386,7 +1404,7 @@ class TextLoader:
         selected, loaded = self._select_document_once(
             document, retain_routine_trace=retain_routine_trace
         )
-        if rcl_project is not None and selected == document:
+        if rcl_project is not None and selected == document and not document.regulation:
             recovered = recover_rcl_document(
                 self,
                 document,
@@ -1571,7 +1589,9 @@ class TextLoader:
                 else:
                     break
         policy_version = DOCUMENT_SELECTION_POLICY_VERSION
-        if document.kind == "rcl" and any(
+        if document.regulation:
+            policy_version = REGULATION_SELECTION_POLICY_VERSION
+        elif document.kind == "rcl" and any(
             candidate.amendment_urls for candidate in (document, *document.alternatives)
         ):
             policy_version = RCL_AMENDMENT_ARCHIVE_POLICY_VERSION
@@ -1652,7 +1672,7 @@ class TextLoader:
                 )
                 continue
             try:
-                main = self._read_candidate(candidate.url, "fallback", index, attempts)
+                main = self._read_candidate(candidate, "fallback", index, attempts)
             except ServiceUnavailableError:
                 raise
             except Exception as exc:
@@ -1678,6 +1698,7 @@ class TextLoader:
                 candidate.url,
                 main,
                 multiple=bool(document.alternatives or document.compare_versions),
+                regulation=candidate.regulation,
             )
             if rejected is not None:
                 fallback = rejected
@@ -1754,7 +1775,7 @@ class TextLoader:
                 )
                 continue
             try:
-                file = self._read_candidate(candidate.url, "version_comparison", index, attempts)
+                file = self._read_candidate(candidate, "version_comparison", index, attempts)
             except ServiceUnavailableError:
                 raise
             except Exception as exc:
@@ -1775,7 +1796,15 @@ class TextLoader:
             item = with_candidate_read(
                 observations[index], file.text, file.selection.parts, file.selection.observed_parts
             )
-            is_bill = item.candidate.is_bill
+            is_bill = (
+                bool(
+                    file.text
+                    and document_kind(file.text) == "regulation"
+                    and file.selection.state not in ("waiting", "ambiguous", "unsupported")
+                )
+                if document.regulation
+                else item.candidate.is_bill
+            )
             if compare_packages and is_bill and index not in incomplete:
                 if candidate.required_urls or candidate.normative_urls or candidate.amendment_urls:
                     normative = candidate.model_copy(update={"extra_urls": ()})
@@ -1947,7 +1976,7 @@ class TextLoader:
             )
         comparison_set = CandidateObservations(tuple(observations)).comparison(candidate_indices)
         prepared = comparison_set.entries
-        choice = select_candidate_versions(comparison_set)
+        choice = select_candidate_versions(comparison_set, regulation=document.regulation)
         if choice is None:
             dispositions.extend(decisions)
             return None

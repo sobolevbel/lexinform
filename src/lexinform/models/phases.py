@@ -116,6 +116,8 @@ PHASE_STEP = {
     "tribunal": "president",
     "tribunal_after_ruling": "president",
     "publication": "journal",
+    "regulation_publication": "journal",
+    "regulation_signature": "rcl",
     "in_force": "in_force",
     "in_force_unknown": "in_force",
 }
@@ -232,6 +234,8 @@ def consultation_open(bill: Bill, today: dt.date) -> bool:
     gives an electronic time stamp and no term (`rcl_letters.parse_letter`); the project's own
     timeline then says whether the consultation is running, and `_rcl_phase` reads it.
     """
+    if bill.act is not None or (bill.rcl is not None and bill.rcl.published_eli):
+        return False
     window = bill.consultation
     if window is None:
         return False
@@ -625,12 +629,18 @@ def _rcl_phase(bill: Bill, today: dt.date) -> Phase | None:
         return None
     if evidence.source is SourceOutcome.SENT_TO_SEJM:
         return Phase(key="rcl_to_sejm")
+    if project.awaiting_publication:
+        return Phase(key="regulation_publication")
     window = bill.consultation
     if window is not None and _consulting(project, window, today):
         return Phase(key="rcl_consultation", date=window.end)
     current = project.current_stage
+    if project.is_regulation and current is not None and "do podpisu" in current.name.casefold():
+        return Phase(key="regulation_signature")
     if current is not None and current.is_legal_commission:
         return Phase(key="rcl_legal_commission")
+    if project.is_regulation and not project.is_open:
+        return None
     group = current.group if current else "opinions"
     return Phase(key=f"rcl_{group}")
 

@@ -11,7 +11,7 @@ import json
 import re
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from lexinform.errors import UnsupportedRclProjectError
 from lexinform.models.enums import BILL_DOCUMENT_TYPE, RCL_PREFIX, ApplicantType, DocumentType
@@ -35,7 +35,12 @@ TextRole = Literal["bill", "justification", "osr"]
 StageGroup = Literal["opinions", "committees", "council", "sejm"]
 
 _STAGE_NAME = re.compile(r"^\s*(\d+)\.\s*(.+?)\s*$")
-_NON_BILL_TITLE = re.compile(r"^(?:projekt\s+)?(rozporządzeni[ae]|uchwał[ay]|zarządzeni[ae])\b")
+_REGULATION_TITLE = re.compile(r"^(?:projekt\s+)?rozporządzeni[ae]\b", re.I)
+_NON_BILL_TITLE = re.compile(r"^(?:projektu?\s+)?(uchwał[ay]|zarządzeni[ae])\b")
+
+
+def is_regulation_title(title: str) -> bool:
+    return _REGULATION_TITLE.match(title.strip()) is not None
 
 
 def unsupported_project_kind(title: str) -> str | None:
@@ -44,8 +49,6 @@ def unsupported_project_kind(title: str) -> str | None:
     if match is None:
         return None
     word = match[1]
-    if word.startswith("rozporządzeni"):
-        return "rozporządzenie"
     return "uchwała" if word.startswith("uchwał") else "zarządzenie"
 
 
@@ -183,7 +186,7 @@ class RclStage(BaseModel):
         folder = self.folder(kind)
         return folder.documents if folder else ()
 
-    def project_documents(self) -> tuple[RclDocument, ...]:
+    def project_documents(self, *, regulation: bool = False) -> tuple[RclDocument, ...]:
         """Unfiled files need an explicit text role; invitations and minutes are not bill text."""
         loose = tuple(
             doc
@@ -192,11 +195,18 @@ class RclStage(BaseModel):
                 r"(?:^|[-_])\s*(?:zaproszen|protok[oó][łl]|uwagi|stanowisk)", doc.name, re.I
             )
             and (
-                (names_a_bill(doc.name) and re.search(r"\bprojekt\b", doc.name, re.I))
-                or text_role(doc.name) in {"justification", "osr"}
+                (regulation and text_role(doc.name, regulation=True) is not None)
+                or (
+                    not regulation
+                    and names_a_bill(doc.name)
+                    and re.search(r"\bprojekt\b", doc.name, re.I)
+                )
+                or text_role(doc.name, regulation=regulation) in {"justification", "osr"}
             )
         )
-        return self.documents("project") + (loose if "bill" in _classify(list(loose)) else ())
+        return self.documents("project") + (
+            loose if "bill" in _classify(list(loose), regulation=regulation) else ()
+        )
 
     def consultation_letter(self) -> RclDocument | None:
         """The pismo kierujące projekt do konsultacji, wherever the ministry filed it.
@@ -287,6 +297,7 @@ class RclProject(BaseModel):
     rm_number: str | None = None
     sejm_url: str | None = None
     print_number: str | None = None
+    published_eli: str | None = Field(default=None, exclude_if=lambda value: value is None)
     stages: tuple[RclStage, ...] = ()
     consultation: RclConsultation | None = None
     consultation_attempts: int = 0
@@ -309,12 +320,24 @@ class RclProject(BaseModel):
         return f"{self.web_url}/komentarz"
 
     @property
+    def is_regulation(self) -> bool:
+        return is_regulation_title(self.title)
+
+    @property
+    def awaiting_publication(self) -> bool:
+        return self.is_regulation and any(
+            st.reached and "do ogłoszenia" in st.name.casefold() for st in self.stages
+        )
+
+    @property
     def is_open(self) -> bool:
         return self.status.strip().lower() == OPEN_STATUS
 
     @property
     def is_over(self) -> bool:
         """Closed on RCL without reaching the Sejm: the government dropped the project."""
+        if self.is_regulation:
+            return self.status.strip().casefold() == "wycofany" and self.published_eli is None
         return not self.is_open and not self.sent_to_sejm
 
     @property
@@ -348,7 +371,9 @@ class RclProject(BaseModel):
 
     @property
     def sent_to_sejm(self) -> bool:
-        return self.rm_number is not None or any(st.is_sejm and st.reached for st in self.stages)
+        return not self.is_regulation and (
+            self.rm_number is not None or any(st.is_sejm and st.reached for st in self.stages)
+        )
 
     def with_stage(self, stage: RclStage) -> RclProject:
         """A copy with one timeline node replaced by its catalog version."""
@@ -373,28 +398,46 @@ class RclProject(BaseModel):
         for stage in reversed(self.reached_stages):
             documents = [d for d in self.stage_documents(stage) if d.readable]
             if documents:
-                return _classify(documents)
+                classified = _classify(documents, regulation=self.is_regulation)
+                if not self.is_regulation or "bill" in classified:
+                    return classified
         return {}
 
     def stage_documents(self, stage: RclStage) -> tuple[RclDocument, ...]:
         current = self.current_stage
         if current is not None and current.id == stage.id and current.is_legal_commission:
-            return stage.project_documents()
+            return stage.project_documents(regulation=self.is_regulation)
         return stage.documents("project")
 
 
-def _classify(documents: list[RclDocument]) -> dict[TextRole, RclDocument]:
-    bills = [d for d in documents if text_role(d.name) == "bill"]
-    main = min(bills, key=_version_rank) if bills else _bill_of_last_resort(documents)
+def _classify(
+    documents: list[RclDocument], *, regulation: bool = False
+) -> dict[TextRole, RclDocument]:
+    bills = [d for d in documents if text_role(d.name, regulation=regulation) == "bill"]
+    main = (
+        min(bills, key=lambda d: _version_rank(d, regulation=regulation))
+        if bills
+        else None
+        if regulation
+        else _bill_of_last_resort(documents)
+    )
     if main is None:
         return {
             role: min(candidates, key=_version_rank)
             for role in ("justification", "osr")
-            if (candidates := [d for d in documents if text_role(d.name) == role])
+            if (
+                candidates := [
+                    d for d in documents if text_role(d.name, regulation=regulation) == role
+                ]
+            )
         }
     picked: dict[TextRole, RclDocument] = {"bill": main}
     for role in ("justification", "osr"):
-        candidates = [d for d in documents if text_role(d.name) == role and d.url != main.url]
+        candidates = [
+            d
+            for d in documents
+            if text_role(d.name, regulation=regulation) == role and d.url != main.url
+        ]
         if main.created is not None:
             candidates = [d for d in candidates if d.created == main.created]
         if candidates:
@@ -402,10 +445,17 @@ def _classify(documents: list[RclDocument]) -> dict[TextRole, RclDocument]:
     return picked
 
 
-def _version_rank(document: RclDocument) -> tuple[int, int, int, int, str]:
+def _version_rank(
+    document: RclDocument, *, regulation: bool = False
+) -> tuple[int, int, int, int, str]:
     explicit = bool(re.search(r"nowy[\s_]+tekst", document.name, re.I))
     date = document.created.toordinal() if document.created else 0
-    return (not explicit, -date, *_rank(document), document.url)
+    return (
+        not explicit,
+        -date,
+        *text_rank(document.name, document.extension, regulation=regulation),
+        document.url,
+    )
 
 
 def _bill_of_last_resort(documents: list[RclDocument]) -> RclDocument | None:
@@ -446,6 +496,12 @@ _NOT_A_TEXT_RE = re.compile(
 # the end of the name: "załącznik do pismo 07.08.2026 uzgodnienia [projekt].pdf". The tag is the
 # one part of such a name that is about the document rather than about its envelope.
 _APPENDIX_RE = re.compile(r"załącznik|zalacznik|zał\.")
+
+
+def regulation_annex_name(name: str) -> bool:
+    return bool(re.search(r"za[łl][aą]cznik.*do (?:projektu )?rozporz[aą]dzenia", name, re.I))
+
+
 _ROLE_TAG_RE = re.compile(r"\[\s*(projekt|uzasadnienie|osr)\s*\]")
 _TAGGED_ROLE: dict[str, TextRole] = {
     "projekt": "bill",
@@ -453,10 +509,11 @@ _TAGGED_ROLE: dict[str, TextRole] = {
     "osr": "osr",
 }
 _BILL_RE = re.compile(r"projekt|ustaw")
+_REGULATION_NAME = re.compile(r"(?:^|[\W_])(?:projekt|rozporz[aą]dzeni[ae])(?:$|[\W_])")
 _FORMAT_RANK = {"pdf": 0, "docx": 1, "docm": 2, "doc": 3, "odt": 4, "xml": 5, "zip": 8}
 
 
-def text_role(name: str) -> TextRole | None:
+def text_role(name: str, *, regulation: bool = False) -> TextRole | None:
     """What a file of a "Projekt" folder (or of a zip package) is, by its name: the bill, its
     uzasadnienie, the OSR, or None for what is not one. A name saying nothing is taken for the
     bill. An appendix is ruled out before the OSR is recognised, or "załącznik do OSR" would
@@ -466,6 +523,17 @@ def text_role(name: str) -> TextRole | None:
     tagged = _ROLE_TAG_RE.search(lowered)
     if tagged is not None:
         return _TAGGED_ROLE[tagged.group(1)]
+    if regulation:
+        if regulation_annex_name(name):
+            return None
+        if not _NOT_A_TEXT_RE.search(_APPENDIX_RE.sub(" ", lowered)):
+            if "uzasad" in lowered:
+                return "justification"
+            if _OSR_RE.search(lowered):
+                return "osr"
+            if _REGULATION_NAME.search(lowered):
+                return "bill"
+        return None
     if re.search(r"\brozp(?:[.\s_]|orz[aą]dze)", lowered):
         return None
     if "uzasad" in lowered:
@@ -477,11 +545,12 @@ def text_role(name: str) -> TextRole | None:
     return "bill"
 
 
-def text_rank(name: str, extension: str) -> tuple[int, int]:
+def text_rank(name: str, extension: str, *, regulation: bool = False) -> tuple[int, int]:
     """How good a file is as the text of its role: a name that calls itself the bill ("projekt
     ustawy") beats one that only fails to say what it is (a note, an information sheet), and PDF
     beats the Word formats, which beat a zip package."""
-    return (0 if _BILL_RE.search(name.lower()) else 1, _FORMAT_RANK.get(extension, 9))
+    heading = _REGULATION_NAME if regulation else _BILL_RE
+    return (0 if heading.search(name.lower()) else 1, _FORMAT_RANK.get(extension, 9))
 
 
 def _rank(document: RclDocument) -> tuple[int, int]:
@@ -527,14 +596,15 @@ def process_summary(project: RclProject, *, term: int) -> ProcessSummary:
         number=project.number,
         title=project.title,
         description=about or None,
-        document_type=BILL_DOCUMENT_TYPE,
-        document_type_enum=DocumentType.BILL,
+        document_type="projekt rozporządzenia" if project.is_regulation else BILL_DOCUMENT_TYPE,
+        document_type_enum=DocumentType.OTHER if project.is_regulation else DocumentType.BILL,
+        eli=project.published_eli,
         process_start_date=project.created,
         document_date=max(dated) if dated else project.created,
         change_date=dt.datetime.combine(project.modified, dt.time(0, 0), tzinfo=dt.UTC),
-        closure_date=project.modified if project.is_over else None,
+        closure_date=project.modified if project.is_over or project.published_eli else None,
         eu_related=project.eu_note is not None or (project.wykaz_number or "").startswith("UC"),
-        rcl_num=project.rm_number,
+        rcl_num=None if project.is_regulation else project.rm_number,
         rcl_link=project.web_url,
         applicant=ApplicantType.GOVERNMENT,
     )

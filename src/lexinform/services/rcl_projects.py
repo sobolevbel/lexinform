@@ -14,9 +14,10 @@ from typing import Literal
 from lexinform import rcl_letters as letter_parser
 from lexinform.errors import ServiceUnavailableError
 from lexinform.metadata_urls import metadata_url_decision
-from lexinform.models import RclConsultation, RclDocument, RclProject, RclStage
+from lexinform.models import ActInfo, RclConsultation, RclDocument, RclProject, RclStage
+from lexinform.models.rcl import is_regulation_title
 from lexinform.models.source_omissions import RclOmissionOwner
-from lexinform.ports import RclGateway, RclLetterUseObserver
+from lexinform.ports import EliGateway, RclGateway, RclLetterUseObserver
 from lexinform.rcl_letters import LETTER_PARSER, LetterInfo, deadline_of, parse_letter
 from lexinform.services.documents import LoadedFile, TextLoader
 from lexinform.services.rcl_letter_history import rcl_letter_observation
@@ -27,6 +28,21 @@ log = logging.getLogger(__name__)
 # Over the 796 corpus projects with a readable "Projekt" folder, the newest reached stage has it
 # for 209 (26%), the one below brings it to 99.25%, a third to 99.75%.
 TEXT_STAGE_ATTEMPTS = 3
+
+
+def regulation_act(eli: EliGateway | None, project: RclProject) -> ActInfo | None:
+    if eli is None or not project.is_regulation or not project.published_eli:
+        return None
+    act = eli.get_act(project.published_eli)
+    if (
+        act is None
+        or act.eli != project.published_eli
+        or not is_regulation_title(act.title)
+        or act.promulgation_date is None
+        or act.promulgation_date < project.created
+    ):
+        return None
+    return act
 
 
 class RclProjectReader:
@@ -78,7 +94,12 @@ class RclProjectReader:
         for stage in list(reversed(project.reached_stages))[:TEXT_STAGE_ATTEMPTS]:
             read = self._rcl.get_stage(project.id, stage.id)
             project = project.with_stage(read)
-            if any(d.readable for d in project.stage_documents(read)):
+            found = (
+                "bill" in project.text_documents()
+                if project.is_regulation
+                else any(d.readable for d in project.stage_documents(read))
+            )
+            if found:
                 break
         return project
 
@@ -122,6 +143,7 @@ class RclProjectReader:
                 "consultation_attempts": stored.consultation_attempts,
                 "print_number": stored.print_number,
                 "rm_number": project.rm_number or stored.rm_number,
+                "published_eli": project.published_eli or stored.published_eli,
             }
         )
 

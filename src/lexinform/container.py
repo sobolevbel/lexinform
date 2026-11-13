@@ -176,6 +176,7 @@ class Container:
                 self.terms,
                 rcl_reader=self.rcl_reader() if self.rcl is not None else None,
                 projects=self.rcl,
+                eli=self.gateway,
                 wykaz=self.wykaz,
                 text_prefilter=self.settings.text_prefilter_enabled,
             ),
@@ -353,6 +354,7 @@ class Container:
                 text_prefilter=self.settings.text_prefilter_enabled,
                 workers=self.settings.rcl_concurrency,
                 terms=self.terms,
+                eli=self.gateway,
             ),
         )
 

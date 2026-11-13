@@ -34,7 +34,14 @@ from lexinform.models.documents import (
     ExtractedDocument,
     ExtractedParts,
 )
-from lexinform.models.rcl import READABLE_EXTENSIONS, TextRole, names_a_bill, text_rank, text_role
+from lexinform.models.rcl import (
+    READABLE_EXTENSIONS,
+    TextRole,
+    names_a_bill,
+    regulation_annex_name,
+    text_rank,
+    text_role,
+)
 from lexinform.sections import (
     APPENDIX_KINDS,
     PAGE_BREAK,
@@ -150,12 +157,25 @@ class CandidateSet:
             )
         )
 
-    def bill_indices(self) -> tuple[int, ...]:
-        return tuple(index for index, item in enumerate(self.entries) if item.is_bill)
+    def bill_indices(self, *, regulation: bool = False) -> tuple[int, ...]:
+        return tuple(
+            index
+            for index, item in enumerate(self.entries)
+            if item.text and document_kind(item.text) == ("regulation" if regulation else "bill")
+        )
 
-    def compare_editions(self, indices: tuple[int, ...]) -> tuple[VersionComparison, bool]:
+    def compare_editions(
+        self, indices: tuple[int, ...], *, regulation: bool = False
+    ) -> tuple[VersionComparison, bool]:
         editions = tuple(self.entries[index] for index in indices)
-        comparison = compare_version_decision([edition.text or "" for edition in editions])
+        texts = [edition.text or "" for edition in editions]
+        comparison = (
+            VersionComparison(
+                tuple(range(len(texts))), tuple(range(len(texts))) if len(set(texts)) == 1 else ()
+            )
+            if regulation
+            else compare_version_decision(texts)
+        )
         attachments = {
             (edition.annex_identities, edition.amendment_identities)
             for index in comparison.matching_indices
@@ -178,12 +198,14 @@ class AmbiguousCandidates:
 
 
 def select_candidate_versions(
-    candidates: CandidateSet,
+    candidates: CandidateSet, *, regulation: bool = False
 ) -> SelectedCandidate | AmbiguousCandidates | None:
-    bill_indices = candidates.bill_indices()
+    bill_indices = candidates.bill_indices(regulation=regulation)
     if not bill_indices:
         return None
-    comparison, attachment_conflict = candidates.compare_editions(bill_indices)
+    comparison, attachment_conflict = candidates.compare_editions(
+        bill_indices, regulation=regulation
+    )
     observed = tuple(
         part
         for index in bill_indices
@@ -206,6 +228,47 @@ def select_candidate_versions(
             comparison,
         )
     return SelectedCandidate(bill_indices[comparison.matching_indices[0]], observed, comparison)
+
+
+def select_regulation_archive(selection: DocumentSelection) -> ExtractedDocument:
+    parts = selection.observed_parts
+    drafts = tuple(part for part in parts if _physical_kind(part) == "regulation")
+    if not drafts:
+        return ExtractedDocument(
+            selection=selection.model_copy(update={"state": "unsupported", "parts": ()})
+        )
+    if any(part.losses for part in drafts):
+        return ExtractedDocument(
+            selection=selection.model_copy(update={"state": "waiting", "parts": drafts})
+        )
+    unique = {
+        (part.members[:-1], part.members[-1].rpartition("/")[0], part.text): part for part in drafts
+    }
+    if len(unique) != 1:
+        return ExtractedDocument(
+            selection=selection.model_copy(update={"state": "ambiguous", "parts": drafts})
+        )
+    draft = min(drafts, key=lambda part: (len(part.members), part.members, part.sha256))
+    owner = draft.members[:-1], draft.members[-1].rpartition("/")[0]
+    annexes = sorted(
+        (
+            part.model_copy(update={"role": "normative_annex"})
+            for part in parts
+            if (part.members[:-1], part.members[-1].rpartition("/")[0]) == owner
+            and _physical_kind(part) == "annex"
+            and regulation_annex_name(part.text[:1200])
+        ),
+        key=lambda part: normative_annex_key(part.text),
+    )
+    if any(part.losses for part in annexes):
+        return ExtractedDocument(
+            selection=selection.model_copy(update={"state": "waiting", "parts": (draft, *annexes)})
+        )
+    selected = (draft.model_copy(update={"role": "bill"}), *annexes)
+    return ExtractedDocument(
+        text=PAGE_BREAK.join(part.text for part in selected),
+        selection=DocumentSelection(parts=selected, observed_parts=parts, state="unverified"),
+    )
 
 
 def select_document_parts(

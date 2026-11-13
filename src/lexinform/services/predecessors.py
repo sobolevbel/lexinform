@@ -34,7 +34,7 @@ def rcl_predecessor(
             return None
         if project_id is not None:
             bill = repo.find_rcl(rcl_number(project_id))
-    if bill is None or bill.rcl is None or bill.status in NOT_FOLLOWED:
+    if bill is None or bill.rcl is None or bill.rcl.is_regulation or bill.status in NOT_FOLLOWED:
         return None
     return bill
 

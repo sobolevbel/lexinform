@@ -484,13 +484,18 @@ class DailyPipeline:
         assert self._rcl_discovery is not None, (
             "run() starts the RCL phases only with RCL discovery"
         )
-        discovered = self._rcl_discovery.discover(term, since, from_register=from_register)
+        try:
+            discovered = self._rcl_discovery.discover(term, since, from_register=from_register)
+        except ServiceUnavailableError:
+            report.discovery_ok = False
+            raise
         report.rcl_discovered = discovered.new
         report.rcl_prefilter_hits = discovered.prefilter_hits
         report.prefilter_rejected = [*(report.prefilter_rejected or []), *discovered.rejected]
         self._prefilter_details(report, discovered.rejected, "title")
         report.over_on_arrival += discovered.over
         if discovered.failed:
+            report.discovery_ok = False
             report.errors.append(f"{discovered.failed} RCL project(s) could not be read")
 
     def _discover_wykaz(self, term: int, since: datetime, report: RunReport) -> list[int]:

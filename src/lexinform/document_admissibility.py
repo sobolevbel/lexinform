@@ -42,7 +42,12 @@ def prefilter_admission(
 
 
 def analysis_admission(
-    selection: DocumentSelection, text: str | None, *, pages: int, min_chars: int
+    selection: DocumentSelection,
+    text: str | None,
+    *,
+    pages: int,
+    min_chars: int,
+    regulation: bool = False,
 ) -> AnalysisAdmission:
     blocked = _blocked(selection)
     if blocked is not None:
@@ -51,7 +56,10 @@ def analysis_admission(
         return "scan"
     if not carries_the_document(text, min_chars=min_chars, pages=pages) and (pages > 0 or not text):
         return "scan"
-    if document_kind(text) in APPENDIX_KINDS:
+    kind = document_kind(text)
+    if regulation:
+        return "text" if kind == "regulation" else "unsupported"
+    if kind in APPENDIX_KINDS:
         return "metadata_only"
     return "text"
 

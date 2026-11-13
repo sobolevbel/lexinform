@@ -3533,6 +3533,13 @@ class AnalysisService:
             document = loaded.document
             located = located.model_copy(update={"document": document})
         text, truncated, source = loaded.text, loaded.truncated, loaded.source
+        if (
+            bill.rcl is not None
+            and bill.rcl.is_regulation
+            and source not in FULL_TEXT_SOURCES
+            and (document is None or document.regulation)
+        ):
+            raise DocumentSelectionError("waiting", "Regulation text is not available")
         if purpose == "explanation" and source not in FULL_TEXT_SOURCES:
             raise ValueError("Текст проекта пока недоступен; повторите /explain после загрузки")
         if previous is not None and (
@@ -3582,7 +3589,7 @@ class AnalysisService:
         if (
             previous is not None
             and previous_can_confirm_equivalence
-            and not (document and document.amendment_urls)
+            and not (document and (document.amendment_urls or document.regulation))
             and self._changes_settled(bill, loaded, previous, previous_document)
         ):
             return self._unchanged(bill, located, loaded, previous)
@@ -4536,7 +4543,11 @@ class AnalysisService:
     def _load_selected(self, document: TextDocument, file: LoadedFile, *, trim: bool) -> _Loaded:
         """Apply the existing admission and input shaping to a selected source."""
         admission = analysis_admission(
-            file.selection, file.text, pages=file.pages, min_chars=MIN_TEXT_CHARS
+            file.selection,
+            file.text,
+            pages=file.pages,
+            min_chars=MIN_TEXT_CHARS,
+            regulation=document.regulation,
         )
         if admission in ("waiting", "ambiguous", "unsupported"):
             raise DocumentSelectionError(admission, "; ".join(file.selection.rejected))
@@ -4574,13 +4585,13 @@ class AnalysisService:
                 budgeted.text,
                 budgeted.truncated or file.selection.has_pdf_page_failure,
                 "pdf",
-                law=law_digest(text),
+                law=None if document.regulation else law_digest(text),
                 whole=text,
                 document=document,
                 selection=file.selection,
                 projection=projection,
             )
-        trimmed = trim_print(text)
+        trimmed = trim_print(text, regulation=document.regulation)
         amendments = tuple(part for part in file.selection.parts if part.role == "self_amendment")
         combined = append_self_amendments(trimmed.text, amendments)
         # Said whether anything was dropped or not: a text that goes in whole is the expensive
@@ -4628,7 +4639,7 @@ class AnalysisService:
             budgeted.text,
             budgeted.truncated or any(part.losses for part in file.selection.parts),
             source,
-            law=None if amendments else law_digest(trimmed.text),
+            law=None if amendments or document.regulation else law_digest(trimmed.text),
             whole=combined,
             document=document,
             selection=file.selection,

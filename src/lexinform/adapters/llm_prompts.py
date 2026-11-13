@@ -15,6 +15,7 @@ from lexinform.models import (
     SupplementContext,
     TriageContext,
 )
+from lexinform.models.rcl import is_regulation_title
 
 PROMPT_VERSION = "2026-10-v14"
 
@@ -635,6 +636,8 @@ def build_user_prompt(ctx: BillContext) -> str:
         f"Tytuł: {ctx.title}",
         f"Wnioskodawca: {ctx.applicant_type}",
     ]
+    if is_regulation_title(ctx.title):
+        lines.append("Rodzaj aktu: rozporządzenie. Ustal skutki na podstawie przepisów tego aktu.")
     if ctx.description:
         lines.append(f"Opis: {ctx.description}")
     if ctx.document_date:

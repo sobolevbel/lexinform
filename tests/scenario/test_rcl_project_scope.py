@@ -5,10 +5,7 @@ import pytest
 from lexinform.models import BillStatus, OutcomeStatus, RunMode, process_summary
 from tests.harness import RCL, RCL_ID, World, rcl_project
 
-REGULATION = (
-    "projekt rozporządzenia Ministra Spraw Zagranicznych zmieniającego rozporządzenie "
-    "w sprawie obniżonych opłat konsularnych"
-)
+RESOLUTION = "Projekt uchwały Rady Ministrów w sprawie opłat konsularnych"
 
 
 @pytest.mark.parametrize("command", ["analyze", "analyze_force", "explain"])
@@ -17,10 +14,10 @@ def test_non_bill_command_is_explained_without_force_or_paid_work(
     command: str, stored: bool
 ) -> None:
     world = World()
-    project = rcl_project(title=REGULATION)
+    project = rcl_project(title=RESOLUTION)
     world.add_rcl_project(project)
     if stored:
-        summary = process_summary(rcl_project(), term=10).model_copy(update={"title": REGULATION})
+        summary = process_summary(rcl_project(), term=10).model_copy(update={"title": RESOLUTION})
         world.repo.upsert_summary(summary, now=world.clock.now())
         world.repo.save_rcl(10, RCL, project)
         world.repo.set_status(10, RCL, BillStatus.DOCUMENT_UNSUPPORTED, reason="legacy rejection")
@@ -34,7 +31,7 @@ def test_non_bill_command_is_explained_without_force_or_paid_work(
 
     ((_, outcome),) = world.replier.replies
     assert outcome.status is OutcomeStatus.SKIPPED
-    assert "rozporządzenie" in outcome.note and "ustawa" in outcome.note
+    assert "uchwała" in outcome.note and "ustawa" in outcome.note
     assert "не поддерживается" in outcome.note
     assert "force" not in outcome.note
     assert (report.commands_handled, report.commands_failed) == (1, 0)
@@ -53,7 +50,7 @@ def test_listing_with_a_non_bill_does_not_enroll_it_or_fail_discovery(
     workers: int, listing_names_statute: bool
 ) -> None:
     world = World(workers=workers)
-    world.add_rcl_project(rcl_project(title=REGULATION))
+    world.add_rcl_project(rcl_project(title=RESOLUTION))
     if listing_names_statute:
         world.rcl.listing[0] = world.rcl.listing[0].model_copy(
             update={"title": "Projekt ustawy o cudzoziemcach"}
@@ -72,8 +69,8 @@ def test_listing_with_a_non_bill_does_not_enroll_it_or_fail_discovery(
 @pytest.mark.parametrize("command", ["/unskip", "/reset"])
 def test_retry_cannot_requeue_a_saved_non_bill(command: str) -> None:
     world = World()
-    project = rcl_project(title=REGULATION)
-    summary = process_summary(rcl_project(), term=10).model_copy(update={"title": REGULATION})
+    project = rcl_project(title=RESOLUTION)
+    summary = process_summary(rcl_project(), term=10).model_copy(update={"title": RESOLUTION})
     world.repo.upsert_summary(summary, now=world.clock.now())
     world.repo.save_rcl(10, RCL, project)
     world.repo.set_status(10, RCL, BillStatus.DOCUMENT_UNSUPPORTED, reason="legacy rejection")
@@ -82,6 +79,6 @@ def test_retry_cannot_requeue_a_saved_non_bill(command: str) -> None:
     world.run(mode=RunMode.COMMANDS, discover=False, track=False, max_analyze=0, max_publish=0)
 
     ((_, outcome),) = world.replier.replies
-    assert outcome.status is OutcomeStatus.SKIPPED and "rozporządzenie" in outcome.note
+    assert outcome.status is OutcomeStatus.SKIPPED and "uchwała" in outcome.note
     assert world.bill(RCL).status is BillStatus.DOCUMENT_UNSUPPORTED
     assert world.rcl.calls == [] and world.llm.contexts == []

@@ -48,7 +48,7 @@ class UnsupportedRclProjectError(ValueError):
         self.kind = kind
         super().__init__(
             f"{number}: unsupported RCL project type: {kind}; "
-            "only draft statutes (ustawa) are supported"
+            "supported types are ustawa and rozporządzenie"
         )
 
 

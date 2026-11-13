@@ -33,9 +33,16 @@ from lexinform.models import (
     wykaz_number,
     wykaz_summary,
 )
-from lexinform.ports import BillRepository, Clock, ProjectResolver, SejmGateway, WykazGateway
+from lexinform.ports import (
+    BillRepository,
+    Clock,
+    EliGateway,
+    ProjectResolver,
+    SejmGateway,
+    WykazGateway,
+)
 from lexinform.services.predecessors import absorb_submission, rcl_predecessor
-from lexinform.services.rcl_projects import RclProjectReader
+from lexinform.services.rcl_projects import RclProjectReader, regulation_act
 from lexinform.services.result_applications import record_retained_name_application
 from lexinform.services.sources import print_of_project
 from lexinform.services.terms import TermResolver
@@ -64,10 +71,12 @@ class BillLookup:
         *,
         rcl_reader: RclProjectReader | None = None,
         projects: ProjectResolver | None = None,
+        eli: EliGateway | None = None,
         wykaz: WykazGateway | None = None,
         text_prefilter: bool = True,
     ) -> None:
         self._gateway = gateway
+        self._eli = eli
         self._repo = repo
         self._prefilter = prefilter
         self._clock = clock
@@ -183,6 +192,7 @@ class BillLookup:
             return Bill(
                 summary=process_summary(project, term=term),
                 rcl=project,
+                act=regulation_act(self._eli, project),
                 stages=rcl_stages(project),
                 status=BillStatus.DISCOVERED,
                 first_seen_at=now,
@@ -270,7 +280,12 @@ class BillLookup:
         self._repo.save_stages(
             bill.term, bill.number, rcl_stages(project), rcl_fingerprint(project)
         )
-        self._prefilter_by_title(bill, summary, has_text=bool(project.text_documents()))
+        act = regulation_act(self._eli, project)
+        if act is not None:
+            self._repo.save_act(bill.term, bill.number, act)
+        self._prefilter_by_title(
+            bill, summary, has_text=bool(project.text_documents() or act is not None)
+        )
         print_number = print_of_project(self._gateway, project, term)
         if print_number is None:
             return self._stored(bill)

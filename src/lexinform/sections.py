@@ -463,7 +463,7 @@ def scan_page_window(pages: int, *, cover_letter: bool) -> PageWindow:
     return PageWindow(first, pages - first)
 
 
-def trim_print(text: str) -> TrimmedText:
+def trim_print(text: str, *, regulation: bool = False) -> TrimmedText:
     """Drop the appendices of a print; unknown layouts (Senate texts, reports) pass unchanged.
 
     Every dropped run is replaced by one Polish marker line so the model knows the text is not
@@ -482,6 +482,8 @@ def trim_print(text: str) -> TrimmedText:
         current = _section_start(
             strip_page_furniture(page, running_head), current, after_osr=after_osr
         )
+        if regulation and not after_osr and current in (REGULATIONS, ANNEX):
+            current = KEEP
         if current in (OSR, OSR_TAIL):
             after_osr = True
         if current == OSR and (cut := _OSR_CUT_RE.search(page)):

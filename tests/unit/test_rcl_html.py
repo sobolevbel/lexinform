@@ -60,7 +60,8 @@ def test_listing_walks_pages_newest_first_and_stops_at_the_first_older_row() -> 
     rows = list(_client(handler, page_size=3).list_projects(modified_since=date(2026, 9, 5)))
 
     assert [r.id for r in rows] == [12411600, 12413507, 12409656]
-    assert [p["pNumber"] for p in seen] == ["1", "2"]
+    assert [p["pNumber"] for p in seen if p["typeId"] == "2"] == ["1", "2"]
+    assert {p["typeId"] for p in seen} == {"2", "3", "4", "5", "7"}
     assert seen[0]["sKey"] == "modifiedDate" and seen[0]["sOrder"] == "desc"
     assert seen[0]["typeId"] == "2" and seen[0]["pSize"] == "3"
 
@@ -89,7 +90,7 @@ def test_listing_stops_when_a_page_is_shorter_than_the_page_size() -> None:
 
     rows = list(_client(handler, page_size=100).list_projects(modified_since=date(2026, 1, 1)))
 
-    assert (len(rows), calls) == (3, 1)
+    assert (len(rows), calls) == (3, 5)
 
 
 def test_project_page_gives_metadata_and_the_timeline() -> None:
@@ -359,3 +360,39 @@ def test_download_of_a_rejected_document_is_an_outage() -> None:
 
     with pytest.raises(RclUnavailableError):
         client.download("https://rcl.test/docs//2/1/2/3/dokument1.pdf")
+
+
+@pytest.mark.parametrize(
+    ("publication_link", "expected"),
+    [
+        ("http://dziennikustaw.gov.pl/DU/2026/1085", "DU/2026/1085"),
+        ("https://eli.gov.pl/eli/DU/2026/1085/ogl", "DU/2026/1085"),
+        ("https://example.org/DU/2026/1085", None),
+        ("https://dziennikustaw.gov.pl/MP/2026/1085", None),
+    ],
+)
+def test_regulation_publication_is_read_only_from_its_journal_field(
+    publication_link: str,
+    expected: str | None,
+) -> None:
+    html = f"""
+    <div class="rcl-title">Projekt rozporządzenia ministra</div>
+    <div class="info">
+      <div class="row"><div>Data utworzenia</div><div>09-07-2026</div></div>
+      <div class="row"><div>Status projektu:</div><div>otwarty</div></div>
+      <div class="row"><div>Odnośnik do publikatora</div>
+        <div><a href="{publication_link}">Dz.U. 2026r. poz. 1085</a></div>
+      </div>
+    </div>
+    <a href="https://dziennikustaw.gov.pl/DU/2025/1079">Podstawa prawna</a>
+    <ul class="cbp_tmtimeline">
+      <li id="1"><div class="cbp_tmicon"></div>
+        <div class="cbp_tmlabel"><div>1. Uzgodnienia</div></div>
+      </li>
+    </ul>
+    """
+
+    project = parse_project(html, 12412250)
+
+    assert project.published_eli == expected
+    assert project.is_open and not project.sent_to_sejm and not project.is_over

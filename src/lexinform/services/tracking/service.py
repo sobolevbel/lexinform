@@ -170,6 +170,7 @@ def _rcl_watcher(
     analysis: AnalysisService | None,
     consultations: ConsultationReminder | None,
     options: TrackingOptions,
+    eli: EliGateway | None,
 ) -> RclWatcher | None:
     if reader is None:
         return None
@@ -182,6 +183,7 @@ def _rcl_watcher(
         gateway,
         analysis=analysis,
         consultations=consultations,
+        eli=eli,
         local_tz=options.local_tz,
         workers=options.workers,
     )
@@ -352,6 +354,7 @@ class StatusTrackingService:
             analysis,
             consultations,
             options,
+            eli,
         )
         self._wykaz = _wykaz_watcher(wykaz, rcl_reader, repo, clock, poster, analysis, options)
         self._agenda = _agenda_watcher(gateway, repo, clock, poster, enricher, options)

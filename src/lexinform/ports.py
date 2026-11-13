@@ -242,7 +242,7 @@ class RclGateway(Protocol):
     """legislacja.rcl.gov.pl (HTML, no API); `RclUnavailableError` when it is down or blocks us."""
 
     def list_projects(self, *, modified_since: date) -> Iterator[RclProjectSummary]:
-        """Bills (typeId=2) modified on or after the date, newest change first."""
+        """Bills and regulations modified on or after the date, newest first within each type."""
         ...
 
     def get_project(self, project_id: int) -> RclProject:

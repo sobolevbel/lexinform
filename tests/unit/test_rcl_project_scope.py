@@ -15,9 +15,9 @@ from tests.harness import rcl_project
 @pytest.mark.parametrize(
     ("title", "expected"),
     [
-        ("projekt rozporządzenia Ministra Spraw Zagranicznych", "rozporządzenie"),
-        ("  PROJEKT\nROZPORZĄDZENIA Rady Ministrów", "rozporządzenie"),
-        ("Rozporządzenie Ministra Spraw Zagranicznych", "rozporządzenie"),
+        ("projekt rozporządzenia Ministra Spraw Zagranicznych", None),
+        ("  PROJEKT\nROZPORZĄDZENIA Rady Ministrów", None),
+        ("Rozporządzenie Ministra Spraw Zagranicznych", None),
         ("Projekt uchwały Rady Ministrów", "uchwała"),
         ("UCHWAŁA RADY MINISTRÓW", "uchwała"),
         ("Projekt zarządzenia Prezesa Rady Ministrów", "zarządzenie"),
@@ -39,14 +39,12 @@ def test_only_explicit_non_statute_openings_are_excluded(title: str, expected: s
 def test_saved_consular_fee_project_cannot_be_labelled_as_a_statute() -> None:
     project = RclProject.model_validate_json((RCL_FIXTURES / "project_12415804.json").read_bytes())
 
-    with pytest.raises(UnsupportedRclProjectError) as caught:
-        process_summary(project, term=10)
-
-    assert (caught.value.number, caught.value.kind) == ("RCL/12415804", "rozporządzenie")
+    assert process_summary(project, term=10).document_type == "projekt rozporządzenia"
+    assert project.is_regulation and not project.sent_to_sejm
 
 
 def test_source_rejects_a_legacy_non_bill_even_without_documents() -> None:
-    project = rcl_project(title="Projekt rozporządzenia w sprawie opłat konsularnych", stages=())
+    project = rcl_project(title="Projekt uchwały w sprawie opłat konsularnych", stages=())
     now = dt.datetime(2026, 11, 13, tzinfo=dt.UTC)
     bill = Bill(
         summary=process_summary(rcl_project(), term=10),
@@ -56,5 +54,5 @@ def test_source_rejects_a_legacy_non_bill_even_without_documents() -> None:
         last_checked_at=now,
     )
 
-    with pytest.raises(UnsupportedRclProjectError, match="rozporządzenie"):
+    with pytest.raises(UnsupportedRclProjectError, match="uchwała"):
         RclTextSource().locate(bill)

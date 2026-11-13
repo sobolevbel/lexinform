@@ -18,6 +18,7 @@ from lexinform.concurrency import fan_out
 from lexinform.errors import ServiceUnavailableError, UnsupportedRclProjectError
 from lexinform.keywords import KeywordPrefilter, accept_title_hits
 from lexinform.models import (
+    ActInfo,
     BillStatus,
     RclProject,
     RclProjectSummary,
@@ -29,10 +30,11 @@ from lexinform.models import (
     rcl_stages,
     wykaz_number,
 )
-from lexinform.models.rcl import unsupported_project_kind
-from lexinform.ports import BillRepository, Clock, RclGateway
+from lexinform.models.rcl import is_regulation_title, unsupported_project_kind
+from lexinform.models.sejm import POLAND_TZ
+from lexinform.ports import BillRepository, Clock, EliGateway, RclGateway
 from lexinform.services.predecessors import NOT_FOLLOWED
-from lexinform.services.rcl_projects import RclProjectReader
+from lexinform.services.rcl_projects import RclProjectReader, regulation_act
 from lexinform.services.terms import TermResolver
 
 log = logging.getLogger(__name__)
@@ -70,8 +72,10 @@ class RclDiscoveryService:
         text_prefilter: bool = True,
         workers: int = 1,
         terms: TermResolver | None = None,
+        eli: EliGateway | None = None,
     ) -> None:
         self._rcl = rcl
+        self._eli = eli
         self._terms = terms
         self._repo = repo
         self._reader = reader
@@ -252,7 +256,7 @@ class RclDiscoveryService:
         return seen
 
     def _remember_number(self, row: RclProjectSummary) -> None:
-        if unsupported_project_kind(row.title) is not None:
+        if is_regulation_title(row.title) or unsupported_project_kind(row.title) is not None:
             return
         number = normalize_wykaz_number(row.wykaz_number)
         if number is not None:
@@ -263,6 +267,8 @@ class RclDiscoveryService:
         leave the row alone. Ingesting it here would give the same bill a second card before
         the linker could hand the plan's card over (`publishing._inherited_card` keys on the
         link, which does not exist yet)."""
+        if is_regulation_title(row.title):
+            return False
         number = normalize_wykaz_number(row.wykaz_number)
         if number is None:
             return False
@@ -302,9 +308,18 @@ class RclDiscoveryService:
     ) -> RclProject:
         """How much of a project is read is what its title's verdict decides; a project whose
         druk is stored (`known`, by RM number) is read no further and carries that druk."""
-        if project.is_over or project.history_on_arrival(term=term, term_started=started):
+        if (
+            project.published_eli
+            or project.is_over
+            or self._closed_regulation(project)
+            or project.history_on_arrival(term=term, term_started=started)
+        ):
             return project
-        druk = known.get(rcl_num_key(project.rm_number)) if project.rm_number else None
+        druk = (
+            known.get(rcl_num_key(project.rm_number))
+            if project.rm_number and not project.is_regulation
+            else None
+        )
         if druk is not None:
             return project.model_copy(update={"print_number": druk})
         if accept_title_hits(self._hits(project, term=0)):
@@ -318,6 +333,21 @@ class RclDiscoveryService:
             )
             return self._reader.with_text(project)
         return project
+
+    @staticmethod
+    def _closed_regulation(project: RclProject) -> bool:
+        return (
+            project.is_regulation
+            and not project.is_open
+            and not (project.awaiting_publication or project.published_eli)
+        )
+
+    def _already_in_force(self, act: ActInfo | None) -> bool:
+        return (
+            act is not None
+            and act.entry_into_force is not None
+            and act.entry_into_force <= self._clock.now().astimezone(POLAND_TZ).date()
+        )
 
     def _hits(self, project: RclProject, *, term: int) -> list[str]:
         summary = process_summary(project, term=term)
@@ -336,16 +366,34 @@ class RclDiscoveryService:
         One closed on RCL without ever reaching the Sejm, before we saw it, is history: a card
         would invite action on something nobody is working on.
         """
+        try:
+            act = regulation_act(self._eli, project)
+        except ServiceUnavailableError as exc:
+            result.failed += 1
+            log.warning("%s: %s", project.number, exc.describe())
+            return
+        if project.published_eli and act is None:
+            result.failed += 1
+            log.warning(
+                "%s: regulation %s not confirmed in ELI", project.number, project.published_eli
+            )
+            return
         summary = process_summary(project, term=term)
         bill = self._repo.upsert_summary(summary, now=self._clock.now())
         self._repo.save_rcl(term, bill.number, project)
         self._repo.save_stages(term, bill.number, rcl_stages(project), rcl_fingerprint(project))
-        if project.is_over:
+        if act is not None:
+            self._repo.save_act(term, bill.number, act)
+        if project.is_over or self._closed_regulation(project) or self._already_in_force(act):
             self._repo.set_status(
                 term,
                 bill.number,
                 BillStatus.SKIPPED_CLOSED,
-                reason=f"closed on RCL on {project.modified}, before it was first seen",
+                reason=(
+                    f"already in force ({act.display_address})"
+                    if act is not None
+                    else f"closed on RCL on {project.modified}, before it was first seen"
+                ),
             )
             log.info(
                 "%s was closed on RCL on %s before we saw it: not followed",
@@ -366,7 +414,7 @@ class RclDiscoveryService:
             result.over += 1
             result.new += 1
             return
-        if project.print_number is not None:
+        if project.print_number is not None and not project.is_regulation:
             # The druk is the bill with the text: the RCL watcher links the project to it.
             self._repo.set_status(
                 term,
@@ -382,7 +430,7 @@ class RclDiscoveryService:
             status = BillStatus.ANALYSIS_PENDING
             result.prefilter_hits += 1
             log.info("candidate %s (%s): %s", bill.number, ", ".join(hits), summary.title)
-        elif self._text_prefilter and project.text_documents():
+        elif self._text_prefilter and (project.text_documents() or act is not None):
             status = BillStatus.TEXT_PREFILTER_PENDING
         else:
             status = BillStatus.SKIPPED_PREFILTER

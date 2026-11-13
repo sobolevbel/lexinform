@@ -505,7 +505,7 @@ class PublishingService:
         if bill.has_process:
             return self._threaded_project(bill)
         druk = None
-        if bill.rcl is not None:
+        if bill.rcl is not None and not bill.rcl.is_regulation:
             if bill.rcl.print_number:
                 druk = self._repo.get(bill.term, bill.rcl.print_number)
             elif bill.rcl.rm_number:

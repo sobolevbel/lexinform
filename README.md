@@ -12,7 +12,8 @@ publication in Dziennik Ustaw, so readers learn about changes while they can sti
 - Sources: the official Sejm REST API (`api.sejm.gov.pl`) and its ELI API, legislacja.rcl.gov.pl
   (government projects before the Sejm), which has no API and is parsed from HTML, and the wykaz
   prac legislacyjnych RM on gov.pl (bills the government has only announced), which comes as one
-  CSV.
+  CSV. Standalone RCL regulations (rozporządzenia) have their own consultation, signature and
+  publication path. An explicit RCL journal link connects the project to the published act in ELI.
 - Importance 1–5, where **5 = legalization of stay** (ustawa o cudzoziemcach, residence permits,
   visas, citizenship, international protection).
 - Posts in Russian (Polish statute names kept in the original); English labels built in.

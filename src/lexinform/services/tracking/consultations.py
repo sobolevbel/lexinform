@@ -68,6 +68,8 @@ class ConsultationReminder:
             self._channel_id, today=today, days_before=self._days_before
         )
         for bill in due:
+            if bill.rcl is not None and bill.rcl.published_eli:
+                continue
             if self._poster.posted(bill, PublicationKind.CONSULTATION_DEADLINE):
                 continue
             try:

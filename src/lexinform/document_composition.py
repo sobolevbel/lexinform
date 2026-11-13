@@ -34,8 +34,13 @@ class BundleAssembly:
     )
 
 
-def start_bundle(main: LoadedFile, *, min_chars: int) -> BundleAssembly | LoadedFile:
-    if main.text is None or document_kind(main.text) in APPENDIX_KINDS:
+def start_bundle(
+    main: LoadedFile, *, min_chars: int, regulation: bool = False
+) -> BundleAssembly | LoadedFile:
+    if main.text is None:
+        return main
+    kind = document_kind(main.text)
+    if kind in APPENDIX_KINDS and not (regulation and kind == "regulation"):
         return main
     if main.pages and not carries_the_document(main.text, min_chars=min_chars, pages=main.pages):
         return main
@@ -185,9 +190,15 @@ def amendment_part(
     )
 
 
-def supporting_part(bundle: BundleAssembly, url: str, file: LoadedFile) -> BundleAssembly:
+def supporting_part(
+    bundle: BundleAssembly, url: str, file: LoadedFile, *, regulation: bool = False
+) -> BundleAssembly:
     extra = file.text
-    if extra is not None and regulation_support(extra):
+    if (
+        extra is not None
+        and regulation_support(extra)
+        and not (regulation and document_kind(extra) in ("justification", "osr"))
+    ):
         return replace(
             bundle,
             missing=(*bundle.missing, f"{url}: supporting draft regulation"),
@@ -236,7 +247,9 @@ def finalize_selection(document: TextDocument, file: LoadedFile) -> LoadedFile:
         complete_pdf_pages=file.complete_pdf_pages,
         word_formula_source=file.word_formula_source,
         opaque_failure_prose=file.opaque_failure_prose,
-        selection=bill_selection(selection, source_basis=document.version_basis),
+        selection=bill_selection(
+            selection, source_basis=document.version_basis, regulation=document.regulation
+        ),
     )
 
 
@@ -264,11 +277,14 @@ class CandidateFallback:
             opaque_failure_prose=True,
         )
 
-    def consider(self, url: str, file: LoadedFile, *, multiple: bool) -> CandidateFallback | None:
-        if file.text and document_kind(file.text) in APPENDIX_KINDS:
+    def consider(
+        self, url: str, file: LoadedFile, *, multiple: bool, regulation: bool = False
+    ) -> CandidateFallback | None:
+        kind = document_kind(file.text) if file.text else None
+        if kind is not None and (kind != "regulation" if regulation else kind in APPENDIX_KINDS):
             return replace(
                 self,
-                rejected=(*self.rejected, f"{url}: {document_kind(file.text)}"),
+                rejected=(*self.rejected, f"{url}: {kind}"),
             )
         if file.selection.state == "waiting" or (
             file.selection.state == "ambiguous"
