@@ -352,6 +352,7 @@ def test_report_carries_phase_timings() -> None:
         "publishing",
         "tracking",
         "submit batches",
+        "command results",
         "digest",
     }
 

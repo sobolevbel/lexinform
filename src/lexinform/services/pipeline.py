@@ -389,6 +389,12 @@ class DailyPipeline:
         self._phase(report, "publishing", lambda: self._publish(opts, report))
         if opts.track:
             self._phase(report, "tracking", lambda: self._track(opts, report))
+        if (commands := self._commands) is not None and not opts.dry_run:
+            self._phase(
+                report,
+                "command results",
+                lambda: commands.complete_work(min_score=opts.min_score, publish=opts.publish),
+            )
         # Skipped on a dry run: a real batch submission has no rollback.
         if not opts.dry_run:
             self._phase(report, "submit batches", lambda: self._submit_batches(report))

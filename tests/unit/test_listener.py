@@ -34,7 +34,6 @@ def _listener(
         updates,
         writer,
         ack,
-        starter=writer,
         channel_id=CHANNEL,
         poll_timeout=5,
         max_retry_delay=max_retry_delay,
@@ -49,7 +48,7 @@ def test_commands_from_the_technical_channel_are_filed_acknowledged_and_confirme
             channel_post(2, "a note for the team"),  # not a command
             channel_post(3, "/show 3039", chat_id=-2002),  # another channel the bot is in
             channel_post(4, None),  # a photo
-            channel_post(5, "/help"),
+            channel_post(5, "/status"),
         ]
     )
     writer, ack = FakeInboxWriter(), FakeAcknowledger()
@@ -59,60 +58,32 @@ def test_commands_from_the_technical_channel_are_filed_acknowledged_and_confirme
     listener.confirm()
 
     assert filed == 2
-    assert [c.text for c in writer.filed] == ["/analyze 3039", "/help"]
+    assert [c.text for c in writer.filed] == ["/analyze 3039", "/status"]
     assert writer.filed[0].chat_id == CHANNEL and writer.filed[0].message_id == 501
     assert ack.acknowledged == [1, 5]
     assert listener.offset == 6
     assert updates.offsets == [None, 6]  # the confirming poll names the next offset
 
 
-def test_run_starts_the_workflow_instead_of_being_filed() -> None:
-    """`/run` is the one command a run cannot execute, because it is the run: the relay asks
-    GitHub to start the workflow with the inputs the operator named and says so under the post.
-    """
-    updates = FakeUpdates([channel_post(1, "/run since=2026-09-01 dry")])
-    writer, ack = FakeInboxWriter(), FakeAcknowledger()
-
-    filed = _listener(updates, writer, ack).poll_once()
-
-    assert filed == 1
-    assert writer.filed == []  # nothing in the inbox: there is nothing for a run to execute
-    assert writer.started == [{"since": "2026-09-01", "dry_run": "true", "log_message_id": "1001"}]
-    assert ack.acknowledged == [1]
-    assert "since=2026-09-01, dry_run=true" in ack.started_notes[0]
-
-
-def test_every_phase_of_a_run_starts_the_workflow_and_is_not_filed() -> None:
-    """`/scan`, `/track`, `/collect-batches`, `/reprefilter` and `/index-rcl-numbers` are runs
-    like `/run` is: each names the CLI command `daily.yml` executes, none ever reaches the
-    inbox."""
+def test_run_and_its_phases_are_saved_as_run_requests() -> None:
     posts = [
-        channel_post(1, "/scan since=2026-09-01"),
-        channel_post(2, "/track dry"),
-        channel_post(3, "/collect-batches dry"),
-        channel_post(4, "/reprefilter limit=200 text_skipped"),
-        channel_post(5, "/index-rcl-numbers since=2023-11-01"),
+        channel_post(1, "/run since=2026-09-01 dry"),
+        channel_post(2, "/scan since=2026-09-01"),
+        channel_post(3, "/track dry"),
+        channel_post(4, "/collect-batches"),
+        channel_post(5, "/reprefilter limit=200 text_skipped"),
+        channel_post(6, "/index-rcl-numbers since=2023-11-01"),
     ]
     writer, ack = FakeInboxWriter(), FakeAcknowledger()
+    listener = _listener(FakeUpdates(posts), writer, ack)
 
-    filed = _listener(FakeUpdates(posts), writer, ack).poll_once()
+    filed = listener.poll_once()
 
-    assert filed == 5 and writer.filed == []
-    assert [inputs.pop("log_message_id") for inputs in writer.started] == [
-        "1001",
-        "1002",
-        "1003",
-        "1004",
-        "1005",
-    ]
-    assert writer.started == [
-        {"command": "scan", "options": "--since 2026-09-01"},
-        {"command": "track", "dry_run": "true"},
-        {"command": "collect-batches", "dry_run": "true"},
-        {"command": "reprefilter", "options": "--limit 200 --include-text-skipped"},
-        {"command": "index-rcl-numbers", "options": "--since 2023-11-01"},
-    ]
-    assert ack.started_notes[0].startswith("scan started")
+    assert filed == 6
+    assert [command.text for command in writer.filed] == [post.text for post in posts]
+    assert all(command.run_requested for command in writer.filed)
+    assert ack.saved_ids == list(range(1, 7)) and not ack.started_notes
+    assert listener.offset == 7
 
 
 def test_a_misspelled_run_option_is_answered_and_starts_nothing() -> None:
@@ -124,11 +95,11 @@ def test_a_misspelled_run_option_is_answered_and_starts_nothing() -> None:
     listener = _listener(updates, writer, ack)
     filed = listener.poll_once()
 
-    assert (filed, writer.started, listener.offset) == (1, [], 2)
+    assert (filed, writer.filed, listener.offset) == (1, [], 2)
     assert "unknown option turbo" in ack.started_notes[0]
 
 
-def test_a_run_that_github_would_not_start_is_tried_again() -> None:
+def test_a_run_that_github_would_not_save_is_tried_again() -> None:
     updates = FakeUpdates([channel_post(1, "/run")])
     writer = FakeInboxWriter(error=ServiceUnavailableError("GitHub API is down"))
 
@@ -139,7 +110,7 @@ def test_a_run_that_github_would_not_start_is_tried_again() -> None:
 
 
 def test_a_command_that_could_not_be_filed_is_not_confirmed() -> None:
-    updates = FakeUpdates([channel_post(1, "/help"), channel_post(2, "/analyze 3039")])
+    updates = FakeUpdates([channel_post(1, "/status"), channel_post(2, "/analyze 3039")])
     writer = FakeInboxWriter(error=ServiceUnavailableError("PUT inbox: HTTP 503"))
     listener = _listener(updates, writer)
 
@@ -152,7 +123,7 @@ def test_a_command_that_could_not_be_filed_is_not_confirmed() -> None:
 
 
 def test_a_channel_named_by_username_matches_case_insensitively() -> None:
-    post = channel_post(1, "/help").model_copy(update={"chat_username": "LexinformLog"})
+    post = channel_post(1, "/status").model_copy(update={"chat_username": "LexinformLog"})
     updates = FakeUpdates([post])
     writer = FakeInboxWriter()
     listener = CommandListener(updates, writer, None, channel_id="@lexinformlog", poll_timeout=5)
@@ -267,7 +238,7 @@ def test_a_pressed_button_is_filed_as_the_command_it_stands_for_and_answered_as_
 
 
 def test_retry_reuses_the_acknowledgement_stored_with_the_command() -> None:
-    posts = [channel_post(1, "/help")]
+    posts = [channel_post(1, "/status")]
     writer = FakeInboxWriter(error=ServiceUnavailableError("offline"))
     ack = FakeAcknowledger()
     listener = _listener(FakeUpdates(posts, posts), writer, ack)

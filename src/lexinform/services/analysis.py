@@ -402,6 +402,8 @@ class AnalysisOptions:
 class Waiting:
     since: datetime
     usage: dict[str, TokenUsage] = field(default_factory=dict)
+    batch_key: str | None = None
+    memo_key: str | None = None
 
 
 class _SourceReadError(Exception):
@@ -1492,7 +1494,7 @@ class AnalysisService:
         job = self._repo.batch_job(key)
         if job is not None:
             if job.state != "failed":
-                return Waiting(job.since)
+                return Waiting(job.since, batch_key=key)
             if job.submissions >= SECONDARY_BATCH_SUBMISSIONS:
                 raise ValueError("Batch разбора поправок не удался дважды; используйте force")
         model = self._options.batch_models.get("amendments", "")
@@ -1546,7 +1548,7 @@ class AnalysisService:
         except Exception:
             self._ledger.release(request.estimated_cost_usd)
             raise
-        return Waiting(now)
+        return Waiting(now, batch_key=key)
 
     def _consume_current(
         self,
@@ -1626,7 +1628,7 @@ class AnalysisService:
         )
         return record
 
-    def explain_bill(self, bill: Bill) -> AnalysisRecord | Waiting:
+    def explain_bill(self, bill: Bill, *, submit: bool = True) -> AnalysisRecord | Waiting:
         prepared = self._accept_preparation(
             bill,
             lambda: self._prepare(
@@ -1653,7 +1655,7 @@ class AnalysisService:
         if job is not None:
             if job.state == "failed":
                 raise RuntimeError("Разбор не получен: batch завершился с ошибкой")
-            return Waiting(job.since)
+            return Waiting(job.since, batch_key=request.custom_id, memo_key=prepared.memo_key)
         if len((request.payload_json or "").encode()) > 100_000_000:
             raise ValueError("one batch request exceeds the 100 MB payload limit")
         provider = prepared.batch_provider or self._options.batch_provider
@@ -1682,18 +1684,27 @@ class AnalysisService:
         except Exception:
             self._ledger.release(request.estimated_cost_usd)
             raise
-        self.submit_queued_batches()
-        return Waiting(now)
+        if submit:
+            self.submit_queued_batches()
+        return Waiting(now, batch_key=request.custom_id, memo_key=prepared.memo_key)
 
     def analyze_bill(
-        self, bill: Bill, *, ignore_cost_limit: bool = False
+        self,
+        bill: Bill,
+        *,
+        ignore_cost_limit: bool = False,
+        redo: bool | None = None,
+        submit: bool = True,
     ) -> AnalysisOutcome | Waiting:
         """First analysis from the current text. Persists the result; raises on failure.
         `ignore_cost_limit` is the operator's explicit wish (a forced command): the per-bill
         cost guard does not apply."""
         if bill.status is BillStatus.BATCH_PENDING:
-            return Waiting(self._clock.now())
-        if ignore_cost_limit:
+            return Waiting(self._clock.now(), batch_key=self._primary_waiting_key(bill))
+        if redo is None:
+            redo = ignore_cost_limit
+        reuse = not redo
+        if redo:
             self._repo.reset_bill(bill.term, bill.number, BillStatus.ANALYSIS_PENDING)
             bill = self._repo.get(bill.term, bill.number) or bill
         prepared = self._accept_preparation(
@@ -1701,36 +1712,60 @@ class AnalysisService:
             lambda: self._prepare_first(
                 bill,
                 cost_guard=not ignore_cost_limit,
+                reuse=reuse,
                 triage=not self._joint_card_exists(bill),
                 submit_batch=self._options.require_batch,
                 history=tuple(
                     self._repo.list_computation_results(bill.term, bill.number, purpose="analysis")
                 )
-                if not ignore_cost_limit
+                if reuse
                 else (),
             ),
         )
         if prepared.queued:
             if not self._enqueue(bill, prepared):
                 return Waiting(self._clock.now())
-            self.submit_queued_batches()
-            return Waiting(self._clock.now(), usage_of(prepared.triage) if prepared.triage else {})
+            if submit:
+                self.submit_queued_batches()
+            return Waiting(
+                self._clock.now(),
+                usage_of(prepared.triage) if prepared.triage else {},
+                prepared.batch_request.custom_id if prepared.batch_request is not None else None,
+            )
         return AnalysisOutcome(self._persist(prepared), prepared.triage)
+
+    def _primary_waiting_key(self, bill: Bill) -> str | None:
+        def owned(meta: BatchItemMeta | DigestItemMeta, term: int, number: str) -> bool:
+            return (
+                term == bill.term
+                and number == bill.number
+                and isinstance(meta, BatchItemMeta)
+                and meta.generation == bill.analysis_generation
+            )
+
+        for intent in (
+            *self._repo.list_queued_batch_intents(),
+            *self._repo.list_submitting_batch_intents(),
+        ):
+            if owned(intent.meta, intent.request.term, intent.request.number):
+                return intent.request.custom_id
+        for batch in self._repo.list_open_llm_batches():
+            for item in self._repo.list_llm_batch_items(batch.batch_id):
+                if item.consumed_at is None and owned(item.meta, item.term, item.number):
+                    return item.custom_id
+        return None
 
     def _prepare_first(
         self,
         bill: Bill,
         *,
         cost_guard: bool = True,
+        reuse: bool = True,
         triage: bool = True,
         submit_batch: bool = False,
         history: tuple[ComputationResult, ...] = (),
     ) -> _Prepared:
-        if (
-            cost_guard
-            and bill.status is BillStatus.ANALYSIS_READY
-            and bill.ready_analysis is not None
-        ):
+        if reuse and bill.status is BillStatus.ANALYSIS_READY and bill.ready_analysis is not None:
             ready = bill.ready_analysis
             return _Prepared(
                 bill,
@@ -1746,6 +1781,7 @@ class AnalysisService:
             self._texts.locate(bill),
             previous=None,
             cost_guard=cost_guard,
+            reuse=reuse,
             triage=triage,
             submit_batch=submit_batch,
             history=history,
@@ -3238,10 +3274,10 @@ class AnalysisService:
         key: str,
         history: tuple[ComputationResult, ...],
         *,
-        cost_guard: bool,
+        reuse: bool,
     ) -> str | None:
         """Prepare workers read only memo and caller-supplied history snapshots."""
-        if not cost_guard:
+        if not reuse:
             return None
         cached = self._memo.get(key)
         if cached is None:
@@ -3286,6 +3322,7 @@ class AnalysisService:
         previous: AnalysisRecord | None,
         previous_document: TextDocument | None = None,
         cost_guard: bool = True,
+        reuse: bool = True,
         triage: bool = True,
         submit_batch: bool = False,
         purpose: Literal["analysis", "reanalysis", "explanation"] | None = None,
@@ -3298,6 +3335,7 @@ class AnalysisService:
                 previous=previous,
                 previous_document=previous_document,
                 cost_guard=cost_guard,
+                reuse=reuse,
                 triage=triage,
                 submit_batch=submit_batch,
                 purpose=purpose,
@@ -3313,6 +3351,7 @@ class AnalysisService:
         previous: AnalysisRecord | None,
         previous_document: TextDocument | None = None,
         cost_guard: bool = True,
+        reuse: bool = True,
         triage: bool = True,
         submit_batch: bool = False,
         purpose: Literal["analysis", "reanalysis", "explanation"] | None = None,
@@ -3372,6 +3411,7 @@ class AnalysisService:
                 previous=previous,
                 previous_document=previous_document,
                 cost_guard=cost_guard,
+                reuse=reuse,
                 triage=triage,
                 submit_batch=submit_batch,
                 purpose=purpose,
@@ -3383,7 +3423,7 @@ class AnalysisService:
             raise _SourceReadError(loaded.source_read, exc) from exc
         if loaded.word_formula_source is not None and previous is None:
             prepared = self._prepare_word_formula_input(
-                prepared, loaded, cost_guard=cost_guard, history=history
+                prepared, loaded, cost_guard=cost_guard, reuse=reuse, history=history
             )
         return replace(prepared, source_read=loaded.source_read)
 
@@ -3393,6 +3433,7 @@ class AnalysisService:
         loaded: _Loaded,
         *,
         cost_guard: bool,
+        reuse: bool,
         history: tuple[ComputationResult, ...],
     ) -> _Prepared:
         request, meta, receipt = prepared.batch_request, prepared.batch_meta, prepared.input_receipt
@@ -3438,9 +3479,7 @@ class AnalysisService:
             custom_id = hashlib.sha256(f"{key}:{meta.generation}".encode()).hexdigest()
             if (
                 custom_id in self._context_rejections
-                or self._cached_analysis(
-                    prepared.bill, "analysis", key, history, cost_guard=cost_guard
-                )
+                or self._cached_analysis(prepared.bill, "analysis", key, history, reuse=reuse)
                 is not None
             ):
                 return prepared
@@ -3482,6 +3521,7 @@ class AnalysisService:
         previous: AnalysisRecord | None,
         previous_document: TextDocument | None = None,
         cost_guard: bool = True,
+        reuse: bool = True,
         triage: bool = True,
         submit_batch: bool = False,
         purpose: Literal["analysis", "reanalysis", "explanation"] | None = None,
@@ -3607,7 +3647,7 @@ class AnalysisService:
                 overflow = submit_batch = True
                 fitted, key = to_overflow("the primary batch rejected the context")
         ctx = fitted.ctx
-        cached = self._cached_analysis(bill, purpose, key, history, cost_guard=cost_guard)
+        cached = self._cached_analysis(bill, purpose, key, history, reuse=reuse)
         record: AnalysisRecord | None = None
         if cached is None and not submit_batch:
             try:
@@ -3618,7 +3658,7 @@ class AnalysisService:
                 overflow = submit_batch = True
                 fitted, key = to_overflow("the primary model rejected the context")
                 ctx = fitted.ctx
-                cached = self._cached_analysis(bill, purpose, key, history, cost_guard=cost_guard)
+                cached = self._cached_analysis(bill, purpose, key, history, reuse=reuse)
         backend = self._overflow_batch if overflow else self._batch
         if cached is None and submit_batch and backend is None:
             raise LlmUnavailableError(

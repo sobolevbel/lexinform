@@ -88,7 +88,7 @@ def test_explaining_an_unknown_bill_does_not_enrol_it_for_publication(source: st
     w.gateway.submissions.append(submission())
     w.gateway.files[submission_url()] = b"%PDF"
     w.add_rcl_project()
-    w.command(f"/explain {source}")
+    incoming = w.command(f"/explain {source}")
 
     report = commands_only(w)
 
@@ -96,9 +96,9 @@ def test_explaining_an_unknown_bill_does_not_enrol_it_for_publication(source: st
     assert w.repo.get(TERM, source) is None
     assert len(w.batch.submitted) == 1 and not w.llm.triage_contexts
     w.batch.resolve()
-    w.command(f"/explain {source}")
     commands_only(w)
-    assert w.replier.replies[-1][1].explanation is not None
+    answered, outcome = w.replier.replies[-1]
+    assert answered.update_id == incoming.update_id and outcome.explanation is not None
     assert w.repo.get(TERM, source) is None and not w.publisher.new_bills
 
 
@@ -213,7 +213,15 @@ def test_uncertain_explanation_submission_is_never_retried(
 
     with monkeypatch.context() as patch:
         patch.setattr(w.batch, "submit", uncertain)
-        commands_only(w)
+        failed = w.run(
+            mode=RunMode.COMMANDS,
+            discover=False,
+            track=False,
+            max_analyze=0,
+            max_publish=0,
+            expect_bugs=True,
+        )
+    assert any("connection lost after submission" in error for error in failed.errors)
     assert len(w.repo.list_submitting_batch_intents()) == 1
     w.command("/explain 3039")
     commands_only(w)

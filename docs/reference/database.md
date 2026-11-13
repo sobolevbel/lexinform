@@ -765,3 +765,11 @@ with one bounded copy of each rendered body.
 Если этого текста в снимке нет, чтение явно сообщает о недоступности
 повторной проверки. Для квитанции с внешним снимком отдельная проверка
 должна открыть именно этот снимок. Миграция создаёт пустую таблицу.
+## Operator request journal (v75)
+
+`commands` keeps the update ID as its primary key. New rows retain the original inbox envelope,
+including the Telegram actor when available, and the Actions run URL. The durable claim precedes
+execution. `executed_at` records the handler's outcome, and `handled_at` records processing of its
+technical reply. `work_json` tracks a pending result separately. Completed work retains its
+batch key or publication ID, and a frozen reply allows a known failed send to be retried without
+executing the command again. Legacy rows retain their prior timestamps and text.

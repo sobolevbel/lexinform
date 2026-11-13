@@ -191,14 +191,10 @@ Telegram ◄── cards (once per bill) ◄── publish ◄──┘        �
    new text version (re-analysed) and the hand-over to the Sejm each make one reply; the druk
    whose `rclNum` names a followed project inherits its card.
 6. **Report** to the technical channel when `LEXINFORM_TELEGRAM_LOG_CHANNEL_ID` is set.
-7. **Obey** the operator: every command of this CLI can be posted in that channel, with its own
-   options (`/analyze 3039 force`, `/show`, `/preview`, `/refresh`, `/skip`, `/unskip`, `/reset`,
-   `/republish`, `/forget`, `/find`, `/status`, `/runs`, `/cost`, `/help`; a bill by any number
-   or link), and is answered under the command a few minutes later. A small relay on an
-   always-on server files them into the git branch `inbox` and starts the commands phase on
-   GitHub; the five that *are* runs (`/run`, `/scan`, `/track`, `/reprefilter`,
-   `/index-rcl-numbers`) start the workflow instead. See
-   [`docs/operator-commands.md`](docs/operator-commands.md).
+7. **Obey** operator commands in the technical channel. A small relay records requests
+   in the `inbox` branch and wakes the shared Actions job. Use `/help` for the catalog,
+   `/queue` for waiting requests, and `/request ID` for the outcome of a saved command.
+   See [operator commands](docs/operator-commands.md).
 
 The Sejm term (kadencja) is read from the API on every run (`/sejm/term`), so a new Sejm is
 picked up without any change of configuration. Discovery works in the current term; everything

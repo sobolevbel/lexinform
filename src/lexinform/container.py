@@ -434,6 +434,19 @@ class Container:
             return self._once("state_checkpoint:dry_run", NoopStateCheckpoint)
         return self._once("state_checkpoint", self._build_state_checkpoint)
 
+    def checkpoint_after_subprocess(self) -> None:
+        """Each child may advance the shared Git state before returning to the locked parent."""
+        self._build_state_checkpoint()()
+
+    @staticmethod
+    def workflow_url() -> str | None:
+        server = os.environ.get("GITHUB_SERVER_URL")
+        repository = os.environ.get("GITHUB_REPOSITORY")
+        run_id = os.environ.get("GITHUB_RUN_ID")
+        if server and repository and run_id:
+            return f"{server.rstrip('/')}/{repository}/actions/runs/{run_id}"
+        return None
+
     def _build_state_checkpoint(self) -> StateCheckpoint:
         path = self.settings.llm_batch_state_file
         if path is None:
@@ -615,19 +628,11 @@ class Container:
             return ConsoleRunNotifier(self.formatter)
         if not self.settings.telegram_log_channel_id:
             return None
-        server = os.environ.get("GITHUB_SERVER_URL")
-        repository = os.environ.get("GITHUB_REPOSITORY")
-        run_id = os.environ.get("GITHUB_RUN_ID")
-        run_url = (
-            f"{server.rstrip('/')}/{repository}/actions/runs/{run_id}"
-            if server and repository and run_id
-            else None
-        )
         return TelegramRunNotifier(
             self.telegram_client(),
             self.formatter,
             channel_id=self.settings.telegram_log_channel_id,
-            run_url=run_url,
+            run_url=self.workflow_url(),
             message_id=int(os.environ["LEXINFORM_RUN_MESSAGE_ID"])
             if os.environ.get("LEXINFORM_RUN_MESSAGE_ID")
             else None,
@@ -670,8 +675,8 @@ class Container:
             client,
             writer,
             acknowledger,
-            starter=writer,  # the same GitHub client: filing and starting differ only in scope
             channel_id=s.telegram_log_channel_id,
+            callback_admin=client.is_chat_admin,
             poll_timeout=s.listen_timeout_seconds,
         )
 
@@ -703,6 +708,7 @@ class Container:
                 grouped_stage_editor=self._grouped_stage_editor(dry_run=dry_run),
                 grouped_stage_resolution_enabled=self._grouped_stage_checkpoint(dry_run=dry_run),
                 grouped_stage_candidate_refs_enabled=self.settings.grouped_stage_candidate_refs_enabled,
+                workflow_url=self.workflow_url(),
             ),
         )
 

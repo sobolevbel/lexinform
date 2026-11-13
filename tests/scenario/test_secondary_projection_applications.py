@@ -246,21 +246,23 @@ def test_explanation_applications_name_commands_without_changing_the_bill(worker
     world.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     world.run()
     before = world.bill("3039")
-    world.command("/explain 3039")
+    first = world.command("/explain 3039")
     commands_only(world)
     assert not applications(world)
     world.batch.resolve()
-    world.command("/explain 3039")
     commands_only(world)
     world.repo.restore(world.repo.dump())
-    world.command("/explain 3039")
+    second = world.command("/explain 3039")
     commands_only(world)
 
     rows = applications(world)
     assert len(rows) == 2 and all(
         row.target is not None and row.target.kind == "command" for row in rows
     )
-    assert len({row.target.ref for row in rows if row.target is not None}) == 2
+    assert {row.target.ref for row in rows if row.target is not None} == {
+        str(first.update_id),
+        str(second.update_id),
+    }
     assert rows[0].result_id == rows[1].result_id and world.bill("3039") == before
     assert len(world.batch.submitted) == 1
 
@@ -271,11 +273,10 @@ def test_explanation_receipt_and_executed_marker_commit_together(
     world = World()
     world.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     world.run()
-    world.command("/explain 3039")
+    incoming = world.command("/explain 3039")
     commands_only(world)
     world.batch.resolve()
     world.analysis.collect_batches()
-    incoming = world.command("/explain 3039")
     answered = len(world.replier.replies)
 
     def crash(application: ResultApplication) -> None:
@@ -294,14 +295,11 @@ def test_explanation_receipt_and_executed_marker_commit_together(
 
     state = world.repo.command_state(incoming.update_id)
     assert state is not None, "the command was recorded before execution"
-    assert state.executed_at is None and not applications(world)
+    assert state.work is not None and not applications(world)
     assert len(world.replier.replies) == answered
     world.repo.restore(world.repo.dump())
     commands_only(world)
-    assert not applications(world)
-    repeated = world.command("/explain 3039")
-    commands_only(world)
     rows = applications(world)
     assert len(rows) == 1 and rows[0].target is not None
-    assert rows[0].target.ref == str(repeated.update_id)
+    assert rows[0].target.ref == str(incoming.update_id)
     assert len(world.batch.submitted) == 1

@@ -85,9 +85,12 @@ class ConsoleReplier:
         self._formatter = formatter
         self._stream = stream
 
+    def render(self, command: IncomingCommand, outcome: CommandOutcome) -> str:
+        return outcome.rendered_reply or self._formatter.command_reply(command, outcome).text
+
     def reply(self, command: IncomingCommand, outcome: CommandOutcome) -> None:
-        rendered = self._formatter.command_reply(command, outcome)
         self._stream.write(
-            f"\n===== REPLY to update {command.update_id} (dry-run) =====\n{rendered.text}\n"
+            f"\n===== REPLY to update {command.update_id} (dry-run) =====\n"
+            f"{self.render(command, outcome)}\n"
         )
         self._stream.flush()

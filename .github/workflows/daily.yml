@@ -246,8 +246,11 @@ jobs:
             exit 0
           fi
           if [ "$EVENT_NAME" = "repository_dispatch" ]; then
-            uv run --frozen --no-dev lexinform commands
-            exit 0
+            STATUS=0
+            uv run --frozen --no-dev lexinform commands || STATUS=$?
+            if [ "$STATUS" = "75" ]; then exit "$STATUS"; fi
+            uv run --frozen --no-dev lexinform commands --run-requests || STATUS=$?
+            exit "$STATUS"
           fi
           # The relay names one phase of a run the way the operator asked for it (/scan, /track,
           # /collect-batches, /reprefilter, /index-rcl-numbers); the schedule and the button name
@@ -271,6 +274,11 @@ jobs:
             && [ "$COMMAND" != "run" ] && [ "$COMMAND" != "track" ] \
             && [ "$COMMAND" != "collect-batches" ]; then
             uv run --frozen --no-dev lexinform commands || STATUS=$?
+          fi
+          if [ "$STATUS" = "75" ]; then exit "$STATUS"; fi
+          if [ "$EVENT_NAME" = "schedule" ] && [ "$INBOX_PRESENT" = "true" ] \
+            && compgen -G "$LEXINFORM_INBOX_DIR/*.json" >/dev/null; then
+            uv run --frozen --no-dev lexinform commands --run-requests || STATUS=$?
           fi
           exit "$STATUS"
 

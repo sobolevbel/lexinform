@@ -15,46 +15,42 @@ from dataclasses import dataclass, field
 from zoneinfo import ZoneInfo
 
 from lexinform.content_versions import is_grouped_stage_revision_slot
-from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError, StateCheckpointError
-from lexinform.intent_ages import intent_ages
+from lexinform.errors import (
+    DeliveryUncertainError,
+    OrkaUnreachableError,
+    ServiceUnavailableError,
+    StateCheckpointError,
+)
 from lexinform.log_context import log_context
 from lexinform.models import (
     DISPATCHED,
-    FAILING_CHECK_MIN,
     SILENCED_BY_OPERATOR,
+    AnalysisRecord,
     Bill,
     BillStatus,
     Command,
     CommandName,
     CommandOutcome,
     CommandState,
+    CommandWork,
     DeliveryResolution,
     IncomingCommand,
     Mnemonic,
     OutcomeStatus,
-    PrintInfo,
     PriorityOverride,
-    Publication,
     PublicationKind,
     PublicationStatus,
     ResultApplicationTarget,
-    SpendSnapshot,
-    StatusSnapshot,
     TokenUsage,
-    card_edit_owner_id,
-    closure_event,
-    failed_card_part_resolution_allowed,
-    is_over,
     merge_usage,
     parse_command,
     valid_mnemonic,
 )
-from lexinform.models.commands import GroupedEditDeliveryResolution
+from lexinform.models.commands import COMMANDS, GroupedEditDeliveryResolution, command_help
 from lexinform.models.grouped_stage_date import (
     GroupedStageDateCommand,
     GroupedStageResolutionCommand,
 )
-from lexinform.models.source_checks import observation_label, operator_observation
 from lexinform.ports import (
     BillRepository,
     Clock,
@@ -64,10 +60,11 @@ from lexinform.ports import (
     StateCheckpoint,
     VerifiedEditOutcome,
 )
-from lexinform.pricing import cost_usd
 from lexinform.services.amendments import AmendmentsService
 from lexinform.services.analysis import AnalysisService, TooExpensiveError, Waiting
-from lexinform.services.content_inspection import inspect_content, inspect_content_page
+from lexinform.services.bill_operations import BillOperations
+from lexinform.services.command_queries import CommandQueries
+from lexinform.services.delivery_commands import DeliveryCommands
 from lexinform.services.digest import DigestResult, DigestService
 from lexinform.services.grouped_stage_date_approval import (
     approve_grouped_stage_date,
@@ -76,7 +73,6 @@ from lexinform.services.grouped_stage_date_approval import (
 from lexinform.services.grouped_stage_date_candidate import GroupedStageBulletRenderer
 from lexinform.services.joint import primary_of
 from lexinform.services.lookup import BillLookup, BillNotFoundError
-from lexinform.services.publications import complete_delivery, source_context_blocked
 from lexinform.services.publishing import PublishingService
 from lexinform.services.result_applications import record_secondary_application
 from lexinform.services.text_prefilter import TextPrefilterService
@@ -92,21 +88,7 @@ SKIPPED = frozenset(
         BillStatus.SKIPPED_CLOSED,
     }
 )
-WAITING = (
-    BillStatus.ANALYSIS_PENDING,
-    BillStatus.TEXT_PREFILTER_PENDING,
-    BillStatus.ANALYSIS_FAILED,
-    BillStatus.SKIPPED_COST,
-    BillStatus.DOCUMENT_UNSUPPORTED,
-    BillStatus.DOCUMENT_AMBIGUOUS,
-)
 FORCE_HINT = "add `force` to analyse anyway"
-_CLOSURE_NOTES = {
-    "veto_sustained": "the President's veto stood",
-    "withdrawn_by_applicant": "withdrawn by the applicant",
-    "rejected": "rejected",
-    "not_enacted": "closed without a law",
-}
 
 
 def _day(when: dt.datetime | None) -> str:
@@ -194,6 +176,7 @@ class CommandService:
         grouped_stage_editor: Callable[[int, int, str], VerifiedEditOutcome] | None = None,
         grouped_stage_resolution_enabled: bool = False,
         grouped_stage_candidate_refs_enabled: bool = False,
+        workflow_url: str | None = None,
     ) -> None:
         self._repo = repo
         self._inbox = inbox
@@ -207,15 +190,25 @@ class CommandService:
         self._tracking = tracking
         self._amendments = amendments
         self._digest = digest
-        self._publisher_for = publisher_for
-        self._status_days = status_days
-        self._status_bills = status_bills
+        self._bills = BillOperations(repo, publishing, lookup, clock, publisher_for)
         self._checkpoint = checkpoint
-        self._source_context_retry = source_context_retry
         self._grouped_stage_formatter = grouped_stage_formatter
         self._grouped_stage_editor = grouped_stage_editor
         self._grouped_stage_resolution_enabled = grouped_stage_resolution_enabled
         self._grouped_stage_candidate_refs_enabled = grouped_stage_candidate_refs_enabled
+        self._deliveries = DeliveryCommands(
+            repo, clock, publishing.channel_id, digest, source_context_retry
+        )
+        self._queries = CommandQueries(
+            repo,
+            inbox,
+            clock,
+            publishing.channel_id,
+            tracking,
+            days=status_days,
+            limit=status_bills,
+        )
+        self._workflow_url = workflow_url
 
     def handle_pending(
         self,
@@ -231,11 +224,14 @@ class CommandService:
         as it is, because its files belong to a real run (the database is rolled back with
         them)."""
         result = CommandsResult()
+        pending = self._inbox.pending()
         if not keep_delivery_attempts:
             self._publishing.start_run()
             if self._digest is not None:
                 self._digest.start_run()
-        for incoming in self._inbox.pending():
+        for incoming in pending:
+            if incoming.run_requested:
+                continue
             with log_context(command_id=incoming.update_id):
                 if not self._handle_one(
                     incoming,
@@ -274,7 +270,9 @@ class CommandService:
         started = time.perf_counter()
         spent: dict[str, TokenUsage] = {}
         if earlier is not None:
-            outcome = self._answer_of_an_earlier_run(earlier)
+            outcome = self._answer_of_an_earlier_run(earlier).model_copy(
+                update={"rendered_reply": earlier.rendered_reply}
+            )
         else:
             ran = self._run_now(
                 incoming, spent, result, min_score=min_score, publish=publish, dry_run=dry_run
@@ -292,7 +290,9 @@ class CommandService:
         _count_usage(result, spent)
         self._save_state(dry_run=dry_run)
         try:
-            self._answer(incoming, outcome, dry_run=dry_run)
+            self._answer(
+                incoming, outcome, dry_run=dry_run, saved_line=earlier.reply if earlier else None
+            )
         except ServiceUnavailableError as exc:
             result.fatal_error = exc.describe()
             log.error("aborting commands phase, %d unanswered: %s", incoming.update_id, exc)
@@ -332,7 +332,12 @@ class CommandService:
             )
         with self._repo.atomic():
             self._repo.mark_command_executed(
-                incoming.update_id, outcome=outcome.line(), at=self._clock.now()
+                incoming.update_id,
+                outcome=outcome.line(),
+                at=self._clock.now(),
+                work=outcome.work,
+                rendered_reply=self._replier.render(incoming, outcome),
+                failed=not outcome.ok,
             )
             if outcome.explanation is not None and outcome.bill is not None:
                 record_secondary_application(
@@ -348,7 +353,7 @@ class CommandService:
     def _earlier_state(self, incoming: IncomingCommand) -> CommandState | None:
         """What earlier runs did with this command, recording it when it is new. None means
         nobody has run it: the inbox file is its only trace."""
-        if self._repo.record_command(incoming):
+        if self._repo.record_command(incoming, workflow_url=self._workflow_url):
             return None
         return self._repo.command_state(incoming.update_id)
 
@@ -373,18 +378,27 @@ class CommandService:
             ),
         )
 
-    def _answer(self, incoming: IncomingCommand, outcome: CommandOutcome, *, dry_run: bool) -> None:
+    def _answer(
+        self,
+        incoming: IncomingCommand,
+        outcome: CommandOutcome,
+        *,
+        dry_run: bool,
+        saved_line: str | None = None,
+    ) -> None:
         """Reply under the command's own message and drop its inbox file.
 
         An outage of the channel propagates: the phase ends and the answer is repeated next run.
         A reply that failed for any other reason is noted and the command is marked handled all
         the same — the command itself ran, and running it again could post a second card.
         """
-        line = outcome.line()
+        line = saved_line or outcome.line()
         try:
             self._replier.reply(incoming, outcome)
         except StateCheckpointError:
             raise
+        except DeliveryUncertainError:
+            line += " (исход отправки технического ответа неизвестен)"
         except ServiceUnavailableError:
             raise
         except Exception as exc:
@@ -402,6 +416,210 @@ class CommandService:
         if not dry_run and self._checkpoint is not None:
             self._checkpoint()
 
+    def complete_work(self, *, min_score: int, publish: bool) -> None:
+        for state in self._repo.pending_command_work():
+            incoming = state.incoming
+            assert incoming is not None, "pending work belongs to a recorded command"
+            if state.handled_at is None:
+                continue
+            if state.final_answer_pending:
+                outcome = self._answer_of_an_earlier_run(state).model_copy(
+                    update={"rendered_reply": state.rendered_reply}
+                )
+            else:
+                work = state.work
+                assert work is not None, "the repository selects pending work or a pending answer"
+                resolved = self._work_result(incoming, work, min_score=min_score, publish=publish)
+                if resolved is None:
+                    continue
+                outcome = resolved
+                with self._repo.atomic():
+                    self._repo.mark_command_executed(
+                        incoming.update_id,
+                        outcome=outcome.line(),
+                        at=self._clock.now(),
+                        work=outcome.work,
+                        rendered_reply=self._replier.render(incoming, outcome),
+                        failed=not outcome.ok,
+                        final_answer_pending=True,
+                    )
+                    if outcome.explanation is not None and outcome.bill is not None:
+                        record_secondary_application(
+                            self._repo,
+                            outcome.bill.term,
+                            outcome.bill.number,
+                            outcome.explanation.computation_id,
+                            target=ResultApplicationTarget(
+                                kind="command", ref=str(incoming.update_id)
+                            ),
+                            now=self._clock.now(),
+                        )
+                self._save_state(dry_run=False)
+            self._answer(
+                incoming,
+                outcome,
+                dry_run=False,
+                saved_line=state.reply if state.final_answer_pending else None,
+            )
+
+    def _work_result(
+        self, incoming: IncomingCommand, work: CommandWork, *, min_score: int, publish: bool
+    ) -> CommandOutcome | None:
+        bill = self._repo.get(work.term, work.number)
+        if work.kind == "explanation" and work.batch_key:
+            record = self._repo.analysis_memo_record(work.memo_key or work.batch_key)
+            if record is not None:
+                if bill is None and work.summary is not None:
+                    bill = Bill(
+                        summary=work.summary,
+                        status=BillStatus.DISCOVERED,
+                        first_seen_at=incoming.received_at,
+                        last_checked_at=incoming.received_at,
+                    )
+                explanation = AnalysisRecord.model_validate_json(record)
+                return CommandOutcome(
+                    status=OutcomeStatus.SHOWN,
+                    bill=bill.model_copy(update={"analysis": explanation})
+                    if bill is not None
+                    else None,
+                    explanation=explanation,
+                    note=f"Разбор по запросу №{incoming.update_id} готов.",
+                )
+            job = self._repo.batch_job(work.batch_key)
+            if job is not None and job.state != "failed":
+                return None
+            return CommandOutcome(
+                status=OutcomeStatus.ERROR, note="Batch разбора не дал результата."
+            )
+        if work.kind in ("amendments", "delivery"):
+            return self._work_delivery(work)
+        if work.kind == "refresh":
+            if bill is None or bill.status is BillStatus.LINKED:
+                return CommandOutcome(
+                    status=OutcomeStatus.ERROR, note="Состояние проекта изменилось."
+                )
+            if bill.awaiting_batch_since is not None or bill.status is BillStatus.REANALYSIS_READY:
+                return None
+            return CommandOutcome(
+                status=OutcomeStatus.REFRESHED,
+                bill=bill,
+                note="Ожидание batch для обновления завершено. Сведения в /show.",
+            )
+        if bill is None or not self._same_analysis(bill, work) or bill.status is BillStatus.LINKED:
+            return CommandOutcome(
+                status=OutcomeStatus.ERROR, note="Запрос заменён более новым состоянием проекта."
+            )
+        if bill.status in (
+            BillStatus.BATCH_PENDING,
+            BillStatus.ANALYSIS_READY,
+            BillStatus.ANALYSIS_PENDING,
+        ):
+            return None
+        if bill.status is not BillStatus.ANALYZED or bill.analysis is None:
+            return CommandOutcome(
+                status=OutcomeStatus.ERROR,
+                bill=bill,
+                note=f"Анализ не завершён: {bill.last_error or bill.status.value}",
+            )
+        command = parse_command(incoming.text)
+        assert command is not None, "analysis work is recorded only for parsed commands"
+        verdict = bill.analysis.analysis
+        card = self._publishing.card_of(bill)
+        if card is not None and card.status in (
+            PublicationStatus.PENDING,
+            PublicationStatus.UNKNOWN,
+            PublicationStatus.FAILED,
+            PublicationStatus.QUEUED,
+        ):
+            return self._work_delivery(
+                work.model_copy(update={"kind": "delivery", "publication_id": card.id})
+            )
+        if (
+            verdict.relevant
+            and (verdict.score >= min_score or work.publish_below_threshold)
+            and card is None
+            and self._bills.over_note(bill) is None
+            and work.publish_allowed
+            and (not publish or not work.publish_below_threshold)
+        ):
+            return None
+        options = {key: value for key, value in command.options.items() if key != "publish"}
+        if work.publish_below_threshold:
+            options["publish"] = "true"
+        outcome = self._card_verdict(
+            bill,
+            command.model_copy(update={"options": options}),
+            min_score=min_score,
+            publish=publish and work.publish_allowed,
+            may_wait=True,
+        )
+        return (
+            None
+            if outcome.status is OutcomeStatus.QUEUED
+            else outcome.model_copy(update={"as_json": command.as_json})
+        )
+
+    def _same_analysis(self, bill: Bill, work: CommandWork) -> bool:
+        if bill.analysis_generation == work.generation:
+            return True
+        if bill.analysis is None or bill.analysis.computation_id is None or work.generation is None:
+            return False
+        result = self._repo.get_computation_result(bill.analysis.computation_id)
+        return (
+            result is not None
+            and result.purpose == "analysis"
+            and result.generation == work.generation
+            and bill.analysis_generation == work.generation + 1
+            and (work.batch_key is None or result.custom_id == work.batch_key)
+        )
+
+    def _work_delivery(self, work: CommandWork) -> CommandOutcome | None:
+        publication = None
+        if work.publication_id is not None:
+            if work.kind == "amendments":
+                publication = next(
+                    (
+                        item
+                        for item in self._repo.list_amendment_revisions(work.publication_id)
+                        if work.batch_key is None or (item.ref or "").endswith(f"/{work.batch_key}")
+                    ),
+                    None,
+                )
+                if publication is None:
+                    if self._analysis.pending_amendment_revision(work.publication_id) is not None:
+                        return None
+                    job = self._repo.batch_job(work.batch_key) if work.batch_key else None
+                    if job is not None and job.state != "failed":
+                        return None
+            else:
+                publication = self._repo.publication_by_id(work.publication_id)
+        if publication is None:
+            return CommandOutcome(
+                status=OutcomeStatus.ERROR, note="Ожидаемая публикация не создана."
+            )
+        if publication.status is PublicationStatus.SENT and publication.delivery:
+            publication = next(
+                (
+                    part
+                    for identity in publication.delivery.continuation_ids
+                    if (part := self._repo.publication_by_id(identity)) is not None
+                    and part.status is not PublicationStatus.SENT
+                ),
+                publication,
+            )
+        if publication.status in (PublicationStatus.PENDING, PublicationStatus.QUEUED):
+            return None
+        return CommandOutcome(
+            status=OutcomeStatus.REFRESHED
+            if publication.status is PublicationStatus.SENT
+            else OutcomeStatus.ERROR,
+            note=f"Доставка {publication.id}: {publication.status.value}. "
+            f"/delivery {publication.id}",
+            message_id=publication.message_id
+            if publication.status is PublicationStatus.SENT
+            else None,
+        )
+
     def _execute(
         self,
         incoming: IncomingCommand,
@@ -414,10 +632,23 @@ class CommandService:
         command = parse_command(incoming.text)
         if command is None:
             return CommandOutcome(status=OutcomeStatus.HELP, note="not a command")
-        if command.error or command.name is CommandName.HELP:
-            return CommandOutcome(status=OutcomeStatus.HELP, note=command.error or "")
+        if command.error:
+            return CommandOutcome(
+                status=OutcomeStatus.HELP,
+                note=command.error + "\n" + command_help(command.name).splitlines()[0],
+            )
+        if command.name is CommandName.HELP:
+            return CommandOutcome(
+                status=OutcomeStatus.HELP,
+                note=command_help(command.help_topic, all_commands=command.help_all),
+            )
+        if command.name is CommandName.QUEUE:
+            return self._queries.queue(incoming.update_id, command.count("page", 1))
+        if command.name is CommandName.REQUEST:
+            assert command.request_id is not None, "/request requires an ID"
+            return self._queries.request(command.request_id)
         if command.name is CommandName.STATUS:
-            return self._status()
+            return self._queries.status()
         if command.name is CommandName.GROUPEDIT:
             if command.grouped_stage_resolution is not None:
                 return self._resolve_groupedit(
@@ -426,39 +657,46 @@ class CommandService:
             assert command.grouped_stage_date is not None, "the parser provides typed group input"
             return self._groupedit(command.grouped_stage_date, publish=publish, dry_run=dry_run)
         if command.name is CommandName.DELIVERY:
-            return self._delivery(command, incoming, publish=publish)
+            return self._deliveries.execute(command, incoming, publish=publish)
         if command.name is CommandName.RUNS:
-            return self._runs(command.count("days", 30), include_all="all" in command.options)
+            return self._queries.runs(
+                command.count("days", 30),
+                include_all="all" in command.options,
+                page=command.count("page", 1),
+            )
         if command.name is CommandName.COST:
-            return self._cost(command.count("days", 30), command.count("top", 5))
+            return self._queries.cost(command.count("days", 30), command.count("top", 5))
         if command.name is CommandName.FIND:
             assert command.query is not None, "parse_command gives /find a query or an error"
-            return self._find(command.query)
+            return self._queries.find(command.query, page=command.count("page", 1))
         if command.name is CommandName.DIGEST:
             return self._digest_command(command, publish=publish)
         if command.name in DISPATCHED:
-            # The relay starts the workflow itself and files nothing, so this can only be an
-            # old file or a hand-written one; either way there is nothing here to execute.
             return CommandOutcome(
                 status=OutcomeStatus.HELP,
-                note=f"/{command.name} is the relay's own command: it starts this workflow with"
-                " that phase, and a run cannot ask itself for one",
+                note=f"/{command.name}: отправьте через реле, чтобы создать запрос запуска.",
             )
         assert command.ref is not None, (
             "only a bill command is left, and parse_command gives it a ref"
         )
         try:
-            if command.name is CommandName.EXPLAIN:
+            lookup = COMMANDS[command.name].lookup
+            if lookup == "source":
                 bill = self._lookup.read_ref(command.ref)
-                explanation = self._analysis.explain_bill(bill)
+                explanation = self._analysis.explain_bill(bill, submit=False)
                 if isinstance(explanation, Waiting):
                     return CommandOutcome(
                         status=OutcomeStatus.QUEUED,
                         bill=bill,
-                        note="Разбор ожидает batch. Повторите /explain "
-                        + bill.number
-                        + " после получения результата; повтор не создаёт новый запрос. "
-                        "Разбор сохраняется отдельно и не публикуется в читательском канале.",
+                        note="Разбор ожидает batch. Результат придёт ответом на эту команду.",
+                        work=CommandWork(
+                            kind="explanation",
+                            term=bill.term,
+                            number=bill.number,
+                            batch_key=explanation.batch_key,
+                            memo_key=explanation.memo_key,
+                            summary=bill.summary,
+                        ),
                     )
                 return CommandOutcome(
                     status=OutcomeStatus.SHOWN,
@@ -466,11 +704,21 @@ class CommandService:
                     explanation=explanation,
                     note="Разбор по запросу; сохранён отдельно от анализа для канала.",
                 )
-            if command.name is CommandName.ANALYZE:
+            if lookup == "load":
                 bill = self._lookup.continuation(self._lookup.load_ref(command.ref))
                 done = self._analyze(bill, command, spent, min_score=min_score, publish=publish)
                 return done.model_copy(update={"as_json": command.as_json})
             bill_or_none = self._lookup.find_ref(command.ref)
+            if (
+                bill_or_none is not None
+                and lookup == "current"
+                and command.name
+                not in (
+                    CommandName.SHOW,
+                    CommandName.REFRESH,
+                )
+            ):
+                bill_or_none = self._lookup.continuation(bill_or_none)
         except BillNotFoundError as exc:
             return CommandOutcome(status=OutcomeStatus.NOT_FOUND, note=str(exc))
         if bill_or_none is None:
@@ -481,9 +729,8 @@ class CommandService:
         if command.name is CommandName.AMENDMENTS:
             if self._amendments is None:
                 return CommandOutcome(status=OutcomeStatus.ERROR, note="amendments service is off")
-            bill = self._lookup.continuation(bill_or_none)
             return self._amendments.request(
-                bill,
+                bill_or_none,
                 publication_id=command.count("publication", 0) or None,
                 force_id=str(incoming.update_id) if command.force else "",
             )
@@ -497,26 +744,22 @@ class CommandService:
             return self._unskip(bill_or_none)
         if command.name is CommandName.RESET:
             wanted = command.options.get("to", BillStatus.ANALYSIS_PENDING.value)
-            return self._reset(bill_or_none, BillStatus(wanted))
+            return self._bills.reset(bill_or_none, BillStatus(wanted))
         if command.name is CommandName.OBSERVE:
-            return self._observe(bill_or_none, command.options["mode"], min_score=min_score)
+            return self._bills.observe(bill_or_none, command.options["mode"], min_score=min_score)
         if command.name in (CommandName.NAME, CommandName.ATTENTION):
             return self._editorial(bill_or_none, command, incoming)
         if command.name is CommandName.PREVIEW:
-            try:
-                bill = self._lookup.continuation(bill_or_none)
-            except BillNotFoundError as exc:
-                return CommandOutcome(status=OutcomeStatus.ERROR, note=str(exc))
-            return self._preview(bill, command.options.get("to"))
+            return self._bills.preview(bill_or_none, command.options.get("to"))
         if command.name is CommandName.FORGET:
-            return self._forget(bill_or_none, min_score=min_score)
+            return self._bills.forget(bill_or_none, min_score=min_score)
         if command.name is CommandName.LINK:
             return self._link(bill_or_none, command.options["to"], publish=publish)
-        return self._republish(bill_or_none, publish=publish)
+        if command.name is CommandName.REPUBLISH:
+            return self._bills.republish(bill_or_none, publish=publish)
+        return CommandOutcome(status=OutcomeStatus.ERROR, note=f"Нет обработчика /{command.name}")
 
     def _editorial(self, bill: Bill, command: Command, incoming: IncomingCommand) -> CommandOutcome:
-        if bill.status is BillStatus.LINKED and bill.linked_number:
-            bill = self._repo.get(bill.term, bill.linked_number) or bill
         editorial = bill.editorial
         if command.name is CommandName.NAME:
             if not command.editorial_name:
@@ -642,12 +885,17 @@ class CommandService:
     ) -> CommandOutcome:
         """`/analyze`: the prefilter, the model and the publishing rule, as the daily run applies
         them; `force` gets past the first two, `publish` past the score threshold."""
-        if not command.force:
+        if not command.force and "recheck" not in command.options:
             bill, skipped = self._skipped_by_prefilter(bill)
             if skipped is not None:
                 return skipped
-        if command.force or bill.analysis is None or bill.status is not BillStatus.ANALYZED:
-            bill, too_expensive = self._analyse_now(bill, spent, force=command.force)
+        if (
+            command.force
+            or "reanalyze" in command.options
+            or bill.analysis is None
+            or bill.status is not BillStatus.ANALYZED
+        ):
+            bill, too_expensive = self._analyse_now(bill, spent, command=command, publish=publish)
             if too_expensive is not None:
                 return too_expensive
         assert bill.analysis is not None, "the bill was analysed before or by _analyse_now above"
@@ -671,7 +919,7 @@ class CommandService:
         return bill, None
 
     def _analyse_now(
-        self, bill: Bill, spent: dict[str, TokenUsage], *, force: bool
+        self, bill: Bill, spent: dict[str, TokenUsage], *, command: Command, publish: bool
     ) -> tuple[Bill, CommandOutcome | None]:
         """Ask the model, and count the triage too: the operator pays for both.
 
@@ -681,7 +929,12 @@ class CommandService:
         nobody read, and `force` is no answer to a WAF.
         """
         try:
-            analysed = self._analysis.analyze_bill(bill, ignore_cost_limit=force)
+            analysed = self._analysis.analyze_bill(
+                bill,
+                ignore_cost_limit=command.force or "allow_over_budget" in command.options,
+                redo=command.force or "reanalyze" in command.options,
+                submit=False,
+            )
         except OrkaUnreachableError as exc:
             return bill, CommandOutcome(
                 status=OutcomeStatus.SKIPPED,
@@ -702,15 +955,25 @@ class CommandService:
             )
         spent.update(analysed.usage)
         if isinstance(analysed, Waiting):
-            return self._reload(bill), CommandOutcome(
+            fresh = self._reload(bill)
+            return fresh, CommandOutcome(
                 status=OutcomeStatus.QUEUED,
-                bill=self._reload(bill),
+                bill=fresh,
                 note="queued to the batch; the result is applied when the batch completes",
+                work=CommandWork(
+                    kind="analysis",
+                    term=fresh.term,
+                    number=fresh.number,
+                    generation=fresh.analysis_generation,
+                    batch_key=analysed.batch_key,
+                    publish_below_threshold=command.publish and publish,
+                    publish_allowed=publish,
+                ),
             )
         return self._reload(bill), None
 
     def _card_verdict(
-        self, bill: Bill, command: Command, *, min_score: int, publish: bool
+        self, bill: Bill, command: Command, *, min_score: int, publish: bool, may_wait: bool = False
     ) -> CommandOutcome:
         """Whether the analysis earns a card now, and what to say when it does not."""
         assert bill.analysis is not None, "_analyze asks for a verdict only of an analysed bill"
@@ -719,14 +982,14 @@ class CommandService:
             return CommandOutcome(
                 status=OutcomeStatus.ANALYSED, bill=bill, note="not relevant: no card"
             )
-        card = self._card(bill)
+        card = self._bills.card_label(bill)
         if card is not None:
             return CommandOutcome(
                 status=OutcomeStatus.ANALYSED,
                 bill=bill,
                 note=f"the card is in the channel already ({card})",
             )
-        if (over := self._over_note(bill)) is not None:
+        if (over := self._bills.over_note(bill)) is not None:
             return CommandOutcome(status=OutcomeStatus.ANALYSED, bill=bill, note=over)
         if verdict.score < min_score and not command.publish:
             return CommandOutcome(
@@ -739,7 +1002,7 @@ class CommandService:
             return CommandOutcome(
                 status=OutcomeStatus.ANALYSED, bill=bill, note="publishing is off in this run"
             )
-        return self._post(bill, OutcomeStatus.ANALYSED)
+        return self._bills.post(bill, OutcomeStatus.ANALYSED, may_wait=may_wait)
 
     def _skip(self, bill: Bill) -> CommandOutcome:
         self._repo.reset_bill(
@@ -748,7 +1011,7 @@ class CommandService:
             BillStatus.SKIPPED_PREFILTER,
             reason=SILENCED_BY_OPERATOR,
         )
-        card = self._card(bill)
+        card = self._bills.card_label(bill)
         note = "silenced: it will not be analysed or posted"
         if card is not None:
             note += f"; its card ({card}) stays and is still followed"
@@ -798,35 +1061,6 @@ class CommandService:
             note=f"was {bill.status}; the next run analyses it",
         )
 
-    def _reset(self, bill: Bill, to: BillStatus) -> CommandOutcome:
-        """`/reset BILL to=STATUS`: any status with a clean budget of attempts, what `/unskip`
-        does for the one status worth a word of its own.
-
-        Analyses and posts are untouched, so a bill reset to `analysis_pending` is read again
-        and one reset to `skipped_prefilter` is silenced while its card stays.
-        """
-        was = bill.status
-        read_again = self._revive_rcl(bill, to)
-        self._repo.reset_bill(bill.term, bill.number, to, reason="reset by the operator (/reset)")
-        note = f"was {was} (attempts {bill.analysis_attempts}), now {to}"
-        return CommandOutcome(
-            status=OutcomeStatus.RESET,
-            bill=self._reload(bill),
-            note=f"{note}; project documents re-read from RCL" if read_again else note,
-        )
-
-    def _observe(self, bill: Bill, choice: str, *, min_score: int) -> CommandOutcome:
-        """`/observe BILL mode=…`: pin how a bill without a card is watched, or hand it back."""
-        has_card = self._publishing.has_sent_card(bill)
-        analysis = bill.analysis.analysis if bill.analysis else None
-        mode, basis = operator_observation(choice, analysis, has_card=has_card, min_score=min_score)
-        self._repo.set_observation(bill.term, bill.number, mode, basis)
-        note = f"was {observation_label(bill.observation_mode, bill.observation_basis)}, now"
-        note += f" {observation_label(mode, basis)}"
-        if has_card:
-            note += "; the bill has a card, which is followed in full whatever its mode"
-        return CommandOutcome(status=OutcomeStatus.OBSERVED, bill=self._reload(bill), note=note)
-
     def _link(self, entry: Bill, print_number: str, *, publish: bool) -> CommandOutcome:
         """`/link ENTRY to=DRUK`: for a druk the Sejm printed without naming its RCL project."""
         if entry.rcl is None and not entry.is_pre_print:
@@ -847,8 +1081,8 @@ class CommandService:
             return CommandOutcome(
                 status=OutcomeStatus.ERROR, bill=entry, note="tracking is off in this run"
             )
-        druk_card = self._card(self._repo.get(entry.term, print_number) or entry)
-        own_card = self._card(entry)
+        druk_card = self._bills.card_label(self._repo.get(entry.term, print_number) or entry)
+        own_card = self._bills.card_label(entry)
         try:
             result = self._tracking.link(entry, print_number, publish=publish)
         except StateCheckpointError:
@@ -884,65 +1118,6 @@ class CommandService:
             return False
         self._repo.save_rcl(bill.term, bill.number, self._lookup.read_rcl_project(bill.number))
         return True
-
-    def _preview(self, bill: Bill, to: str | None = None) -> CommandOutcome:
-        """The message as the channel would get it, rendered into the technical channel alone:
-        what `/republish` would send, before it is sent.
-
-        `PublishingService.plan` decides and not this method, or the operator would be shown a
-        plain card where the channel sends a joint reply, or nothing at all.
-        """
-        if bill.analysis is None:
-            # A print whose group already holds a card is a reply, and a reply is a message a
-            # preview can render whether or not this print has been read yet — which is the one
-            # thing a preview exists to show.
-            if primary_of(self._repo, bill, self._publishing.channel_id) is None:
-                return CommandOutcome(
-                    status=OutcomeStatus.ERROR, bill=bill, note="not analysed: no card to render"
-                )
-        elif bill.analysis.text_source == "excerpts":
-            return CommandOutcome(
-                status=OutcomeStatus.SHOWN,
-                bill=bill,
-                explanation=bill.analysis,
-                note="Есть только предварительная оценка по фрагментам. "
-                f"Для полного разбора: /explain {bill.number}",
-            )
-        card = self._card(bill)
-        note = f"the card in the channel is {card}" if card else "not posted to the channel"
-        if bill.analysis is not None and not bill.analysis.analysis.relevant:
-            note += "; нерелевантный проект: только предпросмотр"
-        plan = self._publishing.plan(bill)
-        if plan.inherited is not None:
-            note = (
-                f"continues {bill.linked_number}: no message of its own, its card is"
-                f" message {plan.inherited.message_id} re-rendered with both tags"
-            )
-        elif plan.primary is not None:
-            note = (
-                f"considered jointly with {plan.primary.number}: a reply under its card"
-                f" (message {plan.primary_message_id}), not a card of its own"
-            )
-            if plan.bill.joint is None:
-                # A read-only command spends nothing, and the comparison is a model call: it is
-                # made when the reply is actually sent, so the preview shows the reply without it.
-                note += "; what differs is compared when the reply goes out"
-        if to is not None:
-            note = self._preview_to(plan.bill, plan.print_info, to)
-        return CommandOutcome(
-            status=OutcomeStatus.PREVIEWED,
-            bill=plan.bill,
-            note=note,
-            print_info=plan.print_info,
-            joint_primary=plan.primary,
-        )
-
-    def _preview_to(self, bill: Bill, print_info: PrintInfo | None, chat: str) -> str:
-        """Send an unrecorded card through the factory that excludes the reader channel."""
-        if self._publisher_for is None:
-            return f"cannot send to {chat}: this run publishes nowhere but its own channel"
-        result = self._publisher_for(chat).publish_new_bill(bill, print_info)
-        return f"sent to {chat} as message {result.message_id}; nothing was recorded"
 
     def _inspect(
         self, bill: Bill, spent: dict[str, TokenUsage], *, refresh: bool, publish: bool
@@ -989,7 +1164,7 @@ class CommandService:
             return CommandOutcome(
                 status=OutcomeStatus.ERROR, bill=bill, note="tracking is off in this run"
             )
-        if publish and self._card(bill) is None:
+        if publish and self._bills.card_label(bill) is None:
             return CommandOutcome(
                 status=OutcomeStatus.ERROR,
                 bill=bill,
@@ -1001,119 +1176,17 @@ class CommandService:
         if result.fatal_error is not None:
             raise _SourceDownError(result.fatal_error)
         return CommandOutcome(
-            status=OutcomeStatus.REFRESHED, bill=self._reload(bill), note=_tracking_note(result)
-        )
-
-    def _status(self) -> CommandOutcome:
-        """The queues, what is stuck and what the recent runs cost — the state between the run
-        reports, which each say what one run did and nothing about what has piled up."""
-        observed_at = self._clock.now()
-        since = observed_at - dt.timedelta(days=self._status_days)
-        batches = tuple(self._repo.list_open_llm_batches())
-        queued = self._repo.list_queued_batch_intents()
-        uncertain = self._repo.list_submitting_batch_intents()
-        held = {
-            (i.request.term, i.request.number)
-            for i in (*queued, *uncertain)
-            if i.request.call_kind in ("analysis", "reanalysis")
-        } | {
-            (item.term, item.number)
-            for batch in batches
-            for item in self._repo.list_llm_batch_items(batch.batch_id)
-            if item.call_kind in ("analysis", "reanalysis")
-        }
-        bills = self._repo.count_by_status()
-        in_flight = self._repo.list_by_status(
-            [BillStatus.BATCH_PENDING], limit=bills.get(BillStatus.BATCH_PENDING, 0)
-        )
-        snapshot = StatusSnapshot(
-            bills=bills,
-            publications=self._repo.count_publications(self._publishing.channel_id),
-            followed=len(self._tracking.followed()) if self._tracking is not None else 0,
-            waiting=tuple(self._repo.list_by_status(list(WAITING), limit=self._status_bills)),
-            stuck=tuple(
-                self._repo.list_stuck_publications(
-                    self._publishing.channel_id, limit=self._status_bills
-                )
-            ),
-            runs=tuple(
-                report
-                for report in self._repo.list_runs(since=since)
-                if report.execution_accounting_measured
-            ),
-            days=self._status_days,
-            batches=batches,
-            queued_intents=len(queued),
-            uncertain_intents=len(uncertain),
-            intent_ages=intent_ages((*queued, *uncertain), observed_at),
-            document_work=self._repo.count_document_work(),
-            orphaned=tuple(b for b in in_flight if (b.term, b.number) not in held),
-            awaiting_batch=tuple(
-                b for b in self._tracking.followed() if b.awaiting_batch_since is not None
+            status=OutcomeStatus.REFRESHED,
+            bill=self._reload(bill),
+            note=_tracking_note(result),
+            work=CommandWork(
+                kind="refresh",
+                term=bill.term,
+                number=bill.number,
+                generation=bill.analysis_generation,
             )
-            if self._tracking is not None
-            else (),
-            failing=tuple(
-                self._repo.list_failing_checks(
-                    min_failures=FAILING_CHECK_MIN, limit=self._status_bills
-                )
-            ),
-            observed_at=observed_at,
-        )
-        return CommandOutcome(
-            status=OutcomeStatus.REPORTED,
-            snapshot=snapshot,
-            note=f"{snapshot.followed} bills followed",
-        )
-
-    def _runs(self, days: int, *, include_all: bool = False) -> CommandOutcome:
-        """`/runs`: what each recorded run of the window found, posted and cost — `lexinform
-        runs` in the channel, for the operator who has no shell open."""
-        reports = self._repo.list_runs(since=self._clock.now() - dt.timedelta(days=days))
-        if not include_all:
-            reports = [report for report in reports if not report.is_empty]
-        label = "runs" if include_all else "non-empty runs"
-        return CommandOutcome(
-            status=OutcomeStatus.LISTED,
-            runs=tuple(reports),
-            note=f"{len(reports)} run(s) in {days} days"
-            if reports
-            else f"no {label} recorded in the last {days} days",
-        )
-
-    def _cost(self, days: int, top: int) -> CommandOutcome:
-        """`/cost`: the window's model spend, per model, its dearest run and its dearest bills."""
-        reports = [
-            report
-            for report in self._repo.list_runs(since=self._clock.now() - dt.timedelta(days=days))
-            if report.execution_accounting_measured
-        ]
-        usage: dict[str, TokenUsage] = {}
-        for report in reports:
-            merge_usage(usage, report.llm_usage)
-        snapshot = SpendSnapshot(
-            days=days,
-            runs=len(reports),
-            usage=usage,
-            dearest=max(reports, key=lambda r: cost_usd(r.llm_usage) or 0.0) if reports else None,
-            priciest=tuple(self._repo.most_expensive_analyses(limit=top)) if top else (),
-        )
-        return CommandOutcome(
-            status=OutcomeStatus.SPENT,
-            spend=snapshot,
-            note=f"{len(reports)} run(s) in {days} days",
-        )
-
-    def _find(self, query: str) -> CommandOutcome:
-        found = self._repo.search(query, limit=self._status_bills)
-        if not found:
-            return CommandOutcome(
-                status=OutcomeStatus.FOUND, note=f"nothing in the database matches {query!r}"
-            )
-        return CommandOutcome(
-            status=OutcomeStatus.FOUND,
-            found=tuple(found),
-            note=f"{len(found)} match(es) for {query!r}",
+            if self._reload(bill).awaiting_batch_since is not None
+            else None,
         )
 
     def _digest_command(self, command: Command, *, publish: bool) -> CommandOutcome:
@@ -1157,37 +1230,6 @@ class CommandService:
             note=said if sent else done.note,
             message_id=message_id,
         )
-
-    def _over_note(self, bill: Bill) -> str | None:
-        """Why no card may be posted for this bill, when its road has ended. A card is an
-        invitation to act, and there is nothing left to act on; a bill the Sejm has only passed
-        is not over, because the Senate is next, and neither is one whose act is published but
-        does not apply yet."""
-        if bill.discontinued_at is not None:
-            return "lapsed with the end of its Sejm term: not posted"
-        if not is_over(bill, today=self._clock.now().date()):
-            return None
-        act = bill.act
-        if act is not None and act.entry_into_force is not None:
-            return f"{act.display_address} in force since {act.entry_into_force}: not posted"
-        ended = bill.summary.closure_date
-        # A dropped plan's "closure date" is the day the register first published it (the
-        # register gives no withdrawal date at all), so it dates nothing a reader asked about.
-        when = f" on {ended}" if ended is not None and bill.wykaz is None else ""
-        return f"the process ended{when} ({self._outcome(bill)}): not posted"
-
-    @staticmethod
-    def _outcome(bill: Bill) -> str:
-        """How the road ended, in the words the channel already tells apart: a rejection, a
-        withdrawal by the applicant and a veto the Sejm could not override are three different
-        answers to "why is there no card", and `closureDate` alone tells none of them apart."""
-        if bill.summary.passed:
-            return "passed"
-        if bill.wykaz is not None:
-            return "dropped from the government's plan"
-        if bill.rcl is not None:
-            return "closed on RCL without reaching the Sejm"
-        return _CLOSURE_NOTES[closure_event(bill)]
 
     def _groupedit(
         self, command: GroupedStageDateCommand, *, publish: bool, dry_run: bool
@@ -1320,261 +1362,6 @@ class CommandService:
             note=f"grouped stage edit slot {command.slot_id} is {audit.status.value}",
         )
 
-    def _delivery(
-        self, command: Command, incoming: IncomingCommand, *, publish: bool
-    ) -> CommandOutcome:
-        assert command.delivery_id is not None
-        publication = self._repo.publication_by_id(command.delivery_id)
-        if publication is None or (
-            publication.channel_id != self._publishing.channel_id
-            and not (self._digest is not None and self._digest.owns_channel(publication.channel_id))
-        ):
-            return CommandOutcome(
-                status=OutcomeStatus.NOT_FOUND, note="publication not found in this channel"
-            )
-        if command.delivery_action == "history":
-            return CommandOutcome(
-                status=OutcomeStatus.DELIVERY,
-                content_history_page=inspect_content_page(
-                    self._repo,
-                    publication,
-                    page=command.delivery_history_page,
-                ),
-            )
-        owner_id = self._repo.digest_owner(command.delivery_id)
-        if owner_id is not None and command.delivery_action != "show":
-            return CommandOutcome(
-                status=OutcomeStatus.ERROR,
-                delivery=publication,
-                note=f"resolve physical digest part {owner_id}; this row is an included event",
-            )
-        action = command.delivery_action
-        if action != "show" and is_grouped_stage_revision_slot(publication):
-            return CommandOutcome(
-                status=OutcomeStatus.ERROR,
-                delivery=publication,
-                note="grouped edit is inspectable; delivery resolution is disabled",
-            )
-        if action != "show" and source_context_blocked(self._repo, publication):
-            if action == "retry" and publish and self._source_context_retry is not None:
-                resolution = DeliveryResolution(
-                    publication_id=command.delivery_id,
-                    publication_ids=(command.delivery_id,),
-                    term=publication.term,
-                    number=publication.number,
-                    kind=publication.kind,
-                    channel_id=publication.channel_id,
-                    action="retry",
-                    command=incoming,
-                    resolved_at=self._clock.now(),
-                    reason=command.delivery_reason,
-                )
-                if self._source_context_retry(resolution):
-                    publication = self._repo.publication_by_id(command.delivery_id)
-                    return CommandOutcome(
-                        status=OutcomeStatus.DELIVERY,
-                        delivery=publication,
-                        delivery_history=tuple(
-                            self._repo.delivery_resolutions(command.delivery_id)
-                        ),
-                        content_history=inspect_content(self._repo, publication)
-                        if publication
-                        else None,
-                        note="source context validated; queued for delivery",
-                    )
-            return CommandOutcome(
-                status=OutcomeStatus.ERROR,
-                delivery=publication,
-                note="source context is invalid; delivery remains blocked",
-            )
-        if action != "show":
-            if not publish:
-                return CommandOutcome(
-                    status=OutcomeStatus.ERROR, note="publishing is off in this run"
-                )
-            exhausted_digest_retry = (
-                action == "retry"
-                and publication.kind is PublicationKind.DIGEST
-                and publication.status is PublicationStatus.FAILED
-                and publication.attempts >= 3
-            )
-            failed_card_part = self._failed_card_part_resolution_allowed(publication, action)
-            if (
-                publication.status is not PublicationStatus.UNKNOWN
-                and not exhausted_digest_retry
-                and not failed_card_part
-            ):
-                return CommandOutcome(
-                    status=OutcomeStatus.ERROR,
-                    delivery=publication,
-                    note=f"only unknown deliveries can be resolved; status: {publication.status}",
-                )
-            if (
-                action == "confirm"
-                and publication.delivery is not None
-                and publication.delivery.edit_message_id is not None
-                and command.delivery_message_id != publication.delivery.edit_message_id
-            ):
-                return CommandOutcome(
-                    status=OutcomeStatus.ERROR,
-                    delivery=publication,
-                    note=f"confirm the saved edit target {publication.delivery.edit_message_id}",
-                )
-            if action == "retry":
-                if publication.delivery is None or not publication.delivery.replayable(
-                    publication.kind
-                ):
-                    return CommandOutcome(
-                        status=OutcomeStatus.ERROR,
-                        delivery=publication,
-                        note="no replayable saved payload; retry refused",
-                    )
-                bill = self._repo.get(publication.term, publication.number)
-                if bill is None and publication.kind is not PublicationKind.DIGEST:
-                    return CommandOutcome(
-                        status=OutcomeStatus.ERROR,
-                        delivery=publication,
-                        note="bill no longer exists; retry refused",
-                    )
-                if publication.kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL) and (
-                    bill is not None
-                    and (
-                        bill.status is BillStatus.LINKED or bill.last_error == SILENCED_BY_OPERATOR
-                    )
-                ):
-                    return CommandOutcome(
-                        status=OutcomeStatus.ERROR,
-                        delivery=publication,
-                        note="card is linked or silenced; resolve that state before retrying",
-                    )
-            resolution = DeliveryResolution(
-                publication_id=command.delivery_id,
-                publication_ids=publication.delivery.publication_ids
-                if publication.delivery is not None and publication.delivery.publication_ids
-                else (command.delivery_id,),
-                term=publication.term,
-                number=publication.number,
-                kind=publication.kind,
-                channel_id=publication.channel_id,
-                action=action,
-                command=incoming,
-                resolved_at=self._clock.now(),
-                message_id=command.delivery_message_id,
-                reason=command.delivery_reason,
-            )
-            with self._repo.atomic():
-                if not self._repo.resolve_delivery(resolution):
-                    return CommandOutcome(
-                        status=OutcomeStatus.ERROR,
-                        note="delivery already resolved; inspect it again",
-                    )
-                if action == "confirm" and publication.delivery is not None:
-                    assert resolution.message_id is not None
-                    identities = publication.delivery.publication_ids or (command.delivery_id,)
-                    for identity in identities:
-                        member = self._repo.publication_by_id(identity)
-                        assert member is not None
-                        complete_delivery(
-                            self._repo,
-                            member,
-                            message_id=resolution.message_id,
-                            sent_at=resolution.resolved_at,
-                        )
-            publication = self._repo.publication_by_id(command.delivery_id)
-        return CommandOutcome(
-            status=OutcomeStatus.DELIVERY,
-            delivery=publication,
-            digest_owner=self._repo.publication_by_id(owner_id) if owner_id is not None else None,
-            digest_members=tuple(
-                member.id
-                for member in self._repo.digest_sources(command.delivery_id)
-                if member.id is not None
-            ),
-            delivery_history=tuple(self._repo.delivery_resolutions(command.delivery_id)),
-            content_history=inspect_content(self._repo, publication)
-            if publication is not None
-            else None,
-            note="queued for the next publishing/tracking phase" if action == "retry" else "",
-        )
-
-    def _failed_card_part_resolution_allowed(self, publication: Publication, action: str) -> bool:
-        plan = publication.delivery
-        root = (
-            self._repo.publication_by_id(plan.continuation_root)
-            if plan is not None and plan.continuation_root is not None
-            else publication
-        )
-        owner_id = card_edit_owner_id(root) if root is not None else None
-        owner = self._repo.publication_by_id(owner_id) if owner_id is not None else None
-        return failed_card_part_resolution_allowed(publication, root, owner, action)
-
-    def _republish(self, bill: Bill, *, publish: bool) -> CommandOutcome:
-        if bill.analysis is None or not bill.analysis.analysis.relevant:
-            return CommandOutcome(
-                status=OutcomeStatus.ERROR, bill=bill, note="no relevant analysis: nothing to post"
-            )
-        if (over := self._over_note(bill)) is not None:
-            return CommandOutcome(status=OutcomeStatus.ERROR, bill=bill, note=over)
-        if not publish:
-            return CommandOutcome(
-                status=OutcomeStatus.ERROR, bill=bill, note="publishing is off in this run"
-            )
-        self._publishing.forget_card(bill)
-        return self._post(bill, OutcomeStatus.REPUBLISHED)
-
-    def _forget(self, bill: Bill, *, min_score: int) -> CommandOutcome:
-        """`/forget`: drop what the channel remembers of the card and post nothing in its place.
-
-        The way out of a card deleted by hand: the `sent` row keeps the bill followed and the
-        refresher keeps editing a message that is not there. `/republish` clears that too, but by
-        sending the card again, which is wrong when it was deleted on purpose. What happens next
-        is the publishing rule's decision, and running this twice changes nothing.
-        """
-        card = self._card(bill)
-        if self._publishing.card_of(bill) is None:
-            return CommandOutcome(
-                status=OutcomeStatus.FORGOTTEN,
-                bill=bill,
-                note="the channel remembers no card for it; nothing to forget",
-            )
-        self._publishing.forget_card(bill)
-        verdict = bill.analysis.analysis if bill.analysis is not None else None
-        candidate = (
-            bill.status is BillStatus.ANALYZED
-            and bill.discontinued_at is None
-            and verdict is not None
-            and verdict.relevant
-            and verdict.score >= min_score
-        )
-        forgotten = f"forgotten: {card}" if card is not None else "forgotten"
-        next_run = (
-            "the next run posts a fresh card"
-            if candidate
-            else f"it will not be posted again ({bill.status})"
-        )
-        return CommandOutcome(
-            status=OutcomeStatus.FORGOTTEN, bill=bill, note=f"{forgotten}; {next_run}"
-        )
-
-    def _post(self, bill: Bill, status: OutcomeStatus) -> CommandOutcome:
-        """Send the card through the normal path (pending row first, joint prints share a
-        thread) and tell which message it became."""
-        ok = self._publishing.publish_bill(bill)
-        posted = self._publishing.card_of(bill)
-        if not ok or posted is None or posted.message_id is None:
-            return CommandOutcome(
-                status=OutcomeStatus.ERROR, bill=bill, note="posting the card failed, see the log"
-            )
-        note = "" if posted.kind is PublicationKind.NEW_BILL else "as a reply under the joint print"
-        return CommandOutcome(status=status, bill=bill, message_id=posted.message_id, note=note)
-
     def _reload(self, bill: Bill) -> Bill:
         fresh = self._repo.get(bill.term, bill.number)
         return fresh if fresh is not None else bill
-
-    def _card(self, bill: Bill) -> str | None:
-        """`message 123` when the bill's card (or its reply under a joint print) is sent."""
-        pub = self._publishing.card_of(bill)
-        if pub is None or pub.status is not PublicationStatus.SENT:
-            return None
-        return f"message {pub.message_id}"

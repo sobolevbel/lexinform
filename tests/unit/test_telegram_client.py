@@ -504,6 +504,7 @@ def test_a_pressed_button_comes_back_as_the_command_it_stands_for() -> None:
                         "update_id": 20,
                         "callback_query": {
                             "id": "4382",
+                            "from": {"id": 123},
                             "data": "digest:2026-W38",
                             "message": {
                                 "message_id": 42,
@@ -521,6 +522,7 @@ def test_a_pressed_button_comes_back_as_the_command_it_stands_for() -> None:
 
     pressed = posts[0]
     assert pressed.text == "/digest publish ref=2026-W38"
+    assert pressed.actor_id == 123 and pressed.date.timestamp() > 1789200000
     assert (pressed.chat_id, pressed.message_id, pressed.callback_id) == (-1001, 42, "4382")
     assert posts[1].text is None  # data no button of ours sent; the offset still moves past it
 

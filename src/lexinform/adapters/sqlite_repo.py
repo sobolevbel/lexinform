@@ -229,6 +229,7 @@ from lexinform.models import (
     CandidateDispositionTrace,
     CheckAspect,
     CommandState,
+    CommandWork,
     ComputationResult,
     ContentSnapshot,
     ContentVersion,
@@ -1142,6 +1143,17 @@ MIGRATIONS: tuple[str, ...] = (
     CREATE INDEX ix_primary_claim_technical_receipts_result
         ON primary_claim_technical_receipts(result_id, receipt_id);
     """,
+    """
+    ALTER TABLE commands ADD COLUMN incoming_json TEXT;
+    ALTER TABLE commands ADD COLUMN workflow_url TEXT;
+    ALTER TABLE commands ADD COLUMN work_json TEXT;
+    ALTER TABLE commands ADD COLUMN completed_work_json TEXT;
+    ALTER TABLE commands ADD COLUMN rendered_reply TEXT;
+    ALTER TABLE commands ADD COLUMN failed INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE commands ADD COLUMN final_answer_pending INTEGER NOT NULL DEFAULT 0;
+    CREATE INDEX ix_commands_work ON commands(update_id)
+      WHERE work_json IS NOT NULL OR final_answer_pending = 1;
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -1788,6 +1800,12 @@ class SqliteBillRepository:
             validate_review_memo_row(self._conn, row["record_json"], row["term"], row["number"])
             result[row["key"]] = row["record_json"]
         return result
+
+    def analysis_memo_record(self, key: str) -> str | None:
+        row = self._conn.execute(
+            "SELECT record_json FROM analysis_memo WHERE key = ?", (key,)
+        ).fetchone()
+        return row[0] if row else None
 
     def get_legacy_result(self, value_id: str) -> LegacyResultValue | None:
         return _read_legacy_result(self._conn, value_id)
@@ -5290,7 +5308,7 @@ class SqliteBillRepository:
         ).fetchall()
         return [self._row_to_publication(row) for row in rows]
 
-    def search(self, text: str, *, limit: int) -> list[Bill]:
+    def search(self, text: str, *, limit: int, offset: int = 0) -> list[Bill]:
         """Match Polish titles and current or former reader names before loading bill histories."""
         rows = self._conn.execute(
             """
@@ -5302,9 +5320,9 @@ class SqliteBillRepository:
                     SELECT 1 FROM json_each(editorial_json, '$.previous') AS previous
                     WHERE instr(lexinform_casefold(json_extract(previous.value, '$.name')), :query)
                )
-            ORDER BY change_date DESC, term, number LIMIT :limit
+            ORDER BY change_date DESC, term, number LIMIT :limit OFFSET :offset
             """,
-            {"query": text.strip().casefold(), "limit": max(1, limit)},
+            {"query": text.strip().casefold(), "limit": max(1, limit), "offset": offset},
         ).fetchall()
         return [self._row_to_bill(row) for row in rows]
 
@@ -7226,6 +7244,8 @@ class SqliteBillRepository:
                     AND has_bill AND settled AND NOT bill_work AND NOT document_work
                     AND NOT publication AND NOT intent AND NOT batch_item
                     AND NOT intent_key_ref AND NOT batch_item_key_ref AND NOT review_key_ref
+                    AND NOT EXISTS (SELECT 1 FROM commands c WHERE c.work_json IS NOT NULL
+                      AND json_extract(c.work_json, '$.memo_key') = memo_retention.key)
                 )
                 """,
                 {"cutoff": _iso(memo_before)},
@@ -7315,44 +7335,101 @@ class SqliteBillRepository:
         ).fetchall()
         return [self._row_to_bill(r) for r in rows]
 
-    def record_command(self, command: IncomingCommand) -> bool:
+    def record_command(self, command: IncomingCommand, *, workflow_url: str | None = None) -> bool:
         """Remember the command before it runs; False when the update was recorded already."""
         cur = self._conn.execute(
-            "INSERT OR IGNORE INTO commands (update_id, chat_id, message_id, text, received_at)"
-            " VALUES (?, ?, ?, ?, ?)",
+            "INSERT OR IGNORE INTO commands (update_id, chat_id, message_id, text, received_at,"
+            " incoming_json, workflow_url) VALUES (?, ?, ?, ?, ?, ?, ?)",
             (
                 command.update_id,
                 command.chat_id,
                 command.message_id,
                 command.text,
                 command.received_at.isoformat(),
+                command.model_dump_json(),
+                workflow_url,
             ),
         )
         return bool(cur.rowcount)
 
     def command_state(self, update_id: int) -> CommandState | None:
         row = self._conn.execute(
-            "SELECT received_at, executed_at, handled_at, reply FROM commands WHERE update_id = ?",
+            "SELECT * FROM commands WHERE update_id = ?",
             (update_id,),
         ).fetchone()
         if row is None:
             return None
+        return self._row_to_command(row)
+
+    def pending_command_work(self) -> list[CommandState]:
+        return [
+            self._row_to_command(row)
+            for row in self._conn.execute(
+                "SELECT * FROM commands WHERE work_json IS NOT NULL OR final_answer_pending = 1"
+                " ORDER BY update_id"
+            )
+        ]
+
+    @staticmethod
+    def _row_to_command(row: sqlite3.Row) -> CommandState:
+        incoming = (
+            IncomingCommand.model_validate_json(row["incoming_json"])
+            if row["incoming_json"] is not None
+            else IncomingCommand(
+                update_id=row["update_id"],
+                chat_id=row["chat_id"],
+                message_id=row["message_id"],
+                text=row["text"],
+                received_at=datetime.fromisoformat(row["received_at"]),
+            )
+        )
         return CommandState(
             received_at=_parse_dt(row["received_at"]),
             executed_at=_parse_dt(row["executed_at"]),
             handled_at=_parse_dt(row["handled_at"]),
             reply=row["reply"],
+            incoming=incoming,
+            workflow_url=row["workflow_url"],
+            work=CommandWork.model_validate_json(row["work_json"]) if row["work_json"] else None,
+            completed_work=CommandWork.model_validate_json(row["completed_work_json"])
+            if row["completed_work_json"]
+            else None,
+            rendered_reply=row["rendered_reply"],
+            failed=bool(row["failed"]),
+            final_answer_pending=bool(row["final_answer_pending"]),
         )
 
-    def mark_command_executed(self, update_id: int, *, outcome: str, at: datetime) -> None:
+    def mark_command_executed(
+        self,
+        update_id: int,
+        *,
+        outcome: str,
+        at: datetime,
+        work: CommandWork | None = None,
+        rendered_reply: str | None = None,
+        failed: bool = False,
+        final_answer_pending: bool = False,
+    ) -> None:
         self._conn.execute(
-            "UPDATE commands SET executed_at = ?, reply = ? WHERE update_id = ?",
-            (at.isoformat(), outcome, update_id),
+            "UPDATE commands SET executed_at = COALESCE(executed_at, ?), reply = ?, work_json = ?,"
+            " completed_work_json = CASE WHEN ? THEN work_json ELSE completed_work_json END,"
+            " rendered_reply = ?, failed = ?, final_answer_pending = ? WHERE update_id = ?",
+            (
+                at.isoformat(),
+                outcome,
+                work.model_dump_json() if work else None,
+                final_answer_pending,
+                rendered_reply,
+                failed,
+                final_answer_pending,
+                update_id,
+            ),
         )
 
     def mark_command_handled(self, update_id: int, *, reply: str, at: datetime) -> None:
         self._conn.execute(
-            "UPDATE commands SET handled_at = ?, reply = ? WHERE update_id = ?",
+            "UPDATE commands SET handled_at = ?, reply = ?, final_answer_pending = 0"
+            " WHERE update_id = ?",
             (at.isoformat(), reply, update_id),
         )
 

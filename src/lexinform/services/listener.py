@@ -12,8 +12,16 @@ import time
 from collections.abc import Callable
 
 from lexinform.errors import ServiceUnavailableError
-from lexinform.models import DISPATCHED, ChannelPost, Command, IncomingCommand, parse_command
-from lexinform.ports import CommandAcknowledger, InboxWriter, UpdatesSource, WorkflowStarter
+from lexinform.models import (
+    DISPATCHED,
+    ChannelPost,
+    Command,
+    CommandName,
+    IncomingCommand,
+    parse_command,
+)
+from lexinform.models.commands import command_help
+from lexinform.ports import CommandAcknowledger, InboxWriter, UpdatesSource
 
 log = logging.getLogger(__name__)
 
@@ -25,8 +33,8 @@ class CommandListener:
         writer: InboxWriter | None,
         acknowledger: CommandAcknowledger | None,
         *,
-        starter: WorkflowStarter | None = None,
         channel_id: str,
+        callback_admin: Callable[[int, int], bool] | None = None,
         poll_timeout: int = 50,
         retry_delay: float = 15.0,
         max_retry_delay: float = 600.0,
@@ -38,9 +46,9 @@ class CommandListener:
         """
         self._updates = updates
         self._writer = writer
-        self._starter = starter
         self._ack = acknowledger
         self._channel = channel_id
+        self._callback_admin = callback_admin
         self._poll_timeout = poll_timeout
         self._retry_delay = retry_delay
         self._max_retry_delay = max_retry_delay
@@ -62,19 +70,17 @@ class CommandListener:
 
     def _fetch_posts(self, timeout: int | None) -> list[ChannelPost]:
         wait = self._poll_timeout if timeout is None else timeout
-        return self._updates.get_updates(offset=self._offset, timeout=wait)
+        offset = self._offset if self._writer is not None else None
+        return self._updates.get_updates(offset=offset, timeout=wait)
 
     def _handle_posts(self, posts: list[ChannelPost]) -> tuple[int, bool]:
         """Stop before confirming an update whose command could not be filed."""
+        self.filed.clear()
         filed = 0
         for post in posts:
             command = self._command_in(post)
             if command is not None:
-                handled = (
-                    self._start_run(post, command)
-                    if command.name in DISPATCHED
-                    else self._file(post)
-                )
+                handled = self._file(post, command)
                 if not handled:
                     return filed, False
                 filed += 1
@@ -136,47 +142,6 @@ class CommandListener:
             return None
         return parse_command(post.text) if post.text is not None else None
 
-    def _start_run(self, post: ChannelPost, command: Command) -> bool:
-        """A command that *is* a run is not filed: `/run`, and the four phases a run is made of.
-
-        The relay asks GitHub to start the workflow with the inputs the operator named, and says
-        so under the command. True when the offset may move: a misspelled option is answered and
-        passed over — leaving it unhandled would make Telegram deliver it again for ever — while
-        an outage is not, the command being worth trying again with nothing started.
-        """
-        acted = post.as_command()
-        if command.error is not None:
-            log.info("update %d: %s", post.update_id, command.error)
-            self._say(lambda ack: ack.started(acted, command.error or ""))
-            self.filed.append(post)
-            return True
-        if self._starter is None:
-            log.info("dry run: would start the workflow with %s", command.inputs or "no inputs")
-            self.filed.append(post)
-            return True
-        acted = self._acknowledge(post)
-        inputs = dict(command.inputs)
-        if acted.acknowledgement_id is not None:
-            inputs["log_message_id"] = str(acted.acknowledgement_id)
-        named = ", ".join(f"{k}={v}" for k, v in command.inputs.items()) or "no inputs"
-        where = self._starter.workflow_url
-        self._say(lambda ack: ack.started(acted, f"{command.name} started ({named})", url=where))
-        try:
-            self._starter.start_run(inputs)
-        except ServiceUnavailableError as exc:
-            log.warning("update %d: the run was not started: %s", post.update_id, exc.describe())
-            self._say(lambda ack: ack.started(acted, "dispatch unavailable; relay will retry"))
-            return False
-        except Exception as exc:
-            log.exception("update %d: the run was not started: %s", post.update_id, exc)
-            refused = f"the run was not started: {exc}"
-            self._say(lambda ack: ack.started(acted, refused))
-            self.filed.append(post)
-            return True
-        self.filed.append(post)
-        log.info("update %d started the workflow (%s)", post.update_id, named)
-        return True
-
     def _say(self, tell: Callable[[CommandAcknowledger], None]) -> None:
         """The acknowledgement is a courtesy: the run is started either way."""
         if self._ack is None:
@@ -186,7 +151,7 @@ class CommandListener:
         except Exception as exc:  # noqa: BLE001 — a channel that is down changes nothing here
             log.warning("could not answer in the channel: %s", exc)
 
-    def _file(self, post: ChannelPost) -> bool:
+    def _file(self, post: ChannelPost, parsed: Command) -> bool:
         """Put one command in the inbox; True when it is safely there and the offset may move.
 
         The acknowledgement in the channel is a courtesy: the command is filed either way.
@@ -196,7 +161,25 @@ class CommandListener:
             log.info("dry run: would file update %d: %s", post.update_id, post.text)
             self.filed.append(post)
             return True
-        command = self._acknowledge(post)
+        callback_id = post.callback_id
+        if (
+            callback_id is not None
+            and self._callback_admin is not None
+            and (post.actor_id is None or not self._callback_admin(post.chat_id, post.actor_id))
+        ):
+            self._say(lambda ack: ack.pressed(callback_id, "Команда доступна администраторам."))
+            return True
+        if parsed.error is not None or parsed.name is CommandName.HELP:
+            note = parsed.error or command_help(parsed.help_topic, all_commands=parsed.help_all)
+            if parsed.error is not None:
+                note += "\n" + command_help(parsed.name).splitlines()[0]
+            self._say(lambda ack: ack.started(command, note))
+            if callback_id is not None:
+                self._say(lambda ack: ack.pressed(callback_id, "Ошибка команды"))
+            return True
+        command = self._acknowledge(post).model_copy(
+            update={"run_requested": parsed.name in DISPATCHED}
+        )
         try:
             self._writer.put(command)
         except ServiceUnavailableError as exc:
@@ -207,6 +190,8 @@ class CommandListener:
             return False
         self.filed.append(post)
         log.info("filed update %d: %s", post.update_id, post.text)
+        if post.callback_id is None:
+            self._say(lambda ack: ack.saved(command))
         if self._ack is not None:
             try:
                 if post.callback_id is not None:

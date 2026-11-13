@@ -170,6 +170,7 @@ service built once) → `cli.py` (typer).
   told; opinions are not.
 - Operator commands come from any admin of the technical channel through a relay on the owner's
   mikrus VPS (384 MB: a `getUpdates` loop, not the bot) into the `inbox` branch and are executed by
-  GitHub Actions, so the state branch stays the only DB writer; every CLI subcommand is a command.
+  GitHub Actions, so the state branch stays the only DB writer. The operator catalog selects
+  which commands are available in Telegram.
 - Weekly digest: one post (Sunday, Warsaw), drafted with a publish button, never sent unread, costs
   nothing; a quiet week is still told.

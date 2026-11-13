@@ -332,7 +332,7 @@ def test_republish_refuses_a_bill_without_a_relevant_analysis() -> None:
     assert w.publisher.new_bills == []
 
 
-def test_help_unknown_commands_and_missing_references_get_the_command_list() -> None:
+def test_help_and_errors_show_the_relevant_usage() -> None:
     w = World()
     w.command("/help")
     w.command("/delete 3039")
@@ -344,12 +344,10 @@ def test_help_unknown_commands_and_missing_references_get_the_command_list() -> 
     statuses = [o.status for _, o in w.replier.replies]
     notes = [o.note for _, o in w.replier.replies]
     assert statuses == [OutcomeStatus.HELP] * 4
-    assert notes == [
-        "",
-        "unknown command /delete",
-        "/analyze needs a bill number or a link",
-        "not a command",
-    ]
+    assert "/help all" in notes[0] and "/republish" not in notes[0]
+    assert "unknown command /delete" in notes[1] and "/help" in notes[1]
+    assert "/analyze BILL" in notes[2] and "/republish" not in notes[2]
+    assert notes[3] == "not a command"
     assert report.commands_failed == 0
 
 
@@ -991,7 +989,7 @@ def test_find_names_the_bills_whose_title_carries_the_words() -> None:
     (_, outcome), *_ = w.replier.replies
     assert outcome.status is OutcomeStatus.FOUND
     assert [b.number for b in outcome.found] == ["3039"]
-    assert outcome.note == "1 match(es) for 'cudzoziemcach'"
+    assert outcome.note == "Страница 1."
 
 
 def test_find_answers_a_miss_without_an_error() -> None:
@@ -1143,7 +1141,7 @@ def test_runs_answers_what_each_recorded_run_did() -> None:
     (_, outcome), *_ = w.replier.replies
     assert outcome.status is OutcomeStatus.LISTED
     assert [report.published for report in outcome.runs] == [1]
-    assert outcome.note == "1 run(s) in 7 days"
+    assert outcome.note == "1 run(s) in 7 days. Страница 1."
 
 
 def test_runs_hides_idle_runs_but_all_includes_them() -> None:
@@ -1248,7 +1246,7 @@ def test_a_phase_that_reaches_the_inbox_is_answered_and_not_obeyed() -> None:
 
     (_, outcome), *_ = w.replier.replies
     assert outcome.status is OutcomeStatus.HELP
-    assert "/scan is the relay's own command" in outcome.note
+    assert "/scan:" in outcome.note and "через реле" in outcome.note
 
 
 def test_preview_sends_the_card_to_the_chat_it_names_and_records_nothing() -> None:

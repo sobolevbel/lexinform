@@ -17,6 +17,7 @@ from lexinform.models import (
     Attachment,
     Bill,
     CommandOutcome,
+    CommandWork,
     DeliveryPlan,
     DigestItemMeta,
     OutcomeStatus,
@@ -333,11 +334,11 @@ class AmendmentsService:
             *self._repo.list_submitting_batch_intents(),
         ):
             if self._targets(intent.meta, publication_id):
-                return Waiting(intent.created_at)
+                return Waiting(intent.created_at, batch_key=intent.request.custom_id)
         for batch in self._repo.list_open_llm_batches():
             for item in self._repo.list_llm_batch_items(batch.batch_id):
                 if item.consumed_at is None and self._targets(item.meta, publication_id):
-                    return Waiting(batch.submitted_at)
+                    return Waiting(batch.submitted_at, batch_key=item.custom_id)
         return None
 
     @staticmethod
@@ -353,6 +354,13 @@ class AmendmentsService:
         return CommandOutcome(
             status=OutcomeStatus.QUEUED,
             bill=bill,
+            work=CommandWork(
+                kind="amendments",
+                term=bill.term,
+                number=bill.number,
+                publication_id=publication_id,
+                batch_key=waiting.batch_key,
+            ),
             note=f"Поправки для публикации {publication_id} "
             f"ожидают batch с {waiting.since.isoformat()}. "
             "После получения результата бот обновит прежнее сообщение.",
@@ -370,6 +378,14 @@ class AmendmentsService:
             if publication.status is PublicationStatus.SENT
             else OutcomeStatus.QUEUED,
             bill=bill,
+            work=CommandWork(
+                kind="delivery",
+                term=bill.term,
+                number=bill.number,
+                publication_id=publication.id,
+            )
+            if publication.status in (PublicationStatus.QUEUED, PublicationStatus.PENDING)
+            else None,
             note=f"Исправление поправок: {publication.status.value}. "
             f"Доставка: /delivery {publication.id}. "
             "Повторный вызов сохраняет существующий результат; force запрашивает новый разбор.",

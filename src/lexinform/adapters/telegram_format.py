@@ -125,67 +125,6 @@ ELLIPSIS = "…"
 QUOTED_LINE_CHARS = 300  # Telegram takes 4096 characters in a command, and echoes them back
 QUARTERS = {1: "I", 2: "II", 3: "III", 4: "IV"}
 
-# What the technical channel accepts (English, like the run report; the operator's language).
-COMMAND_HELP = (
-    "<b>one bill</b> (a druk number, RPW/…, RCL/…, UC164, RM-… or a link to sejm.gov.pl /"
-    " api.sejm.gov.pl / legislacja.rcl.gov.pl):\n"
-    "• <code>/analyze BILL [force] [publish] [json]</code> — fetch, prefilter, analyse; post the"
-    " card when relevant and important enough, then follow it. <code>force</code> gets past the"
-    " prefilter, a previous analysis and the cost guard, <code>publish</code> past the score"
-    " threshold, <code>json</code> adds the raw verdict\n"
-    "• <code>/explain BILL</code> — разобрать независимо от релевантности через batch;"
-    " повтор команды покажет готовый разбор, без публикации читателям\n"
-    "• <code>/show BILL</code> — what the database knows\n"
-    "• <code>/preview BILL [to=CHAT]</code> — the card as the channel would get it, rendered"
-    " here only, or sent to a test chat\n"
-    "• <code>/refresh BILL</code> — check this bill now: stages, act, sittings, its card\n"
-    "• <code>/amendments BILL [publication=ID] [force]</code> — повторно разобрать поправки"
-    " через batch и обновить прежнее сообщение\n"
-    "• <code>/skip BILL</code> — silence a false positive (no analysis, no card)\n"
-    "• <code>/unskip BILL</code> — restore saved analysis, or queue if none exists\n"
-    "• <code>/reset BILL [to=STATUS]</code> — any status with a clean budget of attempts"
-    " (default <code>analysis_pending</code>)\n"
-    "• <code>/observe BILL mode=full|metadata|off|auto</code> — how a bill with no card is"
-    " watched: <code>metadata</code> asks the model nothing, <code>off</code> stops reading it,"
-    " <code>auto</code> hands it back to the rule\n"
-    "• <code>/republish BILL</code> — post the card again\n"
-    "• <code>/forget BILL</code> — drop the card the channel remembers, post nothing"
-    " (a card deleted by hand)\n"
-    "• <code>/link ENTRY to=DRUK</code> — an RCL project or RPW entry the Sejm printed as DRUK:"
-    " the druk continues its thread (a druk already carded keeps its own card)\n"
-    "\n<b>the database</b>, answered here and now:\n"
-    "• <code>/find WORDS</code> — bills whose title or number contains the words\n"
-    "• <code>/name BILL [NAME | REASON]</code> — inspect or change the stable editorial name\n"
-    "• <code>/attention BILL [important|urgent until=DATE | REASON]</code> — inspect or raise"
-    " event priority with an expiry date\n"
-    "• <code>/status</code> — the queues, what is stuck, what the last runs cost\n"
-    "• <code>/delivery ID [history [PAGE] | confirm MESSAGE_ID | retry | dismiss REASON]</code>"
-    " — inspect or"
-    " resolve an unknown delivery after checking the channel\n"
-    "• <code>/groupedit preview</code> — inspect a proposed grouped referral date correction\n"
-    "• <code>/runs [days=N] [all]</code> — non-empty runs; all includes empty runs\n"
-    "• <code>/cost [days=N] [top=N]</code> — the model spend, per model, run and bill\n"
-    "• <code>/digest [ref=2026-W38] [publish]</code> — draft the week's digest here, or send"
-    " it to the channel; the draft's button is the same command\n"
-    "\n<b>a run</b> — these start the workflow instead of waiting for it:\n"
-    "• <code>/run [since=DATE] [dry] [reprefilter=N] [text_skipped] [index_rcl_since=DATE]"
-    " [no_publish] [no_track] [no_rcl] [full_track] [max_publish=N] [max_analyze=N]"
-    " [min_score=N]</code>\n"
-    "• <code>/scan [since=DATE]</code> — discover and keyword-filter only: no model, no posts\n"
-    "• <code>/track [dry]</code> — the tracking phase over every followed bill\n"
-    "• <code>/collect-batches [dry]</code> — write down a finished batch, then analyse/publish"
-    "/track what that frees\n"
-    "• <code>/drain-deliveries [dry]</code> — release saved deliveries without scanning or models\n"
-    "• <code>/reprefilter [limit=N] [text_skipped]</code> — scan the texts of skipped bills\n"
-    "• <code>/index-rcl-numbers since=DATE</code> — read the RCL listing for the wykaz join\n"
-    "\n• <code>/help</code>. <code>listen</code>, <code>commands</code>, <code>db</code> and"
-    " <code>poll-batches</code> are not commands: they are this relay, this phase, the state"
-    " branch around every run and the mikrus timer that asks for a collect run early. Nor are"
-    " <code>batch-intents</code>, <code>attach-batch-intents</code> and"
-    " <code>recover-batch-intent</code>: they repair the state database after checking the"
-    " provider by hand."
-)
-
 # The commands whose answer is a dossier and not a verdict: they get the status, the last stage
 # and the consultation window as well as the bill's title and score.
 FULL_FACTS = frozenset({OutcomeStatus.SHOWN, OutcomeStatus.REFRESHED})
@@ -2092,8 +2031,7 @@ class MessageFormatter:
         return f"{ICON['support']} {esc(lb.digest_support)} " + " · ".join(links)
 
     def command_reply(self, command: IncomingCommand, outcome: CommandOutcome) -> RenderedMessage:
-        """The answer to an operator command, English like the run report: what the bot knows
-        about the bill, the verdict, and what happened to the card."""
+        """Render the operator reply under the original Telegram message."""
         icon = {
             OutcomeStatus.ANALYSED: "🤖",
             OutcomeStatus.SKIPPED: "⏭",
@@ -2115,13 +2053,38 @@ class MessageFormatter:
             OutcomeStatus.HELP: "🛠",
             OutcomeStatus.EXECUTED_EARLIER: "🕗",
             OutcomeStatus.DIGESTED: "🗞",
-        }.get(outcome.status, "❌")
+        }.get(outcome.status, "❌" if not outcome.ok else "📋")
         quoted = esc(_clip(command.text, QUOTED_LINE_CHARS))
-        head = f"{icon} <b>{esc(outcome.status)}</b> · <code>{quoted}</code>"
+        title = {
+            OutcomeStatus.ANALYSED: "Анализ",
+            OutcomeStatus.SKIPPED: "Пропущено",
+            OutcomeStatus.SHOWN: "Сведения",
+            OutcomeStatus.SILENCED: "Исключён из анализа",
+            OutcomeStatus.QUEUED: "Ожидает",
+            OutcomeStatus.RESET: "Попытки сброшены",
+            OutcomeStatus.OBSERVED: "Наблюдение",
+            OutcomeStatus.REPUBLISHED: "Опубликовано повторно",
+            OutcomeStatus.FORGOTTEN: "Карточка отвязана",
+            OutcomeStatus.LINKED: "Связь с druk",
+            OutcomeStatus.PREVIEWED: "Предпросмотр",
+            OutcomeStatus.REFRESHED: "Результат проверки",
+            OutcomeStatus.FOUND: "Поиск",
+            OutcomeStatus.REPORTED: "Состояние",
+            OutcomeStatus.DELIVERY: "Доставка",
+            OutcomeStatus.LISTED: "Прогоны",
+            OutcomeStatus.SPENT: "Расходы",
+            OutcomeStatus.HELP: "Справка",
+            OutcomeStatus.EXECUTED_EARLIER: "Результат прежнего прогона",
+            OutcomeStatus.DIGESTED: "Дайджест",
+            OutcomeStatus.NOT_FOUND: "Не найдено",
+            OutcomeStatus.ERROR: "Ошибка",
+        }[outcome.status]
+        head = f"{icon} <b>{title}</b> · <code>{quoted}</code>"
         if outcome.status is OutcomeStatus.HELP:
-            body = [esc(outcome.note), COMMAND_HELP] if outcome.note else [COMMAND_HELP]
-            return RenderedMessage(text=self._assemble([head, *body]))
-        blocks = [head]
+            return RenderedMessage(text=self._assemble([head, esc(outcome.note)]))
+        blocks = [head, f"<code>/request {command.update_id}</code>"]
+        for run_url in outcome.request_links:
+            blocks.append(f'<a href="{html.escape(run_url, quote=True)}">Прогон GitHub Actions</a>')
         bill = outcome.bill
         if bill is not None:
             blocks.append(
@@ -2132,8 +2095,8 @@ class MessageFormatter:
                 )
             )
         if outcome.message_id is not None:
-            posted = "card posted" if bill is not None else "posted"
-            label = f"message {outcome.message_id}"
+            posted = "Карточка" if bill is not None else "Публикация"
+            label = f"сообщение {outcome.message_id}"
             url = self._post_url(outcome.message_id)
             if url:
                 label = f'<a href="{html.escape(url, quote=True)}">{label}</a>'
@@ -2224,9 +2187,7 @@ class MessageFormatter:
             preview = self.delivery_preview(pub)
             return ["\n".join(lines), "<b>Saved snapshot preview</b>\n" + preview]
         if outcome.status is OutcomeStatus.PREVIEWED and bill is not None:
-            if outcome.joint_primary is not None:
-                return [self.joint_bill(bill, outcome.joint_primary, outcome.print_info).text]
-            return [self.new_bill(bill, outcome.print_info).text]
+            return [self.preview_card(outcome)]
         if outcome.as_json and bill is not None and bill.analysis is not None:
             return [f"<pre>{esc(bill.analysis.model_dump_json(indent=2))}</pre>"]
         if outcome.found:
@@ -2238,6 +2199,16 @@ class MessageFormatter:
         if outcome.spend is not None:
             return [self._spend_body(outcome.spend)]
         return []
+
+    def preview_card(self, outcome: CommandOutcome) -> str:
+        bill = outcome.bill
+        if bill is None:
+            return outcome.note
+        if outcome.explanation is not None:
+            return self.explanation(bill, outcome.explanation).text
+        if outcome.joint_primary is not None:
+            return self.joint_bill(bill, outcome.joint_primary, outcome.print_info).text
+        return self.new_bill(bill, outcome.print_info).text
 
     def explanation(self, bill: Bill, record: AnalysisRecord) -> RenderedMessage:
         a, lb = record.analysis, self._labels

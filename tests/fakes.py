@@ -6,7 +6,7 @@ gateway and `outage_on` on the publisher raise the phase-fatal `ServiceUnavailab
 `fail_on` raises an ordinary per-bill error.
 """
 
-from collections.abc import Callable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 
@@ -1186,6 +1186,9 @@ class FakeReplier:
         self.outage = outage
         self.outage_after = outage_after
 
+    def render(self, command: IncomingCommand, outcome: CommandOutcome) -> str | None:
+        return outcome.rendered_reply
+
     def reply(self, command: IncomingCommand, outcome: CommandOutcome) -> None:
         if self.outage or (
             self.outage_after is not None and len(self.replies) >= self.outage_after
@@ -1215,7 +1218,6 @@ class FakeInboxWriter:
         """`error` is raised for every command instead of filing it (or, for `/run`, instead of
         starting the workflow: in production both go through the one GitHub client)."""
         self.filed: list[IncomingCommand] = []
-        self.started: list[dict[str, str]] = []
         self.error = error
 
     def put(self, command: IncomingCommand) -> None:
@@ -1223,33 +1225,27 @@ class FakeInboxWriter:
             raise self.error
         self.filed.append(command)
 
-    @property
-    def workflow_url(self) -> str:
-        return "https://github.com/owner/repo/actions/workflows/daily.yml"
-
-    def start_run(self, inputs: Mapping[str, str]) -> str:
-        if self.error is not None:
-            raise self.error
-        self.started.append(dict(inputs))
-        return "https://github.com/owner/repo/actions/workflows/daily.yml"
-
 
 class FakeAcknowledger:
     def __init__(self) -> None:
         self.acknowledged: list[int] = []
         self.started_notes: list[str] = []
         self.presses: list[str] = []
+        self.saved_ids: list[int] = []
 
     def queued(self, command: IncomingCommand) -> int:
         self.acknowledged.append(command.update_id)
         return 1000 + command.update_id
+
+    def saved(self, command: IncomingCommand) -> None:
+        self.saved_ids.append(command.update_id)
 
     def started(self, command: IncomingCommand, note: str, *, url: str | None = None) -> None:
         if command.acknowledgement_id is None:
             self.acknowledged.append(command.update_id)
         self.started_notes.append(note)
 
-    def pressed(self, callback_id: str) -> None:
+    def pressed(self, callback_id: str, text: str | None = None) -> None:
         self.presses.append(callback_id)
 
 

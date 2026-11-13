@@ -1,12 +1,4 @@
-"""The inbox branch written from outside git: one file per command through the Contents API, which
-commits and pushes in one call, then a `repository_dispatch` to start the workflow (a push of the
-inbox branch would start nothing — GitHub reads a push event's workflow from the pushed branch).
-The kick is a courtesy: an unkicked command is answered by the next scheduled run.
-
-`/run` goes out as a `workflow_dispatch` instead, being the run itself and not a command a run
-executes. That endpoint needs **Actions: read and write**, one scope more, and says so when it is
-missing: a 403 there is about the token and not the workflow.
-"""
+"""File commands durably in the inbox branch and signal the shared Actions job."""
 
 import base64
 import logging
@@ -49,8 +41,6 @@ def _asks_for_a_sha(response: httpx.Response) -> bool:
 class GitHubInboxWriter:
     MAX_ATTEMPTS = 4
     DISPATCH_EVENT = "inbox"  # `on: repository_dispatch: types: [inbox]` in daily.yml
-    WORKFLOW = "daily.yml"
-    WORKFLOW_REF = "main"  # where the workflow and its inputs live
 
     def __init__(
         self,
@@ -92,46 +82,12 @@ class GitHubInboxWriter:
                 "inbox: filed update %d but could not start the run: %s", command.update_id, exc
             )
 
-    @property
-    def workflow_url(self) -> str:
-        return f"https://github.com/{self._repo}/actions/workflows/{self.WORKFLOW}"
-
-    def start_run(self, inputs: Mapping[str, str]) -> str:
-        """Start `daily.yml` with these inputs and answer with the link to its runs.
-
-        Unlike the kick after a filed command, a failure here is the operator's business: there
-        is no file waiting for the next scheduled run, so nothing happens unless this call does.
-        """
-        payload = {"ref": self.WORKFLOW_REF, "inputs": dict(inputs)}
-        url = f"/repos/{self._repo}/actions/workflows/{self.WORKFLOW}/dispatches"
-        try:
-            response = self._client.post(url, json=payload)
-        except httpx.TransportError as exc:
-            raise GitHubUnavailableError(f"workflow dispatch: {type(exc).__name__}") from exc
-        if response.status_code == 204:
-            log.info("workflow %s started with %s", self.WORKFLOW, dict(inputs) or "no inputs")
-            return self.workflow_url
-        if response.status_code >= 500:
-            raise GitHubUnavailableError(f"workflow dispatch: HTTP {response.status_code}")
-        if response.status_code in (403, 404):
-            # 404 is also what GitHub answers a token that may not see Actions at all, so both
-            # statuses name the scope: the operator cannot tell them apart from the reply.
-            raise GitHubError(
-                f"workflow dispatch: HTTP {response.status_code} — the token needs"
-                f" Actions: read and write on {self._repo}"
-            )
-        raise GitHubError(f"workflow dispatch: HTTP {response.status_code}: {response.text[:200]}")
-
     def _kick(self, command: IncomingCommand) -> None:
-        self.dispatch(
-            self.DISPATCH_EVENT, {"update_id": command.update_id, "text": command.text[:200]}
-        )
+        self.dispatch(self.DISPATCH_EVENT, {"update_id": command.update_id})
         log.info("inbox: run requested for update %d", command.update_id)
 
     def dispatch(self, event_type: str, client_payload: Mapping[str, Any] | None = None) -> None:
-        """A bare `repository_dispatch`: the Contents-scoped token is enough for it, unlike
-        `start_run`'s `workflow_dispatch`. `event_type` is one of `daily.yml`'s
-        `repository_dispatch: types:`."""
+        """Wake the workflow with the Contents-scoped relay token."""
         payload = {"event_type": event_type, "client_payload": dict(client_payload or {})}
         try:
             response = self._client.post(f"/repos/{self._repo}/dispatches", json=payload)

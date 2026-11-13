@@ -1,6 +1,6 @@
 """Interfaces (typing.Protocol) that services depend on. Adapters implement them."""
 
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Iterator, Sequence
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from datetime import date, datetime
@@ -35,6 +35,7 @@ from lexinform.models import (
     CheckAspect,
     CommandOutcome,
     CommandState,
+    CommandWork,
     Committee,
     CommitteeSitting,
     ComputationResult,
@@ -702,6 +703,8 @@ class CommandInbox(Protocol):
 class OperatorReplier(Protocol):
     """Answers a command where it was given (under the message in the log channel)."""
 
+    def render(self, command: IncomingCommand, outcome: CommandOutcome) -> str | None: ...
+
     def reply(self, command: IncomingCommand, outcome: CommandOutcome) -> None: ...
 
 
@@ -719,28 +722,18 @@ class InboxWriter(Protocol):
     def put(self, command: IncomingCommand) -> None: ...
 
 
-class WorkflowStarter(Protocol):
-    """Starts the daily workflow with the inputs `/run` names; answers with a link to it.
-
-    Separate from `InboxWriter` because it is the one command that is not filed: `/run` is the
-    run, so there is nothing for a run to execute."""
-
-    @property
-    def workflow_url(self) -> str: ...
-
-    def start_run(self, inputs: Mapping[str, str]) -> str: ...
-
-
 class CommandAcknowledger(Protocol):
     """Tells the operator the command was taken (a reply under it); best effort."""
 
     def queued(self, command: IncomingCommand) -> int: ...
 
+    def saved(self, command: IncomingCommand) -> None: ...
+
     def started(self, command: IncomingCommand, note: str, *, url: str | None = None) -> None:
         """A `/run` the relay has already acted on: what it started and where to watch it."""
         ...
 
-    def pressed(self, callback_id: str) -> None:
+    def pressed(self, callback_id: str, text: str | None = None) -> None:
         """Stop a pressed inline button spinning; what it asked for is filed like any command."""
         ...
 
@@ -821,6 +814,8 @@ class BillRepository(Protocol):
     def atomic(self) -> AbstractContextManager[None]: ...
 
     def load_analysis_memo(self) -> dict[str, str]: ...
+
+    def analysis_memo_record(self, key: str) -> str | None: ...
 
     def import_legacy_results(self, imported: LegacyResultImport) -> bool: ...
 
@@ -1304,7 +1299,7 @@ class BillRepository(Protocol):
         retry on its own, so the operator is who has to notice it (BUGS.md #4)."""
         ...
 
-    def search(self, text: str, *, limit: int) -> list[Bill]:
+    def search(self, text: str, *, limit: int, offset: int = 0) -> list[Bill]:
         """Bills whose title or number contains `text`, newest change first."""
         ...
 
@@ -1642,7 +1637,7 @@ class BillRepository(Protocol):
         """Analysed bills by the input tokens of their analysis, largest first."""
         ...
 
-    def record_command(self, command: IncomingCommand) -> bool:
+    def record_command(self, command: IncomingCommand, *, workflow_url: str | None = None) -> bool:
         """Remember the command before it runs; False when the update was recorded already."""
         ...
 
@@ -1650,7 +1645,19 @@ class BillRepository(Protocol):
         """What earlier runs did with the command; None when the update is unknown."""
         ...
 
-    def mark_command_executed(self, update_id: int, *, outcome: str, at: datetime) -> None:
+    def pending_command_work(self) -> list[CommandState]: ...
+
+    def mark_command_executed(
+        self,
+        update_id: int,
+        *,
+        outcome: str,
+        at: datetime,
+        work: CommandWork | None = None,
+        rendered_reply: str | None = None,
+        failed: bool = False,
+        final_answer_pending: bool = False,
+    ) -> None:
         """The command ran and its side effects are in the database; the answer may still fail."""
         ...
 

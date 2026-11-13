@@ -47,39 +47,22 @@ Command reference and the relay: `docs/operator-commands.md`.
 - **Parallelism only around the network.** `concurrency.fan_out` runs one network step for many
   items and never touches the repository; outcomes are consumed on the calling thread in input
   order, where every DB write happens. `workers=1` default (tests); `workers=4` must be identical.
-- **Every CLI command is a channel command**, except the machinery: `listen` (the relay),
-  `commands` (the phase answering the inbox), `db init|dump|restore`. `models.OPTIONS` is the whole
-  grammar (per option: bare flag or `key=value`, validation, what it becomes); options are checked
-  where written (never by the workflow, which reads `since` as free text), unknown ones are answered,
-  and `key=value` is an option only where the command knows the key (a Sejm link stays a link).
-  **`models.DISPATCHED`** — `/run`, `/scan`, `/track`, `/reprefilter`, `/index-rcl-numbers` — are
-  started by the relay as a `workflow_dispatch` of `daily.yml` on `main` with `command` (a `type:
-  choice` kept in step with the enum by a test) and `options` (checked values passed through the
-  environment, never interpolated). `dry_run` stays its own input (it also keeps the state branch
-  unpushed). Needs a token with **Actions: read and write** (filing needs only Contents); 403/404 is
-  reported as the missing scope. Reaching a run through the inbox, these are answered, not executed.
-  `/run reprefilter=N` ≠ `/reprefilter limit=N` (backfill then a whole run; the concurrency group
-  keeps one pending run). `/runs`, `/cost`, `/status` spend nothing; `/reset BILL to=STATUS`
-  generalises `/unskip`.
-- **Operator commands are recorded before they run; the relay confirms only what is filed.**
-  Commands reach a run as `{update_id}.json` in the `inbox` branch (`LEXINFORM_INBOX_DIR`); the
-  relay's event runs `lexinform commands`, every scheduled run does that phase first.
-  `CommandService` inserts the `commands` row (v13) before executing, sets `executed_at` (v14) when
-  side effects are done, answers (`OperatorReplier`), marks handled, deletes the file. A re-read file:
-  handled → deleted; recorded not handled → **not re-run**, answered with what the row knows (the
-  outcome, or that a run started it and did not finish). `/analyze` is idempotent; `/republish` is
-  not (the marks keep a second card away). `/forget` = `/republish` without the post (for a card
-  deleted by hand; Telegram's `message to edit not found` is only a warning). `/show`, `/preview`,
-  `/find`, `/status` never post or spend; `/preview` renders into the technical channel. `/refresh` =
-  tracking for one bill (`StatusTrackingService.check_bill`), leaving reminders to the scheduled run.
-  `/unskip` returns any skip to `analysis_pending` with a clean attempt budget, re-reading a skipped
-  RCL row's documents *before* clearing the status. A source or channel outage ends the phase,
-  leaving the file. The relay (`lexinform listen`, one `getUpdates` consumer, never a webhook) files
-  via the GitHub Contents API, answers "queued", then moves the offset; `--dry-run` confirms nothing.
-  The run is started by `repository_dispatch` (a push of `inbox` starts nothing — that branch has no
-  workflow); a lost event is drained by the next run. Manual `/analyze` follows the daily publish rule
-  (`publish` overrides; `force` bypasses prefilter, previous analysis and cost guard). Replies are
-  English (`MessageFormatter.command_reply`).
+- **Telegram exposes an explicit operator catalog** in `models.commands.COMMANDS`.
+  Argument and option validation is shared by the relay and runner. Help and syntax errors
+  are answered by the relay. Use bare flags and refuse conflicting values. A URL is a reference.
+- **Record every executable operator request before it runs.** The relay stores it by update ID in
+  the `inbox` branch and wakes the shared daily job by `repository_dispatch`. Phase requests
+  use `commands --run-requests` under the same state lock. Checkpoint the claim before execution,
+  the outcome before answering, and the handled receipt before deleting the file. A repeated
+  claim may deliver the saved answer or report an uncertain outcome; it cannot execute again.
+  Dry relay phase requests rehearse against an isolated copy and retain their journal receipt.
+- **Deferred command work is separate from delivery of the initial answer.** Preserve an explicit
+  `publish` override for the matching analysis generation, and identify explanations by their
+  exact batch and memo keys. A completed reply is saved before sending. Do not retry an uncertain
+  reader delivery through a command. `/queue` and `/request ID` expose the journal.
+- `/skip` and `/unskip` preserve existing cards. `/unskip` restores a saved analysis when possible.
+  `/reset` supports only retry and allowed skip transitions. Fetch missing RCL documents before
+  clearing a skip. `/refresh` checks one bill; reminders still belong to the scheduled run.
 - **Operator delivery-alert cursors** advance only after a successful notification, survive
   retention and never change delivery identities or resolve `unknown`.
 - **The weekly digest is never sent unread.** `services/digest.py`, its own phase after tracking;

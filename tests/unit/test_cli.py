@@ -259,7 +259,7 @@ def test_reset_puts_the_bill_back_with_a_clean_budget(db: Path) -> None:
 
     assert result.exit_code == 0, result.output
     assert "analyzed (attempts 2) -> analysis_pending" in result.output
-    assert _status(db) == (BillStatus.ANALYSIS_PENDING, 0, None)
+    assert _status(db) == (BillStatus.ANALYSIS_PENDING, 0, "reset by the operator (/reset)")
 
 
 def test_a_bill_of_an_older_term_is_still_found_after_the_sejm_moved_on(db: Path) -> None:
@@ -285,8 +285,8 @@ def test_observe_pins_a_mode_and_auto_gives_back_the_rules(db: Path) -> None:
     wrong = runner.invoke(app, ["observe", "3039", "--mode", "quiet", "-y"], env=_env(db))
 
     assert pinned.exit_code == 0, pinned.output
-    assert "3039: undecided -> off (operator)" in pinned.output
-    assert "3039: off (operator) -> metadata (not_relevant)" in auto.output
+    assert "was undecided, now off (operator)" in pinned.output
+    assert "was off (operator), now metadata (not_relevant)" in auto.output
     assert wrong.exit_code == 2
     repo = SqliteBillRepository(db)
     bill = repo.get(10, "3039")

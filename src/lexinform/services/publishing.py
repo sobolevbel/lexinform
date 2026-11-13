@@ -268,6 +268,11 @@ class PublishingService:
         """Drop what the channel remembers of the bill's card, both kinds, so that the next
         `publish_bill` decides again (the operator's `/republish`)."""
         card = self.card_of(bill)
+        if card is not None and card.status in (
+            PublicationStatus.PENDING,
+            PublicationStatus.UNKNOWN,
+        ):
+            raise ValueError(f"Resolve the original card delivery first: /delivery {card.id}")
         if card is not None and card.delivery is not None:
             unfinished = [
                 identity

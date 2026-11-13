@@ -38,7 +38,7 @@ from lexinform.models.grouped_stage_date import (
 )
 from lexinform.models.rcl import normalize_wykaz_number
 from lexinform.models.report import RunReport
-from lexinform.models.sejm import PrintInfo
+from lexinform.models.sejm import PrintInfo, ProcessSummary
 from lexinform.models.source_checks import AUTO_OBSERVATION, ObservationMode, SourceCheck
 from lexinform.saved_clock import ClockUnknown
 
@@ -60,6 +60,20 @@ class IncomingCommand(BaseModel):
     actor_id: int | None = None
     author_signature: str | None = None
     acknowledgement_id: int | None = None
+    run_requested: bool = False
+
+
+class CommandWork(BaseModel):
+    kind: Literal["analysis", "explanation", "amendments", "delivery", "refresh"]
+    term: int
+    number: str
+    generation: int | None = None
+    batch_key: str | None = None
+    memo_key: str | None = None
+    summary: ProcessSummary | None = None
+    publication_id: int | None = None
+    publish_below_threshold: bool = False
+    publish_allowed: bool = True
 
 
 class CommandState(BaseModel):
@@ -75,6 +89,13 @@ class CommandState(BaseModel):
     executed_at: dt.datetime | None = None
     handled_at: dt.datetime | None = None
     reply: str | None = None
+    incoming: IncomingCommand | None = None
+    workflow_url: str | None = None
+    work: CommandWork | None = None
+    completed_work: CommandWork | None = None
+    rendered_reply: str | None = None
+    failed: bool = False
+    final_answer_pending: bool = False
 
 
 class DeliveryResolution(BaseModel):
@@ -269,7 +290,13 @@ class ChannelPost(BaseModel):
         )
 
 
-CALLBACKS: dict[str, str] = {"digest": "/digest publish ref={}"}
+CALLBACKS: dict[str, str] = {
+    "digest": "/digest publish ref={}",
+    "show": "/show {}",
+    "preview": "/preview {}",
+    "explain": "/explain {}",
+    "delivery": "/delivery {}",
+}
 """What a pressed button stands for, by the prefix of its callback data: a button is a command
 the operator did not have to type, and it takes the same road as one that was."""
 
@@ -279,6 +306,12 @@ def command_for_callback(data: str) -> str | None:
     prefix, _, argument = data.partition(":")
     template = CALLBACKS.get(prefix)
     if template is None or not argument:
+        return None
+    if prefix == "delivery" and not _positive_id(argument):
+        return None
+    if prefix in ("show", "preview", "explain") and parse_reference(argument) is None:
+        return None
+    if prefix == "digest" and not re.fullmatch(r"[0-9]{4}-W[0-9]{2}", argument):
         return None
     return template.format(argument)
 
@@ -349,41 +382,11 @@ class CommandName(StrEnum):
     ATTENTION = "attention"
     DIGEST = "digest"
     HELP = "help"
+    QUEUE = "queue"
+    REQUEST = "request"
 
 
-NEEDS_REFERENCE = frozenset(
-    {
-        CommandName.ANALYZE,
-        CommandName.EXPLAIN,
-        CommandName.SHOW,
-        CommandName.SKIP,
-        CommandName.UNSKIP,
-        CommandName.RESET,
-        CommandName.OBSERVE,
-        CommandName.REPUBLISH,
-        CommandName.FORGET,
-        CommandName.LINK,
-        CommandName.PREVIEW,
-        CommandName.REFRESH,
-        CommandName.AMENDMENTS,
-    }
-)
-NEEDS_QUERY = frozenset({CommandName.FIND})
 MIN_QUERY_CHARS = 3
-
-DISPATCHED = frozenset(
-    {
-        CommandName.RUN,
-        CommandName.SCAN,
-        CommandName.TRACK,
-        CommandName.COLLECT_BATCHES,
-        CommandName.DRAIN_DELIVERIES,
-        CommandName.REPREFILTER,
-        CommandName.INDEX_RCL_NUMBERS,
-    }
-)
-"""The commands no run executes, because each *is* a run: the relay starts `daily.yml` on them
-instead of filing them, and an inbox file naming one is answered rather than obeyed."""
 
 _COMMAND_NAMES: dict[str, CommandName] = {name.value: name for name in CommandName} | {
     "index": CommandName.INDEX_RCL_NUMBERS
@@ -431,6 +434,7 @@ _SCAN_SINCE = Option("since", OptionKind.DATE, flag="--since")
 _LIMIT = Option("limit", OptionKind.COUNT, flag="--limit", low=1)
 _INCLUDE_TEXT_SKIPPED = Option("include_text_skipped", flag="--include-text-skipped")
 _DAYS = Option("days", OptionKind.COUNT, low=1, high=3650)
+_PAGE = Option("page", OptionKind.COUNT, low=1, high=10000)
 
 OPTIONS: dict[CommandName, dict[str, Option]] = {
     CommandName.RUN: {
@@ -465,6 +469,9 @@ OPTIONS: dict[CommandName, dict[str, Option]] = {
     CommandName.INDEX_RCL_NUMBERS: {"since": _SCAN_SINCE},
     CommandName.ANALYZE: {
         "force": Option("force"),
+        "recheck": Option("recheck"),
+        "reanalyze": Option("reanalyze"),
+        "allow_over_budget": Option("allow_over_budget"),
         "publish": Option("publish"),
         "json": Option("json"),
     },
@@ -476,7 +483,9 @@ OPTIONS: dict[CommandName, dict[str, Option]] = {
     CommandName.RESET: {"to": Option("to", OptionKind.STATUS)},
     CommandName.OBSERVE: {"mode": Option("mode", OptionKind.OBSERVATION)},
     CommandName.LINK: {"to": Option("to", OptionKind.PRINT)},
-    CommandName.RUNS: {"days": _DAYS, "all": Option("all")},
+    CommandName.RUNS: {"days": _DAYS, "all": Option("all"), "page": _PAGE},
+    CommandName.FIND: {"page": _PAGE},
+    CommandName.QUEUE: {"page": _PAGE},
     CommandName.COST: {"days": _DAYS, "top": Option("top", OptionKind.COUNT, high=50)},
     CommandName.DIGEST: {
         "ref": Option("ref", OptionKind.WEEK),
@@ -485,11 +494,199 @@ OPTIONS: dict[CommandName, dict[str, Option]] = {
     },
 }
 
-REQUIRED: dict[CommandName, str] = {
-    CommandName.INDEX_RCL_NUMBERS: "since",
-    CommandName.OBSERVE: "mode",
-    CommandName.LINK: "to",
+
+@dataclass(frozen=True)
+class CommandSpec:
+    usage: str
+    description: str
+    arguments: Literal["none", "bill", "query", "request", "editorial", "delivery", "help"] = "none"
+    lookup: Literal["record", "current", "load", "source"] = "record"
+    phase: bool = False
+    common: bool = False
+    required: str | None = None
+
+
+COMMANDS: dict[CommandName, CommandSpec] = {
+    CommandName.RUN: CommandSpec(
+        "[since=DATE] [dry] [reprefilter=N] [text_skipped] [index_rcl_since=DATE] "
+        "[no_publish] [no_track] [no_rcl] [full_track] "
+        "[max_publish=N] [max_analyze=N] [min_score=N]",
+        "Полный прогон. Возможны расходы и публикации. "
+        "dry сохраняет только журнал запроса и вывод прогона.",
+        phase=True,
+        common=True,
+    ),
+    CommandName.SCAN: CommandSpec(
+        "[since=DATE]",
+        "Обнаружить проекты и проверить ключевые слова. Без модели и публикаций.",
+        phase=True,
+    ),
+    CommandName.TRACK: CommandSpec(
+        "[dry]",
+        "Проверить все отслеживаемые проекты. Возможны расходы и обновления читателям.",
+        phase=True,
+    ),
+    CommandName.COLLECT_BATCHES: CommandSpec(
+        "[dry]", "Собрать batch и применить результаты, включая публикации.", phase=True
+    ),
+    CommandName.DRAIN_DELIVERIES: CommandSpec(
+        "[dry]",
+        "Отправить готовые доставки. Без чтения источников и новых запросов к модели.",
+        phase=True,
+    ),
+    CommandName.REPREFILTER: CommandSpec(
+        "[limit=N] [text_skipped]",
+        "Повторить проверку текстов. Прошедшие фильтр проекты могут попасть в анализ позже.",
+        phase=True,
+    ),
+    CommandName.INDEX_RCL_NUMBERS: CommandSpec(
+        "since=DATE",
+        "Обновить индекс номеров проектов RCL. Алиас /index.",
+        phase=True,
+        required="since",
+    ),
+    CommandName.ANALYZE: CommandSpec(
+        "BILL [recheck] [reanalyze] [allow_over_budget] [publish] [json]",
+        "Проверить и проанализировать проект. Карточка может уйти читателям. "
+        "recheck обходит фильтр, reanalyze повторяет анализ, allow_over_budget снимает лимит "
+        "проекта. Старый force сочетает все три действия. "
+        "publish разрешает карточку релевантного проекта ниже порога.",
+        "bill",
+        "load",
+        common=True,
+    ),
+    CommandName.EXPLAIN: CommandSpec(
+        "BILL",
+        "Запросить полный разбор через платный batch. Ответ придёт в технический канал.",
+        "bill",
+        "source",
+        common=True,
+    ),
+    CommandName.SHOW: CommandSpec(
+        "BILL", "Показать сохранённые сведения о проекте.", "bill", "current", common=True
+    ),
+    CommandName.SKIP: CommandSpec(
+        "BILL",
+        "Исключить из автоматического анализа и первой публикации. "
+        "Существующая карточка остаётся в сопровождении.",
+        "bill",
+    ),
+    CommandName.UNSKIP: CommandSpec(
+        "BILL", "Вернуть в работу. Если анализ сохранён, использовать его.", "bill"
+    ),
+    CommandName.RESET: CommandSpec(
+        "BILL [to=analysis_pending|skipped_prefilter|skipped_cost|analyzed]",
+        "Сбросить попытки анализа или перевести проект в допустимый пропуск. "
+        "analyzed требует сохранённого анализа. "
+        "Для восстановления готового анализа используйте /unskip.",
+        "bill",
+    ),
+    CommandName.OBSERVE: CommandSpec(
+        "BILL mode=full|metadata|off|auto",
+        "Настроить наблюдение за проектом без карточки. "
+        "Карточка в канале всегда сопровождается полностью.",
+        "bill",
+        required="mode",
+    ),
+    CommandName.REPUBLISH: CommandSpec(
+        "BILL", "Опубликовать карточку заново. Старая карточка в Telegram остаётся.", "bill"
+    ),
+    CommandName.FORGET: CommandSpec(
+        "BILL",
+        "Отвязать вручную удалённую карточку. Следующий прогон может опубликовать её заново.",
+        "bill",
+    ),
+    CommandName.GROUPEDIT: CommandSpec(
+        "preview|approve|resolve …",
+        "Проверить или применить исправление даты в сводном сообщении. "
+        "Для подтверждения используйте команду из предпросмотра.",
+    ),
+    CommandName.LINK: CommandSpec(
+        "ENTRY to=DRUK",
+        "Связать запись RCL или RPW с druk и продолжить тему.",
+        "bill",
+        required="to",
+    ),
+    CommandName.PREVIEW: CommandSpec(
+        "BILL [to=CHAT]",
+        "Показать карточку в техническом или тестовом канале. Без анализа.",
+        "bill",
+        "current",
+        common=True,
+    ),
+    CommandName.REFRESH: CommandSpec(
+        "BILL",
+        "Проверить один проект. Возможны расходы и обновления читателям.",
+        "bill",
+        "current",
+        common=True,
+    ),
+    CommandName.AMENDMENTS: CommandSpec(
+        "BILL [publication=ID] [force]",
+        "Заказать платный разбор поправок и обновить существующее сообщение после batch.",
+        "bill",
+        "current",
+    ),
+    CommandName.FIND: CommandSpec(
+        "WORDS [page=N]", "Искать сохранённые проекты по названию или номеру.", "query", common=True
+    ),
+    CommandName.RUNS: CommandSpec(
+        "[days=N] [all] [page=N]", "Показать историю прогонов по страницам."
+    ),
+    CommandName.COST: CommandSpec("[days=N] [top=N]", "Показать расходы на модели."),
+    CommandName.STATUS: CommandSpec(
+        "", "Показать состояние бота, batch и застрявшие доставки.", common=True
+    ),
+    CommandName.DELIVERY: CommandSpec(
+        "ID [history [PAGE] | confirm MESSAGE_ID | retry | dismiss REASON]",
+        "Проверить сохранённую доставку. "
+        "confirm, retry и dismiss меняют состояние после сверки с Telegram.",
+        "delivery",
+        common=True,
+    ),
+    CommandName.NAME: CommandSpec(
+        "BILL [NAME | REASON]",
+        "Показать или изменить редакторское название проекта.",
+        "editorial",
+        "current",
+    ),
+    CommandName.ATTENTION: CommandSpec(
+        "BILL [important|urgent until=DATE | REASON]",
+        "Показать историю событий или повысить приоритет до указанной даты.",
+        "editorial",
+        "current",
+    ),
+    CommandName.DIGEST: CommandSpec(
+        "[ref=2026-W38] [publish]",
+        "Подготовить черновик дайджеста. publish отправляет его читателям.",
+        common=True,
+    ),
+    CommandName.HELP: CommandSpec(
+        "[COMMAND|all]", "Показать краткую или адресную справку.", "help"
+    ),
+    CommandName.QUEUE: CommandSpec(
+        "[page=N]", "Показать ожидающие запросы оператора.", common=True
+    ),
+    CommandName.REQUEST: CommandSpec(
+        "ID", "Показать этап выполнения и итог запроса по его номеру.", "request", common=True
+    ),
 }
+
+NEEDS_REFERENCE = frozenset(name for name, spec in COMMANDS.items() if spec.arguments == "bill")
+DISPATCHED = frozenset(name for name, spec in COMMANDS.items() if spec.phase)
+
+
+def command_help(name: CommandName | None = None, *, all_commands: bool = False) -> str:
+    if name is not None:
+        spec = COMMANDS[name]
+        return f"/{name.value} {spec.usage}".rstrip() + "\n" + spec.description
+    lines = [
+        f"/{name.value} · {spec.description.split('. ', 1)[0].rstrip('.')}"
+        for name, spec in COMMANDS.items()
+        if all_commands or spec.common
+    ]
+    return "\n".join((*lines, "", "Подробности: /help COMMAND. Все команды: /help all."))
+
 
 OBSERVATION_CHOICES = (*(mode.value for mode in ObservationMode), AUTO_OBSERVATION)
 
@@ -507,6 +704,9 @@ class Command(BaseModel):
     name: CommandName
     ref: BillRef | None = None
     query: str | None = None
+    request_id: int | None = None
+    help_topic: CommandName | None = None
+    help_all: bool = False
     options: dict[str, str] = Field(default_factory=dict)
     error: str | None = None
     grouped_stage_date: GroupedStageDateCommand | None = Field(
@@ -600,6 +800,8 @@ class OutcomeStatus(StrEnum):
     DIGESTED = "digest"
     DELIVERY = "delivery"
     HELP = "help"
+    QUEUE = "queue"
+    REQUEST = "request"
     EXECUTED_EARLIER = "executed earlier"
     NOT_FOUND = "not_found"
     ERROR = "error"
@@ -683,6 +885,9 @@ class CommandOutcome(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     status: OutcomeStatus
+    work: CommandWork | None = None
+    rendered_reply: str | None = None
+    request_links: tuple[str, ...] = ()
     bill: Bill | None = None
     note: str = ""
     message_id: int | None = None
@@ -722,7 +927,7 @@ class CommandOutcome(BaseModel):
         return f"{head}: {self.note}" if self.note else head
 
 
-_DRUK = re.compile(r"^(?:druk\s*(?:nr\s*)?)?(\d{1,5})$", re.IGNORECASE)
+_DRUK = re.compile(r"^(?:druk\s*(?:nr\s*)?)?(\d{1,5})(?::(\d{1,4}))?$", re.IGNORECASE)
 _RPW = re.compile(r"^RPW/\d+/\d{4}$", re.IGNORECASE)
 _RCL = re.compile(r"^RCL/(\d+)$", re.IGNORECASE)
 _WYKAZ = re.compile(r"^U[A-Z]{1,4}\s?\d+$", re.IGNORECASE)
@@ -746,7 +951,11 @@ def parse_reference(text: str) -> BillRef | None:
     if "gov.pl/" in value.lower():
         return _parse_url(value)
     if match := _DRUK.match(value):
-        return BillRef(kind=RefKind.DRUK, value=str(int(match.group(1))))
+        return BillRef(
+            kind=RefKind.DRUK,
+            value=str(int(match.group(1))),
+            term=int(match.group(2)) if match.group(2) is not None else None,
+        )
     if _RPW.match(value):
         return BillRef(kind=RefKind.RPW, value=PRE_PRINT_PREFIX + value[len(PRE_PRINT_PREFIX) :])
     if match := _RCL.match(value):
@@ -825,7 +1034,7 @@ def _checked(name: CommandName, key: str, option: Option, raw: str) -> tuple[str
     if option.kind is OptionKind.DATE:
         return (raw, "") if _is_date(raw) else (None, f"/{name}: {key} takes a date, not {raw!r}")
     if option.kind is OptionKind.COUNT:
-        if not raw.isdigit():
+        if not raw.isascii() or not raw.isdigit() or len(raw) > 10:
             return None, f"/{name}: {key} takes a number, not {raw!r}"
         if not option.low <= int(raw) <= option.high:
             return None, f"/{name}: {key} takes {option.low}–{option.high}, not {raw}"
@@ -841,7 +1050,7 @@ def _checked(name: CommandName, key: str, option: Option, raw: str) -> tuple[str
             return None, f"/{name}: {key} takes an ISO week (2026-W38), not {raw!r}"
         return raw.upper(), ""
     if option.kind is OptionKind.PRINT:
-        if raw.isdigit() and int(raw) > 0:
+        if raw.isascii() and raw.isdigit() and len(raw) <= 5 and int(raw) > 0:
             return str(int(raw)), ""
         return None, f"/{name}: {key} takes a druk number (3281), not {raw!r}"
     if option.kind is OptionKind.OBSERVATION:
@@ -865,14 +1074,18 @@ def _parse_options(name: CommandName, words: list[str]) -> tuple[dict[str, str],
     options: dict[str, str] = {}
     rest: list[str] = []
     for word in words:
-        key, _, raw = word.partition("=")
+        key, separator, raw = word.partition("=")
         option = spec.get(key.lower().lstrip("-").replace("-", "_"))
         if option is None:
             rest.append(word)
             continue
+        if option.kind is OptionKind.FLAG and separator:
+            return options, rest, f"/{name}: {key} — флаг без значения; укажите его или уберите"
         value, error = _checked(name, key, option, raw)
         if value is None:
             return options, rest, error
+        if option.name in options and options[option.name] != value:
+            return options, rest, f"/{name}: для {option.name} указаны разные значения"
         options[option.name] = value
     return options, rest, ""
 
@@ -890,25 +1103,40 @@ def parse_command(text: str) -> Command | None:
     name = _COMMAND_NAMES.get(head.replace("_", "-"))
     if name is None:
         return Command(name=CommandName.HELP, error=f"unknown command /{head}")
-    if name is CommandName.DELIVERY:
+    spec = COMMANDS[name]
+    if spec.arguments == "help":
+        if len(words) == 1:
+            return Command(name=name)
+        if len(words) == 2:
+            topic = words[1].lower().lstrip("/").replace("_", "-")
+            if topic == "all":
+                return Command(name=name, help_all=True)
+            if target := _COMMAND_NAMES.get(topic):
+                return Command(name=name, help_topic=target)
+        return Command(name=name, error="Укажите /help COMMAND или /help all")
+    if spec.arguments == "request":
+        if len(words) == 2 and _positive_id(words[1]):
+            return Command(name=name, request_id=int(words[1]))
+        return Command(name=name, error="Укажите номер запроса: /request ID")
+    if spec.arguments == "delivery":
         return _parse_delivery(words[1:])
     if name is CommandName.GROUPEDIT:
         return _parse_groupedit(words[1:])
-    if name in (CommandName.NAME, CommandName.ATTENTION):
+    if spec.arguments == "editorial":
         return _parse_editorial(name, words[1:])
     options, rest, error = _parse_options(name, words[1:])
     if error:
         return Command(name=name, error=error)
-    if (needed := REQUIRED.get(name)) is not None and needed not in options:
+    if (needed := spec.required) is not None and needed not in options:
         return Command(name=name, error=f"/{name} needs {needed}=… ({needed} is not optional)")
-    if name in NEEDS_QUERY:
+    if spec.arguments == "query":
         query = " ".join(rest).strip()
         if len(query) < MIN_QUERY_CHARS:
             return Command(
                 name=name, error=f"/{name} needs at least {MIN_QUERY_CHARS} characters to look for"
             )
         return Command(name=name, query=query, options=options)
-    if name in NEEDS_REFERENCE:
+    if spec.arguments == "bill":
         if not rest:
             return Command(name=name, error=f"/{name} needs a bill number or a link")
         ref = parse_reference(" ".join(rest))
@@ -1050,18 +1278,16 @@ def _parse_editorial(name: CommandName, words: list[str]) -> Command:
     )
 
 
+def _positive_id(raw: str) -> bool:
+    return raw.isascii() and raw.isdigit() and len(raw) <= 19 and 0 < int(raw) <= 2**63 - 1
+
+
 def _parse_delivery(words: list[str]) -> Command:
     error = Command(
         name=CommandName.DELIVERY,
         error="use /delivery ID [history [PAGE] | confirm MESSAGE_ID | retry | dismiss REASON]",
     )
-    if (
-        not words
-        or not words[0].isascii()
-        or not words[0].isdigit()
-        or len(words[0]) > 19
-        or not 0 < int(words[0]) <= 9_223_372_036_854_775_807
-    ):
+    if not words or not _positive_id(words[0]):
         return error
     publication_id = int(words[0])
     if len(words) == 1:
@@ -1091,8 +1317,7 @@ def _parse_delivery(words: list[str]) -> Command:
     if (
         action == "confirm"
         and len(words) == 3
-        and words[2].isascii()
-        and words[2].isdigit()
+        and _positive_id(words[2])
         and 0 < int(words[2]) <= 2_147_483_647
     ):
         return Command(

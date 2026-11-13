@@ -11,7 +11,6 @@ from lexinform.models import (
     AnalysisVerdict,
     BillStatus,
     CheckAspect,
-    CommandName,
     CommandOutcome,
     IncomingCommand,
     LlmBatch,
@@ -279,11 +278,11 @@ def test_command_reply_names_the_bill_the_verdict_and_the_card(
     text = formatter.command_reply(_incoming("/analyze 3039 <force>"), outcome).text
 
     assert_telegram_html(text)
-    assert text.startswith("🤖 <b>analysed</b> · <code>/analyze 3039 &lt;force&gt;</code>")
+    assert text.startswith("🤖 <b>Анализ</b> · <code>/analyze 3039 &lt;force&gt;</code>")
     assert "<b>druk nr 3039</b>" in text and "PrzebiegProc.xsp?nr=3039" in text
     assert "🔴 relevant · importance 5/5 · category legal_stay · m on pdf" in text
     assert "<i>Проект меняет правила легализации пребывания.</i>" in text
-    assert "📣 card posted: message 101" in text
+    assert "📣 Карточка: сообщение 101" in text
 
 
 def test_show_reply_adds_status_stage_and_the_last_error(process_3039: ProcessDetail) -> None:
@@ -313,7 +312,7 @@ def test_preview_reply_carries_the_card_itself(process_3039: ProcessDetail) -> N
     text = formatter.command_reply(_incoming("/preview 3039"), outcome).text
 
     assert_telegram_html(text)
-    assert text.startswith("👁 <b>preview</b>")
+    assert text.startswith("👁 <b>Предпросмотр</b>")
     assert "📜 <b>Новый законопроект — druk nr 3039</b>" in text  # the card, as the channel gets it
 
 
@@ -349,7 +348,7 @@ def test_status_reply_shows_the_queues_the_posts_and_the_runs(process_3039: Proc
     assert "📥 <b>bills</b>: analyzed 43 · analysis_pending 1" in text
     assert "📣 <b>posts</b>: sent 120 · failed 1" in text
     assert "👁 <b>followed</b>: 17" in text
-    assert "🏃 <b>runs</b>: 1 in 7 days · 2 card(s) · 3 update(s) · last " in text
+    assert "🏃 <b>Прогоны</b>: 1 in 7 days · 2 card(s) · 3 update(s) · last " in text
     assert "⏳ <b>waiting</b>" in text and "analysis_pending" in text
 
 
@@ -416,7 +415,7 @@ def test_forget_reply_names_the_message_that_was_dropped(process_3039: ProcessDe
     text = formatter.command_reply(_incoming("/forget 3039"), outcome).text
 
     assert_telegram_html(text)
-    assert "🗑 <b>forgotten</b>" in text
+    assert "🗑 <b>Карточка отвязана</b>" in text
     assert "message 21" in text
     assert "card posted" not in text  # nothing went out in its place
 
@@ -428,7 +427,7 @@ def test_runs_reply_gives_each_run_its_own_row() -> None:
     text = formatter.command_reply(_incoming("/runs days=7"), outcome).text
 
     assert_telegram_html(text)
-    assert text.startswith("🏃 <b>runs</b>")
+    assert text.startswith("🏃 <b>Прогоны</b>")
     assert "77/2/2/1 disc·anal·publ·upd" in text and "1 error(s)" in text
 
 
@@ -449,17 +448,17 @@ def test_cost_reply_breaks_the_spend_down_by_model_and_by_bill(
     assert "dearest run" in text and "<b>druk nr 3039</b>" in text
 
 
-def test_help_reply_lists_the_commands_after_the_complaint() -> None:
+def test_help_reply_shows_the_complaint_and_usage() -> None:
     formatter = MessageFormatter("ru")
-    outcome = CommandOutcome(status=OutcomeStatus.HELP, note="unknown command /delete")
+    outcome = CommandOutcome(
+        status=OutcomeStatus.HELP, note="unknown command /delete\n/help [COMMAND|all]"
+    )
 
     text = formatter.command_reply(_incoming("/delete 1"), outcome).text
 
     assert_telegram_html(text)
-    assert "unknown command /delete" in text
-    assert "<code>/help</code>" in text
-    for name in CommandName:
-        assert f"/{name}" in text, f"the help does not name /{name}"
+    assert "unknown command /delete" in text and "/help [COMMAND|all]" in text
+    assert "/republish" not in text
 
 
 @pytest.mark.parametrize(
@@ -481,7 +480,7 @@ def test_a_published_digest_is_not_called_a_card() -> None:
     text = formatter.command_reply(_incoming("/digest publish ref=2026-W39"), outcome).text
 
     assert text.startswith("🗞")
-    assert '📣 posted: <a href="https://t.me/lexinform/63">message 63</a>' in text
+    assert '📣 Публикация: <a href="https://t.me/lexinform/63">сообщение 63</a>' in text
 
 
 def test_run_report_lists_the_commands_handled() -> None:

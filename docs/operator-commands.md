@@ -3,12 +3,14 @@
 Post a command in the technical (log) channel and the bot answers under it a few minutes
 later. Any administrator of that channel can command; nobody else reaches the bot this way.
 
-The relay answers `queued` under the command; for workflow commands that message becomes
-`run started`. The command's answer, the run report or the counters of `/scan` and
-`/index-rcl-numbers` arrive as a **new** message, so Telegram notifies the operator, and the
-`queued`/`run started` message is then deleted. If the answer cannot be sent, the
-acknowledgement stays. Relay-triggered dry runs post only here; reader messages and
-production state remain untouched.
+Реле отвечает сразу после получения команды и подтверждает очередь после записи в
+`inbox`. Номер запроса виден в подтверждении. `/queue` показывает ожидающие команды,
+`/request ID` показывает итог, причину ожидания и ссылку на прогон. Бот отвечает новым
+сообщением под исходной командой. Результат batch приходит туда же.
+
+Начните с `/help`. `/help analyze` показывает синтаксис и последствия одной команды,
+`/help all` перечисляет весь каталог. Справка и ошибки синтаксиса обрабатываются реле
+сразу. `/find`, `/runs` и `/queue` поддерживают `page=N`.
 
 Run reports list prefilter rejections with the project link, title, filtering stage and reason.
 Text rejections include matched patterns and counts when present; unreadable files have a
@@ -18,12 +20,9 @@ in the INFO log and `runs.report_json` (`prefilter_details`). Older reports have
 Use `/show NUMBER` to inspect the saved bill, or `/analyze NUMBER force` to request an analysis
 despite the prefilter (this can publish a card).
 
-**Every `lexinform` command is here**, under its own name and with its own options. Three are
-not, and could not be: `listen` is this relay, `commands` is the phase that answers what it
-files, and `db init|dump|restore` is the workflow's handling of the state branch around every
-run — none of them is a thing to ask a run for, and a `db restore` from a channel would replace
-the database under a running channel. `--yes`, which `republish`, `forget` and `reset` take on a
-terminal, has no twin either: posting the command *is* the confirmation.
+Telegram commands are selected in the operator catalog. Local database maintenance
+and batch submission recovery stay in the CLI. Posting a repair command confirms it.
+See `/help forget`, `/help observe` and `/help delivery` for the consequences.
 
 ### One bill
 
@@ -36,7 +35,10 @@ analysis of a changed text or a filed document.
 ```
 /analyze 3039                 fetch the bill, prefilter it (title, then text), analyse it, post
                               the card when it is relevant and important enough, follow it
-/analyze 3039 force           analyse past the prefilter, a previous analysis and the cost guard
+/analyze 3039 recheck         bypass the prefilter
+/analyze 3039 reanalyze       request a fresh analysis within the cost guard
+/analyze 3039 allow_over_budget  lift only the per-bill cost guard
+/analyze 3039 force           legacy shorthand for all three
 /analyze 3039 publish         post the card of a relevant bill even below the score threshold
 /analyze 3039 json            add the stored analysis as raw JSON under the verdict
 /explain 3039                 полный разбор независимо от релевантности, только для оператора
@@ -51,8 +53,9 @@ analysis of a changed text or a filed document.
 /amendments 1929 force        запросить новый разбор после завершённого исправления
 /skip 3039                    silence a false positive: no analysis, no card (the card stays)
 /unskip 3039                  restore saved analysis; queue analysis only if none exists
-/reset 3039 to=skipped_cost   any status at all, with a clean budget of attempts
-                              (`to=` defaults to `analysis_pending`)
+/reset 3039                   queue analysis with a clean retry budget
+/reset 3039 to=skipped_cost   record a cost skip
+/reset 3039 to=skipped_prefilter   silence as with /skip
 /observe 3150 mode=metadata   how a bill with no card is watched: `full`, `metadata` (stages
                               and documents, no model call), `off` (not read at all), or
                               `auto` to give the choice back to the rule
@@ -89,7 +92,10 @@ the original row remains linked. Commands that change an explicitly named record
 /digest                       draft the week that has just ended, here, with a publish button
 /digest ref=2026-W38            some other week, by its ISO number
 /digest publish ref=2026-W38    send it to the readers' channel — what the button does
-/help                         this list
+/queue page=1                 pending requests
+/request 123456               request status, linked work and result
+/help delivery                syntax and consequences of one command
+/help all                     all supported commands
 ```
 
 ### Browsing retained editorial versions
@@ -187,7 +193,7 @@ after deletion, and the journal survives removal of the publication.
 ```
 /run                          the whole day: discover, prefilter, analyse, publish, track
 /run since=2026-09-01           discover from this date instead of the watermark
-/run dry                        print what would be posted, persist and publish nothing
+/run dry                        rehearse on a temporary database and keep the request receipt
 /run reprefilter=50             first scan the texts of up to N bills the title prefilter skipped
 /run reprefilter=200 text_skipped   …and the bills the text stage itself rejected (see below)
 /run index_rcl_since=2023-11-01 first read the RCL listing back to this date for the wykaz join
@@ -195,31 +201,22 @@ after deletion, and the journal survives removal of the publication.
 /run max_publish=5 max_analyze=3 min_score=4    and its caps
 /scan since=2026-09-01        discover and keyword-filter only: no model, no posts, no tokens
 /track                        the tracking phase over every followed bill (`dry` to see it only)
-/collect-batches               write down a finished batch, then analyse/publish/track what that frees
+/collect-batches               write down a finished batch, then apply results
+/drain-deliveries [dry]        send saved deliveries without discovery or new model calls
 /reprefilter limit=200 text_skipped   the backfill on its own, without the run behind it
 /index-rcl-numbers since=2023-11-01   the RCL listing for the wykaz join (`/index` for short)
 ```
 
-These six are the commands a run does not execute, because each **is** a run: the relay asks
-GitHub to start `daily.yml` (`workflow_dispatch` on `main`) with the inputs named after it and
-answers «▶️ scan started …» with a link, instead of filing anything into the inbox. The workflow
-takes a `command` — which `lexinform` subcommand this run is — and an `options` string carrying
-its flags; every value in it is checked by the relay first, because the workflow would take
-`since=вчера` as free text and answer hours later with a job that did the wrong thing. `dry_run`
-stays an input of its own rather than one more flag in `options`, since it is also what keeps
-the state branch unpushed, and the two must never disagree about what a run persisted. Options
-may be combined in any order (`/run dry since=2026-09-01 min_score=4`). Two things follow from
-`workflow_dispatch`: the token needs **Actions: read and write** on the repository (filing a
-command only needs Contents), and a dry run persists nothing at all — not even an index it was
-asked to build, since the state branch is only pushed by a real run.
+The seven phase commands use the same inbox as bill commands. The relay uses the Contents
+API and sends a `repository_dispatch` wakeup. The runner reads the request under the shared
+state lock and checkpoints the update ID before starting a phase. Duplicate wakeups
+drain the same inbox. A scheduled run also drains saved phase requests.
 
-`/run reprefilter=N` and `/reprefilter limit=N` are not the same thing: the first is a backfill
-*and then* a whole run, which is what the composition is for (two dispatches would be two runs),
-the second is the backfill alone.
-
-Both execute inside the bounded Run step. A failed backfill stops later work, while the final
-checkpoint still saves completed local changes. Backfill and later phases share its 35-minute
-limit; dry runs keep their changes local.
+A relay dry run executes against a temporary copy, including any requested backfill.
+The result and request journal survive. The terminal and the manual Actions form retain
+their own dry-run options. `/run reprefilter=N` performs backfill before the full run,
+while `/reprefilter limit=N` performs just the backfill. All phases share the run step's
+35-minute limit.
 
 An option a command does not know is answered rather than ignored, including one that belongs to
 another command: `/show 3039 force` used to do nothing and say nothing, which reads exactly like
@@ -244,9 +241,8 @@ after it pays for the readings and posts the cards; give it a `limit` you are wi
 иностранцев. Недоступный текст не подменяется разбором одних метаданных; сокращённый
 текст явно отмечается. Обычные ограничения стоимости сохраняются.
 
-Первый вызов отвечает, что разбор ожидает batch. После сбора результата повторите
-ту же `/explain`: бот покажет сохранённый текст в техническом канале без новых токенов.
-Автоматической отправки готового разбора под исходной командой пока нет. Повтор во время
+Первый вызов сообщает, что разбор ожидает batch. Готовый разбор приходит ответом
+на исходную команду, повторный вызов также показывает сохранённый результат. Повтор во время
 queued/submitting/open batch не создаёт второй запрос, даже после reset основного анализа.
 Неопределённая отправка не повторяется автоматически; ошибка batch показывается оператору.
 Изменение текста создаёт отдельный запрос, а смена prompt version сама по себе не создаёт его.
@@ -266,9 +262,8 @@ channel, not about the bill that was named. `/unskip` restores a skipped bill's 
 without another model call and keeps its card. Without a saved analysis it clears the skip and
 spent attempts and queues analysis; an RCL project's documents are read again first. A pending
 batch is left intact. Use `/analyze BILL force` to request analysis again explicitly.
-`/reset` sets whichever status it is given.
-`to=` names a `BillStatus` and the reply repeats what the row was, attempts and all — the one
-command that can put a bill anywhere, which is why it says where it came from.
+`/reset` supports `analysis_pending`, `skipped_prefilter`, `skipped_cost` and `analyzed` when an analysis is already saved.
+Use `/unskip` to recover saved analysis and `/link` to join a project to its druk.
 `/observe` overrides the rule, which watches a relevant bill without a card in full only when it
 scores `min_score − 1` or more (below that it is `metadata`/`below_bar` and its new texts are not
 re-read). The choice is stored as basis `operator`, which no run overwrites, until
@@ -418,34 +413,17 @@ technical channel ──getUpdates──► lexinform listen (VPS) ──Content
                   ◄──reply under the command── daily.yml: lexinform commands ◄─────────┘
 ```
 
-1. `lexinform listen` runs on a small always-on server and long-polls Telegram for posts in the
-   log channel. A post that starts with `/` becomes `inbox/{update_id}.json` on the git branch
-   `inbox`, written through the GitHub Contents API with a personal access token, and the relay
-   sends a `repository_dispatch` event (same token) that starts the workflow within seconds
-   (only cron runs are delayed; a push of the inbox branch itself would start nothing, because
-   GitHub reads a push event's workflow from the pushed branch, which has none). The relay
-   replies "⏳ queued" under the post and only then confirms the update to Telegram, so a GitHub
-   outage leaves the command with Telegram (kept for 24 hours).
-2. `.github/workflows/daily.yml` checks out `state` and `inbox`, restores the database and runs
-   `lexinform commands`: the commands phase alone. Every scheduled run does the same phase first,
-   so a command whose event was lost is answered by the next scheduled run.
-3. The run records the command in the `commands` table before executing it, executes it, marks
-   it executed, answers under the command's message, marks it handled and deletes the file; the
-   workflow commits the deletions. A file that comes back (the deletion was not pushed, the job
-   died after the post) is measured against those two marks: answered means it is only deleted,
-   executed but unanswered means the answer is repeated and the command is *not* run a second
-   time — a repeated `/republish` would post a second card. Runs never race: one concurrency
-   group at job level retains pending jobs with `queue: max`; every enabled job drains the
-   whole inbox.
-
-`/analyze` of an RCL project or an `RPW/…` entry that already reached the Sejm answers about its
-druk instead: the rows are linked and the print carries the thread, so an entry whose act is in
-force cannot get a card that promises a druk number any day now. Named the other way round — the
-druk of an entry already in the channel — the print joins that card instead of getting a second
-one, exactly as the next run's tracking would have linked them. No card is posted for a bill
-whose road has ended (the act is in Dziennik Ustaw, the bill was rejected or withdrawn, the
-project or the plan was dropped) — the reply gives the verdict and says so. A bill the Sejm has
-only passed still gets its card: the Senate and the President are ahead.
+1. `lexinform listen` validates text and callbacks in the technical channel. It files each
+   executable request by Telegram update ID and moves the offset after storage succeeds.
+2. The workflow restores SQLite under its shared state lock. It answers ordinary commands,
+   then runs saved phase requests through `lexinform commands --run-requests`.
+3. Before executing either kind, it checkpoints the journal entry. After an interruption it
+   uses the recorded result or reports that the outcome is unknown. It never re-executes a
+   claimed update. Answer retries use the saved reply. Inbox files are removed after the
+   handled receipt is durable.
+4. A command can be handled while waiting for a model or publication. The journal tracks
+   that work separately and the pipeline replies on completion. `/request ID` remains
+   available after inbox cleanup.
 
 Every reply ends with what the command took: when the run that answered it started, how long
 the command itself ran, and the model tokens and dollars it spent — the triage included, since
@@ -591,8 +569,7 @@ Rules of the road:
   Telegram delivers it again, and the loop waits before the next poll — 15 s, doubling to ten
   minutes while the failures continue, back to nothing on the first poll that gets through.
   A refusal no retry fixes (a revoked PAT, a repository the token may no longer write) therefore
-  shows in `journalctl -u lexinform-listen` as the same warning every few minutes with no
-  "⏳ queued" in the channel; the queued commands are all still with Telegram, which keeps them
+  shows in `journalctl -u lexinform-listen` as the same warning every few minutes without a stored-queue confirmation in the channel; the queued commands are all still with Telegram, which keeps them
   for 24 hours, so a token replaced within the day loses nothing.
 - `LEXINFORM_INBOX_DIR` is set by the workflow; locally, point it at any directory of
   `{update_id}.json` files and run `lexinform commands --dry-run` to see the replies without

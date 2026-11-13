@@ -174,11 +174,12 @@ def test_status_takes_no_arguments() -> None:
     assert command.name is CommandName.STATUS and command.error is None
 
 
-def test_help_takes_no_arguments() -> None:
-    command = parse_command("/help me")
+def test_help_accepts_a_command_name() -> None:
+    command = parse_command("/help delivery")
 
     assert command is not None, "parse_command returns None only for text with no leading slash"
     assert command.name is CommandName.HELP and command.error is None
+    assert command.help_topic is CommandName.DELIVERY
 
 
 def test_run_takes_the_workflows_own_inputs() -> None:
@@ -422,7 +423,7 @@ def test_an_option_of_another_command_is_answered_and_not_swallowed() -> None:
     assert command.error == "/show: unknown option force — it takes none"
     assert parse_command("/analyze 3039 turbo") == Command(
         name=CommandName.ANALYZE,
-        error="/analyze: unknown option turbo — it takes force, publish, json",
+        error="/analyze: unknown option turbo — it takes force, recheck, reanalyze, allow_over_budget, publish, json",
     )
 
 
@@ -430,3 +431,19 @@ def test_analyze_asks_for_the_raw_verdict() -> None:
     command = parse_command("/analyze 3039 json")
 
     assert command is not None and command.as_json and command.error is None
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "/run dry=false",
+        "/analyze 3039 force=false",
+        "/analyze 3039 publish=0",
+        "/run reprefilter=20 reprefilter_limit=30",
+        "/run min_score=²",
+    ],
+)
+def test_ambiguous_or_invalid_options_are_refused(text: str) -> None:
+    command = parse_command(text)
+
+    assert command is not None and command.error

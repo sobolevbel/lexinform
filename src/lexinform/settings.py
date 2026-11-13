@@ -301,10 +301,10 @@ class Settings(BaseSettings):
         " branch is checked out in. Empty means no commands phase.",
     )
 
-    @field_validator("inbox_dir", mode="before")
+    @field_validator("inbox_dir", "llm_batch_state_file", mode="before")
     @classmethod
     def _empty_inbox_dir_is_none(cls, value: object) -> object:
-        """`LEXINFORM_INBOX_DIR=` (blank) means no inbox, not the current directory."""
+        """Blank disables an optional path."""
         return None if isinstance(value, str) and not value.strip() else value
 
     github_repo: str = Field(

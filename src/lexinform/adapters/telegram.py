@@ -114,6 +114,14 @@ class TelegramBotClient:
             raise ValueError("getChat: response has no valid chat id; preview was not sent")
         return identity
 
+    def is_chat_admin(self, chat_id: int, user_id: int) -> bool:
+        try:
+            member = self._call("getChatMember", json={"chat_id": chat_id, "user_id": user_id})
+        except TelegramError as exc:
+            log.warning("getChatMember refused for operator callback: %s", exc)
+            return False
+        return member.get("status") in ("creator", "administrator")
+
     def send_message(
         self,
         chat_id: str,
@@ -121,11 +129,12 @@ class TelegramBotClient:
         *,
         reply_to: int | None = None,
         button: tuple[str, str] | None = None,
+        buttons: tuple[tuple[str, str], ...] = (),
     ) -> int:
         """`button` is (label, callback data): one inline button under the message, which comes
         back as a `callback_query` when it is pressed."""
         return self.send_message_with_receipt(
-            chat_id, html, reply_to=reply_to, button=button
+            chat_id, html, reply_to=reply_to, button=button, buttons=buttons
         ).message_id
 
     def send_message_with_receipt(
@@ -135,6 +144,7 @@ class TelegramBotClient:
         *,
         reply_to: int | None = None,
         button: tuple[str, str] | None = None,
+        buttons: tuple[tuple[str, str], ...] = (),
     ) -> TelegramPublishResult:
         """Send once through the normal path and retain an optional same-response chat ID."""
         payload: dict[str, Any] = {
@@ -144,8 +154,12 @@ class TelegramBotClient:
             "link_preview_options": {"is_disabled": True},
         }
         if button is not None:
+            buttons = (*buttons, button)
+        if buttons:
             payload["reply_markup"] = {
-                "inline_keyboard": [[{"text": button[0], "callback_data": button[1]}]]
+                "inline_keyboard": [
+                    [{"text": label, "callback_data": data} for label, data in buttons]
+                ]
             }
         if reply_to is not None:
             payload["reply_parameters"] = {
@@ -275,7 +289,7 @@ class TelegramBotClient:
         updates = result.get("result")
         posts: list[ChannelPost] = []
         for update in updates if isinstance(updates, list) else []:
-            post = _channel_post(update)
+            post = _channel_post(update, received_at=datetime.now(UTC))
             if post is None and isinstance(update.get("update_id"), int):
                 # Not a post (another update kind, an unreadable one): a placeholder from no
                 # chat, so that the offset still moves past it.
@@ -438,12 +452,12 @@ class TelegramRunNotifier:
         send_and_retract(self._client, self._channel_id, self._message_id, text)
 
 
-def _channel_post(update: dict[str, Any]) -> ChannelPost | None:
+def _channel_post(update: dict[str, Any], *, received_at: datetime) -> ChannelPost | None:
     """The channel post in one `getUpdates` item; None for other kinds of update. A post
     without text (a photo, a poll) still comes back, so that the offset moves past it."""
     update_id = update.get("update_id")
     if isinstance(update_id, int) and isinstance(update.get("callback_query"), dict):
-        return _button_press(update_id, update["callback_query"])
+        return _button_press(update_id, update["callback_query"], received_at=received_at)
     post = update.get("channel_post") or update.get("message")
     if not isinstance(update_id, int) or not isinstance(post, dict):
         return None
@@ -464,7 +478,9 @@ def _channel_post(update: dict[str, Any]) -> ChannelPost | None:
         return None
 
 
-def _button_press(update_id: int, query: dict[str, Any]) -> ChannelPost | None:
+def _button_press(
+    update_id: int, query: dict[str, Any], *, received_at: datetime
+) -> ChannelPost | None:
     """A pressed button as the command it stands for, under the message it hangs on: the run
     then answers there, exactly as it answers a typed command."""
     message = query.get("message")
@@ -483,8 +499,9 @@ def _button_press(update_id: int, query: dict[str, Any]) -> ChannelPost | None:
             chat_username=chat.get("username"),
             message_id=int(message["message_id"]),
             text=text,
-            date=datetime.fromtimestamp(int(message.get("date", 0)), tz=UTC),
+            date=received_at,
             callback_id=str(query.get("id", "")) or None,
+            actor_id=(query.get("from") or {}).get("id"),
         )
     except KeyError, TypeError, ValueError:
         log.warning("callback %s has no readable message", update_id)
@@ -494,14 +511,26 @@ def _button_press(update_id: int, query: dict[str, Any]) -> ChannelPost | None:
 class TelegramAcknowledger:
     """`⏳ queued` under the command, so the operator knows the relay took it."""
 
-    TEXT = "⏳ Команда в очереди; ответ появится здесь после выполнения."
+    TEXT = "Команда сохранена в очереди."
 
     def __init__(self, client: TelegramBotClient, *, channel_id: str) -> None:
         self._client = client
         self._channel_id = channel_id
 
     def queued(self, command: IncomingCommand) -> int:
-        return self._client.send_message(self._channel_id, self.TEXT, reply_to=command.message_id)
+        return self._client.send_message(
+            self._channel_id,
+            f"⏳ Реле получило запрос №{command.update_id}. Сохраняю…",
+            reply_to=command.message_id,
+        )
+
+    def saved(self, command: IncomingCommand) -> None:
+        if command.acknowledgement_id is not None:
+            self._client.edit_message(
+                self._channel_id,
+                command.acknowledgement_id,
+                f"⏳ Запрос №{command.update_id} сохранён. Ожидает выполнения.",
+            )
 
     def started(self, command: IncomingCommand, note: str, *, url: str | None = None) -> None:
         """`/run` is answered by the relay itself: nothing was filed for a run to report on."""
@@ -513,12 +542,12 @@ class TelegramAcknowledger:
             self._client,
             self._channel_id,
             command.acknowledgement_id,
-            f"▶️ {text}",
+            text,
             reply_to=command.message_id,
         )
 
-    def pressed(self, callback_id: str) -> None:
-        self._client.answer_callback(callback_id, self.TEXT)
+    def pressed(self, callback_id: str, text: str | None = None) -> None:
+        self._client.answer_callback(callback_id, text or self.TEXT)
 
 
 class TelegramOperatorReplier:
@@ -531,15 +560,37 @@ class TelegramOperatorReplier:
         self._formatter = formatter
         self._channel_id = channel_id
 
+    def render(self, command: IncomingCommand, outcome: CommandOutcome) -> str:
+        return outcome.rendered_reply or self._formatter.command_reply(command, outcome).text
+
     def reply(self, command: IncomingCommand, outcome: CommandOutcome) -> None:
-        rendered = self._formatter.command_reply(command, outcome)
         send_and_retract(
             self._client,
             self._channel_id,
             command.acknowledgement_id,
-            rendered.text,
+            self.render(command, outcome),
             reply_to=command.message_id,
+            buttons=self._buttons(command, outcome),
         )
+
+    @staticmethod
+    def _buttons(command: IncomingCommand, outcome: CommandOutcome) -> tuple[tuple[str, str], ...]:
+        if outcome.rendered_reply is not None or not outcome.ok:
+            return ()
+        bill = outcome.bill
+        buttons = []
+        if bill is not None:
+            ref = f"{bill.number}:{bill.term}" if bill.has_process else bill.number
+            if len(ref.encode()) <= 56:
+                if not command.text.startswith("/show "):
+                    buttons.append(("Состояние", f"show:{ref}"))
+                if bill.analysis is not None and not command.text.startswith("/preview "):
+                    buttons.append(("Карточка", f"preview:{ref}"))
+                if not command.text.startswith("/explain "):
+                    buttons.append(("Разбор (batch)", f"explain:{ref}"))
+        if outcome.delivery is not None and outcome.delivery.id is not None:
+            buttons.append(("Доставка", f"delivery:{outcome.delivery.id}"))
+        return tuple(buttons)
 
 
 def _replace_or_send(
@@ -573,9 +624,10 @@ def send_and_retract(
     text: str,
     *,
     reply_to: int | None = None,
+    buttons: tuple[tuple[str, str], ...] = (),
 ) -> None:
     """A new message notifies the operator, an edit does not; the acknowledgement then goes."""
-    client.send_message(channel_id, text, reply_to=reply_to)
+    client.send_message(channel_id, text, reply_to=reply_to, buttons=buttons)
     if acknowledgement_id is None:
         return
     try:

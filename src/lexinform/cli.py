@@ -2,6 +2,7 @@
 
 import logging
 import os
+import subprocess
 import sys
 from collections.abc import Callable
 from contextlib import closing
@@ -9,6 +10,7 @@ from datetime import UTC, datetime, timedelta
 from functools import partial
 from html import escape
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Annotated
 
 import anthropic
@@ -21,6 +23,7 @@ from lexinform.adapters.github_inbox import (
     GitHubInboxWriter,
     GitHubUnavailableError,
 )
+from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.adapters.state_snapshot import write_state_snapshot
 from lexinform.adapters.systemd import notify_ready
 from lexinform.adapters.telegram import TelegramBotClient, TelegramRunNotifier, send_and_retract
@@ -37,6 +40,8 @@ from lexinform.models import (
     Bill,
     BillStatus,
     BillSubmission,
+    Command,
+    CommandOutcome,
     LlmBatch,
     LlmBatchItem,
     OutcomeStatus,
@@ -57,13 +62,14 @@ from lexinform.models import (
     usage_of,
 )
 from lexinform.models.commands import OBSERVATION_CHOICES
-from lexinform.models.source_checks import observation_label, operator_observation
 from lexinform.models.source_omissions import SourceReferenceOmissionOwner
 from lexinform.pricing import cost_usd, format_tokens, format_usd
 from lexinform.services.analysis import Waiting
+from lexinform.services.bill_operations import BillOperations
 from lexinform.services.lookup import BillNotFoundError
 from lexinform.services.pipeline import RunOptions
 from lexinform.services.rcl_projects import RclProjectReader
+from lexinform.services.run_requests import RunRequests
 from lexinform.services.text_prefilter import PrefilterLoad
 from lexinform.settings import Settings
 
@@ -352,6 +358,8 @@ def reprefilter(
     finally:
         c.close()
     typer.echo(f"scanned={report.scanned} accepted={len(report.accepted)}")
+    if report.errors and os.environ.get("LEXINFORM_EXECUTING_REQUEST"):
+        raise typer.Exit(code=1)
 
 
 def _tell_the_log_channel(c: Container, report: BackfillReport) -> None:
@@ -489,7 +497,9 @@ def analyze(
                 )
                 raise typer.Exit(code=2)
             else:
-                outcome = c.analysis_service().analyze_bill(bill, ignore_cost_limit=force)
+                outcome = c.analysis_service().analyze_bill(
+                    bill, ignore_cost_limit=force, redo=force
+                )
                 if isinstance(outcome, Waiting):
                     typer.echo(labels_for(c.settings.output_language).analysis_queued)
                     return
@@ -581,22 +591,21 @@ def preview(
     c = _container()
     try:
         bill = _or_exit(lambda: c.bill_lookup().continuation(_load_bill(c, number)))
-        if bill.analysis is None:
-            typer.echo(f"{number} is not analysed yet; run `lexinform analyze {number}`", err=True)
+        operations = _bill_operations(c, publishing=False)
+        try:
+            outcome = operations.preview(bill, to)
+        except (ValueError, RuntimeError) as exc:
+            typer.echo(str(exc), err=True)
+            raise typer.Exit(code=1) from None
+        if not outcome.ok:
+            typer.echo(outcome.note, err=True)
             raise typer.Exit(code=2)
-        print_info = c.gateway.get_print(bill.term, bill.number) if bill.has_process else None
         if to:
-            try:
-                publisher = c.preview_publisher(to, dry_run=False)
-                result = publisher.publish_new_bill(bill, print_info)
-            except (ValueError, RuntimeError) as exc:
-                typer.echo(str(exc), err=True)
-                raise typer.Exit(code=1) from None
-            typer.echo(f"sent message {result.message_id}")
+            typer.echo(outcome.note)
         else:
-            rendered = c.formatter.new_bill(bill, print_info)
-            typer.echo(rendered.text)
-            typer.echo(f"\n[{len(rendered.text)} chars]")
+            rendered = c.formatter.preview_card(outcome)
+            typer.echo(rendered)
+            typer.echo(f"\n[{len(rendered)} chars]")
     finally:
         c.close()
 
@@ -627,6 +636,8 @@ def track(
     finally:
         c.close()
     typer.echo(f"updates={report.updates} errors={report.errors}")
+    if not report.ok:
+        raise typer.Exit(code=1)
 
 
 @app.command(name="collect-batches")
@@ -779,6 +790,9 @@ def commands(
         bool,
         typer.Option("--dry-run", help="Print the replies and cards, roll back, keep the inbox."),
     ] = False,
+    run_requests: Annotated[
+        bool, typer.Option("--run-requests", help="Drain saved phase requests.")
+    ] = False,
 ) -> None:
     """Answer the operator commands waiting in the inbox (LEXINFORM_INBOX_DIR) and nothing else.
 
@@ -787,11 +801,25 @@ def commands(
     c = _container()
     try:
         s = c.settings
-        if c.command_inbox() is None:
+        inbox = c.command_inbox()
+        if inbox is None:
             typer.echo(
                 "no inbox: set LEXINFORM_INBOX_DIR to the directory of the inbox branch", err=True
             )
             raise typer.Exit(code=2)
+        if run_requests:
+            if dry_run:
+                raise typer.BadParameter("Saved requests carry their own dry-run option")
+            requests = RunRequests(
+                c.repo,
+                inbox,
+                c.operator_replier(dry_run=False),
+                c.checkpoint_after_subprocess,
+                c.clock,
+                lambda command: _execute_run_request(c, command),
+                workflow_url=c.workflow_url(),
+            )
+            raise typer.Exit(code=0 if requests.drain() else 1)
         report = c.pipeline(dry_run=dry_run).run(
             RunOptions(
                 term=s.term,
@@ -813,6 +841,55 @@ def commands(
         f" errors={len(report.errors)}"
     )
     raise typer.Exit(code=0 if report.ok else 1)
+
+
+def _execute_run_request(c: Container, command: Command) -> CommandOutcome:
+    inputs = command.inputs
+    dry = inputs.get("dry_run") == "true"
+    phases: list[list[str]] = []
+    if int(inputs.get("reprefilter_limit", "0")) > 0:
+        args = ["reprefilter", "--limit", inputs["reprefilter_limit"]]
+        if inputs.get("reprefilter_text_skipped") == "true":
+            args.append("--include-text-skipped")
+        phases.append(args)
+    if since := inputs.get("index_rcl_since"):
+        phases.append(["index-rcl-numbers", "--since", since])
+    main_args = [command.name.value, *inputs.get("options", "").split()]
+    if since := inputs.get("since"):
+        main_args.extend(("--since", since))
+    if dry:
+        main_args.append("--dry-run")
+    phases.append(main_args)
+    env = os.environ | {"LEXINFORM_RUN_MESSAGE_ID": "", "LEXINFORM_EXECUTING_REQUEST": "1"}
+    with TemporaryDirectory(prefix="lexinform-request-") as directory:
+        if dry:
+            path = Path(directory) / "dry.db"
+            with closing(SqliteBillRepository(path)) as scratch:
+                scratch.restore(c.repo.dump())
+            env.update(
+                LEXINFORM_DB_PATH=str(path),
+                LEXINFORM_STATE_CHECKPOINT_REQUIRED="false",
+                LEXINFORM_LLM_BATCH_STATE_FILE="",
+                LEXINFORM_INBOX_DIR="",
+                LEXINFORM_TELEGRAM_LOG_CHANNEL_ID="",
+            )
+        for args in phases:
+            result = subprocess.run(
+                [sys.executable, "-m", "lexinform.cli", *args], env=env, check=False
+            )
+            if result.returncode == StateCheckpointError.exit_code:
+                raise StateCheckpointError(f"/{args[0]} stopped after a state checkpoint failure")
+            if result.returncode:
+                return CommandOutcome(
+                    status=OutcomeStatus.ERROR,
+                    note=f"/{args[0]} завершился с кодом {result.returncode}. См. журнал прогона.",
+                )
+    return CommandOutcome(
+        status=OutcomeStatus.REPORTED,
+        note="Пробный запуск завершён. Вывод в журнале прогона."
+        if dry
+        else "Запуск завершён. Подробности в отчёте прогона.",
+    )
 
 
 @app.command()
@@ -1129,18 +1206,13 @@ def republish(
             typer.echo(f"{number}: current card in {c.channel_id()}: {state}")
             if not yes and not typer.confirm("Send the card again?"):
                 raise typer.Exit(code=1)
+            operations = _bill_operations(c, publishing=True)
             try:
-                publishing.forget_card(bill)
+                outcome = operations.republish(bill, publish=True)
             except ValueError as exc:
                 raise typer.BadParameter(str(exc)) from None
-            ok = publishing.publish_bill(bill)
-            fresh = publishing.card_of(bill)
-            typer.echo(
-                f"sent message {fresh.message_id}"
-                if ok and fresh
-                else "sending failed, see the log"
-            )
-            raise typer.Exit(code=0 if ok else 1)
+            typer.echo(f"sent message {outcome.message_id}" if outcome.message_id else outcome.note)
+            raise typer.Exit(code=0 if outcome.ok else 1)
     finally:
         c.close()
 
@@ -1178,10 +1250,12 @@ def forget(
             if not yes and not typer.confirm("Forget it, posting nothing?"):
                 raise typer.Exit(code=1)
             try:
-                publishing.forget_card(bill)
+                outcome = _bill_operations(c, publishing=False).forget(
+                    bill, min_score=c.settings.min_score
+                )
             except ValueError as exc:
                 raise typer.BadParameter(str(exc)) from None
-            typer.echo("forgotten; the next run decides whether the bill gets a card again")
+            typer.echo(outcome.note)
     finally:
         c.close()
 
@@ -1207,15 +1281,10 @@ def reset(
             typer.echo(f"{number}: {bill.status} (attempts {bill.analysis_attempts}) -> {to}")
             if not yes and not typer.confirm("Apply?"):
                 raise typer.Exit(code=1)
-            c.repo.reset_bill(bill.term, bill.number, to)
-            if (
-                to is BillStatus.ANALYSIS_PENDING
-                and bill.rcl is not None
-                and not bill.rcl.text_documents()
-            ):
-                c.repo.save_rcl(bill.term, bill.number, _read_rcl_project(c, bill.number))
-                typer.echo("project documents re-read from RCL")
-            typer.echo("done")
+            outcome = _or_exit(lambda: _bill_operations(c, publishing=False).reset(bill, to))
+            typer.echo(outcome.note)
+            if not outcome.ok:
+                raise typer.Exit(code=2)
     finally:
         c.close()
 
@@ -1237,21 +1306,13 @@ def observe(
     try:
         with c.cli_document_reads().capture("observe"):
             bill = _load_bill(c, number)
-            publishing = c.publishing_service(dry_run=True)
-            has_card = publishing.has_sent_card(bill)
-            new_mode, basis = operator_observation(
-                mode.lower(),
-                bill.analysis.analysis if bill.analysis else None,
-                has_card=has_card,
-                min_score=c.settings.min_score,
+            operations = _bill_operations(c, publishing=False)
+            typer.echo(
+                operations.observation_preview(bill, mode.lower(), min_score=c.settings.min_score)
             )
-            was = observation_label(bill.observation_mode, bill.observation_basis)
-            typer.echo(f"{number}: {was} -> {observation_label(new_mode, basis)}")
-            if has_card:
-                typer.echo("the bill has a card, which is followed in full whatever its mode")
             if not yes and not typer.confirm("Apply?"):
                 raise typer.Exit(code=1)
-            c.repo.set_observation(bill.term, bill.number, new_mode, basis)
+            operations.observe(bill, mode.lower(), min_score=c.settings.min_score)
             typer.echo("done")
     finally:
         c.close()
@@ -1449,6 +1510,16 @@ def _load_bill(c: Container, number: str) -> Bill:
 
 def _find_submission(c: Container, number: str) -> BillSubmission:
     return _or_exit(lambda: c.bill_lookup().find_submission(c.term(), number))
+
+
+def _bill_operations(c: Container, *, publishing: bool) -> BillOperations:
+    return BillOperations(
+        c.repo,
+        c.publishing_service(dry_run=not publishing),
+        c.bill_lookup(),
+        c.clock,
+        lambda chat: c.preview_publisher(chat, dry_run=False),
+    )
 
 
 def _or_exit[T](action: Callable[[], T]) -> T:
