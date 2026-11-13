@@ -343,13 +343,16 @@ class SejmApiClient:
     ) -> httpx.Response:
         """One request with retries; `stream=True` returns before the body is read (caller
         closes the response)."""
-        host = self._client.build_request(method, url).url.host
+        request_url = self._client.build_request(method, url).url
+        host = request_url.host
         attempt = 0
         while True:
             with self._failure_lock:
                 if self._failed_requests.get(host, 0) >= self.MAX_FAILED_REQUESTS:
+                    path = request_url.copy_with(query=None).raw_path.decode("ascii")
+                    skipped = "retry skipped" if attempt else "request skipped before sending"
                     raise SejmApiUnavailableError(
-                        f"{host}: request failure budget exhausted; retry on the next run"
+                        f"{method} {path}: {skipped} ({host} request failure budget exhausted)"
                     ).with_download_details("failure_budget")
             attempt += 1
             try:

@@ -26,10 +26,10 @@ class TermResolver:
         self._pinned = pinned
         self._resolved: int | None = None
         self._listed: tuple[SejmTerm, ...] | None = None
+        self._list_error: ServiceUnavailableError | None = None
 
     def current(self) -> int:
-        """The pinned term, else the API's current one (asked once per process), else the newest
-        term in the database. Raises the API's `ServiceUnavailableError` when none is known."""
+        """Use the pinned term, the API's current term, or the newest stored term."""
         if self._pinned is not None:
             return self._pinned
         if self._resolved is None:
@@ -39,8 +39,10 @@ class TermResolver:
     def started(self, term: int) -> dt.date | None:
         """The day `term` began, None when the API is down or does not say."""
         if self._listed is None:
+            if self._list_error is not None:
+                return None
             try:
-                self._listed = self._gateway.list_terms()
+                self._listed = self._list_terms()
             except ServiceUnavailableError as exc:
                 log.warning("%s; the term's start is unknown", exc.describe())
                 return None
@@ -48,7 +50,7 @@ class TermResolver:
 
     def _resolve(self) -> int:
         try:
-            self._listed = self._gateway.list_terms()
+            self._listed = self._list_terms()
             term = current_term(self._listed)
         except ServiceUnavailableError as exc:
             known = self._repo.known_terms()
@@ -60,3 +62,12 @@ class TermResolver:
         if term is None:
             raise RuntimeError("the Sejm API lists no term")
         return term
+
+    def _list_terms(self) -> tuple[SejmTerm, ...]:
+        if self._list_error is not None:
+            raise self._list_error
+        try:
+            return self._gateway.list_terms()
+        except ServiceUnavailableError as exc:
+            self._list_error = exc
+            raise

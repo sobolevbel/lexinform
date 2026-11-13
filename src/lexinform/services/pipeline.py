@@ -456,7 +456,11 @@ class DailyPipeline:
 
     def _discover(self, term: int, since: datetime, report: RunReport) -> None:
         discovered = self._discovery.discover(term, since, pre_print=self._pre_print)
-        report.discovery_ok = True
+        report.discovery_ok = not discovered.errors
+        for error in discovered.errors:
+            message = f"discovery: {error}"
+            log.error(message, extra={"in_report": True})
+            report.errors.append(message)
         report.discovered = discovered.new
         report.pre_print_discovered = discovered.pre_print_new
         report.prefilter_hits = discovered.prefilter_hits

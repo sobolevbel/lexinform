@@ -202,6 +202,10 @@ def scan(since: SinceOpt = None) -> None:
             effective = pipeline.resolve_since(_utc(since))
             term = c.term()
             result = c.discovery_service().discover(term, effective)
+            if result.errors:
+                for error in result.errors:
+                    typer.echo(f"discovery: {error}", err=True)
+                raise typer.Exit(code=1)
             over = result.over
             wykaz_service = c.wykaz_discovery_service()
             wykaz_new = 0

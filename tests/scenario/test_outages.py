@@ -2,7 +2,7 @@
 and it never burns the per-bill budget of attempts either: what failed because the Sejm, the model
 or Telegram was down must be tried again on the next run, and exactly once."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import httpx2 as httpx
 import pytest
@@ -10,7 +10,7 @@ import pytest
 from lexinform.adapters.sejm_api import SejmApiClient
 from lexinform.errors import LlmUnavailableError, SejmApiUnavailableError
 from lexinform.models import BillStatus, PublicationStatus
-from tests.harness import World
+from tests.harness import RPW, TERM, World, submission, submission_url
 
 
 def test_sejm_api_down_during_discovery_is_reported_not_raised() -> None:
@@ -22,6 +22,65 @@ def test_sejm_api_down_during_discovery_is_reported_not_raised() -> None:
     assert not report.ok
     assert report.errors == ["discovery: Sejm API unavailable: iter_processes: connection refused"]
     assert w.notifier.calls[-1][0] is report
+
+
+def test_bills_discovery_continues_when_processes_return_503(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    w = World()
+    w.add_bill("3038", "Projekt ustawy o cudzoziemcach")
+    assert w.run(rcl=False).discovery_ok
+    watermark = w.repo.last_discovery_started_at()
+    w.clock.advance(days=2)
+    w.add_bill("3039", "Projekt ustawy o obywatelstwie polskim")
+    sub = submission(date_of_receipt=w.clock.now().date() - timedelta(days=1))
+    w.gateway.submissions.append(sub)
+    w.gateway.files[submission_url()] = b"%PDF"
+    requests: list[str] = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        requests.append(request.url.path)
+        if request.url.path != "/sejm/term10/bills":
+            return httpx.Response(503)
+        return httpx.Response(
+            200,
+            json=[
+                {
+                    "number": sub.number,
+                    "title": sub.title,
+                    "applicantType": "DEPUTIES",
+                    "dateOfReceipt": str(sub.date_of_receipt),
+                }
+            ],
+        )
+
+    client = SejmApiClient(transport=httpx.MockTransport(respond), sleep=lambda _seconds: None)
+    try:
+        with monkeypatch.context() as patch:
+            patch.setattr(w.gateway, "list_terms", client.list_terms)
+            patch.setattr(w.gateway, "iter_processes", client.iter_processes)
+            patch.setattr(w.gateway, "iter_bills", client.iter_bills)
+            partial = w.run(term=None, since=None)
+    finally:
+        client.close()
+
+    assert (
+        requests == ["/sejm/term"] * 4 + ["/sejm/term10/processes"] * 4 + ["/sejm/term10/bills"] * 2
+    )
+    assert partial.errors == [
+        "discovery: Sejm API unavailable: GET /sejm/term10/processes: HTTP 503 after 4 attempts"
+    ]
+    assert not partial.discovery_ok
+    assert (partial.pre_print_discovered, partial.published) == (1, 1)
+    assert w.bill(RPW).submission is not None
+    assert w.repo.get(TERM, "3039") is None
+    assert w.repo.last_discovery_started_at() == watermark
+
+    recovered = w.run(term=None, since=None)
+
+    assert recovered.discovery_ok
+    assert (recovered.discovered, recovered.pre_print_discovered, recovered.published) == (1, 0, 1)
+    assert w.repo.last_discovery_started_at() == w.clock.now()
 
 
 def test_sejm_api_down_during_analysis_keeps_the_attempts() -> None:

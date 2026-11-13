@@ -170,13 +170,49 @@ def test_sejm_outage_budget_bounds_requests_across_endpoints(failure: str) -> No
         for code in ("ASW", "SPC", "FPB", "ZDR", "EDU"):
             with pytest.raises(SejmApiUnavailableError):
                 client.list_committee_sittings(10, code)
-        with pytest.raises(SejmApiUnavailableError, match="budget exhausted"):
+        with pytest.raises(
+            SejmApiUnavailableError, match="GET /sejm/term10/proceedings: request skipped"
+        ):
             client.list_sittings(10)
-        with pytest.raises(SejmApiUnavailableError, match="budget exhausted"):
-            list(client.iter_processes(10))
+        with pytest.raises(SejmApiUnavailableError) as error:
+            list(client.iter_bills(10))
 
+        assert str(error.value) == (
+            "GET /sejm/term10/bills: request skipped before sending "
+            "(api.sejm.gov.pl request failure budget exhausted)"
+        )
+        assert error.value.download_failure is not None, (
+            "the adapter records why the request stopped"
+        )
+        assert error.value.download_failure.reason == "failure_budget"
         assert len(calls) == 12
         assert delays == [1.0, 2.0, 4.0] * 3
+    finally:
+        client.close()
+
+
+def test_sejm_budget_reports_a_skipped_retry_after_a_request_was_sent() -> None:
+    calls: list[str] = []
+
+    def unavailable(request: httpx.Request) -> httpx.Response:
+        calls.append(request.url.path)
+        return httpx.Response(503)
+
+    def other_calls_while_waiting(delay: float) -> None:
+        if calls == ["/sejm/term10/proceedings"]:
+            for _ in range(3):
+                with pytest.raises(SejmApiUnavailableError, match="HTTP 503 after 2 attempts"):
+                    client.list_terms()
+
+    client = SejmApiClient(
+        transport=httpx.MockTransport(unavailable), max_retries=1, sleep=other_calls_while_waiting
+    )
+    try:
+        with pytest.raises(
+            SejmApiUnavailableError, match="GET /sejm/term10/proceedings: retry skipped"
+        ):
+            client.list_sittings(10)
+        assert calls == ["/sejm/term10/proceedings"] + ["/sejm/term"] * 6
     finally:
         client.close()
 
@@ -237,6 +273,12 @@ def test_sejm_budget_is_host_scoped_and_a_new_client_can_retry() -> None:
         assert client.download("https://files.test/print.pdf") == b"attachment"
         with pytest.raises(SejmApiUnavailableError, match="budget exhausted"):
             client.list_terms()
+        with pytest.raises(SejmApiUnavailableError) as error:
+            client.download("https://user:password@api.sejm.gov.pl/druk%20example.pdf?secret=value")
+        assert str(error.value) == (
+            "GET /druk%20example.pdf: request skipped before sending "
+            "(api.sejm.gov.pl request failure budget exhausted)"
+        )
     finally:
         client.close()
 

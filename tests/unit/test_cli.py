@@ -421,6 +421,14 @@ def test_scan_prints_the_counters_and_the_queue_it_leaves_behind(db: Path, api: 
     assert "rcl_new=0 rcl_hits=0" in result.output  # RCL off: the line still accounts for it
 
 
+def test_scan_exits_with_an_error_when_sejm_discovery_is_incomplete(db: Path) -> None:
+    result = runner.invoke(app, ["scan"], env=_env(db))
+
+    assert result.exit_code == 1
+    assert "discovery: Sejm API unavailable: GET /sejm/term10/processes" in result.output
+    assert "discovery: Sejm API unavailable: GET /sejm/term10/bills" in result.output
+
+
 @pytest.mark.local_http
 def test_track_reports_what_it_posted(db: Path, api: str) -> None:
     result = runner.invoke(app, ["track", "--dry-run"], env=_env(db, api=api))

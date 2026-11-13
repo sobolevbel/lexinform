@@ -40,6 +40,7 @@ class DiscoveryResult:
     prefilter_hits: int = 0
     rejected: list[str] = field(default_factory=list)
     over: int = 0
+    errors: list[str] = field(default_factory=list)
 
 
 class BillDiscoveryService:
@@ -68,9 +69,15 @@ class BillDiscoveryService:
 
     def discover(self, term: int, since: datetime, *, pre_print: bool = True) -> DiscoveryResult:
         result = DiscoveryResult()
-        self._discover_processes(term, since, result)
+        try:
+            self._discover_processes(term, since, result)
+        except ServiceUnavailableError as exc:
+            result.errors.append(exc.describe())
         if pre_print:
-            self._discover_submissions(term, since, result)
+            try:
+                self._discover_submissions(term, since, result)
+            except ServiceUnavailableError as exc:
+                result.errors.append(exc.describe())
         log.info(
             "discovery: seen=%d new=%d pre_print_seen=%d pre_print_new=%d prefilter_hits=%d"
             " over=%d",
