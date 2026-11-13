@@ -135,7 +135,7 @@ class SejmApiClient:
         offset = 0
         previous_first: str | None = None
         while True:
-            page = self._get_json(
+            page = self._get_listing(
                 f"/sejm/term{term}/processes", params={**params, "offset": offset}
             )
             if not isinstance(page, list):
@@ -167,7 +167,7 @@ class SejmApiClient:
         offset = 0
         previous_first: str | None = None
         while True:
-            page = self._get_json(f"/sejm/term{term}/bills", params={**params, "offset": offset})
+            page = self._get_listing(f"/sejm/term{term}/bills", params={**params, "offset": offset})
             if not isinstance(page, list) or not page:
                 return
             first = str(page[0].get("number"))
@@ -330,6 +330,18 @@ class SejmApiClient:
 
     def _get_json(self, path: str, params: dict[str, str | int] | None = None) -> Any:
         return self._request("GET", path, params=params).json()
+
+    def _get_listing(self, path: str, params: dict[str, str | int] | None = None) -> Any:
+        """The public collection routes can return HTML 404 on a failing network path."""
+        try:
+            return self._get_json(path, params)
+        except SejmApiError as exc:
+            details = exc.download_failure
+            if details is None or details.status_code != 404:
+                raise
+            raise SejmApiUnavailableError(str(exc)).with_download_details(
+                "http_status", status_code=404
+            ) from exc
 
     def _request(
         self,

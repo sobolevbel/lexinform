@@ -17,6 +17,19 @@ from tests.conftest import FIXTURES
 Handler = Callable[[httpx.Request], httpx.Response]
 
 
+def test_listing_404_is_an_outage_and_bills_are_still_read() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/bills"):
+            return httpx.Response(200, json=[])
+        return httpx.Response(404, text="Not Found")
+
+    client = _client(handler)
+
+    with pytest.raises(SejmApiUnavailableError, match="GET /sejm/term10/processes: HTTP 404"):
+        list(client.iter_processes(10))
+    assert list(client.iter_bills(10)) == []
+
+
 def test_list_votings_preserves_purpose_prints_and_warsaw_date() -> None:
     data = _fixture("votings_66_2644.json")
 

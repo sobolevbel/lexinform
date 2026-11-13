@@ -16,6 +16,7 @@ from typing import Literal
 from pydantic import BaseModel
 
 from lexinform.errors import (
+    SejmApiUnavailableError,
     ServiceUnavailableError,
     SourceHistoryPersistenceError,
     StateCheckpointError,
@@ -296,6 +297,7 @@ class DailyPipeline:
             return self._terms.current()
         except ServiceUnavailableError as exc:
             message = f"term: {exc.describe()}"
+            report.sejm_discovery_unavailable = isinstance(exc, SejmApiUnavailableError)
         except Exception as exc:
             message = f"term: {type(exc).__name__}: {exc}"
         log.error(message, extra={"in_report": True})
@@ -458,7 +460,9 @@ class DailyPipeline:
         discovered = self._discovery.discover(term, since, pre_print=self._pre_print)
         report.discovery_ok = not discovered.errors
         for error in discovered.errors:
-            message = f"discovery: {error}"
+            if isinstance(error, SejmApiUnavailableError):
+                report.sejm_discovery_unavailable = True
+            message = f"discovery: {error.describe()}"
             log.error(message, extra={"in_report": True})
             report.errors.append(message)
         report.discovered = discovered.new

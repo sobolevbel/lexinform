@@ -20,6 +20,7 @@ def test_sejm_api_down_during_discovery_is_reported_not_raised() -> None:
     report = w.run()
 
     assert not report.ok
+    assert report.sejm_discovery_unavailable
     assert report.errors == ["discovery: Sejm API unavailable: iter_processes: connection refused"]
     assert w.notifier.calls[-1][0] is report
 
@@ -79,6 +80,7 @@ def test_bills_discovery_continues_when_processes_return_503(
     recovered = w.run(term=None, since=None)
 
     assert recovered.discovery_ok
+    assert not recovered.sejm_discovery_unavailable
     assert (recovered.discovered, recovered.pre_print_discovered, recovered.published) == (1, 0, 1)
     assert w.repo.last_discovery_started_at() == w.clock.now()
 

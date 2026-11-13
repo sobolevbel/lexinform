@@ -8,8 +8,8 @@ from pathlib import Path
 import pytest
 
 
-def execution_script(step: str = "Run lexinform") -> str:
-    workflow = Path(__file__).parents[2] / ".github/workflows/daily.yml"
+def execution_script(step: str = "Run lexinform", filename: str = "daily.yml") -> str:
+    workflow = Path(__file__).parents[2] / ".github/workflows" / filename
     lines = workflow.read_text().splitlines()
     start = lines.index(f"      - name: {step}")
     start = lines.index("        run: |", start) + 1
@@ -109,6 +109,48 @@ def test_inbox_deletions_require_a_confirmed_state_save() -> None:
 
     assert "steps.dump.outcome == 'success'" in condition
     assert "inputs.dry_run != true" in condition
+
+
+@pytest.mark.parametrize(
+    ("saved", "main_sha", "retry"),
+    [(True, "abc", True), (True, "def", False), (False, "abc", False)],
+)
+def test_retry_requires_saved_state_and_current_code(
+    tmp_path: Path, saved: bool, main_sha: str, retry: bool
+) -> None:
+    executable = tmp_path / "gh"
+    executable.write_text(
+        '#!/bin/sh\ncase "$2" in\n'
+        '*/jobs) printf "%s\\n" "$SAVED" ;;\n'
+        '*/heads/main) printf "%s\\n" "$MAIN_SHA" ;;\n'
+        '*) printf "%s\\n" "$*" ;;\nesac\n'
+    )
+    executable.chmod(0o755)
+    result = subprocess.run(
+        [
+            "bash",
+            "-c",
+            execution_script(
+                "Retry saved Sejm discovery on another runner", "daily-interrupted.yml"
+            ),
+        ],
+        env={
+            "PATH": f"{tmp_path}{os.pathsep}{os.defpath}",
+            "SAVED": str(saved).lower(),
+            "GITHUB_REPOSITORY": "test/repo",
+            "RUN_ID": "123",
+            "RUN_ATTEMPT": "2",
+            "RUN_SHA": "abc",
+            "MAIN_SHA": main_sha,
+        },
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.splitlines() == (
+        ["run rerun 123 --repo test/repo --failed"] if retry else []
+    )
 
 
 @pytest.mark.parametrize("pending_commands", [False, True])

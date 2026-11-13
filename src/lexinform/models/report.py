@@ -132,6 +132,7 @@ class RunReport(BaseModel):
     )
     term: int | None = None
     discovery_ok: bool = False
+    sejm_discovery_unavailable: bool = Field(default=False, exclude_if=lambda value: not value)
     discovered: int = 0
     pre_print_discovered: int = 0
     rcl_discovered: int = 0

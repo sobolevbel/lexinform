@@ -296,6 +296,7 @@ jobs:
       # files and the run only removes them, so a rebase onto a moved branch never conflicts.
       - name: Commit handled commands and push inbox branch
         if: ${{ always() && inputs.maintenance_spec == '' && inputs.dry_run != true && steps.inbox.outputs.present == 'true' && steps.run.outcome != 'skipped' && steps.dump.outcome == 'success' }}
+        id: inbox_save
         run: |
           set -euo pipefail
           git -C inbox config user.name "github-actions[bot]"
@@ -312,6 +313,10 @@ jobs:
             git -C inbox rebase "origin/$INBOX_BRANCH"
           done
           exit 1
+
+      - name: Mark Sejm recovery safe
+        if: ${{ !cancelled() && github.event_name == 'schedule' && steps.run.outcome == 'failure' && steps.run.outputs.sejm_discovery_unavailable == 'true' && steps.dump.outcome == 'success' && (steps.inbox.outputs.present != 'true' || steps.inbox_save.outcome == 'success') }}
+        run: echo "State saved and Sejm discovery needs another runner"
 
       # A failed pipeline can still save state through the always() dump step.
       - name: Tell the log channel when the job failed around the run

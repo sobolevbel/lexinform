@@ -185,6 +185,9 @@ def run(
     finally:
         c.close()
     typer.echo(report.model_dump_json(indent=2))
+    if report.sejm_discovery_unavailable and (output_path := os.environ.get("GITHUB_OUTPUT")):
+        with Path(output_path).open("a", encoding="utf-8") as output:
+            output.write("sejm_discovery_unavailable=true\n")
     raise typer.Exit(code=0 if report.ok else 1)
 
 
@@ -204,7 +207,7 @@ def scan(since: SinceOpt = None) -> None:
             result = c.discovery_service().discover(term, effective)
             if result.errors:
                 for error in result.errors:
-                    typer.echo(f"discovery: {error}", err=True)
+                    typer.echo(f"discovery: {error.describe()}", err=True)
                 raise typer.Exit(code=1)
             over = result.over
             wykaz_service = c.wykaz_discovery_service()

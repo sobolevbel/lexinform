@@ -8,6 +8,30 @@ on:
 permissions: {}
 
 jobs:
+  retry-sejm:
+    if: ${{ github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.event == 'schedule' && github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.run_attempt < 3 }}
+    permissions:
+      actions: write
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Retry saved Sejm discovery on another runner
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          completed=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/attempts/$RUN_ATTEMPT/jobs" \
+            --jq 'any(.jobs[] | select(.name == "run") | .steps[]; .name == "Mark Sejm recovery safe" and .conclusion == "success")')
+          [ "$completed" = "true" ] || exit 0
+          main_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
+          if [ "$main_sha" = "$RUN_SHA" ]; then
+            gh run rerun "$RUN_ID" --repo "$GITHUB_REPOSITORY" --failed
+          fi
+
   notify:
     if: ${{ contains(fromJSON('["cancelled", "timed_out"]'), github.event.workflow_run.conclusion) }}
     runs-on: ubuntu-latest
