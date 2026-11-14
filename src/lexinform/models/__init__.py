@@ -391,6 +391,7 @@ from lexinform.models.report import (
     PrefilterRejection,
     RunReport,
 )
+from lexinform.models.report_content import ReportContent, ReportField
 from lexinform.models.reviews import (
     CommissionFinding,
     ConsultationFinding,
@@ -750,6 +751,8 @@ __all__ = [
     "CliReadOperation",
     "LlmCall",
     "RunReport",
+    "ReportContent",
+    "ReportField",
     "SERVICE_STAGE_TYPES",
     "SITTING_PHASES",
     "SejmSitting",

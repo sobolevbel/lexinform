@@ -40,6 +40,10 @@ paths:
 
 Command reference and the relay: `docs/operator-commands.md`.
 
+- **Run reports share one content projection** (`RunReport.content`) for display and activity.
+  Declare section, role and scope beside each field with `ReportField`; unannotated fields are
+  result metrics in the fallback section. Nested zero/empty values do not count; metadata never
+  counts, context alone stays quiet. Presentation metadata must not change persisted report JSON.
 - **Outages never burn per-bill attempts.** `ServiceUnavailableError` subclasses abort the phase and
   go to the log channel; anything else is a per-bill failure (3 attempts). Unknown model id and bad
   request parameters are fatal; "prompt too long" is per-bill. An unreachable source stops only its

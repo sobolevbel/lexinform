@@ -1,7 +1,7 @@
 """What one run reports to the log channel and stores in the `runs` table."""
 
 import datetime as dt
-from typing import Literal, Self
+from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -13,6 +13,12 @@ from lexinform.models.document_reads import (
 )
 from lexinform.models.enums import RunMode
 from lexinform.models.metadata_omissions import MetadataUrlOmissions
+from lexinform.models.report_content import (
+    ReportContent,
+    ReportField,
+    has_report_content,
+    report_content,
+)
 
 
 class AnalysisVerdict(BaseModel):
@@ -123,95 +129,178 @@ class RunReport(BaseModel):
     telling without being errors; `rejected` the bills analysed and not published.
     """
 
-    started_at: dt.datetime
-    finished_at: dt.datetime | None = None
-    since: dt.datetime
-    mode: RunMode
-    cli_read_operation: CliReadOperation | None = Field(
+    started_at: Annotated[dt.datetime, ReportField(role="metadata")]
+    finished_at: Annotated[dt.datetime | None, ReportField(role="metadata")] = None
+    since: Annotated[dt.datetime, ReportField(role="metadata")]
+    mode: Annotated[RunMode, ReportField(role="metadata")]
+    cli_read_operation: Annotated[CliReadOperation | None, ReportField(role="metadata")] = Field(
         default=None, exclude_if=lambda value: value is None
     )
-    term: int | None = None
-    discovery_ok: bool = False
-    sejm_discovery_unavailable: bool = Field(default=False, exclude_if=lambda value: not value)
-    discovered: int = 0
-    pre_print_discovered: int = 0
-    rcl_discovered: int = 0
-    rcl_prefilter_hits: int = 0
-    wykaz_discovered: int = 0
-    over_on_arrival: int = 0
-    linked: int = 0
-    prefilter_hits: int = 0
-    prefilter_rejected: list[str] | None = None
-    prefilter_details: list[PrefilterRejection] = Field(default_factory=list)
-    text_prefilter_checked: int = 0
-    text_prefilter_hits: int = 0
-    text_prefilter_scans: int = 0
-    text_prefilter_unreadable: int = 0
-    text_prefilter_unanswered: int = 0
-    acts_published: int = 0
-    in_force_posted: int = 0
-    consultation_reminders: int = 0
-    hearing_reminders: int = 0
-    decision_reminders: int = 0
-    held: int = 0
-    cards_refreshed: int = 0
-    digest_drafted: bool = False
-    digest_reader_parts: int = 0
-    digest_events_covered: int = 0
-    consultation_results_posted: int = 0
-    consultation_reviews_posted: int = 0
-    commission_reviews_posted: int = 0
-    act_reviews_posted: int = 0
-    effective_rule_messages: int = 0
-    amendment_messages_updated: int = 0
-    message_parts_sent: int = 0
-    agenda_posted: int = 0
-    agenda_cancelled: int = 0
-    discontinued: int = 0
-    rehomed: int = 0
-    analyzed: int = 0
-    triaged_out: int = 0
-    analysis_failures: int = 0
-    analysis_skipped_cost: int = 0
-    analysis_unanswered: int = 0
-    joint_revived: int = 0
-    notes: list[str] = Field(default_factory=list)
-    rejected: list[AnalysisVerdict] = Field(default_factory=list)
-    commands_handled: int = 0
-    commands_failed: int = 0
-    commands: list[str] = Field(default_factory=list)
-    published: int = 0
-    joint_published: int = 0
-    updates: int = 0
-    update_events: int = 0
-    attention: dict[str, int] = Field(default_factory=dict)
-    reanalyzed: int = 0
-    tracked: int = 0
-    batch_waiting: int = 0
-    batch_requests_submitted: int = 0
-    batch_requests_pending: int = 0
-    batch_requests_queued: int = 0
-    batch_requests_uncertain: int = 0
-    errors: list[str] = Field(default_factory=list)
-    llm_input_tokens: int = 0
-    llm_output_tokens: int = 0
-    llm_usage: dict[str, TokenUsage] = Field(default_factory=dict)
-    llm_calls: list[LlmCall] = Field(default_factory=list)
-    phase_seconds: dict[str, float] = Field(default_factory=dict)
-    document_reads: DocumentReadMetrics | None = Field(
-        default=None, exclude_if=lambda value: value is None
+    term: Annotated[int | None, ReportField(role="metadata")] = None
+    discovery_ok: Annotated[bool, ReportField(role="metadata")] = False
+    sejm_discovery_unavailable: Annotated[
+        bool, ReportField("discovery", "Sejm discovery unavailable", row=5)
+    ] = Field(default=False, exclude_if=lambda value: not value)
+    discovered: Annotated[int, ReportField("discovery", "Sejm: {} new")] = 0
+    pre_print_discovered: Annotated[
+        int,
+        ReportField("discovery", "{} submitted to the Sejm, no druk number yet (RPW)", order=1),
+    ] = 0
+    rcl_discovered: Annotated[int, ReportField("discovery", "RCL: {} new", row=1)] = 0
+    rcl_prefilter_hits: Annotated[
+        int, ReportField("discovery", "prefilter hits: {}", row=1, order=1)
+    ] = 0
+    wykaz_discovered: Annotated[int, ReportField("discovery", "wykaz prac RM: {} new", row=2)] = 0
+    over_on_arrival: Annotated[
+        int,
+        ReportField("discovery", "{} already over when first seen, not followed", row=3),
+    ] = 0
+    linked: Annotated[int, ReportField("posts", "linked: {}", order=6)] = 0
+    prefilter_hits: Annotated[int, ReportField("discovery", "prefilter hits: {}", order=2)] = 0
+    prefilter_rejected: Annotated[list[str] | None, ReportField(section=None)] = None
+    prefilter_details: Annotated[list[PrefilterRejection], ReportField(section=None)] = Field(
+        default_factory=list
     )
-    document_download_diagnostics: DocumentDownloadDiagnostics | None = Field(
-        default=None, exclude_if=lambda value: value is None
+    text_prefilter_checked: Annotated[
+        int, ReportField("discovery", "text prefilter: checked {}", row=4)
+    ] = 0
+    text_prefilter_hits: Annotated[int, ReportField("discovery", "hits {}", row=4, order=1)] = 0
+    text_prefilter_scans: Annotated[
+        int, ReportField("discovery", "scans to the model {}", row=4, order=2)
+    ] = 0
+    text_prefilter_unreadable: Annotated[
+        int, ReportField("discovery", "unreadable {}", row=4, order=3)
+    ] = 0
+    text_prefilter_unanswered: Annotated[
+        int, ReportField("discovery", "no file to read yet, still pending {}", row=4, order=4)
+    ] = 0
+    acts_published: Annotated[int, ReportField("posts", "acts: {}", row=1)] = 0
+    in_force_posted: Annotated[int, ReportField("posts", "in force: {}", row=1, order=1)] = 0
+    consultation_reminders: Annotated[
+        int, ReportField("posts", "consultation reminders: {}", row=1, order=2)
+    ] = 0
+    hearing_reminders: Annotated[int, ReportField("posts", "hearings: {}", row=1, order=12)] = 0
+    decision_reminders: Annotated[
+        int, ReportField("posts", "Senate/President deadline: {}", row=1, order=13)
+    ] = 0
+    held: Annotated[int, ReportField("posts", "held: {}", order=4)] = 0
+    cards_refreshed: Annotated[
+        int, ReportField("posts", "cards refreshed: {}", row=1, order=14)
+    ] = 0
+    digest_drafted: Annotated[bool, ReportField("digest delivery", "draft prepared")] = False
+    digest_reader_parts: Annotated[
+        int, ReportField("digest delivery", "reader parts: {}", row=1)
+    ] = 0
+    digest_events_covered: Annotated[
+        int, ReportField("digest delivery", "covered events: {}", row=2)
+    ] = 0
+    consultation_results_posted: Annotated[
+        int, ReportField("posts", "results: {}", row=1, order=3)
+    ] = 0
+    consultation_reviews_posted: Annotated[
+        int, ReportField("posts", "consultation review messages: {}", row=1, order=4)
+    ] = 0
+    commission_reviews_posted: Annotated[
+        int, ReportField("posts", "commission review messages: {}", row=1, order=5)
+    ] = 0
+    act_reviews_posted: Annotated[
+        int, ReportField("posts", "act review messages: {}", row=1, order=6)
+    ] = 0
+    effective_rule_messages: Annotated[
+        int, ReportField("posts", "effective-rule messages: {}", row=1, order=7)
+    ] = 0
+    amendment_messages_updated: Annotated[
+        int, ReportField("posts", "amendment messages updated: {}", row=1, order=8)
+    ] = 0
+    message_parts_sent: Annotated[
+        int, ReportField("posts", "additional physical parts: {}", row=1, order=9)
+    ] = 0
+    agenda_posted: Annotated[int, ReportField("posts", "agenda: {}", row=1, order=10)] = 0
+    agenda_cancelled: Annotated[
+        int, ReportField("posts", "sittings called off: {}", row=1, order=11)
+    ] = 0
+    discontinued: Annotated[int, ReportField("posts", "end of term: {} bill(s) lapsed", row=2)] = 0
+    rehomed: Annotated[
+        int, ReportField("posts", "{} government row(s) carried over", row=2, order=1)
+    ] = 0
+    analyzed: Annotated[int, ReportField("analysis", "analyzed: {}")] = 0
+    triaged_out: Annotated[int, ReportField("analysis", "triaged out: {}", order=1)] = 0
+    analysis_failures: Annotated[int, ReportField("analysis", "failures: {}", order=2)] = 0
+    analysis_skipped_cost: Annotated[
+        int, ReportField("analysis", "over the cost limit: {}", order=3)
+    ] = 0
+    analysis_unanswered: Annotated[
+        int, ReportField("analysis", "file refused, still queued: {}", order=4)
+    ] = 0
+    joint_revived: Annotated[int, ReportField("analysis", "joint prints revived: {}", order=5)] = 0
+    notes: Annotated[list[str], ReportField(section=None, scope="all")] = Field(
+        default_factory=list
     )
+    rejected: Annotated[list[AnalysisVerdict], ReportField(section=None)] = Field(
+        default_factory=list
+    )
+    commands_handled: Annotated[int, ReportField("operator activity", "commands handled: {}")] = 0
+    commands_failed: Annotated[
+        int, ReportField("operator activity", "commands failed: {}", order=1)
+    ] = 0
+    commands: Annotated[list[str], ReportField(section=None)] = Field(default_factory=list)
+    published: Annotated[int, ReportField("posts", "new cards: {}")] = 0
+    joint_published: Annotated[int, ReportField("posts", "alternatives: {}", order=1)] = 0
+    updates: Annotated[int, ReportField("posts", "updates: {}", order=2)] = 0
+    update_events: Annotated[int, ReportField("posts", "status events: {}", order=3)] = 0
+    attention: Annotated[
+        dict[str, int],
+        ReportField(
+            "attention: delivery",
+            context_keys=("daily_queued", "daily_oldest_minutes"),
+            separate_lines=True,
+            bare_keys=True,
+        ),
+    ] = Field(default_factory=dict)
+    reanalyzed: Annotated[int, ReportField("posts", "re-analyzed: {}", order=5)] = 0
+    tracked: Annotated[int, ReportField("posts", "tracked: {}", order=7, role="context")] = 0
+    batch_waiting: Annotated[
+        int, ReportField("posts", "awaiting a batch answer: {}", order=8, role="context")
+    ] = 0
+    batch_requests_submitted: Annotated[
+        int, ReportField("analysis", "batch requests submitted: {}", row=1)
+    ] = 0
+    batch_requests_pending: Annotated[
+        int, ReportField("analysis", "batch results pending: {}", row=1, order=1, role="context")
+    ] = 0
+    batch_requests_queued: Annotated[
+        int, ReportField("analysis", "queued for batch: {}", row=1, order=2, role="context")
+    ] = 0
+    batch_requests_uncertain: Annotated[
+        int,
+        ReportField("analysis", "batch submission unconfirmed: {}", row=1, order=3, role="context"),
+    ] = 0
+    errors: Annotated[list[str], ReportField(section=None, scope="all")] = Field(
+        default_factory=list
+    )
+    llm_input_tokens: Annotated[int, ReportField(section=None)] = 0
+    llm_output_tokens: Annotated[int, ReportField(section=None)] = 0
+    llm_usage: Annotated[dict[str, TokenUsage], ReportField(section=None)] = Field(
+        default_factory=dict
+    )
+    llm_calls: Annotated[list[LlmCall], ReportField(section=None)] = Field(default_factory=list)
+    phase_seconds: Annotated[dict[str, float], ReportField(section=None, role="context")] = Field(
+        default_factory=dict
+    )
+    document_reads: Annotated[
+        DocumentReadMetrics | None, ReportField(section=None, scope="reads")
+    ] = Field(default=None, exclude_if=lambda value: value is None)
+    document_download_diagnostics: Annotated[
+        DocumentDownloadDiagnostics | None, ReportField(section=None, scope="reads")
+    ] = Field(default=None, exclude_if=lambda value: value is None)
 
-    metadata_url_omissions: MetadataUrlOmissions | None = Field(
-        default=None, exclude_if=lambda value: value is None
-    )
+    metadata_url_omissions: Annotated[
+        MetadataUrlOmissions | None, ReportField(section=None, scope="reads")
+    ] = Field(default=None, exclude_if=lambda value: value is None)
 
-    document_physical_diagnostics: DocumentPhysicalDiagnostics | None = Field(
-        default=None, exclude_if=lambda value: value is None
-    )
+    document_physical_diagnostics: Annotated[
+        DocumentPhysicalDiagnostics | None, ReportField(role="metadata")
+    ] = Field(default=None, exclude_if=lambda value: value is None)
 
     @model_validator(mode="after")
     def cli_read_scope(self) -> Self:
@@ -225,11 +314,13 @@ class RunReport(BaseModel):
 
     @property
     def ok(self) -> bool:
-        return not self.errors
+        return not has_report_content(self.errors)
 
     @property
     def attention_notifications(self) -> dict[str, int]:
-        metrics = {key: count for key, count in self.attention.items() if count}
+        metrics = {
+            key: count for key, count in sorted(self.attention.items()) if has_report_content(count)
+        }
         if metrics.get("digest_queued_events", 0) <= metrics.get("digest_awaiting_approval", 0):
             for key in (
                 "digest_queued_events",
@@ -240,49 +331,19 @@ class RunReport(BaseModel):
         return metrics
 
     @property
-    def is_empty(self) -> bool:
-        """Routine checks, batch waiting and timing alone are not run results."""
-        if not self.execution_accounting_measured:
-            downloads = self.document_download_diagnostics
-            reads = self.document_reads
-            return not (
-                self.errors
-                or self.notes
-                or self.metadata_url_omissions is not None
-                or downloads is not None
-                and (downloads.invocations or downloads.cache_hits)
-                or reads is not None
-                and (reads.cache_hits or any(host.attempts for host in reads.hosts.values()))
-            )
-        values = self.model_dump()
-        values["attention"] = {
-            key: count
-            for key, count in self.attention_notifications.items()
-            if key not in {"daily_queued", "daily_oldest_minutes"}
-        }
-        return not any(
-            value
-            for name, value in values.items()
-            if name
-            not in {
-                "started_at",
-                "finished_at",
-                "since",
-                "mode",
-                "term",
-                "discovery_ok",
-                "tracked",
-                "batch_waiting",
-                "batch_requests_pending",
-                "batch_requests_queued",
-                "batch_requests_uncertain",
-                "phase_seconds",
-                "metadata_url_omissions",
-                "document_reads",
-                "document_download_diagnostics",
-                "document_physical_diagnostics",
-            }
+    def content(self) -> ReportContent:
+        return report_content(
+            self,
+            execution=self.execution_accounting_measured,
+            overrides={
+                "attention": self.attention_notifications,
+                "update_events": self.update_events if self.update_events != self.updates else 0,
+            },
         )
+
+    @property
+    def is_empty(self) -> bool:
+        return self.content.is_empty
 
     @property
     def duration_seconds(self) -> int | None:

@@ -115,6 +115,7 @@ from lexinform.models.phases import (
     SENATE_DAYS,
     SENATE_DAYS_URGENT,
 )
+from lexinform.models.report_content import ReportContent, has_report_content
 from lexinform.models.reviews import consultation_response_excerpt
 from lexinform.pricing import cost_usd, format_tokens, format_usd
 from lexinform.publication_titles import publication_title
@@ -1636,6 +1637,7 @@ class MessageFormatter:
     def run_report(
         self, report: RunReport, log_lines: list[str], *, run_url: str | None = None
     ) -> RenderedMessage:
+        content = report.content
         if not report.execution_accounting_measured:
             operation = report.cli_read_operation or "unknown"
             blocks = [
@@ -1644,12 +1646,26 @@ class MessageFormatter:
                 format_document_reads(report),
                 "Execution/model accounting: unmeasured",
             ]
+            omissions = report.metadata_url_omissions
+            if content.has("metadata_url_omissions") and omissions is not None:
+                blocks.append(f"omitted metadata URLs: {omissions.total}")
+            blocks.extend(_report_sections(content))
             if run_url:
                 blocks.append(link(run_url, "GitHub Actions log"))
-            if report.errors:
-                blocks.append(_section("❌", "errors", *(_bullet(e) for e in report.errors)))
-            if report.notes:
-                blocks.append(_section("ℹ️", "notes", *(_bullet(n) for n in report.notes)))
+            if content.has("errors"):
+                blocks.append(
+                    _section(
+                        "❌",
+                        "errors",
+                        *(_bullet(e) for e in report.errors if has_report_content(e)),
+                    )
+                )
+            if content.has("notes"):
+                blocks.append(
+                    _section(
+                        "ℹ️", "notes", *(_bullet(n) for n in report.notes if has_report_content(n))
+                    )
+                )
             if log_lines:
                 blocks.append("⚠️ <b>warnings</b>\n<pre>" + esc("\n".join(log_lines)) + "</pre>")
             return RenderedMessage(text=self._assemble(blocks))
@@ -1663,100 +1679,17 @@ class MessageFormatter:
             + (f" · {duration}s" if duration is not None else "")
             + (f"\n{link(run_url, 'GitHub Actions log')}" if run_url else "")
         )
-        # Zero counters say nothing: a section lists what happened, or that nothing did.
         sections = [
-            _section(
-                "🔎",
-                "discovery",
-                _counters(
-                    ("Sejm: {} new", report.discovered),
-                    # Spelled out, because this counter is usually the only one on the line and
-                    # "+1 without print number" said neither where the bill is nor what it is.
-                    (
-                        "{} submitted to the Sejm, no druk number yet (RPW)",
-                        report.pre_print_discovered,
-                    ),
-                    ("prefilter hits: {}", report.prefilter_hits),
-                ),
-                _counters(
-                    ("RCL: {} new", report.rcl_discovered),
-                    ("prefilter hits: {}", report.rcl_prefilter_hits),
-                ),
-                _counters(
-                    ("wykaz prac RM: {} new", report.wykaz_discovered),
-                ),
-                _counters(
-                    ("{} already over when first seen, not followed", report.over_on_arrival),
-                ),
-                _counters(
-                    ("text prefilter: checked {}", report.text_prefilter_checked),
-                    ("hits {}", report.text_prefilter_hits),
-                    ("scans to the model {}", report.text_prefilter_scans),
-                    ("unreadable {}", report.text_prefilter_unreadable),
-                    ("no file to read yet, still pending {}", report.text_prefilter_unanswered),
-                ),
-                empty="nothing new",
-            ),
+            _section("🔎", "discovery", *_report_rows(content, "discovery"), empty="nothing new"),
             _section(
                 "🤖",
                 "analysis",
-                _counters(
-                    ("analyzed: {}", report.analyzed),
-                    ("triaged out: {}", report.triaged_out),
-                    ("failures: {}", report.analysis_failures),
-                    ("over the cost limit: {}", report.analysis_skipped_cost),
-                    ("file refused, still queued: {}", report.analysis_unanswered),
-                    ("joint prints revived: {}", report.joint_revived),
-                ),
-                _counters(
-                    ("batch requests submitted: {}", report.batch_requests_submitted),
-                    ("batch results pending: {}", report.batch_requests_pending),
-                    ("queued for batch: {}", report.batch_requests_queued),
-                    ("batch submission unconfirmed: {}", report.batch_requests_uncertain),
-                ),
+                *_report_rows(content, "analysis"),
                 _tokens_line(report),
                 _spenders_line(report),
                 empty="nothing analyzed",
             ),
-            _section(
-                "📣",
-                "posts",
-                _counters(
-                    ("new cards: {}", report.published),
-                    ("alternatives: {}", report.joint_published),
-                    ("updates: {}", report.updates),
-                    (
-                        "status events: {}",
-                        report.update_events if report.update_events != report.updates else 0,
-                    ),
-                    ("held: {}", report.held),
-                    ("re-analyzed: {}", report.reanalyzed),
-                    ("linked: {}", report.linked),
-                    ("tracked: {}", report.tracked),
-                    ("awaiting a batch answer: {}", report.batch_waiting),
-                ),
-                _counters(
-                    ("acts: {}", report.acts_published),
-                    ("in force: {}", report.in_force_posted),
-                    ("consultation reminders: {}", report.consultation_reminders),
-                    ("results: {}", report.consultation_results_posted),
-                    ("consultation review messages: {}", report.consultation_reviews_posted),
-                    ("commission review messages: {}", report.commission_reviews_posted),
-                    ("act review messages: {}", report.act_reviews_posted),
-                    ("effective-rule messages: {}", report.effective_rule_messages),
-                    ("amendment messages updated: {}", report.amendment_messages_updated),
-                    ("additional physical parts: {}", report.message_parts_sent),
-                    ("agenda: {}", report.agenda_posted),
-                    ("sittings called off: {}", report.agenda_cancelled),
-                    ("hearings: {}", report.hearing_reminders),
-                    ("Senate/President deadline: {}", report.decision_reminders),
-                ),
-                _counters(
-                    ("end of term: {} bill(s) lapsed", report.discontinued),
-                    ("{} government row(s) carried over", report.rehomed),
-                ),
-                empty="nothing posted",
-            ),
+            _section("📣", "posts", *_report_rows(content, "posts"), empty="nothing posted"),
         ]
         timing = " · ".join(
             f"{esc(name)} {secs:.1f}s"
@@ -1765,14 +1698,24 @@ class MessageFormatter:
         )
         if timing:
             sections.append(_section("⏱", "timing", timing))
-        if report.commands:
-            sections.append(_section("🛠", "commands", *(_bullet(c) for c in report.commands)))
-        if report.errors:
-            sections.append(_section("❌", "errors", *(_bullet(e) for e in report.errors)))
-        if report.notes:
-            sections.append(_section("ℹ️", "notes", *(_bullet(n) for n in report.notes)))
+        if content.has("commands"):
+            sections.append(
+                _section(
+                    "🛠", "commands", *(_bullet(c) for c in report.commands if has_report_content(c))
+                )
+            )
+        if content.has("errors"):
+            sections.append(
+                _section(
+                    "❌", "errors", *(_bullet(e) for e in report.errors if has_report_content(e))
+                )
+            )
+        if content.has("notes"):
+            sections.append(
+                _section("ℹ️", "notes", *(_bullet(n) for n in report.notes if has_report_content(n)))
+            )
         rejected_text = ""
-        if report.rejected:
+        if content.has("rejected"):
             rejected_text = _section(
                 "🗂",
                 "analysed, not published",
@@ -1781,24 +1724,7 @@ class MessageFormatter:
                     for v in report.rejected
                 ),
             )
-        if report.digest_reader_parts or report.digest_events_covered:
-            sections.append(
-                _section(
-                    "🗞",
-                    "digest delivery",
-                    f"reader parts: {report.digest_reader_parts}",
-                    f"covered events: {report.digest_events_covered}",
-                )
-            )
-        attention = report.attention_notifications
-        if attention:
-            sections.append(
-                _section(
-                    "👁",
-                    "attention: delivery",
-                    *(f"{esc(key)}: {count}" for key, count in sorted(attention.items())),
-                )
-            )
+        sections.extend(_report_sections(content, exclude=("discovery", "analysis", "posts")))
         logs = ""
         prefilter_blocks = []
         for unreadable, heading in (
@@ -3817,13 +3743,23 @@ def format_document_reads(report: RunReport) -> str:
     if diagnostics is not None:
         failed = diagnostics.invocations - diagnostics.completed - diagnostics.unresolved
         return (
-            f"loader invocations: {diagnostics.invocations} · completed: {diagnostics.completed}"
-            f" · failed: {failed} · unresolved: {diagnostics.unresolved}"
-            f" · cache hits: {diagnostics.cache_hits}"
+            _counters(
+                ("loader invocations: {}", diagnostics.invocations),
+                ("completed: {}", diagnostics.completed),
+                ("failed: {}", failed),
+                ("unresolved: {}", diagnostics.unresolved),
+                ("cache hits: {}", diagnostics.cache_hits),
+            )
+            or "download observations: none"
         )
     reads = report.document_reads
     if reads is not None:
-        return f"completed responses: {reads.completed} · cache hits: {reads.cache_hits}"
+        return (
+            _counters(
+                ("completed responses: {}", reads.completed), ("cache hits: {}", reads.cache_hits)
+            )
+            or "download observations: none"
+        )
     return "download observations: unmeasured"
 
 
@@ -3886,15 +3822,16 @@ def _tokens_line(report: RunReport) -> str:
     """`Total $0.33 · opus-5 $0.32 · sonnet-5 $0.009` then, on its own line, `tokens in/out:
     12345/678 · cache read 4.0k` — the total leads because it is the one figure read at a
     glance; empty when the model was never called, `$?` when its price is unknown."""
-    if not (report.llm_input_tokens or report.llm_output_tokens or report.llm_usage):
+    usage = {model: value for model, value in report.llm_usage.items() if has_report_content(value)}
+    if not has_report_content((report.llm_input_tokens, report.llm_output_tokens, usage)):
         return ""
     lines = []
-    cost = cost_usd(report.llm_usage)
-    if report.llm_usage:
+    cost = cost_usd(usage)
+    if usage:
         money = [f"Total {format_usd(cost)}"]
         money += [
             f"{esc(model.removeprefix('claude-'))} {format_usd(cost_usd({model: u}))}"
-            for model, u in report.llm_usage.items()
+            for model, u in usage.items()
         ]
         lines.append(" · ".join(money))
     tokens = [f"tokens in/out: {report.llm_input_tokens}/{report.llm_output_tokens}"]
@@ -3924,17 +3861,29 @@ def _spenders_line(report: RunReport, *, top: int = 3) -> str:
     return "spent on: " + " · ".join(named) if named else ""
 
 
+def _report_rows(content: ReportContent, section: str) -> tuple[str, ...]:
+    return tuple(" · ".join(esc(text) for text in row) for row in content.rows(section))
+
+
+def _report_sections(content: ReportContent, *, exclude: tuple[str, ...] = ()) -> list[str]:
+    icons = {"digest delivery": "🗞", "attention: delivery": "👁", "operator activity": "🛠"}
+    return [
+        _section(icons.get(section, "📊"), section, *_report_rows(content, section))
+        for section in content.sections
+        if section not in exclude
+    ]
+
+
 def _section(icon: str, title: str, *lines: str, empty: str = "") -> str:
-    """`🔎 <b>title</b>` followed by the non-empty lines, one per row; `empty` is the row shown
-    when there are none."""
-    rows = [line for line in lines if line] or ([empty] if empty else [])
-    return "\n".join([f"{icon} <b>{esc(title)}</b>", *rows])
+    """Optional sections disappear with their last row; explicit empty messages remain visible."""
+    rows = [line for line in lines if has_report_content(line)] or ([empty] if empty else [])
+    return "\n".join([f"{icon} <b>{esc(title)}</b>", *rows]) if rows else ""
 
 
 def _counters(*items: tuple[str, int]) -> str:
-    """`Sejm: 3 new · prefilter hits: 1`: the templates whose counter is not zero, filled in and
-    joined; empty when every counter is zero."""
-    return " · ".join(template.format(value) for template, value in items if value)
+    return " · ".join(
+        template.format(value) for template, value in items if has_report_content(value)
+    )
 
 
 def _number_ref(number: str) -> str:

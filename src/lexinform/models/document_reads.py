@@ -12,6 +12,7 @@ from lexinform.models.candidate_trace import (
 )
 from lexinform.models.documents import DocumentSelection, PdfPageText
 from lexinform.models.extractions import ExtractionResult, ObservedMemberBlockCopy
+from lexinform.models.report_content import ReportField
 from lexinform.models.reviews import ConsultationRow
 from lexinform.word_formula_placement import WordFormulaSource
 
@@ -35,7 +36,7 @@ class HostDocumentReads(BaseModel):
 class DocumentReadMetrics(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    schema_version: Literal[1] = 1
+    schema_version: Annotated[Literal[1], ReportField(role="metadata")] = 1
     cache_hits: int = Field(default=0, ge=0)
     distinct_bodies: int = Field(default=0, ge=0)
     distinct_body_bytes: int = Field(default=0, ge=0)
@@ -112,8 +113,10 @@ class DocumentDownloadDiagnostics(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    schema_version: Literal[1] = 1
-    unit: Literal["text_loader_download_invocation"] = "text_loader_download_invocation"
+    schema_version: Annotated[Literal[1], ReportField(role="metadata")] = 1
+    unit: Annotated[Literal["text_loader_download_invocation"], ReportField(role="metadata")] = (
+        "text_loader_download_invocation"
+    )
     invocations: DownloadDiagnosticCount = 0
     completed: DownloadDiagnosticCount = 0
     missing: DownloadDiagnosticCount = 0
