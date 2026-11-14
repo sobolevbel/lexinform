@@ -3365,7 +3365,7 @@ INSERT INTO "commands" VALUES(79370162,'-1004460742180',803,'/status','2026-11-1
 🧺 <b>batches</b>: 2 open
 • openai <code>batch_6af715637c3481908d12bd52de1c0022</code> · 1 request(s) · submitted since 13 нояб 2026
 • openai <code>batch_6af7181b24308190ab0cc637e20a270f</code> · 1 request(s) · submitted since 13 нояб 2026',0,0);
-INSERT INTO "commands" VALUES(79370163,'-1004460742180',815,'/run','2026-11-14T13:11:23+00:00',NULL,'status: Запуск завершён. Подробности в отчёте прогона.','2026-11-14T13:23:28+00:00','{"update_id":79370163,"chat_id":"-1004460742180","message_id":815,"text":"/run","received_at":"2026-11-14T13:11:23Z","actor_id":null,"author_signature":null,"acknowledgement_id":816,"run_requested":true}','https://github.com/sobolevbel/lexinform/actions/runs/43598510983',NULL,NULL,NULL,'📊 <b>Состояние</b> · <code>/run</code>
+INSERT INTO "commands" VALUES(79370163,'-1004460742180',815,'/run','2026-11-14T13:11:23+00:00','2026-11-14T13:23:38+00:00','status: Запуск завершён. Подробности в отчёте прогона.','2026-11-14T13:23:28+00:00','{"update_id":79370163,"chat_id":"-1004460742180","message_id":815,"text":"/run","received_at":"2026-11-14T13:11:23Z","actor_id":null,"author_signature":null,"acknowledgement_id":816,"run_requested":true}','https://github.com/sobolevbel/lexinform/actions/runs/43598510983',NULL,NULL,NULL,'📊 <b>Состояние</b> · <code>/run</code>
 
 <code>/request 79370163</code>
 
