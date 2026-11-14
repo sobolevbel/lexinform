@@ -186,11 +186,11 @@ those; the invariants that govern *when* they run are in `.claude/rules/sources.
 - Lead time over RCL, measured: UD408 (o zmianie ustawy o cudzoziemcach, MSWiA) entered the
   register 2026-05-12 and appeared on RCL 2026-07-06 (`/projekt/12412103`) — 55 days. RCL shows its
   number as "UD 408", with a space.
-- `www.gov.pl` resolves to one Polish address (185.32.48.49), not a CDN — the shape that turned out
-  to be blocked for RCL — but **GitHub-hosted runners reach it fine** (verified 2026-09-12 with
-  `.github/workflows/wykaz-probe.yml`, Azure eastus2): the page answers in 0.57 s, the CSV in 10.1
-  s uncompressed and 3.1 s / 2.8 MB with `Accept-Encoding: gzip`, which httpx sends by default. So
-  no proxy is needed; `LEXINFORM_WYKAZ_PROXY_URL` stays as the escape hatch if that ever changes.
+- Direct access to `www.gov.pl` varies between GitHub-hosted runners: successful probes do not
+  rule out connection timeouts on another runner. The daily workflow uses
+  `LEXINFORM_WYKAZ_PROXY_URL`, falling back to the existing RCL proxy; both hosts must be allowed
+  by its filter. See [proxy setup](rcl-proxy.md). `.github/workflows/wykaz-probe.yml` compares the
+  direct route with the configured proxy and downloads the CSV with compression.
 - The stage is genuinely actionable: art. 7 ust. 1 of the ustawa o działalności lobbingowej — "z
   chwilą udostępnienia w BIP programów prac legislacyjnych … **każdy** może zgłosić zainteresowanie
   pracami nad projektem", with the organ that prepares it; art. 8 ust. 2 makes the filing the

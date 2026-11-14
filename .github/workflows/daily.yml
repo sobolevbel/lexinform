@@ -170,6 +170,7 @@ jobs:
           LEXINFORM_TELEGRAM_LOG_CHANNEL_ID: ${{ secrets.LEXINFORM_TELEGRAM_LOG_CHANNEL_ID }}
           # legislacja.rcl.gov.pl drops connections from GitHub's runners: go through an EU proxy.
           LEXINFORM_RCL_PROXY_URL: ${{ secrets.LEXINFORM_RCL_PROXY_URL }}
+          LEXINFORM_WYKAZ_PROXY_URL: ${{ secrets.LEXINFORM_WYKAZ_PROXY_URL || secrets.LEXINFORM_RCL_PROXY_URL }}
           LEXINFORM_LOG_LEVEL: INFO
           # Review purposes are opt-in; every supported model call but triage uses batch.
           LEXINFORM_LLM_BATCH_ENABLED: "true"

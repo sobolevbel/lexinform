@@ -1,11 +1,13 @@
-# RCL through a proxy
+# RCL and the government register through a proxy
 
 `legislacja.rcl.gov.pl` drops TCP connections from GitHub-hosted runners (Azure, US): the SYN is
 never answered, for every path and User-Agent, while the Sejm API answers from the same runner
 (verified 2026-09-09 with `.github/workflows/rcl-probe.yml`). From an EU address, even a Hetzner
 one in Helsinki, the site answers in 0.3 s. So the bot reaches RCL through a small HTTP forward
 proxy on an EU host, configured with `LEXINFORM_RCL_PROXY_URL`
-(`http://user:password@host:port`); only the RCL client uses it, the Sejm API, the LLM and
+(`http://user:password@host:port`). The daily workflow also routes the government register on
+`www.gov.pl` through this proxy: direct connections from some GitHub runners time out. An explicit
+`LEXINFORM_WYKAZ_PROXY_URL` repository secret overrides that default. The Sejm API, the LLM and
 Telegram connect directly.
 
 ## The proxy host
@@ -16,7 +18,7 @@ Hetzner Helsinki, `root` by SSH key on port `10000+ID`, shared IPv4 with the for
 password, ports `2xxxx/3xxxx/4xxxx`) served for the first test; FROG servers are deleted after
 three months without an SSH login, so not for production.
 
-## tinyproxy, restricted to RCL
+## tinyproxy, restricted to the two source hosts
 
 Install and configure as root (replace `PORT` with one of the forwarded ports and `PASSWORD` with
 `openssl rand -hex 16`; on Alpine use `apk add tinyproxy` and `rc-update add tinyproxy default`,
@@ -43,7 +45,7 @@ FilterType ere
 Allow 0.0.0.0/0
 Allow ::/0
 EOF
-printf '^legislacja\\.rcl\\.gov\\.pl$\n' | sudo tee /etc/tinyproxy/filter >/dev/null
+printf '%s\n' '^legislacja\.rcl\.gov\.pl$' '^www\.gov\.pl$' | sudo tee /etc/tinyproxy/filter >/dev/null
 sudo mkdir -p /var/log/tinyproxy /run/tinyproxy
 sudo chown tinyproxy:tinyproxy /var/log/tinyproxy /run/tinyproxy
 sudo systemctl enable tinyproxy && sudo systemctl restart tinyproxy
@@ -51,7 +53,7 @@ ss -ltn | grep PORT
 ```
 
 What the configuration guarantees: credentials are required (`BasicAuth`), only `CONNECT` to
-port 443 is tunnelled, and only the RCL host passes the filter (`FilterDefaultDeny`), so a leaked
+port 443 is tunnelled, and only the two source hosts pass the filter (`FilterDefaultDeny`), so a leaked
 password cannot turn the box into an open proxy. The Via header is off so RCL sees a plain client.
 `FilterType ere` is the name tinyproxy 1.11 gave the old `FilterExtended On`, which still works and
 writes one deprecation warning to the log at every start; the filter itself is a plain anchored
@@ -64,9 +66,13 @@ From any machine:
 ```sh
 curl -o /dev/null -w "%{http_code} %{time_total}s\n" -x "http://lexinform:PASSWORD@HOST:PORT" \
   'https://legislacja.rcl.gov.pl/lista?typeId=2&sKey=modifiedDate&sOrder=desc&pSize=10&pNumber=1'   # 200
+curl --compressed -o /dev/null -w "%{http_code} %{time_total}s\n" -x "http://lexinform:PASSWORD@HOST:PORT" \
+  https://www.gov.pl/web/premier/wplip-rm  # 200
 curl -o /dev/null -w "%{http_code}\n" -x "http://lexinform:PASSWORD@HOST:PORT" https://api.sejm.gov.pl/sejm/term  # 403
 ```
 
 Then store the URL as the repository secret `LEXINFORM_RCL_PROXY_URL`
 (`gh secret set LEXINFORM_RCL_PROXY_URL`), which `daily.yml` passes to the run and
-`rcl-probe.yml` uses for its last step. Locally, put the same line into `.env`.
+`rcl-probe.yml` uses for its last step. `wykaz-probe.yml` checks the register page and CSV through
+the same proxy selection as the daily run. Locally, set `LEXINFORM_RCL_PROXY_URL` and, if needed,
+`LEXINFORM_WYKAZ_PROXY_URL` separately in `.env`; the fallback belongs to the workflows.

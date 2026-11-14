@@ -54,10 +54,11 @@ jobs:
       - name: Through the EU proxy (LEXINFORM_WYKAZ_PROXY_URL), when configured
         if: env.PROXY != ''
         env:
-          PROXY: ${{ secrets.LEXINFORM_WYKAZ_PROXY_URL }}
+          PROXY: ${{ secrets.LEXINFORM_WYKAZ_PROXY_URL || secrets.LEXINFORM_RCL_PROXY_URL }}
         run: |
-          set +e
-          curl -sS -o /tmp/p.csv -w "via proxy: http=%{http_code} ttfb=%{time_starttransfer}s total=%{time_total}s bytes=%{size_download}\n" \
-            --max-time 90 -x "$PROXY" "https://www.gov.pl/register-file/Rejestr_20874195.csv"
-          echo "first line: $(head -c 200 /tmp/p.csv)"
-          true
+          curl -fsS --compressed -o /tmp/wykaz-page -x "$PROXY" \
+            --connect-timeout 10 --max-time 30 "https://www.gov.pl/web/premier/wplip-rm"
+          REGISTER_ID=$(grep -o 'registerVue-[0-9]*' /tmp/wykaz-page | head -1 | cut -d- -f2)
+          test -n "$REGISTER_ID"
+          curl -fsS --compressed -o /tmp/p.csv -w "via proxy: http=%{http_code} ttfb=%{time_starttransfer}s total=%{time_total}s bytes=%{size_download}\n" \
+            --connect-timeout 10 --max-time 90 -x "$PROXY" "https://www.gov.pl/register-file/Rejestr_${REGISTER_ID}.csv"

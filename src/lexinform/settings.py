@@ -66,8 +66,8 @@ class Settings(BaseSettings):
     wykaz_timeout_seconds: float = 60.0
     wykaz_proxy_url: str = Field(
         default="",
-        description="gov.pl is a single Polish address, so it may one day need the same EU proxy"
-        " as RCL; it answers GitHub runners today.",
+        description="An HTTP forward proxy with an EU address for gov.pl; empty connects directly."
+        " The daily workflow defaults to the RCL proxy, which must also allow www.gov.pl.",
     )
 
     senate_enabled: bool = Field(
