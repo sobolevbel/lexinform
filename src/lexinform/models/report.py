@@ -229,7 +229,7 @@ class RunReport(BaseModel):
 
     @property
     def attention_notifications(self) -> dict[str, int]:
-        metrics = dict(self.attention)
+        metrics = {key: count for key, count in self.attention.items() if count}
         if metrics.get("digest_queued_events", 0) <= metrics.get("digest_awaiting_approval", 0):
             for key in (
                 "digest_queued_events",
