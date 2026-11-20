@@ -149,8 +149,7 @@ def test_a_bill_whose_act_is_already_in_force_is_neither_analysed_nor_posted() -
 
 
 def test_an_act_whose_vacatio_legis_is_still_ahead_gets_its_card() -> None:
-    """Dz.U. on 2026-09-09, in force on 2026-11-19: three months in which a reader has a date to
-    prepare for. `is_over` used to answer the ELI alone and drop the bill without a word."""
+    """A future entry date leaves a preparation window after official publication."""
     w = World()
     w.add_bill("2695", FOREIGNERS, stages=PASSED_STAGES)
     w.publish_act("2695")
@@ -162,7 +161,8 @@ def test_an_act_whose_vacatio_legis_is_still_ahead_gets_its_card() -> None:
     assert (report.analyzed, report.published) == (1, 1)
     assert w.bill("2695").act is not None  # kept, or the publishing gate would drop the card
     posted, _ = w.publisher.new_bills[0]
-    assert "вступление в силу 19 нояб 2026" in MessageFormatter("ru").new_bill(posted, None).text
+    formatter = MessageFormatter("ru", today=lambda: w.clock.now().date())
+    assert "вступление в силу 19 нояб 2026" in formatter.new_bill(posted, None).text
 
 
 def test_an_act_the_eli_api_has_not_indexed_yet_is_not_assumed_in_force() -> None:

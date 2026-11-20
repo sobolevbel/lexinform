@@ -171,7 +171,7 @@ def test_act_messages_link_the_texts_in_both_languages(
 def test_act_notice_names_the_journal_the_date_and_the_staged_entry_caveat(
     process_3039: ProcessDetail,
 ) -> None:
-    fmt = MessageFormatter("ru")
+    fmt = MessageFormatter("ru", today=lambda: TODAY)
 
     text = fmt.act_published(bill_of(process_3039, act=ACT)).text
     no_date = fmt.act_published(
