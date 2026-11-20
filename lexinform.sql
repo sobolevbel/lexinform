@@ -5257,7 +5257,7 @@ INSERT INTO "commands" VALUES(79370164,'-1004460742180',821,'/digest publish ref
 📣 Публикация: <a href="https://t.me/lex_inform_pl/180">сообщение 180</a>
 
 2026-W46 posted to the channel',0,0);
-INSERT INTO "commands" VALUES(79370165,'-1004460742180',848,'/run','2026-11-20T11:53:52+00:00',NULL,'status: Запуск завершён. Подробности в отчёте прогона.','2026-11-20T12:04:27+00:00','{"update_id":79370165,"chat_id":"-1004460742180","message_id":848,"text":"/run","received_at":"2026-11-20T11:53:52Z","actor_id":null,"author_signature":null,"acknowledgement_id":849,"run_requested":true}','https://github.com/sobolevbel/lexinform/actions/runs/44731317308',NULL,NULL,NULL,'📊 <b>Состояние</b> · <code>/run</code>
+INSERT INTO "commands" VALUES(79370165,'-1004460742180',848,'/run','2026-11-20T11:53:52+00:00','2026-11-20T12:04:40+00:00','status: Запуск завершён. Подробности в отчёте прогона.','2026-11-20T12:04:27+00:00','{"update_id":79370165,"chat_id":"-1004460742180","message_id":848,"text":"/run","received_at":"2026-11-20T11:53:52Z","actor_id":null,"author_signature":null,"acknowledgement_id":849,"run_requested":true}','https://github.com/sobolevbel/lexinform/actions/runs/44731317308',NULL,NULL,NULL,'📊 <b>Состояние</b> · <code>/run</code>
 
 <code>/request 79370165</code>
 
