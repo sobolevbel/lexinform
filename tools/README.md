@@ -563,6 +563,11 @@ reads; without it, existing caches are explicitly unchecked. Raw bytes are not p
 Code and read-input hashes are recorded, changes during inspection are rejected, and network,
 corpus writes and `.env` reads are blocked. Existing outputs and symlink inputs are refused.
 This scope excludes other uncollected catalog entries, Sejm/RPW/Senate and legal correctness.
+
+The registered `committee-reports` suite compares amendment-bearing `reportFile` links with
+identity-checked print catalogues for terms 8–10. Run it with `--declared-only` for the previous
+direct-link behavior and without that flag for catalogue selection, then use `corpus_runs diff`.
+It records unavailable catalogues separately; it does not verify attachment contents or availability.
 Keep reports in a durable project directory rather than `/tmp`; `out/` remains Git-ignored.
 
 The `physical` suite extends the observation to five raw families, their saved text caches and

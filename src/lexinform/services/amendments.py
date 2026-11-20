@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 
 from lexinform.committee_recommendation import (
     CommitteeRecommendationOrigin,
+    committee_report_attachment,
     official_recommendation_stages,
 )
 from lexinform.errors import (
@@ -50,6 +51,31 @@ class AmendmentsSource:
     recommendation_origin: CommitteeRecommendationOrigin | None = None
 
 
+def _committee_report(
+    gateway: SejmGateway, stage: Stage, *, term: int, process_number: str | None
+) -> TextDocument:
+    assert stage.report_file is not None, "amendments_stage takes a report only with its file"
+    url = stage.report_file
+    if stage.print_number is not None and process_number:
+        try:
+            info = gateway.get_print(term, stage.print_number)
+        except ServiceUnavailableError:
+            raise
+        except Exception as exc:
+            log.info("Committee print %s unavailable: %s", stage.print_number, exc)
+        else:
+            attachment = committee_report_attachment(
+                stage, info, term=term, process_number=process_number
+            )
+            if attachment is not None:
+                url = attachment.url
+                if url != stage.report_file:
+                    log.info(
+                        "Committee report attachment resolved: %s -> %s", stage.report_file, url
+                    )
+    return TextDocument(url=url, kind="committee_amendments")
+
+
 def amendments_source(
     gateway: SejmGateway,
     analysis: AnalysisService,
@@ -63,13 +89,11 @@ def amendments_source(
     senate_gateway: SenateGateway | None = None,
 ) -> AmendmentsSource | None:
     """A report on the Senate's amendments lists only votes: the resolution is read with it."""
+    number = process_number or (owner.number if owner is not None else None)
     senate = stage if stage.stage_type == "SenatePosition" else None
     senate = senate or senate_position_reported(stage, stages)
     if senate is None:
-        assert stage.report_file is not None, (
-            "amendments_stage takes a committee report only with its file"
-        )
-        report = TextDocument(url=stage.report_file, kind="committee_amendments")
+        report = _committee_report(gateway, stage, term=term, process_number=number)
         return AmendmentsSource(report, stage.proposal)
     assert senate.print_number is not None, "a Senate position with amendments has its print"
     info = None
@@ -93,7 +117,6 @@ def amendments_source(
     except SejmApiUnavailableError as exc:
         sejm_outage = exc
         log.warning("Sejm source for Senate print %s unavailable: %s", senate.print_number, exc)
-    number = process_number or (owner.number if owner is not None else None)
     if document is None and senate_gateway is not None and senate.date is not None and number:
         try:
             match = senate_gateway.amendment_resolution(number, senate.date)
@@ -127,8 +150,7 @@ def amendments_source(
         return None
     if senate is stage:
         return AmendmentsSource(document)
-    assert stage.report_file is not None, "amendments_stage takes a report only with its file"
-    report = TextDocument(url=stage.report_file, kind="committee_amendments")
+    report = _committee_report(gateway, stage, term=term, process_number=number)
     origin = None
     if (
         info is not None

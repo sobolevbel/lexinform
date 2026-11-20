@@ -117,6 +117,7 @@ files = [
   "tools/replay_archive_dispositions.py",
   "tools/qualify_archive_storage.py",
   "tools/collect_committee_reports.py",
+  "tools/replay_committee_reports.py",
   "tools/replay_archive_priority.py",
 ]
 plugins = ["pydantic.mypy"]

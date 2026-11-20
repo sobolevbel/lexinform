@@ -133,6 +133,9 @@ paths:
   przyjąć"), so `amendments.amendments_source` reads the Senate's resolution with the report beside it
   (`AmendmentsContext.recommendation`) and gives no summary when the resolution cannot be confirmed
   (`senate_position_reported`).
+  Report links are resolved through an identity-checked print catalogue: a replacement must be its
+  sole PDF and name the report number; missing or contradictory catalogues preserve `reportFile`.
+  Resolved attachments do not rewrite official stages or broaden retained recommendation proofs.
 
 ## Joint prints and filed documents
 

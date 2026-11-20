@@ -5,7 +5,39 @@ import re
 from dataclasses import dataclass
 from typing import Literal, TypedDict
 
-from lexinform.models import Stage, flatten_stages, senate_position_reported
+from lexinform.models import Attachment, PrintInfo, Stage, flatten_stages, senate_position_reported
+
+
+def committee_report_attachment(
+    stage: Stage, info: PrintInfo, *, term: int, process_number: str
+) -> Attachment | None:
+    """Resolve a report only within its confirmed print and parent process."""
+    if (
+        stage.stage_type != "CommitteeReport"
+        or not stage.report_file
+        or not stage.print_number
+        or not info.official_term_confirmed
+        or info.term != term
+        or info.number != stage.print_number
+        or process_number not in info.process_prints
+        or re.match(r"(?:dodatkowe\s+)?sprawozdanie\b", info.title.strip(), re.I) is None
+    ):
+        return None
+    candidates = info.pdf_candidates
+    if any(item.print_number != stage.print_number for item in candidates):
+        return None
+    for item in candidates:
+        if item.url == stage.report_file:
+            return item
+    if len(candidates) != 1:
+        return None
+    item = candidates[0]
+    name = "".join(item.name.casefold().split()).removeprefix("druknr")
+    identity = re.match(r"(\d+)(?:-?([a-z]+))?(?=\.pdf$|[-(])", name)
+    if identity is None:
+        return None
+    number = identity[1] + ("-" + identity[2] if identity[2] else "")
+    return item if number == stage.print_number.casefold() else None
 
 
 @dataclass(frozen=True)
