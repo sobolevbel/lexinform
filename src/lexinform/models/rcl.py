@@ -405,7 +405,10 @@ class RclProject(BaseModel):
 
     def stage_documents(self, stage: RclStage) -> tuple[RclDocument, ...]:
         current = self.current_stage
-        if current is not None and current.id == stage.id and current.is_legal_commission:
+        if (current is not None and current.id == stage.id and current.is_legal_commission) or (
+            self.is_regulation
+            and stage.name.casefold().startswith("skierowanie projektu do podpisu")
+        ):
             return stage.project_documents(regulation=self.is_regulation)
         return stage.documents("project")
 
@@ -510,6 +513,7 @@ _TAGGED_ROLE: dict[str, TextRole] = {
 }
 _BILL_RE = re.compile(r"projekt|ustaw")
 _REGULATION_NAME = re.compile(r"(?:^|[\W_])(?:projekt|rozporz[aą]dzeni[ae])(?:$|[\W_])")
+_REGULATION_PACKAGE = re.compile(r"^RM-\d+-\d+-\d{2,4}\.zip$", re.I)
 _FORMAT_RANK = {"pdf": 0, "docx": 1, "docm": 2, "doc": 3, "odt": 4, "xml": 5, "zip": 8}
 
 
@@ -531,7 +535,7 @@ def text_role(name: str, *, regulation: bool = False) -> TextRole | None:
                 return "justification"
             if _OSR_RE.search(lowered):
                 return "osr"
-            if _REGULATION_NAME.search(lowered):
+            if _REGULATION_NAME.search(lowered) or _REGULATION_PACKAGE.fullmatch(name):
                 return "bill"
         return None
     if re.search(r"\brozp(?:[.\s_]|orz[aą]dze)", lowered):

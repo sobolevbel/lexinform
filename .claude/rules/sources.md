@@ -41,6 +41,7 @@ columns, probes): `docs/rcl-scraping.md`.
   `zarządzenie` stops discovery, lookup and text sourcing before files or model calls, including
   `force`. Only statute projects join Sejm rows and plans from the central wykaz. Regulation
   publication requires an explicit journal link on the RCL project and corroborating ELI metadata.
+- Regulation signing stages admit explicitly classified loose drafts, including `RM-<number>-<number>-<year>.zip`; archive contents still pass document selection. The RCL watcher reopens blocked prefilters only after both the listing and refreshed project confirm a later modification, without replaying historical events.
 - **`/bills` rows are refreshed by tracking only.** Discovery saves new submissions and never
   overwrites an existing row; the reconciler (`tracking/pre_print.py`) re-reads `/bills` for pending
   RPW entries and those awaiting consultation results and compares (print assigned, withdrawn,

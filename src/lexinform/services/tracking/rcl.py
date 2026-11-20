@@ -44,6 +44,7 @@ from lexinform.services.tracking.stages import change_key
 from lexinform.services.tracking_result import TrackingResult
 
 log = logging.getLogger(__name__)
+MAX_BLOCKED_REFRESHES = 40
 
 
 class RclWatcher:
@@ -91,6 +92,7 @@ class RclWatcher:
         `quiet` are projects with no card: refreshed and stored the same way, never delivered.
         """
         silent = {(b.term, b.number) for b in quiet}
+        self._retry_changed_documents(result)
         followed = [b for b in (*bills, *quiet) if b.rcl is not None]
         try:
             followed = self._find_prints(followed)
@@ -165,6 +167,53 @@ class RclWatcher:
                     result.abort(exc, failed=True)
                     return False
         return True
+
+    def _retry_changed_documents(self, result: TrackingResult) -> None:
+        """Reopen blocked prefilters after RCL advertises a later source modification."""
+        pending = [
+            bill
+            for bill in self._repo.list_by_status(
+                [BillStatus.DOCUMENT_AMBIGUOUS, BillStatus.DOCUMENT_UNSUPPORTED], limit=-1
+            )
+            if bill.rcl is not None
+            and bill.rcl.modified is not None
+            and bill.analysis is None
+            and bill.summary.change_date.date() > bill.rcl.modified
+            and (observations := self._repo.list_source_observations(bill.term, bill.number))
+            and observations[-1].purpose == "prefilter"
+        ][:MAX_BLOCKED_REFRESHES]
+        projects = tuple(bill.rcl.id for bill in pending if bill.rcl is not None)
+        omissions = self._reader.source_omission_inputs(projects)
+        with closing(
+            fan_out(
+                tuple(zip(pending, omissions, strict=True)),
+                lambda item: self._reader.run_source_omission_input(
+                    item[1], self._refresh, item[0]
+                ),
+                workers=self._workers,
+            )
+        ) as outcomes:
+            for outcome in outcomes:
+                bill = outcome.item[0]
+                try:
+                    project = outcome.result()
+                except ServiceUnavailableError as exc:
+                    result.partial_errors.append(f"RCL document retry: {exc.describe()}")
+                    break
+                except Exception:
+                    result.failed += 1
+                    log.exception("blocked documents of %s could not be refreshed", bill.number)
+                    continue
+                if bill.rcl is not None and project.modified <= bill.rcl.modified:
+                    continue
+                with self._repo.atomic():
+                    self._repo.save_rcl(bill.term, bill.number, project)
+                    self._repo.set_status(
+                        bill.term,
+                        bill.number,
+                        BillStatus.TEXT_PREFILTER_PENDING,
+                        reason="text prefilter: retry after RCL source modification",
+                    )
 
     def _find_prints(self, bills: list[Bill]) -> list[Bill]:
         """Ask the Sejm for the druk of a project that has been handed over and has none stored.

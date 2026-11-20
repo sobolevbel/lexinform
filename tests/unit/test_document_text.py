@@ -54,6 +54,15 @@ def test_rendered_page_break_markers_separate_pages() -> None:
     assert DocxTextExtractor().extract(data) == f"strona 1{PAGE_BREAK}strona 2"
 
 
+def test_nonbreaking_hyphens_preserve_place_names_and_numeric_ranges() -> None:
+    data = _docx(
+        "<w:p><w:r><w:t>Wrocław</w:t><w:noBreakHyphen/><w:t>Fabryczna, "
+        "art. 1</w:t><w:noBreakHyphen/><w:t>2.</w:t></w:r></w:p>"
+    )
+
+    assert DocxTextExtractor().extract(data) == "Wrocław\u2011Fabryczna, art. 1\u20112."
+
+
 def test_a_table_nested_in_a_cell_is_read_once_as_part_of_the_cell() -> None:
     # The OSR form is a table; some ministries put a table of affected parties inside a cell.
     data = _docx(

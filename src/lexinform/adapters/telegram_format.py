@@ -1729,7 +1729,7 @@ class MessageFormatter:
         prefilter_blocks = []
         for unreadable, heading in (
             (False, "prefilter: rejected"),
-            (True, "prefilter: unreadable, not a relevance verdict"),
+            (True, "prefilter: document selection needs attention, not a relevance verdict"),
         ):
             details = [
                 v for v in report.prefilter_details if (v.stage == "unreadable") == unreadable
@@ -1741,7 +1741,7 @@ class MessageFormatter:
                         f"{heading} ({len(details)})",
                         *(
                             f"• {link(process_web_url(v.term, v.number), _number_ref(v.number))}"
-                            f" · {esc(v.stage)} · {esc(_clip(v.title, 110))}\n"
+                            f" · {esc(v.display_stage)} · {esc(_clip(v.title, 110))}\n"
                             f"  {esc(v.reason)}"
                             for v in details
                         ),

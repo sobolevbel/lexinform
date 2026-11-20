@@ -93,6 +93,39 @@ def test_the_latest_stage_with_a_project_folder_wins() -> None:
     assert project.text_documents()["bill"].id == 2
 
 
+@pytest.mark.parametrize(
+    ("stage_name", "filename", "regulation", "selected"),
+    [
+        (
+            "Skierowanie projektu do podpisu Prezesa Rady Ministrów",
+            "RM-06110-68-26.zip",
+            True,
+            True,
+        ),
+        ("Skierowanie projektu do podpisu Prezesa Rady Ministrów", "Pismo.pdf", True, False),
+        ("Skierowanie projektu do podpisu Prezesa Rady Ministrów", "Opinia.zip", True, False),
+        ("Uzgodnienia", "RM-06110-68-26.zip", True, False),
+        (
+            "Skierowanie projektu do podpisu Prezesa Rady Ministrów",
+            "RM-06110-68-26.zip",
+            False,
+            False,
+        ),
+    ],
+)
+def test_signing_package_requires_a_regulation_and_the_signing_stage(
+    stage_name: str, filename: str, regulation: bool, selected: bool
+) -> None:
+    stage = _stage(14, stage_name, "reached").model_copy(
+        update={"loose_documents": (_doc(1, filename),)}
+    )
+    project = _project(stage, _stage(15, "Ogłoszenie", "active"))
+    if regulation:
+        project = project.model_copy(update={"title": "Projekt rozporządzenia w sprawie opłat"})
+
+    assert ("bill" in project.text_documents()) is selected
+
+
 def test_what_the_committees_file_beside_the_bill_is_not_taken_for_the_bill() -> None:
     # Every name here was published in a "Projekt" folder of a followed project; none of them is
     # the text, and each used to pass as one because no pattern ruled it out.

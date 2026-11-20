@@ -96,9 +96,11 @@ def test_a_broken_pdf_is_unsupported_and_a_file_not_there_yet_waits() -> None:
     report = w.run()
 
     assert report.text_prefilter_checked == 2 and not report.errors
-    assert (report.text_prefilter_unreadable, report.text_prefilter_unanswered) == (1, 1)
+    assert (report.text_prefilter_unreadable, report.text_prefilter_unanswered) == (0, 1)
+    assert report.text_prefilter_unsupported == 1
     assert report.prefilter_rejected == []
     assert [(v.number, v.stage) for v in report.prefilter_details] == [("4100", "unreadable")]
+    assert report.prefilter_details[0].display_stage == "unsupported"
     broken, missing = w.bill("4100"), w.bill("4101")
     # The reason is on record: a skip for lack of a text is not a keyword miss.
     assert broken.status is BillStatus.DOCUMENT_UNSUPPORTED
@@ -141,7 +143,8 @@ def test_a_file_with_neither_text_nor_pages_is_unsupported() -> None:
 
     report = w.run()
 
-    assert (report.text_prefilter_scans, report.text_prefilter_unreadable) == (0, 1)
+    assert (report.text_prefilter_scans, report.text_prefilter_unreadable) == (0, 0)
+    assert report.text_prefilter_unsupported == 1
     bill = w.bill("4100")
     assert bill.status is BillStatus.DOCUMENT_UNSUPPORTED
     assert bill.last_error is not None and "no readable body" in bill.last_error

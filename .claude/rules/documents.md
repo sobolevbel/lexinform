@@ -5,6 +5,7 @@ paths:
   - "src/lexinform/pricing.py"
   - "src/lexinform/law_*.py"
   - "src/lexinform/document_*.py"
+  - "src/lexinform/regulation_versions.py"
   - "src/lexinform/analysis_records.py"
   - "src/lexinform/adapters/pdf_text.py"
   - "src/lexinform/adapters/doc_text.py"
@@ -59,7 +60,7 @@ What of a document reaches the model, with the prints each rule was derived from
   committee is read from the print number (`Stage.is_additional_report`: every "Praca w komisjach po
   II czytaniu" carries an "-A" report, none after a first reading). `…-A` reports proposing "przyjąć
   poprawki" are amendment tables, not text.
-- **RCL: the final stage does not carry the text.** "Skierowanie projektu ustawy do Sejmu" has only
+- **RCL statutes: the final stage does not carry the text.** "Skierowanie projektu ustawy do Sejmu" has only
   the covering letter. `with_text` walks back up to `TEXT_STAGE_ATTEMPTS` = **3** catalogs, stopping
   at the first with the text (newest stage has it in 26%, two reach 99.25%, three 99.75%).
 - **RCL: the bill may be combined with its uzasadnienie or be a letter's appendix.** `text_role`
@@ -70,6 +71,8 @@ What of a document reaches the model, with the prints each rule was derived from
 - Package/file candidate decisions belong to `document_candidates` (`CandidateSet`, `select_document_parts`, `select_candidate_versions`); `extract_parts` stays physical and must never call that policy or the legal classifier. `extract_document` is the compatible facade, with its explicit `max_part_chars` selection limit.
 - Loose-file composition/fallback belongs to pure `document_composition`; `TextLoader` owns ordered IO and its distinct required/optional failure contracts. Candidate Edition metadata does not replace admission or paid-input identity; see `docs/reference/database.md`.
 - `TextLoader.select_document` labels completed decisions with `DOCUMENT_SELECTION_POLICY_VERSION`; bump it for selection behavior changes. A label identifies that decision, not the original paid analysis or a legal edition; legacy/physical-cache values stay unknown until a new selection is made.
+- Regulation editions use `regulation_versions`: typography and relocated note definitions may match, but numeric tokens, note content and call positions remain significant. Prefer a newer explicit draft date only within one confirmed issuer and subject; different simultaneous variants stay blocked.
+- Blocked prefilters without an analysis retry once for an explicitly superseded selection policy; legacy ambiguous selections without observations also retry once. An unsupported row without provenance stays blocked. The new observation prevents repeated retries; reports distinguish `ambiguous` and `unsupported` from `unreadable`. RCL source-date recovery belongs to its watcher.
 - **Memoized results** (`analysis_memo`) are keyed by bill identity, purpose, normalised text and
   comparison context (a scan by file digest and page window; triage has its own key), so a URL change
   never triggers a paid re-analysis; reused results charge no new tokens. Worker threads never write

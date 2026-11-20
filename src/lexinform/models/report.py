@@ -116,6 +116,13 @@ class PrefilterRejection(BaseModel):
     title: str
     stage: Literal["title", "text", "unreadable"]
     reason: str
+    document_state: Literal["ambiguous", "unsupported"] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+
+    @property
+    def display_stage(self) -> str:
+        return self.document_state or self.stage
 
 
 class RunReport(BaseModel):
@@ -171,6 +178,12 @@ class RunReport(BaseModel):
     text_prefilter_unreadable: Annotated[
         int, ReportField("discovery", "unreadable {}", row=4, order=3)
     ] = 0
+    text_prefilter_ambiguous: Annotated[
+        int, ReportField("discovery", "conflicting document versions {}", row=4, order=5)
+    ] = Field(default=0, exclude_if=lambda value: not value)
+    text_prefilter_unsupported: Annotated[
+        int, ReportField("discovery", "unsupported documents {}", row=4, order=6)
+    ] = Field(default=0, exclude_if=lambda value: not value)
     text_prefilter_unanswered: Annotated[
         int, ReportField("discovery", "no file to read yet, still pending {}", row=4, order=4)
     ] = 0

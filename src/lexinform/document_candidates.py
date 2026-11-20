@@ -42,6 +42,7 @@ from lexinform.models.rcl import (
     text_rank,
     text_role,
 )
+from lexinform.regulation_versions import compare_regulation_versions
 from lexinform.sections import (
     APPENDIX_KINDS,
     PAGE_BREAK,
@@ -170,11 +171,7 @@ class CandidateSet:
         editions = tuple(self.entries[index] for index in indices)
         texts = [edition.text or "" for edition in editions]
         comparison = (
-            VersionComparison(
-                tuple(range(len(texts))), tuple(range(len(texts))) if len(set(texts)) == 1 else ()
-            )
-            if regulation
-            else compare_version_decision(texts)
+            compare_regulation_versions(texts) if regulation else compare_version_decision(texts)
         )
         attachments = {
             (edition.annex_identities, edition.amendment_identities)
@@ -241,14 +238,19 @@ def select_regulation_archive(selection: DocumentSelection) -> ExtractedDocument
         return ExtractedDocument(
             selection=selection.model_copy(update={"state": "waiting", "parts": drafts})
         )
-    unique = {
-        (part.members[:-1], part.members[-1].rpartition("/")[0], part.text): part for part in drafts
+    comparison = compare_regulation_versions([part.text for part in drafts], prefer_newer=False)
+    owners = {
+        (drafts[index].members[:-1], drafts[index].members[-1].rpartition("/")[0])
+        for index in comparison.matching_indices
     }
-    if len(unique) != 1:
+    if not comparison.matching_indices or len(owners) != 1:
         return ExtractedDocument(
             selection=selection.model_copy(update={"state": "ambiguous", "parts": drafts})
         )
-    draft = min(drafts, key=lambda part: (len(part.members), part.members, part.sha256))
+    draft = min(
+        (drafts[index] for index in comparison.matching_indices),
+        key=lambda part: (len(part.members), part.members, part.sha256),
+    )
     owner = draft.members[:-1], draft.members[-1].rpartition("/")[0]
     annexes = sorted(
         (

@@ -855,6 +855,7 @@ class _WordMl:
                 for name in (
                     "t",
                     "tab",
+                    "noBreakHyphen",
                     "br",
                     "cr",
                     "lastRenderedPageBreak",
@@ -1092,6 +1093,7 @@ class _WordMl:
                 if el.tag in (
                     self.tag("t"),
                     self.tag("tab"),
+                    self.tag("noBreakHyphen"),
                     self.tag("br"),
                     self.tag("cr"),
                     self.tag("lastRenderedPageBreak"),
@@ -1115,6 +1117,8 @@ class _WordMl:
                     self._structure.report_removal_text()
             elif el.tag == self.tag("tab"):
                 parts.append("\t")
+            elif el.tag == self.tag("noBreakHyphen"):
+                parts.append("\u2011")
             elif el.tag == self.tag("br"):
                 parts.append(PAGE_BREAK if el.get(self.tag("type")) == "page" else "\n")
             elif el.tag == self.tag("cr"):
@@ -1180,7 +1184,7 @@ class _WordMl:
         view: WordStructureView
         if node.tag == _MC_FALLBACK:
             view = "ignored_fallback"
-        elif node.tag == self.tag("t"):
+        elif node.tag in (self.tag("t"), self.tag("noBreakHyphen")):
             view = "text"
         elif node.tag == self.tag("tab"):
             view = "tab"

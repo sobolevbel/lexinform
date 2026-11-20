@@ -19,8 +19,9 @@ from lexinform.models.documents import (
 from lexinform.sections import PAGE_BREAK, document_kind, trim_print
 from lexinform.text_projection import SourcePiece, TextProjection, project_pieces
 
-DOCUMENT_SELECTION_POLICY_VERSION = "document-selection-v24"
-REGULATION_SELECTION_POLICY_VERSION = "regulation-selection-v1"
+DOCUMENT_SELECTION_POLICY_VERSION = "document-selection-v30"
+REGULATION_SELECTION_POLICY_VERSION = "regulation-selection-v2"
+SUPERSEDED_SELECTION_POLICIES = frozenset({"document-selection-v24", "regulation-selection-v1"})
 RCL_AMENDMENT_ARCHIVE_POLICY_VERSION = "document-selection-v25"
 ARCHIVE_EDITION_DIRECTORY_POLICY_VERSION = "document-selection-v27"
 RCL_COMMENT_TABLE_AMENDMENT_POLICY_VERSION = "document-selection-v28"

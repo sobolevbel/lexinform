@@ -15,6 +15,7 @@ from dataclasses import dataclass, field, replace
 
 from lexinform.concurrency import fan_out
 from lexinform.document_admissibility import prefilter_admission
+from lexinform.document_selection import SUPERSEDED_SELECTION_POLICIES
 from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError
 from lexinform.keywords import WEAK_PATTERNS, KeywordPrefilter, accept_text_hits
 from lexinform.models import (
@@ -33,17 +34,13 @@ TEXT_HIT_PREFIX = "text:"
 
 @dataclass
 class TextPrefilterResult:
-    """Counters of one text-prefilter phase.
-
-    `scans` counts the bills sent on to the model because their file has pages but no text to
-    search, `unreadable` those with no document, no pages either, or a download or extraction
-    that failed, and `unanswered` those whose host refused to hand the file over, which is not a
-    finding about the bill and leaves it pending.
-    """
+    """Separate keyword verdicts, scans, missing files and blocked document selections."""
 
     checked: int = 0
     rejected: list[str] = field(default_factory=list)
     unreadable_bills: list[str] = field(default_factory=list)
+    ambiguous_bills: list[str] = field(default_factory=list)
+    unsupported_bills: list[str] = field(default_factory=list)
     hits: int = 0
     scans: int = 0
     unreadable: int = 0
@@ -103,6 +100,7 @@ class TextPrefilterService:
         result = TextPrefilterResult()
         if limit <= 0:
             return result
+        self._retry_superseded_decisions()
         pending = self._repo.list_by_status([BillStatus.TEXT_PREFILTER_PENDING], limit=limit)
         omission_slots = self._loader.source_omission_inputs(
             tuple(
@@ -135,6 +133,10 @@ class TextPrefilterService:
                 status = self._record_decision(bill, loaded)
                 if status is BillStatus.TEXT_PREFILTER_PENDING:
                     result.unanswered += 1
+                elif status is BillStatus.DOCUMENT_AMBIGUOUS:
+                    result.ambiguous_bills.append(f"{bill.term}/{bill.number}")
+                elif status is BillStatus.DOCUMENT_UNSUPPORTED:
+                    result.unsupported_bills.append(f"{bill.term}/{bill.number}")
                 elif loaded.is_scan:
                     result.scans += 1
                 elif loaded.text is None:
@@ -145,15 +147,48 @@ class TextPrefilterService:
                 elif status is BillStatus.SKIPPED_TEXT_PREFILTER and loaded.text is not None:
                     result.rejected.append(f"{bill.term}/{bill.number}")
         log.info(
-            "text prefilter: checked=%d hits=%d scans=%d unreadable=%d unanswered=%d failed=%d",
+            "text prefilter: checked=%d hits=%d scans=%d unreadable=%d ambiguous=%d "
+            "unsupported=%d unanswered=%d failed=%d",
             result.checked,
             result.hits,
             result.scans,
             result.unreadable,
+            len(result.ambiguous_bills),
+            len(result.unsupported_bills),
             result.unanswered,
             result.failed,
         )
         return result
+
+    def _retry_superseded_decisions(self) -> None:
+        """Retry blocked prefilters once when their recorded selection policy is obsolete."""
+        blocked = self._repo.list_by_status(
+            [BillStatus.DOCUMENT_AMBIGUOUS, BillStatus.DOCUMENT_UNSUPPORTED], limit=-1
+        )
+        for bill in blocked:
+            if bill.analysis is not None:
+                continue
+            observations = self._repo.list_source_observations(bill.term, bill.number)
+            if not observations and bill.status is not BillStatus.DOCUMENT_AMBIGUOUS:
+                continue
+            if observations and observations[-1].purpose != "prefilter":
+                continue
+            selection = (
+                self._repo.get_document_selection(observations[-1].selection_id)
+                if observations
+                else None
+            )
+            if (
+                not observations
+                or selection is not None
+                and selection.selection.policy_version in SUPERSEDED_SELECTION_POLICIES
+            ):
+                self._repo.set_status(
+                    bill.term,
+                    bill.number,
+                    BillStatus.TEXT_PREFILTER_PENDING,
+                    reason="text prefilter: retry after document selection policy update",
+                )
 
     def check(self, bill: Bill) -> bool:
         """Scan the bill text; True when the bill is sent on to analysis."""

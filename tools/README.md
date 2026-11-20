@@ -77,6 +77,20 @@ external-corpus registry. Cross-run comparison remains a separate acceptance ste
 
 ## RCL project type admission
 
+Replay blocked selections from a saved state dump and local originals without network, model
+calls or changes to that state:
+
+```sh
+uv run --offline --frozen python -m tools.replay_regulation_selection \
+  --inputs /path/to/pinned-inputs --output /new/report.json
+```
+
+The input directory contains `state.sql`, originals named as in their source URLs, and
+`manifest.json` with `state_sha256` and an `inputs` map of filenames to SHA-256. The report pins
+consumed inputs and source code, compares selections, injects five meaningful changes into each
+regulation body, and checks the prefilter again after a database dump/restore. It does not qualify
+legal relevance or model results. Missing optional sources remain explicit rejected inputs.
+
 Replay project-title admission across the saved RCL project metadata and listing pages, with the
 production-state witness captured from `origin/state` at `f7f13bb1` (2026-11-13 17:38 UTC):
 

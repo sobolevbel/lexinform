@@ -522,9 +522,17 @@ class DailyPipeline:
         report.prefilter_rejected = [*(report.prefilter_rejected or []), *checked.rejected]
         self._prefilter_details(report, checked.rejected, "text")
         self._prefilter_details(report, checked.unreadable_bills, "unreadable")
+        self._prefilter_details(
+            report, checked.ambiguous_bills, "unreadable", document_state="ambiguous"
+        )
+        self._prefilter_details(
+            report, checked.unsupported_bills, "unreadable", document_state="unsupported"
+        )
         report.text_prefilter_hits = checked.hits
         report.text_prefilter_scans = checked.scans
         report.text_prefilter_unreadable = checked.unreadable
+        report.text_prefilter_ambiguous = len(checked.ambiguous_bills)
+        report.text_prefilter_unsupported = len(checked.unsupported_bills)
         report.text_prefilter_unanswered = checked.unanswered
         if checked.fatal_error:
             report.errors.append(f"text prefilter: {checked.fatal_error}")
@@ -534,6 +542,8 @@ class DailyPipeline:
         report: RunReport,
         keys: Sequence[str],
         stage: Literal["title", "text", "unreadable"],
+        *,
+        document_state: Literal["ambiguous", "unsupported"] | None = None,
     ) -> None:
         for key in keys:
             term, number = key.split("/", 1)
@@ -548,9 +558,16 @@ class DailyPipeline:
                     title=bill.summary.title,
                     stage=stage,
                     reason=reason,
+                    document_state=document_state,
                 )
             )
-            log.info("prefilter %s: %s | %s | %s", stage, key, bill.summary.title, reason)
+            log.info(
+                "prefilter %s: %s | %s | %s",
+                document_state or stage,
+                key,
+                bill.summary.title,
+                reason,
+            )
 
     def _analyse(self, opts: RunOptions, report: RunReport) -> None:
         analysed = self._analysis.analyze_pending(limit=opts.max_analyze)
