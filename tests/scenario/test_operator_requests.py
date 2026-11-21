@@ -66,6 +66,7 @@ def test_repeated_actions_wakeup_runs_the_saved_request_once() -> None:
         workflow_url="https://example.test/actions/runs/42",
     )
     assert service.drain()
+    assert not world.replier.replies
     world.repo.restore(durable[-1])
     world.inbox.commands.append(incoming)
     assert service.drain()
@@ -73,10 +74,65 @@ def test_repeated_actions_wakeup_runs_the_saved_request_once() -> None:
     _commands_only(world)
 
     assert calls == [{"command": "track", "dry_run": "true"}]
-    assert len(world.replier.replies) == 2
+    assert len(world.replier.replies) == 1
     _, answer = world.replier.replies[-1]
     assert "completed" in answer.note and "73" in answer.note
     assert answer.request_links == ("https://example.test/actions/runs/42",)
+
+
+def test_successful_run_keeps_its_report_without_a_completion_reply() -> None:
+    world = World()
+    incoming = world.command("/run").model_copy(update={"run_requested": True})
+    world.inbox.commands[:] = [incoming]
+    world.replier.outage = True
+
+    def execute(command: Command) -> CommandOutcome:
+        world.run()
+        return CommandOutcome(status=OutcomeStatus.REPORTED, note="completed")
+
+    service = RunRequests(
+        world.repo, world.inbox, world.replier, lambda: None, world.clock, execute
+    )
+
+    assert service.drain()
+
+    assert len(world.notifier.calls) == 1 and world.notifier.calls[0][0].ok
+    assert not world.replier.replies and not world.inbox.pending()
+    state = world.repo.command_state(incoming.update_id)
+    assert state is not None, "RunRequests records every request before execution"
+    assert state.executed_at is not None and state.handled_at is not None
+    assert state.reply == "status: completed" and not state.failed
+
+
+@pytest.mark.parametrize("failed", [False, True])
+def test_saved_run_outcome_is_finished_without_repeating_execution(failed: bool) -> None:
+    world = World()
+    incoming = world.command("/run").model_copy(update={"run_requested": True})
+    world.inbox.commands[:] = [incoming]
+    world.repo.record_command(incoming)
+    world.repo.mark_command_executed(
+        incoming.update_id, at=world.clock.now(), outcome="saved outcome", failed=failed
+    )
+    world.repo.restore(world.repo.dump())
+
+    def execute(command: Command) -> CommandOutcome:
+        pytest.fail("A saved execution must never be repeated")
+
+    service = RunRequests(
+        world.repo, world.inbox, world.replier, lambda: None, world.clock, execute
+    )
+
+    assert service.drain() is not failed
+
+    assert not world.inbox.pending()
+    state = world.repo.command_state(incoming.update_id)
+    assert state is not None, "The saved request survives database restoration"
+    assert state.handled_at is not None and state.reply == "saved outcome"
+    if failed:
+        assert len(world.replier.replies) == 1
+        assert world.replier.replies[0][1].status is OutcomeStatus.ERROR
+    else:
+        assert not world.replier.replies
 
 
 def test_interrupted_run_request_keeps_the_original_claim() -> None:

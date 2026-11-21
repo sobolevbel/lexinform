@@ -211,6 +211,8 @@ The seven phase commands use the same inbox as bill commands. The relay uses the
 API and sends a `repository_dispatch` wakeup. The runner reads the request under the shared
 state lock and checkpoints the update ID before starting a phase. Duplicate wakeups
 drain the same inbox. A scheduled run also drains saved phase requests.
+Successful completion is kept in `/request ID` without an extra Telegram reply;
+phase reports and notifications about failed or interrupted requests remain.
 
 A relay dry run executes against a temporary copy, including any requested backfill.
 The result and request journal survive. The terminal and the manual Actions form retain

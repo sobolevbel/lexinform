@@ -75,14 +75,17 @@ class RunRequests:
             rendered_reply=self._replier.render(incoming, outcome),
         )
         self._checkpoint()
-        try:
-            self._replier.reply(incoming, outcome)
-        except DeliveryUncertainError:
-            log.warning("Technical reply for request %d has an unknown delivery outcome", identity)
-        except ServiceUnavailableError:
-            return False
-        except Exception:
-            log.exception("Technical reply for request %d was refused", identity)
+        if not outcome.ok:
+            try:
+                self._replier.reply(incoming, outcome)
+            except DeliveryUncertainError:
+                log.warning(
+                    "Technical reply for request %d has an unknown delivery outcome", identity
+                )
+            except ServiceUnavailableError:
+                return False
+            except Exception:
+                log.exception("Technical reply for request %d was refused", identity)
         self._repo.mark_command_handled(
             identity, at=self._clock.now(), reply=saved_reply or outcome.line()
         )
