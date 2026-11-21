@@ -48,7 +48,12 @@ class StageEnricher:
                 )
                 voting = stage.voting.model_copy(update={"clubs": aggregate_clubs(votes)})
                 return stage.model_copy(update={"voting": voting})
-            if stage.stage_type == "Referral" and stage.committee_code and not stage.committee_name:
+            if (
+                stage.stage_type == "Referral"
+                and stage.committee_code
+                and stage.committee_code != PLENARY_COMMITTEE_CODE
+                and not stage.committee_name
+            ):
                 name = self.committee_name(term, stage.committee_code)
                 return stage.model_copy(update={"committee_name": name})
         except ServiceUnavailableError:
