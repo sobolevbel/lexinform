@@ -13,6 +13,7 @@ from zoneinfo import ZoneInfo
 
 from lexinform.commission_reviews import filed_commission_sources
 from lexinform.concurrency import fan_out
+from lexinform.document_selection import SUPERSEDED_SELECTION_POLICIES
 from lexinform.errors import ServiceUnavailableError, StateCheckpointError
 from lexinform.models import (
     AmendmentsContext,
@@ -414,6 +415,7 @@ class StatusTrackingService:
             return self._finish(result)
         tracked = self._list_tracked(changed_since)
         everyone = tracked if changed_since is None else self._list_tracked()
+        tracked = self._include_selection_retries(tracked, everyone)
         quiet: list[Bill] = []
         quiet_everyone: list[Bill] = []
         if self._options.observe_unthreaded:
@@ -424,6 +426,7 @@ class StatusTrackingService:
                 if changed_since is None
                 else self._list_tracked(changed_since, unthreaded=True)
             )
+            quiet = self._include_selection_retries(quiet, quiet_everyone, unthreaded=True)
         if not self._check_other_sources(
             tracked,
             everyone,
@@ -753,6 +756,37 @@ class StatusTrackingService:
             result.agenda_posted,
             result.failed,
         )
+
+    def _include_selection_retries(
+        self, tracked: list[Bill], everyone: list[Bill], *, unthreaded: bool = False
+    ) -> list[Bill]:
+        """Retry superseded blocked selections independently of the discovery watermark."""
+        if tracked is everyone or self._analysis is None:
+            return tracked
+        selected = {(bill.term, bill.number) for bill in tracked}
+        for bill in everyone:
+            if (
+                (bill.term, bill.number) in selected
+                or bill.status is not BillStatus.ANALYZED
+                or bill.analysis is None
+                or unthreaded
+                and bill.observation_mode is not ObservationMode.FULL
+            ):
+                continue
+            observations = self._repo.list_source_observations(bill.term, bill.number)
+            latest = next(
+                (row for row in reversed(observations) if row.purpose == "analysis"), None
+            )
+            if latest is None or latest.document.url == bill.analysis.source_url:
+                continue
+            selection = self._repo.get_document_selection(latest.selection_id)
+            if (
+                selection is not None
+                and selection.selection.state in {"ambiguous", "unsupported"}
+                and selection.selection.policy_version in SUPERSEDED_SELECTION_POLICIES
+            ):
+                selected.add((bill.term, bill.number))
+        return [bill for bill in everyone if (bill.term, bill.number) in selected]
 
     def _list_tracked(
         self, changed_since: datetime | None = None, *, unthreaded: bool = False

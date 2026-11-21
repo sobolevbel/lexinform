@@ -1,0 +1,191 @@
+{
+  "captured_on": "2026-11-21",
+  "pins": {
+    "state_sha": "9eff77860232b205a49a582d172fe926777611ec",
+    "baseline": "fd8d14c0da9809defc43256606ea36e18e9c709a",
+    "sql_sha256": "ba31ea8647ffacaa7b34f99bf30448400088a999b971afb11619c59724aed8f2"
+  },
+  "runs": [
+    {
+      "id": 555,
+      "url": "https://github.com/sobolevbel/lexinform/actions/runs/44927244225",
+      "mode": "deliveries",
+      "started_at": "2026-11-21T16:57:09+00:00",
+      "ok": true,
+      "errors": [],
+      "application_error_lines": 0,
+      "application_warning_lines": 0,
+      "workflow_exit_error_lines": 0,
+      "published": 0,
+      "updates": 0,
+      "reanalyzed": 0,
+      "model_calls": 0
+    },
+    {
+      "id": 554,
+      "url": "https://github.com/sobolevbel/lexinform/actions/runs/44915857272",
+      "mode": "run",
+      "started_at": "2026-11-21T14:50:05+00:00",
+      "ok": false,
+      "errors": [
+        "tracking: senate: senat.gov.pl unavailable: GET https://www.senat.gov.pl/prace/proces-legislacyjny-w-senacie/ustawy-uchwalone-przez-sejm/ustawy-uchwalone-przez-sejm/ustawa,2228.html: HTTP 403"
+      ],
+      "application_error_lines": 1,
+      "application_warning_lines": 0,
+      "workflow_exit_error_lines": 2,
+      "published": 0,
+      "updates": 0,
+      "reanalyzed": 0,
+      "model_calls": 0
+    }
+  ],
+  "senate_outage": {
+    "bill": "3003",
+    "senate_print": "928",
+    "finding": "The exact official act URL returned HTTP 403 on the GitHub runner. Its repeated path component is present in the official listing; shortening it gives HTTP 404.",
+    "effect": "The Senate watcher stopped at the first eligible bill; the other pipeline phases continued and state was checkpointed. The later successful tick only processed deliveries.",
+    "local_probes": [
+      {
+        "bill": "3003",
+        "url": "https://www.senat.gov.pl/prace/proces-legislacyjny-w-senacie/ustawy-uchwalone-przez-sejm/ustawy-uchwalone-przez-sejm/ustawa,2228.html",
+        "http_status": 200,
+        "sha256": "6cc6fa475aebe0a41f1b136829df7d653858f48204e67f8b996842a0b51e59da",
+        "changed_fields": {},
+        "committees_equal": true
+      },
+      {
+        "bill": "3139",
+        "url": "https://www.senat.gov.pl/prace/proces-legislacyjny-w-senacie/ustawy-uchwalone-przez-sejm/ustawy-uchwalone-przez-sejm/ustawa,2239.html",
+        "http_status": 200,
+        "sha256": "95092ea83b3ed0588118979f77e7485ed2aef1bad163dab305e183218a2341de",
+        "changed_fields": {},
+        "committees_equal": true
+      },
+      {
+        "bill": "3231",
+        "url": "https://www.senat.gov.pl/prace/proces-legislacyjny-w-senacie/ustawy-uchwalone-przez-sejm/ustawy-uchwalone-przez-sejm/ustawa,2223.html",
+        "http_status": 200,
+        "sha256": "c0c78171e8eab61ec49186b53dd3d424606141150958ba51bb07e4c62077edc1",
+        "changed_fields": {},
+        "committees_equal": true
+      },
+      {
+        "bill": "2995",
+        "url": "https://www.senat.gov.pl/prace/proces-legislacyjny-w-senacie/ustawy-uchwalone-przez-sejm/ustawy-uchwalone-przez-sejm/ustawa,2238.html",
+        "http_status": 200,
+        "sha256": "8cbda8cd9b287865ff71247658d77eedceefd558d53d3675fa20af7d31a6720a",
+        "changed_fields": {},
+        "committees_equal": true
+      },
+      {
+        "bill": "3281",
+        "url": "https://www.senat.gov.pl/prace/proces-legislacyjny-w-senacie/ustawy-uchwalone-przez-sejm/ustawy-uchwalone-przez-sejm/ustawa,2234.html",
+        "http_status": 200,
+        "sha256": "64e0eaa7b8e794a806cc6b22feeecc1a86b3865df2498b820973e16e4affce54",
+        "changed_fields": {},
+        "committees_equal": true
+      }
+    ],
+    "committee_pages": [
+      {
+        "url": "https://www.senat.gov.pl/prace/komisje-senackie/komisja,218.html",
+        "sha256": "65e10c6189f1a6602544b71b47a0072dc9eab3789010a64c33a98fd871e1ec7c",
+        "status": 200
+      },
+      {
+        "url": "https://www.senat.gov.pl/prace/komisje-senackie/komisja,228.html",
+        "sha256": "3cc6a625e12a7b723cfa1276383db427b976384bd542850f16be818e15c14097",
+        "status": 200
+      },
+      {
+        "url": "https://www.senat.gov.pl/prace/komisje-senackie/komisja,225.html",
+        "sha256": "fb36cc10e185e63f80deb439211b92e42c7b4f65cbe1215a2e8de657ad30af7e",
+        "status": 200
+      }
+    ],
+    "reader_preview": "The saved next step and committee contacts match the local source reads; the sitting is 24 November and the decision deadline is 9 December 2026.",
+    "verdict": "Keep the genuine source-access error visible. Local HTTP 200 does not prove recovery from the Actions network. The runner response body and headers were not logged, so the precise cause of HTTP 403 remains unknown."
+  },
+  "delivery_state": {
+    "publication_statuses": {
+      "queued": 7,
+      "sent": 370,
+      "skipped": 5
+    },
+    "publications_created_or_sent_since_1448_utc": 0,
+    "new_reader_messages_in_audited_runs": 0
+  },
+  "reanalysis_recovery": {
+    "bill": "RCL/12416702",
+    "cause": "A blocked reanalysis retained an analyzed status and an old source date. Scheduled tracking filtered it out by changed_since, so the new regulation-selection policy alone did not schedule a retry. Existing blocked-prefilter recovery only covers bills without an analysis.",
+    "change": "Include tracked analyzed bills with a different latest analysis source blocked by an explicitly superseded policy. Preserve metadata-only observation, source ordering, previous analysis and the existing batch lifecycle; a completed current-policy observation ends the retry.",
+    "cohort": {
+      "baseline": "fd8d14c0da9809defc43256606ea36e18e9c709a",
+      "state_sha": "9eff77860232b205a49a582d172fe926777611ec",
+      "since": "2026-11-20T11:32:36+00:00",
+      "cohorts": [
+        {
+          "unthreaded": false,
+          "all_followed": 46,
+          "previously_selected": 12,
+          "newly_eligible": [
+            {
+              "term": 10,
+              "number": "RCL/12416702",
+              "policy": "regulation-selection-v2",
+              "state": "ambiguous",
+              "analysis_url": "https://legislacja.rcl.gov.pl/docs//3/12416702/13237117/13237118/dokument806559.zip",
+              "blocked_url": "https://legislacja.rcl.gov.pl/docs//3/12416702/13237124/dokument806759.zip",
+              "observation_id": "source-observation-v1:c68814911a6120e794ada260273ee0f52580457ef6c015756cb336772bbff53b",
+              "analysis_attempts": 0
+            }
+          ]
+        },
+        {
+          "unthreaded": true,
+          "all_followed": 109,
+          "previously_selected": 24,
+          "newly_eligible": []
+        }
+      ],
+      "database_rows_unchanged": true
+    },
+    "regressions": "Twelve cases cover workers 1/4, carded/full/metadata-only observation, corrected editions and genuine conflicts. Restore into a new process, preserve external batch history, inject a download outage, recover, collect the batch and repeat without file reads or duplicate submissions. Later review observations do not hide analysis evidence."
+  },
+  "validation": {
+    "gate": "make check",
+    "passed": 11091,
+    "mypy": "passed",
+    "ruff": "passed",
+    "docs": "make docs-check passed"
+  },
+  "local_artifacts": {
+    "root": "/Users/sobaleu/projects/lexinform/out/audits/new-runs-20261121",
+    "sha256": {
+      "run-554.log": "708ec6a5dbdabab6abaf5b0d871bf6aa384228a9772e6d46eb71bafd2f51f91b",
+      "run-555.log": "4e7f663ddf9f472c9be3737a66f63876a8842c80b840891e9450c5c8721ffaae",
+      "recovery_census.py": "a66613cb54145c72f4c485729a9c5e7fdf8a3ba3d332b91e967ba082c476b23e",
+      "recovery-census.json": "aab2c3b6d587862ada64b2b33b392e5607f75314536018b23dff79a3f5ba60d2",
+      "senate-verified.json": "28dca74adcc7382c75d19ad8fe0c01de0f27a70f71a1fe46f82dd0ba709edea9",
+      "quality-gate-final.log": "16a7e3ad416739f99e939f104e4ffbaba5dd6bd348e6fdfde0078163c4919445",
+      "batch-recovery-verified.log": "bab5d30a21662567c25d738f4efafcc6cdc27a4fd58371c3a792b1e0890c79ce",
+      "preview-3003.txt": "ddf2018d9888a84f613ad4a95257ad9ab39144d4012a5a6328c5667b8fdc01a9",
+      "preview-RCL-12416702.txt": "bb2f18a29035bf7bf5158422832dc93f3459cbf1bdaab4582529c35a53b7e4f7"
+    }
+  },
+  "reproduction": [
+    "gh run view 44915857272 --log",
+    "gh run view 44927244225 --log",
+    "Restore origin/state at 9eff77860232b205a49a582d172fe926777611ec into a scratch database; do not run the production pipeline against it.",
+    "PYTHONPATH=. uv run --offline python out/audits/new-runs-20261121/recovery_census.py",
+    "uv run pytest -q tests/scenario/test_blocked_document_recovery.py",
+    "make check",
+    "make docs-check"
+  ],
+  "exclusions": [
+    "No manual production run, paid model call, Telegram delivery or production-state mutation.",
+    "No new full scheduled run has confirmed Senate connectivity or applied the RCL retry in production.",
+    "The pinned database census measures retry eligibility, not legal accuracy or model output.",
+    "No extraction, normalization, text comparison or document selection behavior changed; the previous corpus replay remains the evidence for regulation date selection."
+  ]
+}
