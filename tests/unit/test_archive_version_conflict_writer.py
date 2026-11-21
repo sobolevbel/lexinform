@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import timedelta
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
@@ -22,7 +23,14 @@ def test_deferred_conflict_requires_the_exact_body_receipt(
     repo: SqliteBillRepository,
 ) -> None:
     loader, source = source_loader(PEER)
-    record_source_read(repo, source, term=10, number="archive", purpose="analysis", recorded_at=NOW)
+    record_source_read(
+        repo,
+        replace(source, reads=()),
+        term=10,
+        number="archive",
+        purpose="analysis",
+        recorded_at=NOW,
+    )
     (observation,) = repo.list_source_observations(10, "archive")
     history = PhysicalHistoryPersistence(loader, loader.deferred_archive_traces)
     finished = NOW + timedelta(minutes=10)

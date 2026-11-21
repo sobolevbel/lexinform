@@ -1,0 +1,256 @@
+{
+  "captured_on": "2026-11-22",
+  "baseline": "084c1490f52b1cb5d3fd7ebc1d7c01cfdf5a9e55",
+  "findings": [
+    {
+      "name": "Incomplete reanalysis lost behind the discovery watermark",
+      "before": "A ZIP with a corrupt draft member records waiting while keeping the previous analysis. Later filtered runs omit the bill, including after the same URL serves a complete archive.",
+      "after": "Waiting analysis-source selections remain eligible until a completed decision; metadata-only observation, batch deferral and the previous analysis are preserved.",
+      "regression": "Eight carded/full-observation scenarios failed before the fix; four metadata-only controls passed."
+    },
+    {
+      "name": "An older alternative bypassed conflicting archive drafts",
+      "before": "Confirmed conflicting archive texts had an ambiguous physical selection without draft_version_conflict. Loose-file comparison discarded that candidate and could select an older alternative.",
+      "after": "Policy v31 retains the conflict and its reason. The outer decision blocks fallback while preserving the existing physical-parent dispositions and keeping unselected conflict parts observed.",
+      "regression": "Four conflicting-recovery scenarios still failed after fixing waiting eligibility alone. Existing archive-proof reader/writer, parent-integrity and trace-cap tests verify the final history path."
+    }
+  ],
+  "corpus": {
+    "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+    "projects": 825,
+    "stage_observations": 4276,
+    "counts": {
+      "ambiguous": 118,
+      "no_candidate": 205,
+      "selected": 2269,
+      "unsupported": 669,
+      "unverified": 923,
+      "waiting": 92
+    },
+    "diff": {
+      "after_manifest_sha256": "5f744d6f8e72e706dd34325d00fb34e67dcfc9685da627c272928c9c55b08126",
+      "before_manifest_sha256": "4372884190bef6a7a5125f63c9fa2a8b80a553b9e5da7636242018e409d859ce",
+      "changed_inputs": [],
+      "changes": [],
+      "scope": "Observation differences, not an independent legal accuracy verdict",
+      "status": "same",
+      "suite": "candidates",
+      "summary_changes": {},
+      "version": 1
+    },
+    "missing_cached_paths": 1383,
+    "complete_population": false
+  },
+  "archive_controls": {
+    "population": 2998,
+    "eligible": 837,
+    "sample": 24,
+    "selection_rule": "24 evenly spaced sorted eligible IDs, 300-20000 chars, a first article line and bill classifier",
+    "inputs": {
+      "210140": "ceca32ccc3ff83366c9e0166eb092488e50d5d3a7cdb53882c8cc6d05262f5a8",
+      "572492": "56f61b189196d0a5e64401c554d371162665169a4ad11e14fa2f5e2255552fdb",
+      "659886": "5a37dd674d7928a8b1a25cd1369fd3d3c0440c29d1ab82e1b84d4d177a3f41ed",
+      "671251": "445b76624c04e5f7024b8f6a394dec2458f65537865243b24cd4845b587f722d",
+      "678462": "4d220396c7b0f654993f7cbc519c98548ab5eaca34ed0379f616cf07e32a05c9",
+      "683439": "04cfe116582078dfc9073013a70981cab148b27f819847e0cdc3bd8cfcbb02c0",
+      "693458": "c49118e09ccbf463de2a78136f0e54467d68f6ebb6a17334d114a372ef283b92",
+      "704728": "f16edfae2b45b9d759bbcd253998ca770dd0ffc4ea5669edf706f13a9d6082c2",
+      "714200": "087e9541224067a0620285d8ce425b271f261909bfcca0f616ae48f0b4279089",
+      "716112": "f1ddaac786ba1b86977f1ae6bb6a8ad58598413e51ef82a5bb92f6fd2931d2fe",
+      "720357": "1477d1454a0960008a49c98aae82bbb8d843c8de9f4014aaa49c2e7660710b3a",
+      "722217": "53d2d02ea076adb995a31dfff57909ffce1565b3f9c77a75ff50d109ac6476aa",
+      "725230": "677f3da51bd5a8407c2b9271dcd3542bf0ab538a673ddb47a1da36ac30981c17",
+      "729498": "d3781f19e81acdd714f8f142c2ec7045272cb15bf5126f9bd987e748cfad80a3",
+      "734686": "4e0834d9402fad93a85c8db4c7a6c38c0471e6fad60386bae938527a6220b3f4",
+      "741678": "c8f521750f9f467ca0fd777340eac3aeb6dd31b2f327810bf87de9c7ffdfa866",
+      "750319": "16869071322a940d7fe26bf50d472e418e08a5aecb4d5455b0be258be3f13934",
+      "755732": "cab5babaa70b51b20fdf041eaaf465666f2f625f5f966c5a13b1ce2c0342a17a",
+      "764350": "38e7ee5e024496f897b5ef3ce521ad972e998516a19afe01f973e148191c1d3a",
+      "772521": "89f4af6bb30328f8dfa49f69f4901e040f4408c376c38c0f195d5283545d0b2a",
+      "779364": "85a81c3b131a6e13b9ba0e8c50ca83027c7c7ec34bfaf60979ef7282b4e57242",
+      "785673": "91ba6c51f166f7aef64db6e745e630a799ab28bf5990dcb3ef5acf0bfcbee54c",
+      "792957": "4a0b76a70e6c2436b43f864ee63c924d0f8e610a32df4801c8ba832e531357a2",
+      "796513": "39816b23725c6704c4a5c9750e9ef047cd5d78ee7e462e2ad53f8834e8c89af2"
+    },
+    "dimensions": [
+      "amount",
+      "negation",
+      "scope",
+      "date",
+      "reference"
+    ],
+    "mutations_blocked": 120,
+    "before_fallbacks_now_blocked": 115,
+    "before_waiting_now_ambiguous": 5,
+    "duplicate_controls_unchanged": 24,
+    "scope": "Cached real bill texts placed in synthetic DOCX/ZIP containers; controlled provision inserted after the first article line. Form feeds become newlines in the synthetic XML carrier. No legal completeness verdict."
+  },
+  "compatibility": {
+    "old_reader_sha": "084c1490f52b1cb5d3fd7ebc1d7c01cfdf5a9e55",
+    "both_directions_exact_roundtrip": true,
+    "raw_and_gzip_measurements": {
+      "baseline": [
+        {
+          "case": "2-0",
+          "observations": 1,
+          "traces": 2,
+          "archive_proofs": 1,
+          "sql_bytes": 59521,
+          "gzip_bytes": 11601,
+          "sql_sha256": "5f6c82e69ef923bfd19943de5e5503e43b20a131ac17e42ce7a2d12309c74145"
+        },
+        {
+          "case": "2-1",
+          "observations": 1,
+          "traces": 2,
+          "archive_proofs": 1,
+          "sql_bytes": 68752,
+          "gzip_bytes": 12591,
+          "sql_sha256": "b2bc040b3d98772e0572ac22db496e09a7ae664b3c91f5535a5797ff2644d82b"
+        },
+        {
+          "case": "3-0",
+          "observations": 1,
+          "traces": 2,
+          "archive_proofs": 1,
+          "sql_bytes": 63532,
+          "gzip_bytes": 11874,
+          "sql_sha256": "23910718572f89cd77873b82f8a40b275b373c15bd8dccd2ccfaa4eaa4e2d071"
+        },
+        {
+          "case": "3-1",
+          "observations": 1,
+          "traces": 2,
+          "archive_proofs": 1,
+          "sql_bytes": 72663,
+          "gzip_bytes": 12859,
+          "sql_sha256": "8ab2559cc51b0fe40bca7e2c372269e1dc1ff553744aa253744c846b59d5408f"
+        }
+      ],
+      "candidate": [
+        {
+          "case": "2-0",
+          "observations": 1,
+          "traces": 2,
+          "archive_proofs": 1,
+          "sql_bytes": 60460,
+          "gzip_bytes": 11655,
+          "sql_sha256": "dee1114de422866f163d8ee49ab23969dcba923f4ccce0c16c5e52c9b5c2780b"
+        },
+        {
+          "case": "2-1",
+          "observations": 1,
+          "traces": 2,
+          "archive_proofs": 1,
+          "sql_bytes": 68535,
+          "gzip_bytes": 12272,
+          "sql_sha256": "e07d2ff6af1c7fcc01ee7efd367d201aede4c9425cfe79ae0d90d9fc03a981e7"
+        },
+        {
+          "case": "3-0",
+          "observations": 1,
+          "traces": 2,
+          "archive_proofs": 1,
+          "sql_bytes": 64993,
+          "gzip_bytes": 11996,
+          "sql_sha256": "37c28c923934817ad1682b4597fbb9c5c909f241ebe5c3ebc0d79ab3b1517a28"
+        },
+        {
+          "case": "3-1",
+          "observations": 1,
+          "traces": 2,
+          "archive_proofs": 1,
+          "sql_bytes": 73068,
+          "gzip_bytes": 12559,
+          "sql_sha256": "275c4b947ad37874c2092ff4960ea2b206590d3d66f649568a65795edeeb5327"
+        }
+      ]
+    },
+    "schema_changes": false,
+    "reader_rollout_required": false,
+    "explanation": "All emitted record fields and proof-parent shapes remain readable by the deployed baseline; no new writer format was activated."
+  },
+  "state_census": {
+    "baseline": "084c1490f52b1cb5d3fd7ebc1d7c01cfdf5a9e55",
+    "state_sha": "922e2234da80b67e35afaaac8d297ce96268a412",
+    "sql_sha256": "5ac2171994161a33e4465bfd1fd70e691cd31c30d9d5b4689a45080310ca0264",
+    "now": "2026-11-21T22:22:49+00:00",
+    "since": "2026-11-20T11:32:36+00:00",
+    "cohorts": [
+      {
+        "unthreaded": false,
+        "followed": 46,
+        "watermark_selected": 12,
+        "latest_unapplied_selection_states": {
+          "unverified": 2,
+          "ambiguous": 1
+        },
+        "before_policy_retry": [
+          "RCL/12416702"
+        ],
+        "after_selection_retry": [
+          "RCL/12416702"
+        ],
+        "newly_eligible": []
+      },
+      {
+        "unthreaded": true,
+        "followed": 109,
+        "watermark_selected": 24,
+        "latest_unapplied_selection_states": {},
+        "before_policy_retry": [],
+        "after_selection_retry": [],
+        "newly_eligible": []
+      }
+    ],
+    "database_rows_unchanged": true,
+    "scope": "Eligibility census only; no production incident or completed reanalysis inferred."
+  },
+  "validation": {
+    "gate": "make check",
+    "passed": 11103,
+    "mypy": "passed",
+    "ruff": "passed",
+    "docs": "make docs-check passed",
+    "scenarios": "Twelve cases exercise real ZIP corruption, same-URL recovery, conflicting repairs, fresh processes, workers 1/4, carded/full/metadata modes, batch collection and quiet repeated runs."
+  },
+  "source_sha256": {
+    "src/lexinform/document_candidates.py": "4a167efe885594d03b183f598e1edc0f323e4994f7715c310f3d7c2d44e22318",
+    "src/lexinform/document_selection.py": "f8ec3874e4163cd2ac0faa54e2d715d8bfccbdab153cca4de45e42ba42e83107",
+    "src/lexinform/services/documents.py": "e3fa7bc932c9eae1c1bb42840def31944daef277f4a337688b4914d7c968584e",
+    "src/lexinform/services/tracking/service.py": "cc0a8b8d773dcfdbd8d8e7a2712eccaaaa14b7a7a8bcb7a8f8ade8fb5883fac4"
+  },
+  "local_artifacts": {
+    "root": "/Users/sobaleu/projects/lexinform/out/audits/waiting-reanalysis-20261121",
+    "sha256": {
+      "before.log": "97e24f3b4f79d65db68d36fdf5657d4a4ac792d10c0d5fc766e66bdec9f99500",
+      "after.log": "465c6042cfb53c7e3a8670c0e92ef4f166a746195934580e469b91340b913738",
+      "evidence-verified.log": "735f4ec77ff1f8c70da4e5e38cef23ee8ab2ee98d2cbe00274c5a9e1453046aa",
+      "quality-gate-verified.log": "33c72ce65cb2de1e92b2765de43ae1adb2d4e7ecc1aca7d36b0bf63bb5a28e04",
+      "corpus-final-diff.json": "2c9041c9b4146f0d072e84a3b966f7affe3eb115c44b0a482be6bc1b48cc6e2d",
+      "controls-before-v2.json": "9d2387c4adbecd9a01aaaf1ba3b7fa9b5a3c05d32c033b0549b9fd663c9d5cff",
+      "controls-final.json": "e98345676b0f5c1901fa2a3a741174430d9420e205428ee7234d4db119e38385",
+      "archive_controls.py": "c8380aa623c7e991ea62eacb4bc2576e9a9e4b330af190e90bdef3d117a04eea",
+      "compatibility.py": "6f2969aafa02d5c733b75138560cce1ff321112e558185b8321b57804e8be5ec",
+      "candidate-read.json": "84435eedb4e4e15764e92c50086e203a96feeba6f48a5b9d4f15a52ec986c16d",
+      "baseline-read.json": "37817b99f2cee5d540d12869d0f3444b02d0db492f5df7072045dfeb5c8ff161",
+      "state-census.json": "412937ab2c2bd788820293c9fb01e1ddfadb51dd40860c31dbeefa382e14ba2a",
+      "state_census.py": "d149af56cd00463511e64d8038d437b86192f2616f383d506ac7e83d409f0793"
+    }
+  },
+  "reproduction": [
+    "uv run pytest -q tests/scenario/test_waiting_reanalysis_recovery.py",
+    "Run tools.corpus_runs candidates at baseline and candidate with ../lexinform-corpus; verify and diff the sealed directories.",
+    "Run archive_controls.py at both revisions with distinct output labels.",
+    "Run compatibility.py write at each revision, then read each dump using the opposite revision.",
+    "PYTHONPATH=src:. uv run --offline python out/audits/waiting-reanalysis-20261121/state_census.py",
+    "make check",
+    "make docs-check"
+  ],
+  "exclusions": [
+    "The cached global replay does not re-extract raw archives; the focused controls use real cached bill texts inside synthetic DOCX/ZIP containers.",
+    "Mutation controls insert a provision; page-break characters become XML-compatible newlines in the synthetic carrier. Initial invalid-XML measurements were discarded.",
+    "The pinned active-state census adds no new retries beyond the preceding release; no live incident is inferred from this reproduction.",
+    "No manual production run, paid model call, Telegram send or production-state mutation."
+  ]
+}

@@ -54,6 +54,7 @@ from lexinform.document_downloads import (
     read_exclusion_reason,
 )
 from lexinform.document_selection import (
+    ARCHIVE_TEXT_CONFLICT_POLICY_VERSION,
     DOCUMENT_SELECTION_POLICY_VERSION,
     RCL_AMENDMENT_ARCHIVE_POLICY_VERSION,
     RCL_COMMENT_TABLE_AMENDMENT_POLICY_VERSION,
@@ -214,6 +215,38 @@ def _log_extracted_text(
             selection.state,
             selection.rejected,
         )
+
+
+def _version_conflict(
+    conflicts: Mapping[int, DocumentSelection],
+    observed: Mapping[int, tuple[DocumentPart, ...]],
+) -> LoadedFile:
+    """Keep text-conflict members observed, as required by their persisted physical proofs."""
+    return LoadedFile(
+        None,
+        selection=DocumentSelection(
+            state="ambiguous",
+            policy_version=next(
+                (
+                    conflict.policy_version
+                    for conflict in conflicts.values()
+                    if conflict.policy_version
+                ),
+                None,
+            ),
+            limitations=("draft_version_conflict",),
+            parts=tuple(
+                part
+                for conflict in conflicts.values()
+                if conflict.policy_version != ARCHIVE_TEXT_CONFLICT_POLICY_VERSION
+                for part in conflict.parts
+            ),
+            observed_parts=tuple(part for parts in observed.values() for part in parts),
+            rejected=tuple(
+                reason for conflict in conflicts.values() for reason in conflict.rejected
+            ),
+        ),
+    )
 
 
 def _trace_with_archive_evidence(
@@ -1815,6 +1848,7 @@ class TextLoader:
         unpack_blocked: set[int] = set()
         normative_blocked: set[int] = set()
         conflicts: dict[int, DocumentSelection] = {}
+        text_conflicts: dict[int, DocumentSelection] = {}
         observed: dict[int, tuple[DocumentPart, ...]] = {}
         decisions: list[CandidateDisposition] = []
         sources = source_set.official_sources()
@@ -1910,8 +1944,13 @@ class TextLoader:
                 file.selection.state == "ambiguous"
                 and "draft_version_conflict" in file.selection.limitations
             ):
-                conflicts[index] = file.selection
-            if index in incomplete or index in conflicts or is_bill:
+                target = (
+                    text_conflicts
+                    if file.selection.policy_version == ARCHIVE_TEXT_CONFLICT_POLICY_VERSION
+                    else conflicts
+                )
+                target[index] = file.selection
+            if index in incomplete or index in conflicts or index in text_conflicts or is_bill:
                 observed[index] = item.candidate.observed_parts or item.candidate.parts
             observations[index] = item
             if is_bill:
@@ -1953,24 +1992,12 @@ class TextLoader:
                 else item
                 for item in decisions
             )
-            selection = DocumentSelection(
-                state="ambiguous",
-                policy_version=next(
-                    (
-                        conflict.policy_version
-                        for conflict in conflicts.values()
-                        if conflict.policy_version
-                    ),
-                    None,
-                ),
-                limitations=("draft_version_conflict",),
-                parts=tuple(part for conflict in conflicts.values() for part in conflict.parts),
-                observed_parts=tuple(part for parts in observed.values() for part in parts),
-                rejected=tuple(
-                    reason for conflict in conflicts.values() for reason in conflict.rejected
-                ),
+            return (
+                document,
+                _version_conflict(conflicts | text_conflicts, observed),
+                "ambiguous",
+                "version_conflict",
             )
-            return document, LoadedFile(None, selection=selection), "ambiguous", "version_conflict"
         hold_rcl_package = (
             document.kind == "rcl"
             and not candidate_indices
@@ -2037,6 +2064,13 @@ class TextLoader:
         choice = select_candidate_versions(comparison_set, regulation=document.regulation)
         if choice is None:
             dispositions.extend(decisions)
+            if text_conflicts:
+                return (
+                    document,
+                    _version_conflict(text_conflicts, observed),
+                    "ambiguous",
+                    "version_conflict",
+                )
             return None
         includes_archive = any(
             part.members for item in prepared for part in (*item.parts, *item.observed_parts)
@@ -2104,6 +2138,19 @@ class TextLoader:
             return (
                 document,
                 LoadedFile(None, selection=choice.selection),
+                "ambiguous",
+                "version_conflict",
+            )
+        if text_conflicts:
+            dispositions.extend(
+                item.model_copy(update={"reason": "version_conflict"})
+                if item.outcome == "policy_excluded"
+                else item
+                for item in decisions
+            )
+            return (
+                document,
+                _version_conflict(text_conflicts, observed),
                 "ambiguous",
                 "version_conflict",
             )

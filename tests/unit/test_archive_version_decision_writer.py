@@ -63,15 +63,18 @@ def test_writes_only_successful_native_archive_comparison_after_physical_history
     history.persist_source_history(repo, recorded_at=finished)
 
     traces = repo.list_candidate_disposition_traces(observation.observation_id)
-    if order is None:
-        assert traces == baseline
-        return
     (extra,) = [trace for trace in traces if trace not in baseline]
-    proof = extra.archive_version_decision
-    assert proof is not None, "the supported native branch has persisted its exact peer"
-    assert (proof.order, proof.date_filter) == (order, dates)
-    (capture,) = repo.iter_physical_captures(proof.peer.root_sha256)
-    assert (capture.capture_id, capture.recorded_at) == (proof.capture_id, finished)
+    if order is None:
+        assert extra.archive_version_decision is None
+        conflict = extra.archive_version_conflict
+        assert conflict is not None, "the blocked archive retains its conflict without a winner"
+        assert conflict.compared_slots == (0, 1)
+    else:
+        proof = extra.archive_version_decision
+        assert proof is not None, "the supported native branch has persisted its exact peer"
+        assert (proof.order, proof.date_filter) == (order, dates)
+        (capture,) = repo.iter_physical_captures(proof.peer.root_sha256)
+        assert (capture.capture_id, capture.recorded_at) == (proof.capture_id, finished)
     dump = repo.dump()
     history.persist_source_history(repo, recorded_at=finished + timedelta(days=1))
     assert repo.dump() == dump

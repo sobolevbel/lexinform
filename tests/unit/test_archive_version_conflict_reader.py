@@ -46,13 +46,13 @@ def conflict(
     return observation.observation_id, base, trace
 
 
-def test_conflict_proof_retains_original_fallback_and_restores(repo: SqliteBillRepository) -> None:
+def test_conflict_proof_retains_blocked_selection_and_restores(repo: SqliteBillRepository) -> None:
     observation_id, base, trace = conflict(repo)
     repo.save_candidate_disposition_trace(observation_id, trace)
 
     assert (trace.result, trace.reason, trace.selection_state) == (
-        "fallback",
-        "all_rejected",
+        "ambiguous",
+        "version_conflict",
         "ambiguous",
     )
     assert trace.dispositions == base.dispositions

@@ -103,6 +103,8 @@ def test_confirmed_versions_with_different_amounts_remain_ambiguous() -> None:
     result = select_document_parts(physical, max_part_chars=400_000)
     assert result.selection.state == "ambiguous" and not result.text
     assert len(result.selection.observed_parts) == len(result.selection.parts) == 2
+    assert "draft_version_conflict" in result.selection.limitations
+    assert "Archive contains conflicting bill versions" in result.selection.rejected
 
 
 @pytest.mark.parametrize(("amount", "state"), [("200", "unverified"), ("300", "ambiguous")])

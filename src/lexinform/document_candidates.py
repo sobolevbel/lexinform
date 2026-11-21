@@ -14,6 +14,7 @@ from lexinform.archive_policy_capture import (
 )
 from lexinform.document_selection import (
     ARCHIVE_EDITION_DIRECTORY_POLICY_VERSION,
+    ARCHIVE_TEXT_CONFLICT_POLICY_VERSION,
     ARCHIVE_UNREADABLE_EDITION_POLICY_VERSION,
 )
 from lexinform.document_versions import (
@@ -614,6 +615,8 @@ def _select_parts(
                 else "text_conflict",
             )
         if not indices or annex_conflict or unassigned_annexes:
+            if not indices and not annex_conflict and not unassigned_annexes:
+                policy_version = ARCHIVE_TEXT_CONFLICT_POLICY_VERSION
             if not indices and decision_sink is not None and len(confirmed) == 2:
                 conflict_slots = (confirmed[0][0], confirmed[1][0])
             for index, _ in (*annexes, *supporting):
@@ -625,9 +628,7 @@ def _select_parts(
                     selection=DocumentSelection(
                         observed_parts=tuple(parts),
                         state="ambiguous",
-                        limitations=("draft_version_conflict",)
-                        if annex_conflict or unassigned_annexes
-                        else (),
+                        limitations=("draft_version_conflict",),
                         parts=(
                             *(part for _, part in confirmed),
                             *(
@@ -639,6 +640,11 @@ def _select_parts(
                         ),
                         rejected=(
                             *rejected,
+                            *(
+                                ("Archive contains conflicting bill versions",)
+                                if not indices
+                                else ()
+                            ),
                             *(
                                 ("Archive annex cannot be assigned to a draft directory",)
                                 if unassigned_annexes

@@ -760,7 +760,7 @@ class StatusTrackingService:
     def _include_selection_retries(
         self, tracked: list[Bill], everyone: list[Bill], *, unthreaded: bool = False
     ) -> list[Bill]:
-        """Retry superseded blocked selections independently of the discovery watermark."""
+        """Retry waiting or superseded blocked selections independently of the watermark."""
         if tracked is everyone or self._analysis is None:
             return tracked
         selected = {(bill.term, bill.number) for bill in tracked}
@@ -780,9 +780,9 @@ class StatusTrackingService:
             if latest is None or latest.document.url == bill.analysis.source_url:
                 continue
             selection = self._repo.get_document_selection(latest.selection_id)
-            if (
-                selection is not None
-                and selection.selection.state in {"ambiguous", "unsupported"}
+            if selection is not None and (
+                selection.selection.state == "waiting"
+                or selection.selection.state in {"ambiguous", "unsupported"}
                 and selection.selection.policy_version in SUPERSEDED_SELECTION_POLICIES
             ):
                 selected.add((bill.term, bill.number))
