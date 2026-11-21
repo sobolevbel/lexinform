@@ -5411,7 +5411,7 @@ INSERT INTO "commands" VALUES(79370165,'-1004460742180',848,'/run','2026-11-20T1
 <a href="https://github.com/sobolevbel/lexinform/actions/runs/44731317308">Прогон GitHub Actions</a>
 
 Запуск завершён. Подробности в отчёте прогона.',0,0);
-INSERT INTO "commands" VALUES(79370166,'-1004460742180',854,'/run','2026-11-21T11:30:16+00:00',NULL,'status: Запуск завершён. Подробности в отчёте прогона.','2026-11-21T11:35:21+00:00','{"update_id":79370166,"chat_id":"-1004460742180","message_id":854,"text":"/run","received_at":"2026-11-21T11:30:16Z","actor_id":null,"author_signature":null,"acknowledgement_id":855,"run_requested":true}','https://github.com/sobolevbel/lexinform/actions/runs/44899414233',NULL,NULL,NULL,'📊 <b>Состояние</b> · <code>/run</code>
+INSERT INTO "commands" VALUES(79370166,'-1004460742180',854,'/run','2026-11-21T11:30:16+00:00','2026-11-21T11:35:34+00:00','status: Запуск завершён. Подробности в отчёте прогона.','2026-11-21T11:35:21+00:00','{"update_id":79370166,"chat_id":"-1004460742180","message_id":854,"text":"/run","received_at":"2026-11-21T11:30:16Z","actor_id":null,"author_signature":null,"acknowledgement_id":855,"run_requested":true}','https://github.com/sobolevbel/lexinform/actions/runs/44899414233',NULL,NULL,NULL,'📊 <b>Состояние</b> · <code>/run</code>
 
 <code>/request 79370166</code>
 
