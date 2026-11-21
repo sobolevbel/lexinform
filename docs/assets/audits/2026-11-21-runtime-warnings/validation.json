@@ -1,0 +1,1369 @@
+{
+  "scope": {
+    "from": "2026-11-13T23:00:00Z",
+    "through": "2026-11-21T11:35:20Z",
+    "timezone": "Europe/Warsaw",
+    "workflow": "daily.yml",
+    "workflow_runs": 51,
+    "database_runs": 54,
+    "baseline": "14bd0d2bd1a1ab2c8b33ea289070542c3c501f54",
+    "state_sha": "f44a6854f3007488103f4158f44a3bfa3063541e",
+    "sql_sha256": "b4dc2a1679847eca21ccab2962affc3f8f75c62f86b95c7f6fb3f04a7fa70a23"
+  },
+  "counts": {
+    "WARNING": 106,
+    "ERROR": 16,
+    "workflow": 18
+  },
+  "findings": {
+    "archive_flat_text": {
+      "status": "fixed",
+      "finding": "The generic statute-selection facade returned no combined text while retaining readable regulation files. The regulation-aware source selection succeeded.",
+      "change": "Report retained text and parts at INFO; preserve WARNING for empty or failed reads.",
+      "evidence": "Seven downloaded archives replayed before and after: identical selected text and selection hashes; zero document warnings after the fix. One archive also contains a valid textless scanned attachment.",
+      "counts": {
+        "WARNING": 11
+      },
+      "occurrences": [
+        {
+          "run": "43598510983-1",
+          "line": 574
+        },
+        {
+          "run": "43598510983-1",
+          "line": 590
+        },
+        {
+          "run": "43598510983-1",
+          "line": 596
+        },
+        {
+          "run": "43598510983-1",
+          "line": 688
+        },
+        {
+          "run": "44401694563-1",
+          "line": 574
+        },
+        {
+          "run": "44620835096-1",
+          "line": 549
+        },
+        {
+          "run": "44731317308-1",
+          "line": 540
+        },
+        {
+          "run": "44731317308-1",
+          "line": 550
+        },
+        {
+          "run": "44731317308-1",
+          "line": 627
+        },
+        {
+          "run": "44731317308-1",
+          "line": 684
+        },
+        {
+          "run": "44731317308-1",
+          "line": 690
+        }
+      ]
+    },
+    "pdf_scan": {
+      "status": "fixed",
+      "finding": "RPW/39483/2026 is a 12-page PDF scan, not an unreadable file.",
+      "change": "Report retained scan pages at INFO; PDF page extraction failures remain warnings.",
+      "evidence": "Production analyzed the submission on 2026-11-19 and marked score 1; analysis_attempts=0, last_error=null.",
+      "counts": {
+        "WARNING": 2
+      },
+      "occurrences": [
+        {
+          "run": "44620835096-1",
+          "line": 540
+        },
+        {
+          "run": "44620835096-1",
+          "line": 669
+        }
+      ]
+    },
+    "plenary_referral": {
+      "status": "fixed",
+      "finding": "StageEnricher.enrich requested committees/Sejm for plenary referrals of prints 3397 and 3398. The endpoint returns HTTP 204 with an empty body.",
+      "change": "Apply the existing PLENARY_COMMITTEE_CODE guard to stage enrichment, matching name_committees.",
+      "evidence": "Live source bodies pinned; before/after replay over 5,533 corpus processes plus two current cases preserved every stage output and all real committee calls.",
+      "counts": {
+        "WARNING": 2
+      },
+      "occurrences": [
+        {
+          "run": "44620835096-1",
+          "line": 685
+        },
+        {
+          "run": "44620835096-1",
+          "line": 700
+        }
+      ]
+    },
+    "amendment_attachment": {
+      "status": "previous_fix_recovered",
+      "finding": "Print 3383 uses the verified attachment name 3383 .pdf, while reportFile named missing 3383.pdf.",
+      "change": "Already fixed in baseline 14bd0d2bd1a1ab2c8b33ea289070542c3c501f54; no additional change.",
+      "evidence": "Production run 552 submitted amendments for 2644 in batch_6b0181f005f88190875c39bd31d52115 at 2026-11-21T11:35:12Z. Result delivery was still pending in the pinned snapshot.",
+      "counts": {
+        "WARNING": 12
+      },
+      "occurrences": [
+        {
+          "run": "44401694563-1",
+          "line": 726
+        },
+        {
+          "run": "44419114588-1",
+          "line": 533
+        },
+        {
+          "run": "44422157310-1",
+          "line": 500
+        },
+        {
+          "run": "44425032943-1",
+          "line": 499
+        },
+        {
+          "run": "44480889943-1",
+          "line": 500
+        },
+        {
+          "run": "44491459669-1",
+          "line": 554
+        },
+        {
+          "run": "44620835096-1",
+          "line": 722
+        },
+        {
+          "run": "44623383909-1",
+          "line": 532
+        },
+        {
+          "run": "44626835077-1",
+          "line": 500
+        },
+        {
+          "run": "44704393986-1",
+          "line": 530
+        },
+        {
+          "run": "44731317308-1",
+          "line": 705
+        },
+        {
+          "run": "44818579018-1",
+          "line": 594
+        }
+      ]
+    },
+    "adopted_text_404": {
+      "status": "source_recovered",
+      "finding": "The advertised 2995_u3.pdf and 3281_u3.pdf were temporarily unavailable. Previous analyses were preserved.",
+      "change": "No change: retries recovered when the files appeared.",
+      "evidence": "Both files now return 200. Validated reanalysis results were collected 2026-11-21T11:32:15Z, source_kind=text_after3, revisions 2 and 3; no waiting flag or last_error remains.",
+      "counts": {
+        "WARNING": 10
+      },
+      "occurrences": [
+        {
+          "run": "44620835096-1",
+          "line": 740
+        },
+        {
+          "run": "44620835096-1",
+          "line": 747
+        },
+        {
+          "run": "44623383909-1",
+          "line": 536
+        },
+        {
+          "run": "44623383909-1",
+          "line": 543
+        },
+        {
+          "run": "44626835077-1",
+          "line": 504
+        },
+        {
+          "run": "44626835077-1",
+          "line": 507
+        },
+        {
+          "run": "44704393986-1",
+          "line": 534
+        },
+        {
+          "run": "44704393986-1",
+          "line": 536
+        },
+        {
+          "run": "44731317308-1",
+          "line": 710
+        },
+        {
+          "run": "44731317308-1",
+          "line": 724
+        }
+      ]
+    },
+    "submission_404": {
+      "status": "linked_to_available_print",
+      "finding": "The Orka PDF for RPW/39150/2026 returned HTTP 404.",
+      "change": "No change: later linked to print 3398, whose document was successfully read and compared with its RCL predecessor.",
+      "evidence": "Run 539 linked both RPW and RCL/12405805 to 3398; the production state is linked, analysis_attempts=0. The old last_error field is historical, not an active retry.",
+      "counts": {
+        "WARNING": 6
+      },
+      "occurrences": [
+        {
+          "run": "44401694563-1",
+          "line": 548
+        },
+        {
+          "run": "44419114588-1",
+          "line": 513
+        },
+        {
+          "run": "44422157310-1",
+          "line": 489
+        },
+        {
+          "run": "44425032943-1",
+          "line": 489
+        },
+        {
+          "run": "44480889943-1",
+          "line": 489
+        },
+        {
+          "run": "44491459669-1",
+          "line": 537
+        }
+      ]
+    },
+    "wykaz_network": {
+      "status": "source_recovered",
+      "finding": "Real runner network failures: network unreachable, timeouts, and one truncated CSV response; fallback register ID and retries also failed in six ticks.",
+      "change": "Keep the warnings and bounded retries; do not interpret a partial CSV as an empty register.",
+      "evidence": "Runs 503, 524, 529 and 552 recovered. Wykaz discovery reads every entry independent of the news watermark, so the source is reconsidered after recovery.",
+      "counts": {
+        "WARNING": 44,
+        "ERROR": 10
+      },
+      "occurrences": [
+        {
+          "run": "43595142327-1",
+          "line": 491
+        },
+        {
+          "run": "43595142327-1",
+          "line": 492
+        },
+        {
+          "run": "43595142327-1",
+          "line": 493
+        },
+        {
+          "run": "43595142327-1",
+          "line": 494
+        },
+        {
+          "run": "43595142327-1",
+          "line": 495
+        },
+        {
+          "run": "43595142327-1",
+          "line": 496
+        },
+        {
+          "run": "43828216513-1",
+          "line": 490
+        },
+        {
+          "run": "43828216513-1",
+          "line": 491
+        },
+        {
+          "run": "43828216513-1",
+          "line": 492
+        },
+        {
+          "run": "43828216513-1",
+          "line": 501
+        },
+        {
+          "run": "43828216513-1",
+          "line": 502
+        },
+        {
+          "run": "43828216513-1",
+          "line": 503
+        },
+        {
+          "run": "43974634751-1",
+          "line": 491
+        },
+        {
+          "run": "43974634751-1",
+          "line": 492
+        },
+        {
+          "run": "43974634751-1",
+          "line": 493
+        },
+        {
+          "run": "43974634751-1",
+          "line": 494
+        },
+        {
+          "run": "43974634751-1",
+          "line": 495
+        },
+        {
+          "run": "43974634751-1",
+          "line": 496
+        },
+        {
+          "run": "43974634751-1",
+          "line": 673
+        },
+        {
+          "run": "43974634751-1",
+          "line": 674
+        },
+        {
+          "run": "43974634751-1",
+          "line": 675
+        },
+        {
+          "run": "43974634751-1",
+          "line": 676
+        },
+        {
+          "run": "43974634751-1",
+          "line": 677
+        },
+        {
+          "run": "43974634751-1",
+          "line": 678
+        },
+        {
+          "run": "43979403261-1",
+          "line": 492
+        },
+        {
+          "run": "43979403261-1",
+          "line": 493
+        },
+        {
+          "run": "43979403261-1",
+          "line": 494
+        },
+        {
+          "run": "43979403261-1",
+          "line": 495
+        },
+        {
+          "run": "43979403261-1",
+          "line": 496
+        },
+        {
+          "run": "43979403261-1",
+          "line": 497
+        },
+        {
+          "run": "44054322375-1",
+          "line": 492
+        },
+        {
+          "run": "44054322375-1",
+          "line": 493
+        },
+        {
+          "run": "44054322375-1",
+          "line": 494
+        },
+        {
+          "run": "44054322375-1",
+          "line": 495
+        },
+        {
+          "run": "44054322375-1",
+          "line": 496
+        },
+        {
+          "run": "44054322375-1",
+          "line": 497
+        },
+        {
+          "run": "44054322375-1",
+          "line": 506
+        },
+        {
+          "run": "44054322375-1",
+          "line": 507
+        },
+        {
+          "run": "44054322375-1",
+          "line": 508
+        },
+        {
+          "run": "44054322375-1",
+          "line": 509
+        },
+        {
+          "run": "44054322375-1",
+          "line": 510
+        },
+        {
+          "run": "44054322375-1",
+          "line": 511
+        },
+        {
+          "run": "44268661054-1",
+          "line": 489
+        },
+        {
+          "run": "44268661054-1",
+          "line": 490
+        },
+        {
+          "run": "44268661054-1",
+          "line": 491
+        },
+        {
+          "run": "44268661054-1",
+          "line": 492
+        },
+        {
+          "run": "44268661054-1",
+          "line": 493
+        },
+        {
+          "run": "44268661054-1",
+          "line": 494
+        },
+        {
+          "run": "44268661054-1",
+          "line": 566
+        },
+        {
+          "run": "44268661054-1",
+          "line": 567
+        },
+        {
+          "run": "44268661054-1",
+          "line": 568
+        },
+        {
+          "run": "44268661054-1",
+          "line": 569
+        },
+        {
+          "run": "44268661054-1",
+          "line": 570
+        },
+        {
+          "run": "44268661054-1",
+          "line": 571
+        }
+      ]
+    },
+    "sejm_network": {
+      "status": "source_recovered",
+      "finding": "16 retry warnings: timeouts, disconnects and HTTP 502. Run 511 exhausted retries on KSS/SUE/ZDR and then the shared host budget skipped proceedings and process 1929 before sending.",
+      "change": "Keep bounded retries and the explicit skipped-before-sending diagnostic.",
+      "evidence": "Run 516 tracked 39 and had only wykaz errors; subsequent full runs completed. Other retry incidents recovered in the same tick or later. A local HTTP 200 does not disprove the earlier runner failure.",
+      "counts": {
+        "WARNING": 19,
+        "ERROR": 2
+      },
+      "occurrences": [
+        {
+          "run": "43598510983-1",
+          "line": 725
+        },
+        {
+          "run": "43722798247-1",
+          "line": 513
+        },
+        {
+          "run": "43722798247-1",
+          "line": 514
+        },
+        {
+          "run": "43722798247-1",
+          "line": 515
+        },
+        {
+          "run": "43722798247-1",
+          "line": 516
+        },
+        {
+          "run": "43722798247-1",
+          "line": 517
+        },
+        {
+          "run": "43722798247-1",
+          "line": 518
+        },
+        {
+          "run": "43722798247-1",
+          "line": 519
+        },
+        {
+          "run": "43722798247-1",
+          "line": 520
+        },
+        {
+          "run": "43722798247-1",
+          "line": 521
+        },
+        {
+          "run": "43722798247-1",
+          "line": 522
+        },
+        {
+          "run": "43722798247-1",
+          "line": 523
+        },
+        {
+          "run": "43722798247-1",
+          "line": 524
+        },
+        {
+          "run": "43722798247-1",
+          "line": 525
+        },
+        {
+          "run": "43722798247-1",
+          "line": 526
+        },
+        {
+          "run": "43722798247-1",
+          "line": 527
+        },
+        {
+          "run": "43722798247-1",
+          "line": 528
+        },
+        {
+          "run": "44054322375-1",
+          "line": 512
+        },
+        {
+          "run": "44620835096-1",
+          "line": 746
+        },
+        {
+          "run": "44623383909-1",
+          "line": 544
+        },
+        {
+          "run": "44731317308-1",
+          "line": 696
+        }
+      ]
+    },
+    "rcl_network": {
+      "status": "source_recovered",
+      "finding": "Run 522 saw TLS EOF on /lista and a disconnect on /projekt/12400563 during short health probes.",
+      "change": "Keep bounded health probes and preserve the failed discovery watermark.",
+      "evidence": "Run 524 used the same since=2026-11-15T22:57:06+00:00 as run 522, discovered four RCL projects and finished without errors.",
+      "counts": {
+        "ERROR": 2
+      },
+      "occurrences": [
+        {
+          "run": "44054322375-1",
+          "line": 499
+        },
+        {
+          "run": "44054322375-1",
+          "line": 513
+        }
+      ]
+    },
+    "senate_403": {
+      "status": "source_recovered",
+      "finding": "Two ticks received HTTP 403 on the official act 2228 URL. The repeated path segment is valid; the shortened alternative returns 404.",
+      "change": "Keep official URLs and normal retry on the next tick; no URL rewriting or bypass.",
+      "evidence": "Run 541 and subsequent full runs recovered; bill 3003 has current Senate committee metadata. Local probes returned 200 for the official URL and 404 for the shortened URL. The remote reason for 403 is unknown.",
+      "counts": {
+        "ERROR": 2
+      },
+      "occurrences": [
+        {
+          "run": "44620835096-1",
+          "line": 684
+        },
+        {
+          "run": "44623383909-1",
+          "line": 528
+        }
+      ]
+    },
+    "workflow_exit": {
+      "status": "accounted_for",
+      "finding": "18 final error lines represent two exit checks in each of nine failed workflows, not 18 additional failures.",
+      "change": "No change: the workflows correctly surface source failures after saving checkpoints.",
+      "evidence": "Each failed workflow maps to the source errors above; no separate traceback or state-push failure was found.",
+      "counts": {
+        "workflow": 18
+      },
+      "occurrences": [
+        {
+          "run": "43595142327-1",
+          "line": 504
+        },
+        {
+          "run": "43595142327-1",
+          "line": 629
+        },
+        {
+          "run": "43722798247-1",
+          "line": 640
+        },
+        {
+          "run": "43722798247-1",
+          "line": 766
+        },
+        {
+          "run": "43828216513-1",
+          "line": 614
+        },
+        {
+          "run": "43828216513-1",
+          "line": 739
+        },
+        {
+          "run": "43974634751-1",
+          "line": 1075
+        },
+        {
+          "run": "43974634751-1",
+          "line": 1200
+        },
+        {
+          "run": "43979403261-1",
+          "line": 505
+        },
+        {
+          "run": "43979403261-1",
+          "line": 630
+        },
+        {
+          "run": "44054322375-1",
+          "line": 626
+        },
+        {
+          "run": "44054322375-1",
+          "line": 751
+        },
+        {
+          "run": "44268661054-1",
+          "line": 868
+        },
+        {
+          "run": "44268661054-1",
+          "line": 993
+        },
+        {
+          "run": "44620835096-1",
+          "line": 1169
+        },
+        {
+          "run": "44620835096-1",
+          "line": 1294
+        },
+        {
+          "run": "44623383909-1",
+          "line": 557
+        },
+        {
+          "run": "44623383909-1",
+          "line": 682
+        }
+      ]
+    }
+  },
+  "validation": {
+    "archives": {
+      "cases": 7,
+      "changed_selected_texts": 0,
+      "changed_selections": 0,
+      "document_warnings_after": 0,
+      "sources": [
+        {
+          "url": "https://legislacja.rcl.gov.pl/docs//3/12408356/13193173/13193174/dokument808367.zip",
+          "file": "dokument808367.zip",
+          "bytes": 640570,
+          "sha256": "d290257c2d8598bf48fdda7a736c2fbec86b7d17ab7bca013d41e9f94e949d02"
+        },
+        {
+          "url": "https://legislacja.rcl.gov.pl/docs//3/12413400/13220239/13220240/dokument798069.zip",
+          "file": "dokument798069.zip",
+          "bytes": 710600,
+          "sha256": "c6f259ea4d0390540fed2186beaa1ce9aae39e1adf2c83e603ad94db2fa3baf3"
+        },
+        {
+          "url": "https://legislacja.rcl.gov.pl/docs//3/12413400/13220239/13220240/dokument806127.zip",
+          "file": "dokument806127.zip",
+          "bytes": 614684,
+          "sha256": "670e2fb7d5f122e146af45ab48c4b7db60f8bf3d988fd931fb317f0aa7ebaa49"
+        },
+        {
+          "url": "https://legislacja.rcl.gov.pl/docs//3/12414502/13225792/13225793/dokument807442.zip",
+          "file": "dokument807442.zip",
+          "bytes": 296626,
+          "sha256": "7528ec18c54fe5f5066ce431480c9d2b7acc96340a711caca98a25eb4c3f377f"
+        },
+        {
+          "url": "https://legislacja.rcl.gov.pl/docs//3/12415150/13228800/13228801/dokument808097.zip",
+          "file": "dokument808097.zip",
+          "bytes": 626658,
+          "sha256": "394927f650726acc670c40af240060dd41c4febec6e128e9ca9b30c39ee311ac"
+        },
+        {
+          "url": "https://legislacja.rcl.gov.pl/docs//3/12415911/13232919/13232920/dokument805896.zip",
+          "file": "dokument805896.zip",
+          "bytes": 760543,
+          "sha256": "1430ef719a41c98075d77e4c1ce8d9295bf585bf26a01a5205877ee0fb9ffd70"
+        },
+        {
+          "url": "https://legislacja.rcl.gov.pl/docs//4/12414302/13224920/13224921/dokument805421.zip",
+          "file": "dokument805421.zip",
+          "bytes": 781824,
+          "sha256": "606f00259b36948bade1061700ba02146bfdf43e476433b12e06c0ad88467c5c"
+        }
+      ],
+      "results": [
+        {
+          "url": "https://legislacja.rcl.gov.pl/docs//3/12408356/13193173/13193174/dokument808367.zip",
+          "raw_state": "unsupported",
+          "raw_text_chars": 0,
+          "retained_chars": 73361,
+          "selected_state": "unverified",
+          "selected_chars": 1752,
+          "selected_sha256": "6b7f131066c9bfefede758f0a0c56beafa4b0b09d51da9add7f44d663e10bc9f",
+          "selection_sha256": "41136102fef78369ca27624566f4ff09f2eaa08ab08b9f98feb8ba03c76cfab3"
+        },
+        {
+          "url": "https://legislacja.rcl.gov.pl/docs//3/12413400/13220239/13220240/dokument798069.zip",
+          "raw_state": "unsupported",
+          "raw_text_chars": 0,
+          "retained_chars": 61665,
+          "selected_state": "unverified",
+          "selected_chars": 32585,
+          "selected_sha256": "15e827c6b92b58c4c64aafeef7b26f671cd23bcd23c36e09d9e7463541c1b327",
+          "selection_sha256": "a9aa491b9394b1ef4996cabd13876bffc89a26fa69f556702de61acc609ac943"
+        },
+        {
+          "url": "https://legislacja.rcl.gov.pl/docs//3/12413400/13220239/13220240/dokument806127.zip",
+          "raw_state": "unsupported",
+          "raw_text_chars": 0,
+          "retained_chars": 43108,
+          "selected_state": "unverified",
+          "selected_chars": 34005,
+          "selected_sha256": "705746d03d623439545edd7581f4312afbc6486cabdbe2f097751127b660ee97",
+          "selection_sha256": "13167ea43cfb10d57edcba1c5687a4e1a270509bb33971ee1154b4e0c5e90750"
+        },
+        {
+          "url": "https://legislacja.rcl.gov.pl/docs//3/12414502/13225792/13225793/dokument807442.zip",
+          "raw_state": "unsupported",
+          "raw_text_chars": 0,
+          "retained_chars": 41974,
+          "selected_state": "unverified",
+          "selected_chars": 13377,
+          "selected_sha256": "57ca8e0fd88ef25ad185c6a8fba63a03e7234cda72c34fbde934cf7677913fd5",
+          "selection_sha256": "af6cf8c3919a1b15ecbfde05706f832432527174557b85cbfe428771c00e238a"
+        },
+        {
+          "url": "https://legislacja.rcl.gov.pl/docs//3/12415150/13228800/13228801/dokument808097.zip",
+          "raw_state": "unsupported",
+          "raw_text_chars": 0,
+          "retained_chars": 29778,
+          "selected_state": "unverified",
+          "selected_chars": 22727,
+          "selected_sha256": "aeeb6532bf74085fc2f1c6cf6cc4813af7d50c3ef1fce5dadb7d64483fbf9751",
+          "selection_sha256": "cd39fea59b6789fdd80046a688d4c2b7ce458acf63a24cf9d66e625f8aa330c2"
+        },
+        {
+          "url": "https://legislacja.rcl.gov.pl/docs//3/12415911/13232919/13232920/dokument805896.zip",
+          "raw_state": "unsupported",
+          "raw_text_chars": 0,
+          "retained_chars": 41347,
+          "selected_state": "unverified",
+          "selected_chars": 27479,
+          "selected_sha256": "073b813a5fb4c4ed6ae896f31a500743f2544ac705c71f5ddbef01beaa334d9c",
+          "selection_sha256": "da9b73f019a3edb508439aefe9748fc5204d2502f057c8d3c62c3a5ba7745702"
+        },
+        {
+          "url": "https://legislacja.rcl.gov.pl/docs//4/12414302/13224920/13224921/dokument805421.zip",
+          "raw_state": "unsupported",
+          "raw_text_chars": 0,
+          "retained_chars": 25565,
+          "selected_state": "unverified",
+          "selected_chars": 987,
+          "selected_sha256": "7abffc59d46a8dbfdedd9d18ee9f49b6eee760863ef9f701ffbc998108a24a47",
+          "selection_sha256": "d63c1d6a132fc7e99ec2255b4593718c8143d1c80e58d7e696451a1df25a1c29"
+        }
+      ]
+    },
+    "stages": {
+      "baseline": "14bd0d2bd1a1ab2c8b33ea289070542c3c501f54",
+      "source_sha256": "4f8ffa56a37173162c06511831dc5c7ddda99e5c4350e2ffc7bd033eadfb7aaa",
+      "counts": {
+        "processes": 5535,
+        "stages": 56470,
+        "unchanged_real_committee_calls": 5593,
+        "avoided_plenary_calls": 1968
+      },
+      "inputs": [
+        {
+          "path": "/Users/sobaleu/projects/lexinform-corpus/sejm/term8/process_details.json.gz",
+          "sha256": "9c3a7f2e5de2dc84f1d7ca21f23aadf420ebeb60f9666a72b96023155b03f9c9"
+        },
+        {
+          "path": "/Users/sobaleu/projects/lexinform-corpus/sejm/term9/process_details.json.gz",
+          "sha256": "058e7992271c4b74d10123dd2fd8e07720ad069c1bcaf004b649c825ae0e4f4a"
+        },
+        {
+          "path": "/Users/sobaleu/projects/lexinform-corpus/sejm/term10/process_details.json.gz",
+          "sha256": "30bfa64c770e09a3451c78fd10e52fc1a37e7e0304071ee8c9c5f17d2e3abf9f"
+        },
+        {
+          "path": "/Users/sobaleu/projects/lexinform/out/audits/warnings-20261121/live/process-3397",
+          "sha256": "6972c02978c1a91a154c79263a46de98911aa8f8fef0bf8419ef657a6004d7f8"
+        },
+        {
+          "path": "/Users/sobaleu/projects/lexinform/out/audits/warnings-20261121/live/process-3398",
+          "sha256": "604cbc221d0c3999256204ba95961e9b6e8c98d4706235f881b6e76631ce1259"
+        }
+      ],
+      "changed_stage_outputs": 0,
+      "excluded_inputs": [],
+      "scope": "Enrichment only; fake committee responses, voting enrichment disabled; no live calls."
+    },
+    "delivery": {
+      "pending_failed_unknown": [],
+      "queued_this_week": [
+        {
+          "id": 370,
+          "number": "RCL/12402353",
+          "destination": "digest_only",
+          "reason": "routine_step_without_reader_action"
+        },
+        {
+          "id": 378,
+          "number": "3267",
+          "destination": "digest_only",
+          "reason": "routine_step_without_reader_action"
+        },
+        {
+          "id": 395,
+          "number": "RCL/12405805",
+          "destination": "digest_only",
+          "reason": "routine_step_without_reader_action"
+        },
+        {
+          "id": 421,
+          "number": "3141",
+          "destination": "digest_only",
+          "reason": "routine_step_without_reader_action"
+        },
+        {
+          "id": 422,
+          "number": "3157",
+          "destination": "digest_only",
+          "reason": "routine_step_without_reader_action"
+        }
+      ]
+    },
+    "official_endpoint_probes": [
+      {
+        "name": "process-3397",
+        "url": "https://api.sejm.gov.pl/sejm/term10/processes/3397",
+        "status": 200,
+        "content_type": "application/json",
+        "bytes": 1522,
+        "sha256": "6972c02978c1a91a154c79263a46de98911aa8f8fef0bf8419ef657a6004d7f8"
+      },
+      {
+        "name": "process-3398",
+        "url": "https://api.sejm.gov.pl/sejm/term10/processes/3398",
+        "status": 200,
+        "content_type": "application/json",
+        "bytes": 1572,
+        "sha256": "604cbc221d0c3999256204ba95961e9b6e8c98d4706235f881b6e76631ce1259"
+      },
+      {
+        "name": "committee-Sejm",
+        "url": "https://api.sejm.gov.pl/sejm/term10/committees/Sejm",
+        "status": 204,
+        "content_type": null,
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "source_sha256": {
+      "src/lexinform/services/documents.py": "c73b42f20844dd5823429be2a76035db79ff469685554c26eaf596a4e08b6af1",
+      "src/lexinform/services/tracking/stages.py": "4f8ffa56a37173162c06511831dc5c7ddda99e5c4350e2ffc7bd033eadfb7aaa",
+      "tests/unit/test_document_read_logging.py": "473e9907411651c3ef1b4eec3b3c3207dc25f0c377f4384d2f72eabd83a05a5d",
+      "tests/unit/test_stage_enrichment.py": "0dcb93218c60758a62e6b4218ba04af609530cb8db9154f250e4e8d7058947f1"
+    },
+    "quality_gate": {
+      "command": "make check",
+      "result": "passed",
+      "tests_passed": 11039,
+      "log_sha256": "c3c6d3c9462e29a7bf2deb89afc49237a6801d1c3f716c1ce93394a714925dd5"
+    },
+    "docs_gate": {
+      "command": "make docs-check",
+      "result": "passed",
+      "log_sha256": "09c33b53db5c238fa0e774caa273683a065310731985f795018cb953e0b4916e"
+    }
+  },
+  "reproduction": {
+    "warning_pattern": "\\b(WARNING|ERROR|CRITICAL)\\s+([\\w.]+): (.*)",
+    "raw_logs": "gh run view RUN_ID --attempt 1 --log",
+    "targeted_tests": "uv run pytest -q tests/unit/test_document_read_logging.py tests/unit/test_stage_enrichment.py",
+    "local_archive_replay": "uv run python out/audits/warnings-20261121/replay_archives.py NEW_LABEL",
+    "local_stage_replay": "PYTHONPATH=. uv run python out/audits/warnings-20261121/replay_stages.py NEW_REPORT.json",
+    "local_replay_scripts_sha256": {
+      "replay_archives.py": "dbf11f30ade91845956c9702becffcd3c1d6304cc068be9d5bc00b202a8a952d",
+      "replay_stages.py": "e2907545f45ba1268b2d19d7bae4ed2b51468801136bf40f191628a1a7be448d"
+    }
+  },
+  "limitations": [
+    "Network root causes beyond observed HTTP/transport failures are not established.",
+    "No production pipeline, Telegram send, paid model call or production database mutation was performed by this audit.",
+    "Stage replay uses fake committee responses and disables voting enrichment; it is not a full lifecycle replay.",
+    "Archive replay checks reading and selection identity, not legal relevance or model output.",
+    "Local raw logs, downloaded sources and ad-hoc replay scripts are retained in out/audits/warnings-20261121; they are not included in Git.",
+    "Archive bodies were captured on 2026-11-21; historical log lines do not independently prove that their original response bytes were identical."
+  ],
+  "log_manifest": [
+    {
+      "run": 44899414233,
+      "attempt": 1,
+      "created_at": "2026-11-21T11:30:22Z",
+      "head_sha": "14bd0d2bd1a1ab2c8b33ea289070542c3c501f54",
+      "bytes": 90686,
+      "sha256": "31726f6d2b43ea90d963e7f637c3bf752126f8f3347dfb53e5d8a2688f198c4a"
+    },
+    {
+      "run": 44886310460,
+      "attempt": 1,
+      "created_at": "2026-11-21T08:44:52Z",
+      "head_sha": "14bd0d2bd1a1ab2c8b33ea289070542c3c501f54",
+      "bytes": 55751,
+      "sha256": "caa49594be9a5d802c84500c77bd7fd8132d83ddec8028dee57c965c47c131f6"
+    },
+    {
+      "run": 44847039542,
+      "attempt": 1,
+      "created_at": "2026-11-21T00:56:01Z",
+      "head_sha": "14bd0d2bd1a1ab2c8b33ea289070542c3c501f54",
+      "bytes": 55750,
+      "sha256": "7ec525a6a1c4c1c6827212cd8f2123e047a9043cde0add28023544d9d30ef820"
+    },
+    {
+      "run": 44818579018,
+      "attempt": 1,
+      "created_at": "2026-11-20T21:14:41Z",
+      "head_sha": "8cb169a821d45c821f25d170d036db66984bb573",
+      "bytes": 121889,
+      "sha256": "8d300da998598dc271a6422e08fa8fa9110bbe4f04cbc885cdba96e5b53a939d"
+    },
+    {
+      "run": 44796181101,
+      "attempt": 1,
+      "created_at": "2026-11-20T18:48:06Z",
+      "head_sha": "8cb169a821d45c821f25d170d036db66984bb573",
+      "bytes": 57404,
+      "sha256": "103fa866b3d23cb81e5c5b057f8ca85554646be4ce72d4405594d41aa1270f37"
+    },
+    {
+      "run": 44731317308,
+      "attempt": 1,
+      "created_at": "2026-11-20T11:53:57Z",
+      "head_sha": "8cb169a821d45c821f25d170d036db66984bb573",
+      "bytes": 141208,
+      "sha256": "66c42c65b2f5ee275f45fea130123b0f5bb71a571a3bf97f66f58c3a343fa755"
+    },
+    {
+      "run": 44719276920,
+      "attempt": 1,
+      "created_at": "2026-11-20T10:26:39Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 55749,
+      "sha256": "61717075a343c719bf01e5da8a7893269555f851e87bf026d91ee11b871523eb"
+    },
+    {
+      "run": 44704393986,
+      "attempt": 1,
+      "created_at": "2026-11-20T08:40:13Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 81241,
+      "sha256": "661417a77dc0ab3864d44d3d5f8bcd962dd081a09822e3a158de2eaf8cfcc76a"
+    },
+    {
+      "run": 44661790773,
+      "attempt": 1,
+      "created_at": "2026-11-20T02:34:41Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 55749,
+      "sha256": "26ef0d8a9891eabb11228287b00cc9df5fbb0e3ba43fc10790e5c161554107f4"
+    },
+    {
+      "run": 44626835077,
+      "attempt": 1,
+      "created_at": "2026-11-19T22:15:16Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 62489,
+      "sha256": "0f90ba057a16813d30805a189720fcfff0c2dccd4b040369ed3e9d991b97ad13"
+    },
+    {
+      "run": 44623383909,
+      "attempt": 1,
+      "created_at": "2026-11-19T21:54:13Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 79429,
+      "sha256": "79d68b4bb5411a12a1042f00045367a7b7f151b0e029b0ac9816c816c1f3b0d2"
+    },
+    {
+      "run": 44620835096,
+      "attempt": 1,
+      "created_at": "2026-11-19T21:38:43Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 168069,
+      "sha256": "00dd33d51a4d90812f746b2d99af4e6852500493c79eb4d7962015b491fa4c52"
+    },
+    {
+      "run": 44613863656,
+      "attempt": 1,
+      "created_at": "2026-11-19T20:57:20Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 55752,
+      "sha256": "6da5d61e52e80dc863c7bd3922a32b21ba92fc05843ae6648c46f7cf3e8df027"
+    },
+    {
+      "run": 44520776372,
+      "attempt": 1,
+      "created_at": "2026-11-19T12:06:18Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 55754,
+      "sha256": "526c090db81b6b38e9dc5d46f73e11aa7450e50d6100ea01f3fc8d0daa40a923"
+    },
+    {
+      "run": 44491459669,
+      "attempt": 1,
+      "created_at": "2026-11-19T08:53:26Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 91650,
+      "sha256": "ecabdbf2c0dcc7a3b8fa14585f3f2c50babe19a69caf5d1585ff2d75d52ff925"
+    },
+    {
+      "run": 44480889943,
+      "attempt": 1,
+      "created_at": "2026-11-19T07:36:13Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 61011,
+      "sha256": "28921614f0f9789e40fc2151ba49e94a5dd88f9b058d4dcc23a40efc7d480d18"
+    },
+    {
+      "run": 44446851126,
+      "attempt": 1,
+      "created_at": "2026-11-19T02:47:28Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 55757,
+      "sha256": "492c00cb74c6acb9b8edfb631d41f84446a211e541101ea4ccb5e59ad43f1b87"
+    },
+    {
+      "run": 44425032943,
+      "attempt": 1,
+      "created_at": "2026-11-18T23:57:14Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 72222,
+      "sha256": "9ae6959a90da740168c0e8caccbc26e33cd32b67217853d784f9c6902ee2a4b5"
+    },
+    {
+      "run": 44422157310,
+      "attempt": 1,
+      "created_at": "2026-11-18T23:36:14Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 66497,
+      "sha256": "b122aaff2adab03039234c1c5f4b8a2f03326399c46edd49f78fa9c8dc247e27"
+    },
+    {
+      "run": 44419114588,
+      "attempt": 1,
+      "created_at": "2026-11-18T23:15:15Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 80638,
+      "sha256": "1acc20867600869f93bef3142fda190582fb1efd841bcdd1d24cfcb1b4badfb9"
+    },
+    {
+      "run": 44402838898,
+      "attempt": 1,
+      "created_at": "2026-11-18T21:34:17Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 55755,
+      "sha256": "22bee92a2a8217ec8b57307a9896dcdf3fca6aec2c6d4e5e96beeac7fc4dcc8d"
+    },
+    {
+      "run": 44401694563,
+      "attempt": 1,
+      "created_at": "2026-11-18T21:27:40Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 151748,
+      "sha256": "d16e9e904f6e636366e388fd1072c08763fac8d9e5e1f197621e0b2d3646f2d2"
+    },
+    {
+      "run": 44313863795,
+      "attempt": 1,
+      "created_at": "2026-11-18T13:27:16Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 55755,
+      "sha256": "1e07de7fd2c27eb811b975d2a785985f5927907353bf7b0fd7c2c3b16fb7ca7a"
+    },
+    {
+      "run": 44268661054,
+      "attempt": 1,
+      "created_at": "2026-11-18T08:37:53Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 112481,
+      "sha256": "4123b2fba95b850334737f72319992ca7604a461fa47229326bb15966cf89657"
+    },
+    {
+      "run": 44239124835,
+      "attempt": 1,
+      "created_at": "2026-11-18T04:42:01Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 55754,
+      "sha256": "fd3f7049d895e6af8dc1343dd9c92bce80328799d6a452ed3cbf706d911ad741"
+    },
+    {
+      "run": 44196599330,
+      "attempt": 1,
+      "created_at": "2026-11-17T23:07:58Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 55748,
+      "sha256": "817aec8f9147cf13cf72cff3649a8934651903bd318f63a6a0032a5ba169b761"
+    },
+    {
+      "run": 44183674756,
+      "attempt": 1,
+      "created_at": "2026-11-17T21:48:42Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 95535,
+      "sha256": "aa2f10b0fd37e123ddf977289aaa6871e53410a77a51fe172bd5ee7a88511ce6"
+    },
+    {
+      "run": 44107902418,
+      "attempt": 1,
+      "created_at": "2026-11-17T14:52:32Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 55752,
+      "sha256": "870551fee502ea4f9bf1b7a22211e0fc77f706f677d208a6ebb54ed48bd55eba"
+    },
+    {
+      "run": 44054322375,
+      "attempt": 1,
+      "created_at": "2026-11-17T09:18:08Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 75651,
+      "sha256": "acec3a7945d49e0c0c399e8c3fbfebdaed01722478833e1ef26e8b9c1a1eeca5"
+    },
+    {
+      "run": 44019439092,
+      "attempt": 1,
+      "created_at": "2026-11-17T04:46:07Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 55749,
+      "sha256": "f059325398b166ca3a3e87de0a9bab72e830d4636f040781b443895fe8a7ed68"
+    },
+    {
+      "run": 43979403261,
+      "attempt": 1,
+      "created_at": "2026-11-16T23:27:12Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 65160,
+      "sha256": "2625d53d1477fe0786efe65786c097f83b90ba9bece224cc443097c011f02fa3"
+    },
+    {
+      "run": 43974634751,
+      "attempt": 1,
+      "created_at": "2026-11-16T22:55:38Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 145689,
+      "sha256": "9e9472045d0a8e1fc7739abaa9f25f97cb07ca6c27510a4902d610d9994e4637"
+    },
+    {
+      "run": 43970541360,
+      "attempt": 1,
+      "created_at": "2026-11-16T22:29:25Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 55749,
+      "sha256": "ea091be624b99f7df89903a0f25a9584874cbd2cefa7c1033b6698deeb017a95"
+    },
+    {
+      "run": 43862865551,
+      "attempt": 1,
+      "created_at": "2026-11-16T12:01:36Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 55754,
+      "sha256": "db8d2a872614ab9ef1d9f8d569581672f08d2c162f6a02502ca9298abab2680b"
+    },
+    {
+      "run": 43828216513,
+      "attempt": 1,
+      "created_at": "2026-11-16T08:03:23Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 73424,
+      "sha256": "7b041427f0c0f4f4ae15d54fdbc7c8f8e692b4752599fe27a9a9e088d0b96a9e"
+    },
+    {
+      "run": 43795970399,
+      "attempt": 1,
+      "created_at": "2026-11-16T03:04:56Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 55749,
+      "sha256": "8407d04fbed3f59a3a967d436818e2e57ac9eabf93c673fd62281aee8acfb087"
+    },
+    {
+      "run": 43773248194,
+      "attempt": 1,
+      "created_at": "2026-11-15T23:09:23Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 55751,
+      "sha256": "11ea264082d2eee489897739c8ebd807101a8aae086463488920893f6f94c2a2"
+    },
+    {
+      "run": 43744030947,
+      "attempt": 1,
+      "created_at": "2026-11-15T17:57:56Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 55753,
+      "sha256": "eb9f2afcd2fc599aafaab7e980175ab8729834bbfab5288ad39a8c614b9422ff"
+    },
+    {
+      "run": 43727067080,
+      "attempt": 1,
+      "created_at": "2026-11-15T14:56:23Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 60361,
+      "sha256": "faa8a5f3c75cd84b445318491d2fef6b8704d52b4656c8eae43eb14686cf6592"
+    },
+    {
+      "run": 43722798247,
+      "attempt": 1,
+      "created_at": "2026-11-15T14:09:28Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 78396,
+      "sha256": "d26dbfc3b28a924d8a5387114afbc70730debf0fb0d31134620d0b9350730e20"
+    },
+    {
+      "run": 43709051199,
+      "attempt": 1,
+      "created_at": "2026-11-15T11:28:03Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 55749,
+      "sha256": "4af2885cff7c653bb5bd2a649cc79df056c5046c838b844c0504a22844d7562b"
+    },
+    {
+      "run": 43670568708,
+      "attempt": 1,
+      "created_at": "2026-11-15T03:03:11Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 55755,
+      "sha256": "e3048568d6c09472af464c4b7ba388265aa026f1ff6162dc85b36bf6706de7e5"
+    },
+    {
+      "run": 43652897545,
+      "attempt": 1,
+      "created_at": "2026-11-14T23:22:10Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 55751,
+      "sha256": "c707f004411b7ce85066e9648dd304f3eb0154f1421e34d838ac0eebafacfd73"
+    },
+    {
+      "run": 43632205783,
+      "attempt": 1,
+      "created_at": "2026-11-14T19:27:42Z",
+      "head_sha": "3d4512daa6283cdf4abe257284354025048bdb5f",
+      "bytes": 55753,
+      "sha256": "99de1f7fb549c9f1070bc76083523ba0ef0c1146f3887af1ea413907756c6045"
+    },
+    {
+      "run": 43605083085,
+      "attempt": 1,
+      "created_at": "2026-11-14T14:29:04Z",
+      "head_sha": "1e454df25d6c4ba5555dd1c184a7b7bfbca73d1d",
+      "bytes": 55754,
+      "sha256": "81161a574befc213b29b2ed956074c6ad2da117a48fae2f4c6bc1f0edba8f7b0"
+    },
+    {
+      "run": 43601010636,
+      "attempt": 1,
+      "created_at": "2026-11-14T13:41:17Z",
+      "head_sha": "1e454df25d6c4ba5555dd1c184a7b7bfbca73d1d",
+      "bytes": 68620,
+      "sha256": "5e37e8bf51eb985b8e1633dddb44c1719cb5b975708ef826fecb40c911514587"
+    },
+    {
+      "run": 43600253111,
+      "attempt": 1,
+      "created_at": "2026-11-14T13:32:13Z",
+      "head_sha": "1e454df25d6c4ba5555dd1c184a7b7bfbca73d1d",
+      "bytes": 82721,
+      "sha256": "0b45121460b8ab33ff1f0b852c465a4818ff9b15f051ba924b3dab80649f61ae"
+    },
+    {
+      "run": 43598510983,
+      "attempt": 1,
+      "created_at": "2026-11-14T13:11:27Z",
+      "head_sha": "1e454df25d6c4ba5555dd1c184a7b7bfbca73d1d",
+      "bytes": 144784,
+      "sha256": "1f8304c13f72a0e5f183e48b37b7da8224a91f0b0872d969ec7a3413ca428fb0"
+    },
+    {
+      "run": 43595142327,
+      "attempt": 1,
+      "created_at": "2026-11-14T12:30:14Z",
+      "head_sha": "cc6edc018a78652131aff55d6dedcbecb75bd615",
+      "bytes": 65259,
+      "sha256": "1de2484b900abc8b7a9a74f6fe56cd2a3e9b187717be97d8b6e1275ec64669d7"
+    },
+    {
+      "run": 43568928659,
+      "attempt": 1,
+      "created_at": "2026-11-14T06:59:16Z",
+      "head_sha": "cc6edc018a78652131aff55d6dedcbecb75bd615",
+      "bytes": 55676,
+      "sha256": "202545417a4bb87c230404f0fc4969c545188d2d17be45dcf02738f9ddb8e0d8"
+    },
+    {
+      "run": 43530107346,
+      "attempt": 1,
+      "created_at": "2026-11-13T23:50:51Z",
+      "head_sha": "cc6edc018a78652131aff55d6dedcbecb75bd615",
+      "bytes": 55677,
+      "sha256": "b1e17e79086495286c8599fbd36f2cc7411bcd40c5b9d9b4d9cd80542c5d10d0"
+    }
+  ]
+}

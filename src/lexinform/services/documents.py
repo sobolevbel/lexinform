@@ -158,6 +158,64 @@ MAX_COMMENT_TABLE_EXCLUSIONS = 8
 MIN_TEXT_CHARS = 200
 
 
+def _log_extracted_text(
+    url: str,
+    text: str,
+    pages: int,
+    selection: DocumentSelection,
+    elapsed: float,
+    *,
+    archive_unpack_blocked: bool,
+) -> None:
+    parts = selection.observed_parts or selection.parts
+    losses = tuple(
+        loss
+        for part in parts
+        for loss in part.losses
+        if loss != "no extracted text" or part.pages <= 0
+    )
+    has_text = len(text.strip()) >= MIN_TEXT_CHARS
+    if not has_text and any(len(part.text.strip()) >= MIN_TEXT_CHARS for part in parts):
+        log.log(
+            logging.WARNING if losses or archive_unpack_blocked else logging.INFO,
+            "%s: no combined text (%s selection); retained %d chars across %d parts in %.1fs; "
+            "archive_unpack_blocked=%s; losses=%s",
+            url,
+            selection.state,
+            sum(len(part.text) for part in parts),
+            len(parts),
+            elapsed,
+            archive_unpack_blocked,
+            losses,
+        )
+        return
+    log.info("%s: %d chars extracted in %.1fs", url, len(text), elapsed)
+    if has_text:
+        return
+    if (
+        pages > 0
+        and selection.state in ("unverified", "selected")
+        and not selection.rejected
+        and not losses
+        and not archive_unpack_blocked
+    ):
+        log.info(
+            "%s has little searchable text (%d chars, %d pages); retained for scan processing",
+            url,
+            len(text),
+            pages,
+        )
+    else:
+        log.warning(
+            "%s yielded almost no text (%d chars, %d pages; selection=%s; rejected=%s)",
+            url,
+            len(text),
+            pages,
+            selection.state,
+            selection.rejected,
+        )
+
+
 def _trace_with_archive_evidence(
     trace: CandidateDispositionTrace,
     evidence: ArchiveVersionEvidence,
@@ -2259,14 +2317,15 @@ class TextLoader:
                 )
                 digest = artifact.sha256
                 pages = complete_pdf_pages or self._extractor.pages(data)
-                log.info(
-                    "%s: %d chars extracted in %.1fs", url, len(text), time.perf_counter() - started
-                )
                 has_text = len(text.strip()) >= MIN_TEXT_CHARS
-                if not has_text:
-                    log.warning(
-                        "%s yielded almost no text (%d chars, %d pages)", url, len(text), pages
-                    )
+                _log_extracted_text(
+                    url,
+                    text,
+                    pages,
+                    selection,
+                    time.perf_counter() - started,
+                    archive_unpack_blocked=archive_unpack_blocked,
+                )
                 rows: tuple[ConsultationRow, ...] = ()
                 if self._capture_consultation_archive_rows is not None and urlparse(
                     url
