@@ -1,0 +1,142 @@
+{
+  "case": "RCL/12416702",
+  "captured_on": "2026-11-21",
+  "pins": {
+    "state_sha": "81b8cbe9ce970ccd55fe3a70de953340ef17ba55",
+    "baseline": "6bbafea2c183d43f7b293ecb2b589950e29cc7b6",
+    "sql_sha256": "87fd86ecf7da0254f5dc0d185234aa8673a1fcbf37599ff287c1ce2981b3ab1b"
+  },
+  "cause": "The 9 November draft and the 13 November text shared an issuer and subject, but the latter no longer had a Projekt heading. Draft-only date extraction retained both as conflicting candidates.",
+  "change": "Use a complete act date in the regulation heading only without draft markers; explicit draft dates take precedence. Keep same-issuer/subject gates, same-date conflicts, package ownership and material text comparison. Regulation selection policy v3 retries v1/v2 blocked observations once.",
+  "date_evidence": [
+    {
+      "file": "dokument806559.zip",
+      "text_date": "2026-11-09",
+      "kind": "explicit draft",
+      "rcl_uploaded": "2026-11-12",
+      "stage": 12
+    },
+    {
+      "file": "dokument806759.zip",
+      "text_date": "2026-11-13",
+      "kind": "act heading",
+      "rcl_uploaded": "2026-11-13",
+      "stage": 14
+    }
+  ],
+  "metadata_limits": "Upload and Word save dates do not identify a legal edition. No embedded OOXML signature part was present. A printed signature line or stage does not establish publication or entry into force.",
+  "captured_sources": [
+    {
+      "url": "https://legislacja.rcl.gov.pl/docs//3/12416702/13237124/dokument806759.zip",
+      "file": "dokument806759.zip",
+      "status": 200,
+      "content_type": "application/zip",
+      "bytes": 119525,
+      "sha256": "6897b76b92422288cd22dd14404e9a68993393219b719122ad49cb8aefd19fc4"
+    },
+    {
+      "url": "https://legislacja.rcl.gov.pl/docs//3/12416702/13237117/13237118/dokument806559.zip",
+      "file": "dokument806559.zip",
+      "status": 200,
+      "content_type": "application/zip",
+      "bytes": 178557,
+      "sha256": "0608b31696f35ad14201cee4c40b0f6bff593fa8bc2b80319416a18a91a66d55"
+    },
+    {
+      "url": "https://legislacja.rcl.gov.pl/projekt/12416702",
+      "file": "12416702",
+      "status": 200,
+      "content_type": "text/html;charset=UTF-8",
+      "bytes": 24662,
+      "sha256": "342e567b43d885c15a6f123a90e3bce6606a9a007547bb89da86e75773d8ab38"
+    }
+  ],
+  "target_replay": {
+    "before": "ambiguous",
+    "after": "unverified",
+    "selected_url": "https://legislacja.rcl.gov.pl/docs//3/12416702/13237124/dokument806759.zip",
+    "selected_chars": 2570,
+    "selected_text_sha256": "6b5a37713b325f2295bdfcf8a61657689e713c42ee373bcee770c6dd8f89c0bf",
+    "admission": "Unverified is an admissible selection, not verified legal completeness.",
+    "source_unchanged": true,
+    "same_normative_paragraphs": "Manual comparison of paragraphs 1 and 2 found the same wording; dates, header and signature apparatus differ. No normalization was introduced."
+  },
+  "corpus": {
+    "projects": 825,
+    "stage_observations": 4276,
+    "counts": {
+      "ambiguous": 118,
+      "no_candidate": 205,
+      "selected": 2269,
+      "unsupported": 669,
+      "unverified": 923,
+      "waiting": 92
+    },
+    "comparison": {
+      "after_manifest_sha256": "1f5a42155d6c36316a80d09c1c2c949823d43a6d895b35bf71ac6f222dc4eba4",
+      "before_manifest_sha256": "24fe9f5ee73242dc812c6c53bcb21907d39151a3f2e02911f820dc907069e114",
+      "changed_inputs": [],
+      "changes": [],
+      "scope": "Observation differences, not an independent legal accuracy verdict",
+      "status": "same",
+      "suite": "candidates",
+      "summary_changes": {},
+      "version": 1
+    },
+    "missing_cached_inputs": 1383,
+    "complete_population": false,
+    "cached_regulations": 44,
+    "known_dates": 33,
+    "same_subject_pairs": 2,
+    "changed_cached_regulation_dates_or_decisions": 0,
+    "index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666"
+  },
+  "material_controls": {
+    "passed": 225,
+    "corpus": 220,
+    "target": 5,
+    "description": "220 inserted provision mutations across 44 cached regulation texts; five replacements in the current raw extracted final text. Same-date variants must conflict.",
+    "dimensions": [
+      "amount or duration",
+      "negation",
+      "scope",
+      "effective date",
+      "legal reference"
+    ]
+  },
+  "tests": {
+    "gate": "make check",
+    "passed": 11079,
+    "mypy": "passed",
+    "ruff": "passed",
+    "docs": "make docs-check passed",
+    "regressions": "New date-order and footer-date controls failed on the baseline. Scenarios cover replacement, retained analysis on concurrent conflicts, repeated runs and one-time policy recovery with workers=1 and workers=4."
+  },
+  "local_artifacts": {
+    "root": "out/audits/rcl-12416702-20261121",
+    "sha256": {
+      "replay.py": "9aadee796e12f0a8d74ae0a1318032bbbdea520936df8b99fde9cfb0d3f74571",
+      "mutations.py": "884aab0606cfde77ea181779a536c2c2d259a36475538268131491ed8cc0be30",
+      "before-verified.json": "097c15389afa8f32f569f05d0c3185f969afb32f5245fcc141720d0510420375",
+      "final-verified.json": "daf3af59490a6e2dc05e18b0b2628929fe0a8c7839a47eadfe001316d54d456b",
+      "mutations-final.json": "e3c01c88e4a7c220e386cec3a5d75ce8253a783fe58f0ee8628e448492780699",
+      "corpus-diff.json": "3f24a0064c9ef27e252bb8cecc57762ab7433fd158586d93796edf6113af63e3",
+      "quality-gate-final.log": "89abb4de57942d8d49b4ef328e8cb4cfa2a8068814a3cb0b7aff35a6c2d34332"
+    }
+  },
+  "reproduction": [
+    "uv run --offline --frozen python -m tools.corpus_runs run --root <new-output-root> --id <id> --suite candidates --corpus ../lexinform-corpus",
+    "uv run --offline --frozen python -m tools.corpus_runs verify <run-directory>",
+    "uv run --offline --frozen python -m tools.corpus_runs diff <before> <after> --output <new-diff.json>",
+    "PYTHONPATH=. uv run --offline --frozen python out/audits/rcl-12416702-20261121/replay.py <new-label>",
+    "PYTHONPATH=. uv run --offline --frozen python out/audits/rcl-12416702-20261121/mutations.py <new-label>",
+    "make check"
+  ],
+  "exclusions": [
+    "The global RCL replay uses cached texts with 1,383 missing input paths; it does not prove raw bundle, scan or legal completeness.",
+    "The current November project is absent from the older corpus and was replayed separately from the two pinned raw archives.",
+    "Corpus mutations insert a synthetic provision; the five current-case mutations replace existing words and numbers.",
+    "No live pipeline, paid model call, Telegram delivery or production-state mutation.",
+    "The initial full gate overlapped the final guard edit and failed its source-immutability assertion; it was discarded and the entire gate passed on the frozen final code."
+  ]
+}

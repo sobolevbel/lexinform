@@ -27,8 +27,9 @@ def blocked_project(world: World) -> None:
 
 
 @pytest.mark.parametrize("workers", [1, 4])
+@pytest.mark.parametrize("policy", ["regulation-selection-v1", "regulation-selection-v2"])
 def test_policy_retry_is_recorded_once_and_survives_restart(
-    workers: int, monkeypatch: pytest.MonkeyPatch
+    workers: int, policy: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     world = World(
         workers=workers,
@@ -38,9 +39,7 @@ def test_policy_retry_is_recorded_once_and_survives_restart(
     )
     blocked_project(world)
     with monkeypatch.context() as legacy:
-        legacy.setattr(
-            document_service, "REGULATION_SELECTION_POLICY_VERSION", "regulation-selection-v1"
-        )
+        legacy.setattr(document_service, "REGULATION_SELECTION_POLICY_VERSION", policy)
         first = world.run(max_analyze=0)
     world.repo.restore(world.repo.dump())
 

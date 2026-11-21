@@ -1,9 +1,13 @@
 import datetime as dt
 
+import pytest
+
 from lexinform.models import BillStatus, PublicationKind, TextDocument, next_phase
 from tests.fakes import FakeTextExtractor
 from tests.harness import RCL, World, act, rcl_document, rcl_folder, rcl_project, rcl_stage
 from tests.unit.test_physical_extraction import archive, docx, extractor
+from tests.unit.test_regulation_versions import FINAL
+from tests.unit.test_regulation_versions import TEXT as DATED_TEXT
 
 TITLE = "Projekt rozporządzenia Ministra w sprawie opłat za zezwolenia na pracę cudzoziemców"
 TEXT = "ROZPORZĄDZENIE\nMINISTRA\n§ 1. " + "Opłata wynosi 400 zł. " * 30
@@ -150,6 +154,56 @@ def test_regulation_revision_changes_the_analyzed_amount() -> None:
     assert world.llm.contexts[-1].previous_summary is not None
     assert "Opłata wynosi 800 zł" in world.llm.contexts[-1].text
     assert world.run().reanalyzed == 0
+
+
+@pytest.mark.parametrize("workers", [1, 4])
+@pytest.mark.parametrize("conflicting", [False, True])
+def test_signing_archive_replaces_the_draft_only_with_one_identifiable_edition(
+    workers: int, conflicting: bool, caplog: pytest.LogCaptureFixture
+) -> None:
+    world = World(workers=workers, extractor=extractor())
+    original = rcl_document(8231, "Projekt rozporządzenia.zip")
+    stage = rcl_stage(12, "Rada Ministrów", "active", rcl_folder(84, "Projekt", original))
+    project = world.add_rcl_project(rcl_project(title=TITLE, stages=(stage,)))
+    world.rcl.files[original.url] = archive({"projekt.docx": docx(DATED_TEXT)})
+    world.run()
+    previous = world.bill(RCL).analysis
+    assert previous is not None, "the first run analyzes the dated draft"
+    world.clock.advance(days=2)
+    modified = world.clock.now().date()
+    revision = rcl_document(8232, "RM-06110-78-26.zip", created=modified)
+    variant = rcl_document(8233, "Projekt rozporządzenia wariant.zip", created=modified)
+    signing = rcl_stage(14, "Skierowanie projektu do podpisu Prezesa Rady Ministrów", "active")
+    signing = signing.model_copy(
+        update={
+            "loose_documents": (revision, variant) if conflicting else (revision,),
+            "modified": modified,
+        }
+    )
+    world.add_rcl_project(
+        project.model_copy(update={"modified": modified, "stages": (stage, signing)})
+    )
+    final = FINAL.replace("200,50", "300,50")
+    world.rcl.files[revision.url] = archive({"rozporzadzenie.docx": docx(final)})
+    world.rcl.files[variant.url] = archive(
+        {"wariant.docx": docx(final.replace("300,50", "400,50"))}
+    )
+
+    report = world.run()
+    current = world.bill(RCL)
+
+    assert current.analysis is not None, "tracking keeps the previous analysis until replacement"
+    assert current.act is None
+    assert report.published == report.acts_published == report.in_force_posted == 0
+    if conflicting:
+        assert report.reanalyzed == 0 and current.analysis == previous
+        assert "reanalysis blocked" in caplog.text
+    else:
+        assert report.reanalyzed == 1 and current.analysis.source_url == revision.url
+        assert "300,50" in world.llm.contexts[-1].text
+        assert world.llm.contexts[-1].previous_summary is not None
+        assert "reanalysis blocked" not in caplog.text
+        assert world.run().reanalyzed == 0
 
 
 def test_regulation_archive_keeps_its_normative_annex() -> None:

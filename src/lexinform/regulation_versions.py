@@ -1,12 +1,19 @@
 """Compare regulation editions without treating typography as a competing draft."""
 
+import datetime as dt
 import re
 from hashlib import sha256
 
-from lexinform.document_versions import VersionComparison, draft_version
+from lexinform.document_versions import VersionComparison, draft_version, version_date
 from lexinform.law_technical import DECORATED_PAGE
 
 _HEADING = re.compile(r"(?im)^[ \t]*r\s*o\s*z\s*p\s*o\s*r\s*z\s*ą\s*d\s*z\s*e\s*n\s*i\s*e\s*$")
+_TITLE = re.compile(
+    r"\A(?P<issuer>.*?)^[ \t]*z\s+dnia(?P<date>[^\n]*)\n"
+    r"(?P<subject>.*?)\bNa\s+podstawie\b",
+    re.S | re.I | re.M,
+)
+_DRAFT_MARKER = re.compile(r"\bp\s*r\s*o\s*j\s*e\s*k\s*t\b|\b(?:wersja|etap)\b", re.I)
 _NOTE = re.compile(r"\[przypis ([^:\]\s]+): (.*?)\]", re.S)
 _NOTE_START = re.compile(r"^\s*(?:\d{1,2})?\)\s*")
 _CHARS = str.maketrans({"–": "-", "—": "-", "‑": "-", "−": "-", "\u00ad": "", "\u00a0": " "})
@@ -32,15 +39,33 @@ def regulation_subject(text: str) -> str:
     heading = _HEADING.search(text[:1200])
     if heading is None:
         return ""
-    title = re.search(
-        r"\A(.*?)^[ \t]*z\s+dnia[^\n]*\n(.*?)\bNa\s+podstawie\b",
-        text[heading.end() : 6000],
-        re.S | re.I | re.M,
-    )
+    title = _TITLE.match(text[heading.end() : 6000])
     if title is None:
         return ""
-    issuer = re.sub(r"\d{1,2}\)", "", title[1])
-    return _key(issuer + title[2])[0]
+    issuer = re.sub(r"\d{1,2}\)", "", title["issuer"])
+    return _key(issuer + title["subject"])[0]
+
+
+def regulation_version(text: str) -> dt.date | None:
+    text = _NOTE.sub("", text)
+    heading = _HEADING.search(text[:1200])
+    if heading is None:
+        return None
+    prefix = text[: heading.start()]
+    if date := draft_version(prefix):
+        return date
+    if _DRAFT_MARKER.search(prefix):
+        return None
+    title = _TITLE.match(text[heading.end() : 6000])
+    if (
+        title is None
+        or not title["issuer"].strip()
+        or not title["subject"].strip()
+        or _DRAFT_MARKER.search(title["issuer"])
+        or re.search(r"\bNa\s+podstawie\b|§|\bArt\.\s*\d", title["issuer"], re.I)
+    ):
+        return None
+    return version_date(title["date"])
 
 
 def _identity(text: str, definitions: dict[str, str]) -> tuple[TextKey, tuple[TextKey, ...]]:
@@ -93,7 +118,7 @@ def compare_regulation_versions(
     if not texts:
         return VersionComparison((), ())
     subjects = {regulation_subject(text) for text in texts}
-    dates = [draft_version(text) for text in texts]
+    dates = [regulation_version(text) for text in texts]
     date_filter = None
     if prefer_newer and len(subjects) == 1 and "" not in subjects and all(dates):
         known = tuple(date for date in dates if date is not None)

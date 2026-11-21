@@ -55,6 +55,14 @@ def _dated_match(match: re.Match[str]) -> dt.date | None:
         return None
 
 
+def version_date(text: str) -> dt.date | None:
+    text = re.sub(r"\s*(?:r\.|roku)\s*$", "", text.strip(), flags=re.I)
+    for pattern in _UPDATE_DATES:
+        if match := pattern.fullmatch(text):
+            return _dated_match(match)
+    return None
+
+
 def draft_version_evidence(text: str) -> tuple[tuple[dt.date | None, int, int], ...]:
     heading = _SUBJECT.search(text[:1200])
     article = _ARTICLE.search(text[:1200])
