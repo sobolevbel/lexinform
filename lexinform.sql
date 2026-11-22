@@ -5437,7 +5437,13 @@ INSERT INTO "commands" VALUES(79370166,'-1004460742180',854,'/run','2026-11-21T1
 <a href="https://github.com/sobolevbel/lexinform/actions/runs/44899414233">Прогон GitHub Actions</a>
 
 Запуск завершён. Подробности в отчёте прогона.',0,0);
-INSERT INTO "commands" VALUES(79370167,'-1004460742180',861,'/digest publish ref=2026-W47','2026-11-22T15:18:26.869921+00:00',NULL,NULL,NULL,'{"update_id":79370167,"chat_id":"-1004460742180","message_id":861,"text":"/digest publish ref=2026-W47","received_at":"2026-11-22T15:18:26.869921Z","actor_id":352346680,"author_signature":null,"acknowledgement_id":null,"run_requested":false}','https://github.com/sobolevbel/lexinform/actions/runs/45037570085',NULL,NULL,NULL,NULL,0,0);
+INSERT INTO "commands" VALUES(79370167,'-1004460742180',861,'/digest publish ref=2026-W47','2026-11-22T15:18:26.869921+00:00',NULL,'digest (message 201): 2026-W47 posted to the channel','2026-11-22T15:21:44+00:00','{"update_id":79370167,"chat_id":"-1004460742180","message_id":861,"text":"/digest publish ref=2026-W47","received_at":"2026-11-22T15:18:26.869921Z","actor_id":352346680,"author_signature":null,"acknowledgement_id":null,"run_requested":false}','https://github.com/sobolevbel/lexinform/actions/runs/45037570085',NULL,NULL,NULL,'🗞 <b>Дайджест</b> · <code>/digest publish ref=2026-W47</code>
+
+<code>/request 79370167</code>
+
+📣 Публикация: <a href="https://t.me/lex_inform_pl/201">сообщение 201</a>
+
+2026-W47 posted to the channel',0,0);
 CREATE TABLE computation_results (
         result_id TEXT PRIMARY KEY,
         provider TEXT NOT NULL,
