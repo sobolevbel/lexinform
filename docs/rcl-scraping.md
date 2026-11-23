@@ -114,7 +114,9 @@ those; the invariants that govern *when* they run are in `.claude/rules/sources.
   niniejszego pisma", 30 for social partners), often no date (electronic time stamp) and the e-mail
   for comments ("na adres: …"). `rcl_letters.parse_letter` reads them; the deadline counts from the
   letter date or the day the letter appeared on RCL. Every project also has a comment form
-  `/projekt/{id}/komentarz` (captcha).
+  `/projekt/{id}/komentarz` (captcha, text only, no attachments), which
+  [KPRM lists as a way to submit consultation comments](https://www.gov.pl/web/konsultacje/wykazy-konsultacji).
+  Cards and deadline reminders link this form when the letter gives no e-mail for comments.
 - **The letter is not always in the folder named after it.** Of the 603 corpus projects whose
   "Konsultacje publiczne" catalog was read, 24 leave "Pisma kierujące projekt do konsultacji
   publicznych" empty, and **three** of those put the pismo in "Projekt" beside the bill instead:

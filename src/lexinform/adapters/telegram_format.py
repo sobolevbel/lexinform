@@ -1052,7 +1052,7 @@ class MessageFormatter:
             # three days before the window shuts and weeks below the card in the thread.
             project = bill.rcl
             if not window.email:
-                where = self._rcl_submission_route(project.web_url, window)
+                where = link(project.comment_url, lb.action_rcl_form)
             polish = lb.action_in_polish.format(wykaz=project.wykaz_number or project.number)
             where = f"{where} {esc(polish)}"
         until = (
@@ -3435,17 +3435,16 @@ class MessageFormatter:
             return []
         actions: list[str] = []
         if window is not None and open_now:
+            polish = lb.action_in_polish.format(wykaz=project.wykaz_number or project.number)
             if window.email:
-                polish = lb.action_in_polish.format(wykaz=project.wykaz_number or project.number)
                 text = esc(lb.action_email_ministry.format(email=window.email))
             else:
-                polish = ""
-                text = self._rcl_submission_route(project.web_url, window)
+                text = link(project.comment_url, lb.action_rcl_form)
             if window.end is not None:
                 text += f" {esc(lb.consultation_until)} {self.fmt_date(window.end)}"
             elif window.email:
                 text += f" ({esc(lb.consultation_deadline_in_letter)})"
-            actions.append(f"{text} {esc(polish)}".rstrip())
+            actions.append(f"{text} {esc(polish)}")
         if project.is_regulation or not (project.is_open and not project.sent_to_sejm):
             return actions
         organ = project.applicant or lb.wykaz_organ_unknown
@@ -3453,7 +3452,9 @@ class MessageFormatter:
         contacts = ministry_contact_url(project.applicant) if project.applicant else None
         if contacts is not None:
             interest += f" · {link(contacts, lb.action_ministry_site)}"
-        residual = [link(project.comment_url, lb.action_rcl_comment), interest]
+        residual = [interest]
+        if not open_now or window is None or window.email:
+            residual.insert(0, link(project.comment_url, lb.action_rcl_comment))
         # A project that never had a public consultation (a quarter of them skip the stage) has
         # no window that shut, so there is nothing to say it did.
         if open_now:
@@ -3463,12 +3464,6 @@ class MessageFormatter:
         else:
             actions.append(f"{esc(lb.action_rcl_window_closed)} " + "; ".join(residual))
         return actions
-
-    def _rcl_submission_route(self, project_url: str, window: ConsultationWindow) -> str:
-        lb = self._labels
-        if window.letter_url:
-            return link(window.letter_url, lb.action_rcl_letter_route)
-        return link(project_url, lb.action_rcl_project_route)
 
     def _upcoming(
         self, bill: Bill, today: dt.date, phase: Phase, *, kind: str | None = None

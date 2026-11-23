@@ -182,8 +182,12 @@ def test_card_names_the_ministry_the_letter_deadline_and_both_ways_to_react() ->
     assert "#UC164" in text and "#RCL" in text and "#консультации" in text
 
 
-def test_card_after_the_deadline_keeps_only_the_comment_form_and_says_what_follows() -> None:
-    bill = rcl_bill(rcl_project())
+@pytest.mark.parametrize("email", ["dep.prawny@mswia.gov.pl", None])
+def test_card_after_the_deadline_keeps_only_the_comment_form_and_says_what_follows(
+    email: str | None,
+) -> None:
+    project = rcl_project(consultation=RCL_CONSULTATION.model_copy(update={"email": email}))
+    bill = rcl_bill(project)
 
     text = MessageFormatter("ru").new_bill(bill, None, today=dt.date(2026, 9, 20)).text
 
@@ -374,13 +378,29 @@ def test_the_consultation_reminder_says_how_to_write_as_the_card_does() -> None:
     assert "(на польском, с номером UC164)" in text
 
 
-def test_open_consultation_without_email_leads_with_its_letter() -> None:
-    project = rcl_project(consultation=RCL_CONSULTATION.model_copy(update={"email": None}))
+@pytest.mark.parametrize("language", ["ru", "en"])
+@pytest.mark.parametrize("letter_url", [CONSULTATION_LETTER.url, None])
+def test_open_consultation_without_email_leads_with_the_submission_form(
+    language: str, letter_url: str | None
+) -> None:
+    project = rcl_project(
+        consultation=RCL_CONSULTATION.model_copy(update={"email": None, "letter_url": letter_url})
+    )
+    bill = rcl_bill(project)
+    formatter = MessageFormatter(language)
 
-    text = MessageFormatter("ru").new_bill(rcl_bill(project), None, today=TODAY).text
+    card = formatter.new_bill(bill, None, today=TODAY).text
+    reminder = formatter.consultation_deadline(bill, today=TODAY).text
 
-    assert (
-        f'<a href="{CONSULTATION_LETTER.url}">уточните способ подачи замечаний'
-        " в письме о консультациях</a> до"
-    ) in text
-    assert "Дополнительно: <a" in text
+    action, polish = (
+        ("направить замечания через форму RCL", "(на польском, с номером UC164)")
+        if language == "ru"
+        else ("send comments through the RCL form", "(in Polish, quoting UC164)")
+    )
+    for text in (card, reminder):
+        assert_telegram_html(text)
+        assert f'<a href="{COMMENT_FORM}">{action}</a>' in text
+        assert text.count(COMMENT_FORM) == 1
+        assert polish in text
+        if letter_url is not None:
+            assert f'<a href="{letter_url}">' in text

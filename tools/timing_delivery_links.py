@@ -262,7 +262,8 @@ class TimingDeliveryLinks:
             version = read_content_version(row)
             if (
                 version.card_context_profile == "continuation-v1"
-                and version.formatter_version in {"telegram-format-v2", "telegram-format-v3"}
+                and version.formatter_version
+                in {"telegram-format-v2", "telegram-format-v3", "telegram-format-v4"}
                 and verify_card_content(self.connection, version, retained=True) == identity
             ):
                 return version.language

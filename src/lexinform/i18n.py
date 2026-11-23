@@ -178,8 +178,7 @@ class Labels:
     action_in_polish: str
     action_rcl_comment: str
     action_rcl_window_closed: str
-    action_rcl_letter_route: str
-    action_rcl_project_route: str
+    action_rcl_form: str
     action_rcl_additional: str
     action_in_force: str
     rcl_results_hint: str
@@ -563,8 +562,7 @@ RU = Labels(
     action_email_ministry="направить замечания на {email}",
     action_in_polish="(на польском, с номером {wykaz})",
     action_rcl_comment="оставить комментарий через форму на RCL",
-    action_rcl_letter_route="уточните способ подачи замечаний в письме о консультациях",
-    action_rcl_project_route="поищите способ подачи замечаний на странице проекта",
+    action_rcl_form="направить замечания через форму RCL",
     action_rcl_additional="Дополнительно:",
     action_rcl_window_closed=(
         "публичные консультации уже закрыты, но пока проект в правительстве остаётся:"
@@ -1339,8 +1337,7 @@ EN = Labels(
     action_email_ministry="send comments to {email}",
     action_in_polish="(in Polish, quoting {wykaz})",
     action_rcl_comment="leave a comment through the RCL form",
-    action_rcl_letter_route="check the consultation letter for how to submit comments",
-    action_rcl_project_route="check the project page for instructions on submitting comments",
+    action_rcl_form="send comments through the RCL form",
     action_rcl_additional="Other ways to take part:",
     action_rcl_window_closed=(
         "the public consultation has closed; while the draft is still with the government there"
