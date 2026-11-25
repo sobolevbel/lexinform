@@ -1,0 +1,4136 @@
+{
+  "status": "completed research; auxiliary OCR recommended; no production integration",
+  "dates": "2026-11-25/2026-11-26",
+  "code_head": "ffc6d620901c8139448a9fb8b54f5d8fe669ada1",
+  "corpus_head": "0ae14b7ac5984e2ba33635031733a91fa9f5daaf",
+  "corpus_index_sha256": "2030ab1d13f961fcb09bd58247cbcf97aba3a3575725eed166940620f4c60666",
+  "unique_original_pdfs": 76,
+  "unique_original_pages": 698,
+  "timed_invocations": 366,
+  "timed_page_executions": 1124,
+  "environment": {
+    "platform": "macOS-27.2.1-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "python": "Python 3.14.7",
+    "liteparse": "2.21.2",
+    "model_package": "ocria-nano@1.0.0",
+    "hw.model": "Mac14,7",
+    "machdep.cpu.brand_string": "Apple M2",
+    "hw.memsize": "17179869184",
+    "hw.ncpu": "8",
+    "hw.physicalcpu": "8",
+    "tesseract_engine_version": "5.3.4 (pinned build source of tesseract-rs 0.2.0; no exported runtime version API)",
+    "tessdata_repository": "tesseract-ocr/tessdata_fast",
+    "tessdata_revision": "87416418657359cb625c412a48b6e1d6d41c29bd",
+    "tessdata_languages": "pol+eng",
+    "onnxruntime_version": "1.31.1",
+    "runtime_sha256": "2685dc296147c47b0dbd8e0615547b12fc0c445d158d1f374cbd0705d9626fdc"
+  },
+  "runs": {
+    "controls-ocria": {
+      "synthetic_prose": {
+        "documents": 14,
+        "succeeded": 14,
+        "expected_pages": 14,
+        "output_pages": 14,
+        "complete_page_maps": 14,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 9830,
+        "wall_seconds": 4.272937289671972,
+        "parse_seconds": 3.456608624663204,
+        "wall_seconds_per_page": 0.3052098064051409,
+        "median_document_seconds": 0.3023691874695942,
+        "max_peak_rss_mib": 405.984375
+      },
+      "synthetic_table": {
+        "documents": 4,
+        "succeeded": 4,
+        "expected_pages": 4,
+        "output_pages": 4,
+        "complete_page_maps": 4,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 1280,
+        "wall_seconds": 1.1514211660251021,
+        "parse_seconds": 0.919147543841973,
+        "wall_seconds_per_page": 0.28785529150627553,
+        "median_document_seconds": 0.288116124458611,
+        "max_peak_rss_mib": 405.875
+      },
+      "all": {
+        "documents": 18,
+        "succeeded": 18,
+        "expected_pages": 18,
+        "output_pages": 18,
+        "complete_page_maps": 18,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 11110,
+        "wall_seconds": 5.4243584556970745,
+        "parse_seconds": 4.375756168505177,
+        "wall_seconds_per_page": 0.3013532475387264,
+        "median_document_seconds": 0.30101647845003754,
+        "max_peak_rss_mib": 405.984375
+      }
+    },
+    "controls-tesseract": {
+      "synthetic_prose": {
+        "documents": 14,
+        "succeeded": 14,
+        "expected_pages": 14,
+        "output_pages": 14,
+        "complete_page_maps": 14,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 10896,
+        "wall_seconds": 7.222367457346991,
+        "parse_seconds": 6.478161332895979,
+        "wall_seconds_per_page": 0.5158833898104993,
+        "median_document_seconds": 0.5165529164951295,
+        "max_peak_rss_mib": 167.015625
+      },
+      "synthetic_table": {
+        "documents": 4,
+        "succeeded": 4,
+        "expected_pages": 4,
+        "output_pages": 4,
+        "complete_page_maps": 4,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 1181,
+        "wall_seconds": 1.3515363750047982,
+        "parse_seconds": 1.1394018337596208,
+        "wall_seconds_per_page": 0.33788409375119954,
+        "median_document_seconds": 0.3361973959254101,
+        "max_peak_rss_mib": 167.09375
+      },
+      "all": {
+        "documents": 18,
+        "succeeded": 18,
+        "expected_pages": 18,
+        "output_pages": 18,
+        "complete_page_maps": 18,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 12077,
+        "wall_seconds": 8.573903832351789,
+        "parse_seconds": 7.6175631666556,
+        "wall_seconds_per_page": 0.4763279906862105,
+        "median_document_seconds": 0.5096613339846954,
+        "max_peak_rss_mib": 167.09375
+      }
+    },
+    "controls-tesseract-layout": {
+      "synthetic_prose": {
+        "documents": 14,
+        "succeeded": 14,
+        "expected_pages": 14,
+        "output_pages": 14,
+        "complete_page_maps": 14,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 10896,
+        "wall_seconds": 7.622379500651732,
+        "parse_seconds": 6.855394664686173,
+        "wall_seconds_per_page": 0.5444556786179808,
+        "median_document_seconds": 0.5448606669669971,
+        "max_peak_rss_mib": 237.296875
+      },
+      "synthetic_table": {
+        "documents": 4,
+        "succeeded": 4,
+        "expected_pages": 4,
+        "output_pages": 4,
+        "complete_page_maps": 4,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 1181,
+        "wall_seconds": 1.4668368329294026,
+        "parse_seconds": 1.248819291824475,
+        "wall_seconds_per_page": 0.36670920823235065,
+        "median_document_seconds": 0.3647097289795056,
+        "max_peak_rss_mib": 237.703125
+      },
+      "all": {
+        "documents": 18,
+        "succeeded": 18,
+        "expected_pages": 18,
+        "output_pages": 18,
+        "complete_page_maps": 18,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 12077,
+        "wall_seconds": 9.089216333581135,
+        "parse_seconds": 8.104213956510648,
+        "wall_seconds_per_page": 0.5049564629767297,
+        "median_document_seconds": 0.5389783539576456,
+        "max_peak_rss_mib": 237.703125
+      }
+    },
+    "existing-ocria": {
+      "existing_ocr_layer": {
+        "documents": 4,
+        "succeeded": 4,
+        "expected_pages": 4,
+        "output_pages": 4,
+        "complete_page_maps": 4,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 6414,
+        "wall_seconds": 1.656071832869202,
+        "parse_seconds": 1.4344164591748267,
+        "wall_seconds_per_page": 0.4140179582173005,
+        "median_document_seconds": 0.4259098538896069,
+        "max_peak_rss_mib": 453.890625
+      },
+      "all": {
+        "documents": 4,
+        "succeeded": 4,
+        "expected_pages": 4,
+        "output_pages": 4,
+        "complete_page_maps": 4,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 6414,
+        "wall_seconds": 1.656071832869202,
+        "parse_seconds": 1.4344164591748267,
+        "wall_seconds_per_page": 0.4140179582173005,
+        "median_document_seconds": 0.4259098538896069,
+        "max_peak_rss_mib": 453.890625
+      }
+    },
+    "existing-tesseract": {
+      "existing_ocr_layer": {
+        "documents": 4,
+        "succeeded": 4,
+        "expected_pages": 4,
+        "output_pages": 4,
+        "complete_page_maps": 4,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 7462,
+        "wall_seconds": 3.452712500002235,
+        "parse_seconds": 3.2471974580548704,
+        "wall_seconds_per_page": 0.8631781250005588,
+        "median_document_seconds": 0.8862702499609441,
+        "max_peak_rss_mib": 192.25
+      },
+      "all": {
+        "documents": 4,
+        "succeeded": 4,
+        "expected_pages": 4,
+        "output_pages": 4,
+        "complete_page_maps": 4,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 7462,
+        "wall_seconds": 3.452712500002235,
+        "parse_seconds": 3.2471974580548704,
+        "wall_seconds_per_page": 0.8631781250005588,
+        "median_document_seconds": 0.8862702499609441,
+        "max_peak_rss_mib": 192.25
+      }
+    },
+    "full-ocria": {
+      "full_scan": {
+        "documents": 24,
+        "succeeded": 24,
+        "expected_pages": 600,
+        "output_pages": 600,
+        "complete_page_maps": 24,
+        "page_errors": 0,
+        "blank_text_pages": 2,
+        "output_chars": 1306099,
+        "wall_seconds": 168.85802391753532,
+        "parse_seconds": 167.26161266630515,
+        "wall_seconds_per_page": 0.2814300398625589,
+        "median_document_seconds": 5.556212979485281,
+        "max_peak_rss_mib": 1293.078125
+      },
+      "all": {
+        "documents": 24,
+        "succeeded": 24,
+        "expected_pages": 600,
+        "output_pages": 600,
+        "complete_page_maps": 24,
+        "page_errors": 0,
+        "blank_text_pages": 2,
+        "output_chars": 1306099,
+        "wall_seconds": 168.85802391753532,
+        "parse_seconds": 167.26161266630515,
+        "wall_seconds_per_page": 0.2814300398625589,
+        "median_document_seconds": 5.556212979485281,
+        "max_peak_rss_mib": 1293.078125
+      }
+    },
+    "paired-ocria": {
+      "paired_normative": {
+        "documents": 24,
+        "succeeded": 24,
+        "expected_pages": 24,
+        "output_pages": 24,
+        "complete_page_maps": 24,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 56014,
+        "wall_seconds": 9.27165083377622,
+        "parse_seconds": 7.938174998387694,
+        "wall_seconds_per_page": 0.3863187847406759,
+        "median_document_seconds": 0.38425354147329926,
+        "max_peak_rss_mib": 448.421875
+      },
+      "paired_osr": {
+        "documents": 4,
+        "succeeded": 4,
+        "expected_pages": 4,
+        "output_pages": 4,
+        "complete_page_maps": 4,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 19100,
+        "wall_seconds": 2.106251373887062,
+        "parse_seconds": 1.8823480422142893,
+        "wall_seconds_per_page": 0.5265628434717655,
+        "median_document_seconds": 0.5258989579742774,
+        "max_peak_rss_mib": 495.734375
+      },
+      "paired_remarks": {
+        "documents": 4,
+        "succeeded": 4,
+        "expected_pages": 4,
+        "output_pages": 4,
+        "complete_page_maps": 4,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 17759,
+        "wall_seconds": 1.836560582742095,
+        "parse_seconds": 1.608848542207852,
+        "wall_seconds_per_page": 0.45914014568552375,
+        "median_document_seconds": 0.4662367078708485,
+        "max_peak_rss_mib": 433.5
+      },
+      "paired_compliance": {
+        "documents": 4,
+        "succeeded": 4,
+        "expected_pages": 4,
+        "output_pages": 4,
+        "complete_page_maps": 4,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 20194,
+        "wall_seconds": 1.760738292010501,
+        "parse_seconds": 1.535710042109713,
+        "wall_seconds_per_page": 0.44018457300262526,
+        "median_document_seconds": 0.44667197950184345,
+        "max_peak_rss_mib": 433.265625
+      },
+      "all": {
+        "documents": 36,
+        "succeeded": 36,
+        "expected_pages": 36,
+        "output_pages": 36,
+        "complete_page_maps": 36,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 113067,
+        "wall_seconds": 14.975201082415879,
+        "parse_seconds": 12.965081624919549,
+        "wall_seconds_per_page": 0.4159778078448855,
+        "median_document_seconds": 0.38823391660116613,
+        "max_peak_rss_mib": 495.734375
+      }
+    },
+    "paired-tesseract": {
+      "paired_normative": {
+        "documents": 24,
+        "succeeded": 24,
+        "expected_pages": 24,
+        "output_pages": 24,
+        "complete_page_maps": 24,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 63459,
+        "wall_seconds": 23.309248667908832,
+        "parse_seconds": 22.062086959835142,
+        "wall_seconds_per_page": 0.9712186944962014,
+        "median_document_seconds": 0.9537645004456863,
+        "max_peak_rss_mib": 176.328125
+      },
+      "paired_osr": {
+        "documents": 4,
+        "succeeded": 4,
+        "expected_pages": 4,
+        "output_pages": 4,
+        "complete_page_maps": 4,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 22379,
+        "wall_seconds": 6.391394166275859,
+        "parse_seconds": 6.183721459237859,
+        "wall_seconds_per_page": 1.5978485415689647,
+        "median_document_seconds": 1.6192551250569522,
+        "max_peak_rss_mib": 189.234375
+      },
+      "paired_remarks": {
+        "documents": 4,
+        "succeeded": 4,
+        "expected_pages": 4,
+        "output_pages": 4,
+        "complete_page_maps": 4,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 20336,
+        "wall_seconds": 4.9485401248093694,
+        "parse_seconds": 4.739841207163408,
+        "wall_seconds_per_page": 1.2371350312023424,
+        "median_document_seconds": 1.2168013334739953,
+        "max_peak_rss_mib": 183.078125
+      },
+      "paired_compliance": {
+        "documents": 4,
+        "succeeded": 4,
+        "expected_pages": 4,
+        "output_pages": 4,
+        "complete_page_maps": 4,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 23286,
+        "wall_seconds": 4.697610499104485,
+        "parse_seconds": 4.484943832969293,
+        "wall_seconds_per_page": 1.1744026247761212,
+        "median_document_seconds": 1.1599855625536293,
+        "max_peak_rss_mib": 181.65625
+      },
+      "all": {
+        "documents": 36,
+        "succeeded": 36,
+        "expected_pages": 36,
+        "output_pages": 36,
+        "complete_page_maps": 36,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 129460,
+        "wall_seconds": 39.346793458098546,
+        "parse_seconds": 37.4705934592057,
+        "wall_seconds_per_page": 1.0929664849471818,
+        "median_document_seconds": 0.9835434375563636,
+        "max_peak_rss_mib": 189.234375
+      }
+    },
+    "paired-tesseract-layout": {
+      "paired_normative": {
+        "documents": 24,
+        "succeeded": 24,
+        "expected_pages": 24,
+        "output_pages": 24,
+        "complete_page_maps": 24,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 63459,
+        "wall_seconds": 25.147603501100093,
+        "parse_seconds": 23.806952252984047,
+        "wall_seconds_per_page": 1.0478168125458371,
+        "median_document_seconds": 1.0398321874672547,
+        "max_peak_rss_mib": 242.859375
+      },
+      "paired_osr": {
+        "documents": 4,
+        "succeeded": 4,
+        "expected_pages": 4,
+        "output_pages": 4,
+        "complete_page_maps": 4,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 22379,
+        "wall_seconds": 6.808928292943165,
+        "parse_seconds": 6.5843853338155895,
+        "wall_seconds_per_page": 1.7022320732357912,
+        "median_document_seconds": 1.730169708491303,
+        "max_peak_rss_mib": 250.390625
+      },
+      "paired_remarks": {
+        "documents": 4,
+        "succeeded": 4,
+        "expected_pages": 4,
+        "output_pages": 4,
+        "complete_page_maps": 4,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 20336,
+        "wall_seconds": 5.195077125914395,
+        "parse_seconds": 4.972281082998961,
+        "wall_seconds_per_page": 1.2987692814785987,
+        "median_document_seconds": 1.2837783129652962,
+        "max_peak_rss_mib": 256.578125
+      },
+      "paired_compliance": {
+        "documents": 4,
+        "succeeded": 4,
+        "expected_pages": 4,
+        "output_pages": 4,
+        "complete_page_maps": 4,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 23286,
+        "wall_seconds": 5.032611957984045,
+        "parse_seconds": 4.805625499924645,
+        "wall_seconds_per_page": 1.2581529894960113,
+        "median_document_seconds": 1.216637812089175,
+        "max_peak_rss_mib": 254.375
+      },
+      "all": {
+        "documents": 36,
+        "succeeded": 36,
+        "expected_pages": 36,
+        "output_pages": 36,
+        "complete_page_maps": 36,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 129460,
+        "wall_seconds": 42.1842208779417,
+        "parse_seconds": 40.16924416972324,
+        "wall_seconds_per_page": 1.1717839132761583,
+        "median_document_seconds": 1.0598921454511583,
+        "max_peak_rss_mib": 256.578125
+      }
+    },
+    "relevance-ocria": {
+      "targeted_relevance": {
+        "documents": 24,
+        "succeeded": 24,
+        "expected_pages": 24,
+        "output_pages": 24,
+        "complete_page_maps": 24,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 60737,
+        "wall_seconds": 9.536214919760823,
+        "parse_seconds": 8.194875210290775,
+        "wall_seconds_per_page": 0.39734228832336765,
+        "median_document_seconds": 0.40419710404239595,
+        "max_peak_rss_mib": 448.703125
+      },
+      "all": {
+        "documents": 24,
+        "succeeded": 24,
+        "expected_pages": 24,
+        "output_pages": 24,
+        "complete_page_maps": 24,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 60737,
+        "wall_seconds": 9.536214919760823,
+        "parse_seconds": 8.194875210290775,
+        "wall_seconds_per_page": 0.39734228832336765,
+        "median_document_seconds": 0.40419710404239595,
+        "max_peak_rss_mib": 448.703125
+      }
+    },
+    "relevance-tesseract": {
+      "targeted_relevance": {
+        "documents": 24,
+        "succeeded": 24,
+        "expected_pages": 24,
+        "output_pages": 24,
+        "complete_page_maps": 24,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 70984,
+        "wall_seconds": 23.25785450125113,
+        "parse_seconds": 22.01414262619801,
+        "wall_seconds_per_page": 0.9690772708854638,
+        "median_document_seconds": 0.982319520553574,
+        "max_peak_rss_mib": 177.609375
+      },
+      "all": {
+        "documents": 24,
+        "succeeded": 24,
+        "expected_pages": 24,
+        "output_pages": 24,
+        "complete_page_maps": 24,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 70984,
+        "wall_seconds": 23.25785450125113,
+        "parse_seconds": 22.01414262619801,
+        "wall_seconds_per_page": 0.9690772708854638,
+        "median_document_seconds": 0.982319520553574,
+        "max_peak_rss_mib": 177.609375
+      }
+    },
+    "sample-ocria": {
+      "real_scan": {
+        "documents": 24,
+        "succeeded": 24,
+        "expected_pages": 69,
+        "output_pages": 69,
+        "complete_page_maps": 24,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 132698,
+        "wall_seconds": 21.466866706032306,
+        "parse_seconds": 20.017260622233152,
+        "wall_seconds_per_page": 0.31111401023235224,
+        "median_document_seconds": 0.9166855203220621,
+        "max_peak_rss_mib": 541.609375
+      },
+      "mixed_interior": {
+        "documents": 6,
+        "succeeded": 6,
+        "expected_pages": 22,
+        "output_pages": 22,
+        "complete_page_maps": 6,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 34579,
+        "wall_seconds": 5.442728002090007,
+        "parse_seconds": 5.080628541763872,
+        "wall_seconds_per_page": 0.24739672736772758,
+        "median_document_seconds": 0.9154402919812128,
+        "max_peak_rss_mib": 611.984375
+      },
+      "mixed_tail": {
+        "documents": 6,
+        "succeeded": 6,
+        "expected_pages": 24,
+        "output_pages": 24,
+        "complete_page_maps": 6,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 39701,
+        "wall_seconds": 5.859192791860551,
+        "parse_seconds": 5.508081248961389,
+        "wall_seconds_per_page": 0.24413303299418962,
+        "median_document_seconds": 0.9615484164096415,
+        "max_peak_rss_mib": 534.015625
+      },
+      "paired_normative": {
+        "documents": 12,
+        "succeeded": 12,
+        "expected_pages": 12,
+        "output_pages": 12,
+        "complete_page_maps": 12,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 28808,
+        "wall_seconds": 1.4038018728606403,
+        "parse_seconds": 0.7726929180789739,
+        "wall_seconds_per_page": 0.11698348940505336,
+        "median_document_seconds": 0.10623337491415441,
+        "max_peak_rss_mib": 384.3125
+      },
+      "paired_osr": {
+        "documents": 2,
+        "succeeded": 2,
+        "expected_pages": 2,
+        "output_pages": 2,
+        "complete_page_maps": 2,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 9639,
+        "wall_seconds": 0.2432501669973135,
+        "parse_seconds": 0.1388040422461927,
+        "wall_seconds_per_page": 0.12162508349865675,
+        "median_document_seconds": 0.12162508349865675,
+        "max_peak_rss_mib": 143.90625
+      },
+      "paired_remarks": {
+        "documents": 2,
+        "succeeded": 2,
+        "expected_pages": 2,
+        "output_pages": 2,
+        "complete_page_maps": 2,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 9081,
+        "wall_seconds": 0.2082745840307325,
+        "parse_seconds": 0.1042069171089679,
+        "wall_seconds_per_page": 0.10413729201536626,
+        "median_document_seconds": 0.10413729201536626,
+        "max_peak_rss_mib": 141.78125
+      },
+      "paired_compliance": {
+        "documents": 2,
+        "succeeded": 2,
+        "expected_pages": 2,
+        "output_pages": 2,
+        "complete_page_maps": 2,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 10577,
+        "wall_seconds": 0.24044791725464165,
+        "parse_seconds": 0.133532291976735,
+        "wall_seconds_per_page": 0.12022395862732083,
+        "median_document_seconds": 0.12022395862732083,
+        "max_peak_rss_mib": 142.171875
+      },
+      "rcl_empty_letter": {
+        "documents": 2,
+        "succeeded": 2,
+        "expected_pages": 4,
+        "output_pages": 4,
+        "complete_page_maps": 2,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 5702,
+        "wall_seconds": 1.3166316670831293,
+        "parse_seconds": 1.204746374860406,
+        "wall_seconds_per_page": 0.3291579167707823,
+        "median_document_seconds": 0.6583158335415646,
+        "max_peak_rss_mib": 498.765625
+      },
+      "rcl_empty_project": {
+        "documents": 2,
+        "succeeded": 2,
+        "expected_pages": 6,
+        "output_pages": 6,
+        "complete_page_maps": 2,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 20933,
+        "wall_seconds": 2.3925337493419647,
+        "parse_seconds": 2.2771282088942826,
+        "wall_seconds_per_page": 0.39875562489032745,
+        "median_document_seconds": 1.1962668746709824,
+        "max_peak_rss_mib": 623.953125
+      },
+      "rcl_empty_response": {
+        "documents": 4,
+        "succeeded": 4,
+        "expected_pages": 10,
+        "output_pages": 10,
+        "complete_page_maps": 4,
+        "page_errors": 0,
+        "blank_text_pages": 1,
+        "output_chars": 19335,
+        "wall_seconds": 2.9684152503032237,
+        "parse_seconds": 2.7426816658116877,
+        "wall_seconds_per_page": 0.29684152503032235,
+        "median_document_seconds": 0.8626379586057737,
+        "max_peak_rss_mib": 545.4375
+      },
+      "all": {
+        "documents": 62,
+        "succeeded": 62,
+        "expected_pages": 153,
+        "output_pages": 153,
+        "complete_page_maps": 62,
+        "page_errors": 0,
+        "blank_text_pages": 1,
+        "output_chars": 311053,
+        "wall_seconds": 41.54214270785451,
+        "parse_seconds": 37.97976283193566,
+        "wall_seconds_per_page": 0.2715172726003563,
+        "median_document_seconds": 0.8502527085365728,
+        "max_peak_rss_mib": 623.953125
+      }
+    },
+    "sample-tesseract": {
+      "real_scan": {
+        "documents": 24,
+        "succeeded": 24,
+        "expected_pages": 69,
+        "output_pages": 69,
+        "complete_page_maps": 24,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 151281,
+        "wall_seconds": 53.80546612618491,
+        "parse_seconds": 52.57505470793694,
+        "wall_seconds_per_page": 0.7797893641476074,
+        "median_document_seconds": 2.2671734375180677,
+        "max_peak_rss_mib": 186.15625
+      },
+      "mixed_interior": {
+        "documents": 6,
+        "succeeded": 6,
+        "expected_pages": 22,
+        "output_pages": 22,
+        "complete_page_maps": 6,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 37288,
+        "wall_seconds": 11.236767624970526,
+        "parse_seconds": 10.92770583415404,
+        "wall_seconds_per_page": 0.5107621647713875,
+        "median_document_seconds": 1.8717911455314606,
+        "max_peak_rss_mib": 210.03125
+      },
+      "mixed_tail": {
+        "documents": 6,
+        "succeeded": 6,
+        "expected_pages": 24,
+        "output_pages": 24,
+        "complete_page_maps": 6,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 42819,
+        "wall_seconds": 13.998458166606724,
+        "parse_seconds": 13.691555583151057,
+        "wall_seconds_per_page": 0.5832690902752802,
+        "median_document_seconds": 2.4316416669171304,
+        "max_peak_rss_mib": 194.859375
+      },
+      "paired_normative": {
+        "documents": 12,
+        "succeeded": 12,
+        "expected_pages": 12,
+        "output_pages": 12,
+        "complete_page_maps": 12,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 28731,
+        "wall_seconds": 0.910987208597362,
+        "parse_seconds": 0.3304100406821817,
+        "wall_seconds_per_page": 0.07591560071644683,
+        "median_document_seconds": 0.0655026244930923,
+        "max_peak_rss_mib": 129.6875
+      },
+      "paired_osr": {
+        "documents": 2,
+        "succeeded": 2,
+        "expected_pages": 2,
+        "output_pages": 2,
+        "complete_page_maps": 2,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 9639,
+        "wall_seconds": 0.14078837470151484,
+        "parse_seconds": 0.043357416056096554,
+        "wall_seconds_per_page": 0.07039418735075742,
+        "median_document_seconds": 0.07039418735075742,
+        "max_peak_rss_mib": 46.65625
+      },
+      "paired_remarks": {
+        "documents": 2,
+        "succeeded": 2,
+        "expected_pages": 2,
+        "output_pages": 2,
+        "complete_page_maps": 2,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 9081,
+        "wall_seconds": 0.11720008309930563,
+        "parse_seconds": 0.02080174977891147,
+        "wall_seconds_per_page": 0.058600041549652815,
+        "median_document_seconds": 0.058600041549652815,
+        "max_peak_rss_mib": 43.796875
+      },
+      "paired_compliance": {
+        "documents": 2,
+        "succeeded": 2,
+        "expected_pages": 2,
+        "output_pages": 2,
+        "complete_page_maps": 2,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 10577,
+        "wall_seconds": 0.14161124965175986,
+        "parse_seconds": 0.04445095779374242,
+        "wall_seconds_per_page": 0.07080562482587993,
+        "median_document_seconds": 0.07080562482587993,
+        "max_peak_rss_mib": 45.453125
+      },
+      "rcl_empty_letter": {
+        "documents": 2,
+        "succeeded": 2,
+        "expected_pages": 4,
+        "output_pages": 4,
+        "complete_page_maps": 2,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 7411,
+        "wall_seconds": 2.709065416129306,
+        "parse_seconds": 2.606047125067562,
+        "wall_seconds_per_page": 0.6772663540323265,
+        "median_document_seconds": 1.354532708064653,
+        "max_peak_rss_mib": 172.84375
+      },
+      "rcl_empty_project": {
+        "documents": 2,
+        "succeeded": 2,
+        "expected_pages": 6,
+        "output_pages": 6,
+        "complete_page_maps": 2,
+        "page_errors": 0,
+        "blank_text_pages": 0,
+        "output_chars": 25080,
+        "wall_seconds": 7.725933667039499,
+        "parse_seconds": 7.618647290859371,
+        "wall_seconds_per_page": 1.2876556111732498,
+        "median_document_seconds": 3.8629668335197493,
+        "max_peak_rss_mib": 238.203125
+      },
+      "rcl_empty_response": {
+        "documents": 4,
+        "succeeded": 4,
+        "expected_pages": 10,
+        "output_pages": 10,
+        "complete_page_maps": 4,
+        "page_errors": 0,
+        "blank_text_pages": 1,
+        "output_chars": 23662,
+        "wall_seconds": 8.238517207093537,
+        "parse_seconds": 8.031116372905672,
+        "wall_seconds_per_page": 0.8238517207093536,
+        "median_document_seconds": 2.307835166575387,
+        "max_peak_rss_mib": 196.203125
+      },
+      "all": {
+        "documents": 62,
+        "succeeded": 62,
+        "expected_pages": 153,
+        "output_pages": 153,
+        "complete_page_maps": 62,
+        "page_errors": 0,
+        "blank_text_pages": 1,
+        "output_chars": 345569,
+        "wall_seconds": 99.02479512407444,
+        "parse_seconds": 95.88914707838558,
+        "wall_seconds_per_page": 0.6472208831638853,
+        "median_document_seconds": 1.9458669580053538,
+        "max_peak_rss_mib": 238.203125
+      }
+    }
+  },
+  "quality_cohorts": [
+    {
+      "suite": "controls",
+      "cohort": "synthetic_prose",
+      "variant": "clean",
+      "backend": "ocria",
+      "planned_cases": 7,
+      "observed_cases": 7,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 7,
+        "mean": 0.0028647557065777903,
+        "median": 0.002861230329041488,
+        "p90_nearest_rank": 0.0028776978417266188,
+        "min": 0.002861230329041488,
+        "max": 0.0028776978417266188
+      },
+      "wer": {
+        "count": 7,
+        "mean": 0.017413097962297047,
+        "median": 0.017391304347826087,
+        "p90_nearest_rank": 0.017543859649122806,
+        "min": 0.017391304347826087,
+        "max": 0.017543859649122806
+      },
+      "micro_cer": 0.002864743196234909,
+      "micro_wer": 0.017412935323383085,
+      "parse_seconds": {
+        "count": 7,
+        "mean": 0.24742007741172398,
+        "median": 0.24483037507161498,
+        "p90_nearest_rank": 0.2639058749191463,
+        "min": 0.24267075001262128,
+        "max": 0.2639058749191463
+      },
+      "peak_rss_bytes": {
+        "count": 7,
+        "mean": 425036068.5714286,
+        "median": 425590784,
+        "p90_nearest_rank": 425705472,
+        "min": 423165952,
+        "max": 425705472
+      },
+      "numeric_tokens": {
+        "reference_count": 147,
+        "retained_count": 147,
+        "observed_count": 147,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "negation_tokens": {
+        "reference_count": 27,
+        "retained_count": 27,
+        "observed_count": 27,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "exact_lines": {
+        "scored_cases": 7,
+        "expected_count": 77,
+        "retained_count": 70,
+        "recall": 0.9090909090909091
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 1922,
+        "scan_input_tokens": 21770
+      }
+    },
+    {
+      "suite": "controls",
+      "cohort": "synthetic_prose",
+      "variant": "clean",
+      "backend": "tesseract",
+      "planned_cases": 7,
+      "observed_cases": 7,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 7,
+        "mean": 0.011459022826311161,
+        "median": 0.011444921316165951,
+        "p90_nearest_rank": 0.011510791366906475,
+        "min": 0.011444921316165951,
+        "max": 0.011510791366906475
+      },
+      "wer": {
+        "count": 7,
+        "mean": 0.06965239184918819,
+        "median": 0.06956521739130435,
+        "p90_nearest_rank": 0.07017543859649122,
+        "min": 0.06956521739130435,
+        "max": 0.07017543859649122
+      },
+      "micro_cer": 0.011458972784939635,
+      "micro_wer": 0.06965174129353234,
+      "parse_seconds": {
+        "count": 7,
+        "mean": 0.46919748799077104,
+        "median": 0.4656960410065949,
+        "p90_nearest_rank": 0.4861452500335872,
+        "min": 0.46334466710686684,
+        "max": 0.4861452500335872
+      },
+      "peak_rss_bytes": {
+        "count": 7,
+        "mean": 174786852.57142857,
+        "median": 174817280,
+        "p90_nearest_rank": 175128576,
+        "min": 174260224,
+        "max": 175128576
+      },
+      "numeric_tokens": {
+        "reference_count": 147,
+        "retained_count": 98,
+        "observed_count": 98,
+        "recall": 0.6666666666666666,
+        "precision": 1.0
+      },
+      "negation_tokens": {
+        "reference_count": 27,
+        "retained_count": 27,
+        "observed_count": 27,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "exact_lines": {
+        "scored_cases": 7,
+        "expected_count": 77,
+        "retained_count": 21,
+        "recall": 0.2727272727272727
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 2020,
+        "scan_input_tokens": 21770
+      }
+    },
+    {
+      "suite": "controls",
+      "cohort": "synthetic_prose",
+      "variant": "clean",
+      "backend": "tesseract-layout",
+      "planned_cases": 7,
+      "observed_cases": 7,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 7,
+        "mean": 0.011459022826311161,
+        "median": 0.011444921316165951,
+        "p90_nearest_rank": 0.011510791366906475,
+        "min": 0.011444921316165951,
+        "max": 0.011510791366906475
+      },
+      "wer": {
+        "count": 7,
+        "mean": 0.06965239184918819,
+        "median": 0.06956521739130435,
+        "p90_nearest_rank": 0.07017543859649122,
+        "min": 0.06956521739130435,
+        "max": 0.07017543859649122
+      },
+      "micro_cer": 0.011458972784939635,
+      "micro_wer": 0.06965174129353234,
+      "parse_seconds": {
+        "count": 7,
+        "mean": 0.495960922579148,
+        "median": 0.49322549998760223,
+        "p90_nearest_rank": 0.5107690829318017,
+        "min": 0.4911365411244333,
+        "max": 0.5107690829318017
+      },
+      "peak_rss_bytes": {
+        "count": 7,
+        "mean": 248702098.2857143,
+        "median": 248676352,
+        "p90_nearest_rank": 248823808,
+        "min": 248578048,
+        "max": 248823808
+      },
+      "numeric_tokens": {
+        "reference_count": 147,
+        "retained_count": 98,
+        "observed_count": 98,
+        "recall": 0.6666666666666666,
+        "precision": 1.0
+      },
+      "negation_tokens": {
+        "reference_count": 27,
+        "retained_count": 27,
+        "observed_count": 27,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "exact_lines": {
+        "scored_cases": 7,
+        "expected_count": 77,
+        "retained_count": 21,
+        "recall": 0.2727272727272727
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 2020,
+        "scan_input_tokens": 21770
+      }
+    },
+    {
+      "suite": "controls",
+      "cohort": "synthetic_prose",
+      "variant": "degraded",
+      "backend": "ocria",
+      "planned_cases": 7,
+      "observed_cases": 7,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 7,
+        "mean": 0.0028647557065777903,
+        "median": 0.002861230329041488,
+        "p90_nearest_rank": 0.0028776978417266188,
+        "min": 0.002861230329041488,
+        "max": 0.0028776978417266188
+      },
+      "wer": {
+        "count": 7,
+        "mean": 0.017413097962297047,
+        "median": 0.017391304347826087,
+        "p90_nearest_rank": 0.017543859649122806,
+        "min": 0.017391304347826087,
+        "max": 0.017543859649122806
+      },
+      "micro_cer": 0.002864743196234909,
+      "micro_wer": 0.017412935323383085,
+      "parse_seconds": {
+        "count": 7,
+        "mean": 0.24638115468301944,
+        "median": 0.24253399996086955,
+        "p90_nearest_rank": 0.2555167500395328,
+        "min": 0.2408742078114301,
+        "max": 0.2555167500395328
+      },
+      "peak_rss_bytes": {
+        "count": 7,
+        "mean": 405838701.71428573,
+        "median": 405848064,
+        "p90_nearest_rank": 406044672,
+        "min": 405602304,
+        "max": 406044672
+      },
+      "numeric_tokens": {
+        "reference_count": 147,
+        "retained_count": 147,
+        "observed_count": 147,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "negation_tokens": {
+        "reference_count": 27,
+        "retained_count": 27,
+        "observed_count": 27,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "exact_lines": {
+        "scored_cases": 7,
+        "expected_count": 77,
+        "retained_count": 70,
+        "recall": 0.9090909090909091
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 1929,
+        "scan_input_tokens": 21770
+      }
+    },
+    {
+      "suite": "controls",
+      "cohort": "synthetic_prose",
+      "variant": "degraded",
+      "backend": "tesseract",
+      "planned_cases": 7,
+      "observed_cases": 7,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 7,
+        "mean": 0.010026644973022265,
+        "median": 0.010014306151645207,
+        "p90_nearest_rank": 0.010071942446043165,
+        "min": 0.010014306151645207,
+        "max": 0.010071942446043165
+      },
+      "wer": {
+        "count": 7,
+        "mean": 0.052239293886891136,
+        "median": 0.05217391304347826,
+        "p90_nearest_rank": 0.05263157894736842,
+        "min": 0.05217391304347826,
+        "max": 0.05263157894736842
+      },
+      "micro_cer": 0.01002660118682218,
+      "micro_wer": 0.05223880597014925,
+      "parse_seconds": {
+        "count": 7,
+        "mean": 0.4562541309943689,
+        "median": 0.4556032919790596,
+        "p90_nearest_rank": 0.46615316695533693,
+        "min": 0.45020891702733934,
+        "max": 0.46615316695533693
+      },
+      "peak_rss_bytes": {
+        "count": 7,
+        "mean": 154325577.14285713,
+        "median": 154337280,
+        "p90_nearest_rank": 154468352,
+        "min": 154107904,
+        "max": 154468352
+      },
+      "numeric_tokens": {
+        "reference_count": 147,
+        "retained_count": 112,
+        "observed_count": 112,
+        "recall": 0.7619047619047619,
+        "precision": 1.0
+      },
+      "negation_tokens": {
+        "reference_count": 27,
+        "retained_count": 27,
+        "observed_count": 27,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "exact_lines": {
+        "scored_cases": 7,
+        "expected_count": 77,
+        "retained_count": 35,
+        "recall": 0.45454545454545453
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 2096,
+        "scan_input_tokens": 21770
+      }
+    },
+    {
+      "suite": "controls",
+      "cohort": "synthetic_prose",
+      "variant": "degraded",
+      "backend": "tesseract-layout",
+      "planned_cases": 7,
+      "observed_cases": 7,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 7,
+        "mean": 0.010026644973022265,
+        "median": 0.010014306151645207,
+        "p90_nearest_rank": 0.010071942446043165,
+        "min": 0.010014306151645207,
+        "max": 0.010071942446043165
+      },
+      "wer": {
+        "count": 7,
+        "mean": 0.052239293886891136,
+        "median": 0.05217391304347826,
+        "p90_nearest_rank": 0.05263157894736842,
+        "min": 0.05217391304347826,
+        "max": 0.05263157894736842
+      },
+      "micro_cer": 0.01002660118682218,
+      "micro_wer": 0.05223880597014925,
+      "parse_seconds": {
+        "count": 7,
+        "mean": 0.48338117237601963,
+        "median": 0.4833012910094112,
+        "p90_nearest_rank": 0.4865032499656081,
+        "min": 0.48037512484006584,
+        "max": 0.4865032499656081
+      },
+      "peak_rss_bytes": {
+        "count": 7,
+        "mean": 229631122.2857143,
+        "median": 229588992,
+        "p90_nearest_rank": 229851136,
+        "min": 229490688,
+        "max": 229851136
+      },
+      "numeric_tokens": {
+        "reference_count": 147,
+        "retained_count": 112,
+        "observed_count": 112,
+        "recall": 0.7619047619047619,
+        "precision": 1.0
+      },
+      "negation_tokens": {
+        "reference_count": 27,
+        "retained_count": 27,
+        "observed_count": 27,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "exact_lines": {
+        "scored_cases": 7,
+        "expected_count": 77,
+        "retained_count": 35,
+        "recall": 0.45454545454545453
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 2096,
+        "scan_input_tokens": 21770
+      }
+    },
+    {
+      "suite": "controls",
+      "cohort": "synthetic_table",
+      "variant": "clean",
+      "backend": "ocria",
+      "planned_cases": 2,
+      "observed_cases": 2,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 0
+      },
+      "wer": {
+        "count": 0
+      },
+      "micro_cer": null,
+      "micro_wer": null,
+      "parse_seconds": {
+        "count": 2,
+        "mean": 0.23525700042955577,
+        "median": 0.23525700042955577,
+        "p90_nearest_rank": 0.2358159169089049,
+        "min": 0.23469808395020664,
+        "max": 0.2358159169089049
+      },
+      "peak_rss_bytes": {
+        "count": 2,
+        "mean": 424525824,
+        "median": 424525824.0,
+        "p90_nearest_rank": 425590784,
+        "min": 423460864,
+        "max": 425590784
+      },
+      "numeric_tokens": {
+        "reference_count": 0,
+        "retained_count": 0,
+        "observed_count": 0,
+        "recall": null,
+        "precision": null
+      },
+      "negation_tokens": {
+        "reference_count": 0,
+        "retained_count": 0,
+        "observed_count": 0,
+        "recall": null,
+        "precision": null
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 2,
+        "expected_count": 12,
+        "retained_count": 12,
+        "recall": 1.0
+      },
+      "token_estimate": {
+        "observed_text_tokens": 226,
+        "scan_input_tokens": 6220
+      }
+    },
+    {
+      "suite": "controls",
+      "cohort": "synthetic_table",
+      "variant": "clean",
+      "backend": "tesseract",
+      "planned_cases": 2,
+      "observed_cases": 2,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 0
+      },
+      "wer": {
+        "count": 0
+      },
+      "micro_cer": null,
+      "micro_wer": null,
+      "parse_seconds": {
+        "count": 2,
+        "mean": 0.29619122948497534,
+        "median": 0.29619122948497534,
+        "p90_nearest_rank": 0.3021639999933541,
+        "min": 0.2902184589765966,
+        "max": 0.3021639999933541
+      },
+      "peak_rss_bytes": {
+        "count": 2,
+        "mean": 175112192,
+        "median": 175112192.0,
+        "p90_nearest_rank": 175210496,
+        "min": 175013888,
+        "max": 175210496
+      },
+      "numeric_tokens": {
+        "reference_count": 0,
+        "retained_count": 0,
+        "observed_count": 0,
+        "recall": null,
+        "precision": null
+      },
+      "negation_tokens": {
+        "reference_count": 0,
+        "retained_count": 0,
+        "observed_count": 0,
+        "recall": null,
+        "precision": null
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 2,
+        "expected_count": 12,
+        "retained_count": 0,
+        "recall": 0.0
+      },
+      "token_estimate": {
+        "observed_text_tokens": 243,
+        "scan_input_tokens": 6220
+      }
+    },
+    {
+      "suite": "controls",
+      "cohort": "synthetic_table",
+      "variant": "clean",
+      "backend": "tesseract-layout",
+      "planned_cases": 2,
+      "observed_cases": 2,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 0
+      },
+      "wer": {
+        "count": 0
+      },
+      "micro_cer": null,
+      "micro_wer": null,
+      "parse_seconds": {
+        "count": 2,
+        "mean": 0.3272341669071466,
+        "median": 0.3272341669071466,
+        "p90_nearest_rank": 0.3362618340179324,
+        "min": 0.31820649979636073,
+        "max": 0.3362618340179324
+      },
+      "peak_rss_bytes": {
+        "count": 2,
+        "mean": 249102336,
+        "median": 249102336.0,
+        "p90_nearest_rank": 249249792,
+        "min": 248954880,
+        "max": 249249792
+      },
+      "numeric_tokens": {
+        "reference_count": 0,
+        "retained_count": 0,
+        "observed_count": 0,
+        "recall": null,
+        "precision": null
+      },
+      "negation_tokens": {
+        "reference_count": 0,
+        "retained_count": 0,
+        "observed_count": 0,
+        "recall": null,
+        "precision": null
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 2,
+        "expected_count": 12,
+        "retained_count": 4,
+        "recall": 0.3333333333333333
+      },
+      "token_estimate": {
+        "observed_text_tokens": 243,
+        "scan_input_tokens": 6220
+      }
+    },
+    {
+      "suite": "controls",
+      "cohort": "synthetic_table",
+      "variant": "degraded",
+      "backend": "ocria",
+      "planned_cases": 2,
+      "observed_cases": 2,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 0
+      },
+      "wer": {
+        "count": 0
+      },
+      "micro_cer": null,
+      "micro_wer": null,
+      "parse_seconds": {
+        "count": 2,
+        "mean": 0.2243167714914307,
+        "median": 0.2243167714914307,
+        "p90_nearest_rank": 0.22651620907709002,
+        "min": 0.22211733390577137,
+        "max": 0.22651620907709002
+      },
+      "peak_rss_bytes": {
+        "count": 2,
+        "mean": 404062208,
+        "median": 404062208.0,
+        "p90_nearest_rank": 404488192,
+        "min": 403636224,
+        "max": 404488192
+      },
+      "numeric_tokens": {
+        "reference_count": 0,
+        "retained_count": 0,
+        "observed_count": 0,
+        "recall": null,
+        "precision": null
+      },
+      "negation_tokens": {
+        "reference_count": 0,
+        "retained_count": 0,
+        "observed_count": 0,
+        "recall": null,
+        "precision": null
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 2,
+        "expected_count": 12,
+        "retained_count": 12,
+        "recall": 1.0
+      },
+      "token_estimate": {
+        "observed_text_tokens": 224,
+        "scan_input_tokens": 6220
+      }
+    },
+    {
+      "suite": "controls",
+      "cohort": "synthetic_table",
+      "variant": "degraded",
+      "backend": "tesseract",
+      "planned_cases": 2,
+      "observed_cases": 2,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 0
+      },
+      "wer": {
+        "count": 0
+      },
+      "micro_cer": null,
+      "micro_wer": null,
+      "parse_seconds": {
+        "count": 2,
+        "mean": 0.27350968739483505,
+        "median": 0.27350968739483505,
+        "p90_nearest_rank": 0.2762763749342412,
+        "min": 0.27074299985542893,
+        "max": 0.2762763749342412
+      },
+      "peak_rss_bytes": {
+        "count": 2,
+        "mean": 154222592,
+        "median": 154222592.0,
+        "p90_nearest_rank": 154468352,
+        "min": 153976832,
+        "max": 154468352
+      },
+      "numeric_tokens": {
+        "reference_count": 0,
+        "retained_count": 0,
+        "observed_count": 0,
+        "recall": null,
+        "precision": null
+      },
+      "negation_tokens": {
+        "reference_count": 0,
+        "retained_count": 0,
+        "observed_count": 0,
+        "recall": null,
+        "precision": null
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 2,
+        "expected_count": 12,
+        "retained_count": 0,
+        "recall": 0.0
+      },
+      "token_estimate": {
+        "observed_text_tokens": 211,
+        "scan_input_tokens": 6220
+      }
+    },
+    {
+      "suite": "controls",
+      "cohort": "synthetic_table",
+      "variant": "degraded",
+      "backend": "tesseract-layout",
+      "planned_cases": 2,
+      "observed_cases": 2,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 0
+      },
+      "wer": {
+        "count": 0
+      },
+      "micro_cer": null,
+      "micro_wer": null,
+      "parse_seconds": {
+        "count": 2,
+        "mean": 0.2971754790050909,
+        "median": 0.2971754790050909,
+        "p90_nearest_rank": 0.30299625010229647,
+        "min": 0.2913547079078853,
+        "max": 0.30299625010229647
+      },
+      "peak_rss_bytes": {
+        "count": 2,
+        "mean": 229687296,
+        "median": 229687296.0,
+        "p90_nearest_rank": 229785600,
+        "min": 229588992,
+        "max": 229785600
+      },
+      "numeric_tokens": {
+        "reference_count": 0,
+        "retained_count": 0,
+        "observed_count": 0,
+        "recall": null,
+        "precision": null
+      },
+      "negation_tokens": {
+        "reference_count": 0,
+        "retained_count": 0,
+        "observed_count": 0,
+        "recall": null,
+        "precision": null
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 2,
+        "expected_count": 12,
+        "retained_count": 12,
+        "recall": 1.0
+      },
+      "token_estimate": {
+        "observed_text_tokens": 211,
+        "scan_input_tokens": 6220
+      }
+    },
+    {
+      "suite": "paired",
+      "cohort": "paired_compliance",
+      "variant": "clean",
+      "backend": "ocria",
+      "planned_cases": 2,
+      "observed_cases": 2,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 2,
+        "mean": 0.3254336037052603,
+        "median": 0.3254336037052603,
+        "p90_nearest_rank": 0.5070044709388972,
+        "min": 0.1438627364716234,
+        "max": 0.5070044709388972
+      },
+      "wer": {
+        "count": 2,
+        "mean": 0.38232611786164533,
+        "median": 0.38232611786164533,
+        "p90_nearest_rank": 0.6124031007751938,
+        "min": 0.1522491349480969,
+        "max": 0.6124031007751938
+      },
+      "micro_cer": 0.3603411513859275,
+      "micro_wer": 0.4472049689440994,
+      "parse_seconds": {
+        "count": 2,
+        "mean": 0.3912816250231117,
+        "median": 0.3912816250231117,
+        "p90_nearest_rank": 0.4063935000449419,
+        "min": 0.3761697500012815,
+        "max": 0.4063935000449419
+      },
+      "peak_rss_bytes": {
+        "count": 2,
+        "mean": 451067904,
+        "median": 451067904.0,
+        "p90_nearest_rank": 454311936,
+        "min": 447823872,
+        "max": 454311936
+      },
+      "numeric_tokens": {
+        "reference_count": 108,
+        "retained_count": 104,
+        "observed_count": 105,
+        "recall": 0.9629629629629629,
+        "precision": 0.9904761904761905
+      },
+      "negation_tokens": {
+        "reference_count": 0,
+        "retained_count": 0,
+        "observed_count": 0,
+        "recall": null,
+        "precision": null
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 2047,
+        "scan_input_tokens": 6220
+      }
+    },
+    {
+      "suite": "paired",
+      "cohort": "paired_compliance",
+      "variant": "clean",
+      "backend": "tesseract",
+      "planned_cases": 2,
+      "observed_cases": 2,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 2,
+        "mean": 0.30098532438402475,
+        "median": 0.30098532438402475,
+        "p90_nearest_rank": 0.4572280178837556,
+        "min": 0.14474263088429387,
+        "max": 0.4572280178837556
+      },
+      "wer": {
+        "count": 2,
+        "mean": 0.3376854161637295,
+        "median": 0.3376854161637295,
+        "p90_nearest_rank": 0.5542635658914729,
+        "min": 0.12110726643598616,
+        "max": 0.5542635658914729
+      },
+      "micro_cer": 0.3310234541577825,
+      "micro_wer": 0.3987577639751553,
+      "parse_seconds": {
+        "count": 2,
+        "mean": 1.1401011875132099,
+        "median": 1.1401011875132099,
+        "p90_nearest_rank": 1.3497471250593662,
+        "min": 0.9304552499670535,
+        "max": 1.3497471250593662
+      },
+      "peak_rss_bytes": {
+        "count": 2,
+        "mean": 187367424,
+        "median": 187367424.0,
+        "p90_nearest_rank": 190480384,
+        "min": 184254464,
+        "max": 190480384
+      },
+      "numeric_tokens": {
+        "reference_count": 108,
+        "retained_count": 101,
+        "observed_count": 102,
+        "recall": 0.9351851851851852,
+        "precision": 0.9901960784313726
+      },
+      "negation_tokens": {
+        "reference_count": 0,
+        "retained_count": 0,
+        "observed_count": 0,
+        "recall": null,
+        "precision": null
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 2223,
+        "scan_input_tokens": 6220
+      }
+    },
+    {
+      "suite": "paired",
+      "cohort": "paired_compliance",
+      "variant": "clean",
+      "backend": "tesseract-layout",
+      "planned_cases": 2,
+      "observed_cases": 2,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 2,
+        "mean": 0.30098532438402475,
+        "median": 0.30098532438402475,
+        "p90_nearest_rank": 0.4572280178837556,
+        "min": 0.14474263088429387,
+        "max": 0.4572280178837556
+      },
+      "wer": {
+        "count": 2,
+        "mean": 0.3376854161637295,
+        "median": 0.3376854161637295,
+        "p90_nearest_rank": 0.5542635658914729,
+        "min": 0.12110726643598616,
+        "max": 0.5542635658914729
+      },
+      "micro_cer": 0.3310234541577825,
+      "micro_wer": 0.3987577639751553,
+      "parse_seconds": {
+        "count": 2,
+        "mean": 1.2421720834681764,
+        "median": 1.2421720834681764,
+        "p90_nearest_rank": 1.4895726670511067,
+        "min": 0.9947714998852462,
+        "max": 1.4895726670511067
+      },
+      "peak_rss_bytes": {
+        "count": 2,
+        "mean": 263249920,
+        "median": 263249920.0,
+        "p90_nearest_rank": 266731520,
+        "min": 259768320,
+        "max": 266731520
+      },
+      "numeric_tokens": {
+        "reference_count": 108,
+        "retained_count": 101,
+        "observed_count": 102,
+        "recall": 0.9351851851851852,
+        "precision": 0.9901960784313726
+      },
+      "negation_tokens": {
+        "reference_count": 0,
+        "retained_count": 0,
+        "observed_count": 0,
+        "recall": null,
+        "precision": null
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 2223,
+        "scan_input_tokens": 6220
+      }
+    },
+    {
+      "suite": "paired",
+      "cohort": "paired_compliance",
+      "variant": "degraded",
+      "backend": "ocria",
+      "planned_cases": 2,
+      "observed_cases": 2,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 2,
+        "mean": 0.29545739757130784,
+        "median": 0.29545739757130784,
+        "p90_nearest_rank": 0.45365126676602086,
+        "min": 0.1372635283765948,
+        "max": 0.45365126676602086
+      },
+      "wer": {
+        "count": 2,
+        "mean": 0.34439795069874735,
+        "median": 0.34439795069874735,
+        "p90_nearest_rank": 0.5503875968992248,
+        "min": 0.1384083044982699,
+        "max": 0.5503875968992248
+      },
+      "micro_cer": 0.32587064676616917,
+      "micro_wer": 0.40248447204968946,
+      "parse_seconds": {
+        "count": 2,
+        "mean": 0.3765733960317448,
+        "median": 0.3765733960317448,
+        "p90_nearest_rank": 0.40437100012786686,
+        "min": 0.3487757919356227,
+        "max": 0.40437100012786686
+      },
+      "peak_rss_bytes": {
+        "count": 2,
+        "mean": 426098688,
+        "median": 426098688.0,
+        "p90_nearest_rank": 427130880,
+        "min": 425066496,
+        "max": 427130880
+      },
+      "numeric_tokens": {
+        "reference_count": 108,
+        "retained_count": 105,
+        "observed_count": 105,
+        "recall": 0.9722222222222222,
+        "precision": 1.0
+      },
+      "negation_tokens": {
+        "reference_count": 0,
+        "retained_count": 0,
+        "observed_count": 0,
+        "recall": null,
+        "precision": null
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 2038,
+        "scan_input_tokens": 6220
+      }
+    },
+    {
+      "suite": "paired",
+      "cohort": "paired_compliance",
+      "variant": "degraded",
+      "backend": "tesseract",
+      "planned_cases": 2,
+      "observed_cases": 2,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 2,
+        "mean": 0.36447665624387365,
+        "median": 0.36447665624387365,
+        "p90_nearest_rank": 0.5296572280178837,
+        "min": 0.1992960844698636,
+        "max": 0.5296572280178837
+      },
+      "wer": {
+        "count": 2,
+        "mean": 0.4382460234435772,
+        "median": 0.4382460234435772,
+        "p90_nearest_rank": 0.6550387596899225,
+        "min": 0.22145328719723184,
+        "max": 0.6550387596899225
+      },
+      "micro_cer": 0.39623312011371714,
+      "micro_wer": 0.4993788819875776,
+      "parse_seconds": {
+        "count": 2,
+        "mean": 1.1023707289714366,
+        "median": 1.1023707289714366,
+        "p90_nearest_rank": 1.2826891660224646,
+        "min": 0.9220522919204086,
+        "max": 1.2826891660224646
+      },
+      "peak_rss_bytes": {
+        "count": 2,
+        "mean": 166223872,
+        "median": 166223872.0,
+        "p90_nearest_rank": 168280064,
+        "min": 164167680,
+        "max": 168280064
+      },
+      "numeric_tokens": {
+        "reference_count": 108,
+        "retained_count": 99,
+        "observed_count": 101,
+        "recall": 0.9166666666666666,
+        "precision": 0.9801980198019802
+      },
+      "negation_tokens": {
+        "reference_count": 0,
+        "retained_count": 0,
+        "observed_count": 0,
+        "recall": null,
+        "precision": null
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 2255,
+        "scan_input_tokens": 6220
+      }
+    },
+    {
+      "suite": "paired",
+      "cohort": "paired_compliance",
+      "variant": "degraded",
+      "backend": "tesseract-layout",
+      "planned_cases": 2,
+      "observed_cases": 2,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 2,
+        "mean": 0.36447665624387365,
+        "median": 0.36447665624387365,
+        "p90_nearest_rank": 0.5296572280178837,
+        "min": 0.1992960844698636,
+        "max": 0.5296572280178837
+      },
+      "wer": {
+        "count": 2,
+        "mean": 0.4382460234435772,
+        "median": 0.4382460234435772,
+        "p90_nearest_rank": 0.6550387596899225,
+        "min": 0.22145328719723184,
+        "max": 0.6550387596899225
+      },
+      "micro_cer": 0.39623312011371714,
+      "micro_wer": 0.4993788819875776,
+      "parse_seconds": {
+        "count": 2,
+        "mean": 1.160640666494146,
+        "median": 1.160640666494146,
+        "p90_nearest_rank": 1.3238609579857439,
+        "min": 0.9974203750025481,
+        "max": 1.3238609579857439
+      },
+      "peak_rss_bytes": {
+        "count": 2,
+        "mean": 237699072,
+        "median": 237699072.0,
+        "p90_nearest_rank": 239910912,
+        "min": 235487232,
+        "max": 239910912
+      },
+      "numeric_tokens": {
+        "reference_count": 108,
+        "retained_count": 99,
+        "observed_count": 101,
+        "recall": 0.9166666666666666,
+        "precision": 0.9801980198019802
+      },
+      "negation_tokens": {
+        "reference_count": 0,
+        "retained_count": 0,
+        "observed_count": 0,
+        "recall": null,
+        "precision": null
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 2255,
+        "scan_input_tokens": 6220
+      }
+    },
+    {
+      "suite": "paired",
+      "cohort": "paired_normative",
+      "variant": "clean",
+      "backend": "ocria",
+      "planned_cases": 12,
+      "observed_cases": 12,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 12,
+        "mean": 0.022695535787045414,
+        "median": 0.018069703014965563,
+        "p90_nearest_rank": 0.04964953271028037,
+        "min": 0.01059220028887819,
+        "max": 0.05414470531863919
+      },
+      "wer": {
+        "count": 12,
+        "mean": 0.10843592521174927,
+        "median": 0.09985590216925652,
+        "p90_nearest_rank": 0.14076246334310852,
+        "min": 0.04899135446685879,
+        "max": 0.21367521367521367
+      },
+      "micro_cer": 0.022201169783342946,
+      "micro_wer": 0.1047186474892758,
+      "parse_seconds": {
+        "count": 12,
+        "mean": 0.3318597256632832,
+        "median": 0.3293114169500768,
+        "p90_nearest_rank": 0.34041591617278755,
+        "min": 0.3082287919241935,
+        "max": 0.3689089168328792
+      },
+      "peak_rss_bytes": {
+        "count": 12,
+        "mean": 450498560,
+        "median": 457981952.0,
+        "p90_nearest_rank": 465551360,
+        "min": 431030272,
+        "max": 470204416
+      },
+      "numeric_tokens": {
+        "reference_count": 652,
+        "retained_count": 605,
+        "observed_count": 630,
+        "recall": 0.9279141104294478,
+        "precision": 0.9603174603174603
+      },
+      "negation_tokens": {
+        "reference_count": 2,
+        "retained_count": 2,
+        "observed_count": 2,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 9471,
+        "scan_input_tokens": 37320
+      }
+    },
+    {
+      "suite": "paired",
+      "cohort": "paired_normative",
+      "variant": "clean",
+      "backend": "tesseract",
+      "planned_cases": 12,
+      "observed_cases": 12,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 12,
+        "mean": 0.020399865818921996,
+        "median": 0.018306370830582,
+        "p90_nearest_rank": 0.03477765108323831,
+        "min": 0.009583133684714902,
+        "max": 0.04030612244897959
+      },
+      "wer": {
+        "count": 12,
+        "mean": 0.1026578154439242,
+        "median": 0.10417291354322838,
+        "p90_nearest_rank": 0.14705882352941177,
+        "min": 0.05572755417956656,
+        "max": 0.15249266862170088
+      },
+      "micro_cer": 0.020100502512562814,
+      "micro_wer": 0.10370931112793338,
+      "parse_seconds": {
+        "count": 12,
+        "mean": 0.9614221875866255,
+        "median": 0.9684963125037029,
+        "p90_nearest_rank": 1.0302328749094158,
+        "min": 0.8643504169303924,
+        "max": 1.0328373750671744
+      },
+      "peak_rss_bytes": {
+        "count": 12,
+        "mean": 183100757.33333334,
+        "median": 183263232.0,
+        "p90_nearest_rank": 184598528,
+        "min": 177668096,
+        "max": 184893440
+      },
+      "numeric_tokens": {
+        "reference_count": 652,
+        "retained_count": 576,
+        "observed_count": 595,
+        "recall": 0.8834355828220859,
+        "precision": 0.9680672268907563
+      },
+      "negation_tokens": {
+        "reference_count": 2,
+        "retained_count": 2,
+        "observed_count": 2,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 10634,
+        "scan_input_tokens": 37320
+      }
+    },
+    {
+      "suite": "paired",
+      "cohort": "paired_normative",
+      "variant": "clean",
+      "backend": "tesseract-layout",
+      "planned_cases": 12,
+      "observed_cases": 12,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 12,
+        "mean": 0.020399865818921996,
+        "median": 0.018306370830582,
+        "p90_nearest_rank": 0.03477765108323831,
+        "min": 0.009583133684714902,
+        "max": 0.04030612244897959
+      },
+      "wer": {
+        "count": 12,
+        "mean": 0.1026578154439242,
+        "median": 0.10417291354322838,
+        "p90_nearest_rank": 0.14705882352941177,
+        "min": 0.05572755417956656,
+        "max": 0.15249266862170088
+      },
+      "micro_cer": 0.020100502512562814,
+      "micro_wer": 0.10370931112793338,
+      "parse_seconds": {
+        "count": 12,
+        "mean": 1.0383902848116122,
+        "median": 1.0372753749834374,
+        "p90_nearest_rank": 1.1125320000573993,
+        "min": 0.9454132087994367,
+        "max": 1.131830541882664
+      },
+      "peak_rss_bytes": {
+        "count": 12,
+        "mean": 249303040,
+        "median": 249069568.0,
+        "p90_nearest_rank": 250904576,
+        "min": 245415936,
+        "max": 254656512
+      },
+      "numeric_tokens": {
+        "reference_count": 652,
+        "retained_count": 576,
+        "observed_count": 595,
+        "recall": 0.8834355828220859,
+        "precision": 0.9680672268907563
+      },
+      "negation_tokens": {
+        "reference_count": 2,
+        "retained_count": 2,
+        "observed_count": 2,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 10634,
+        "scan_input_tokens": 37320
+      }
+    },
+    {
+      "suite": "paired",
+      "cohort": "paired_normative",
+      "variant": "degraded",
+      "backend": "ocria",
+      "planned_cases": 12,
+      "observed_cases": 12,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 12,
+        "mean": 0.02765402912421742,
+        "median": 0.02006392587471606,
+        "p90_nearest_rank": 0.05081775700934579,
+        "min": 0.01171303074670571,
+        "max": 0.076544315129812
+      },
+      "wer": {
+        "count": 12,
+        "mean": 0.11106506602125508,
+        "median": 0.10187615436959269,
+        "p90_nearest_rank": 0.20320855614973263,
+        "min": 0.05763688760806916,
+        "max": 0.21367521367521367
+      },
+      "micro_cer": 0.027885328280748002,
+      "micro_wer": 0.10900832702498107,
+      "parse_seconds": {
+        "count": 12,
+        "mean": 0.3296548575356913,
+        "median": 0.32765652099624276,
+        "p90_nearest_rank": 0.33589433296583593,
+        "min": 0.3106055830139667,
+        "max": 0.36466554179787636
+      },
+      "peak_rss_bytes": {
+        "count": 12,
+        "mean": 425530709.3333333,
+        "median": 423616512.0,
+        "p90_nearest_rank": 425410560,
+        "min": 420970496,
+        "max": 447266816
+      },
+      "numeric_tokens": {
+        "reference_count": 652,
+        "retained_count": 603,
+        "observed_count": 624,
+        "recall": 0.9248466257668712,
+        "precision": 0.9663461538461539
+      },
+      "negation_tokens": {
+        "reference_count": 2,
+        "retained_count": 2,
+        "observed_count": 2,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 9490,
+        "scan_input_tokens": 37320
+      }
+    },
+    {
+      "suite": "paired",
+      "cohort": "paired_normative",
+      "variant": "degraded",
+      "backend": "tesseract",
+      "planned_cases": 12,
+      "observed_cases": 12,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 12,
+        "mean": 0.024347061515008022,
+        "median": 0.020044674643655204,
+        "p90_nearest_rank": 0.051924798567591766,
+        "min": 0.009760858955588092,
+        "max": 0.05324909747292419
+      },
+      "wer": {
+        "count": 12,
+        "mean": 0.10338382631622198,
+        "median": 0.10377461111715436,
+        "p90_nearest_rank": 0.1378299120234604,
+        "min": 0.0641025641025641,
+        "max": 0.1657754010695187
+      },
+      "micro_cer": 0.024672543043084274,
+      "micro_wer": 0.1049709815796114,
+      "parse_seconds": {
+        "count": 12,
+        "mean": 0.8770850590663031,
+        "median": 0.8813688129885122,
+        "p90_nearest_rank": 0.9255846659652889,
+        "min": 0.7947645408567041,
+        "max": 0.9532890000846237
+      },
+      "peak_rss_bytes": {
+        "count": 12,
+        "mean": 161427456,
+        "median": 161292288.0,
+        "p90_nearest_rank": 162250752,
+        "min": 160563200,
+        "max": 162758656
+      },
+      "numeric_tokens": {
+        "reference_count": 652,
+        "retained_count": 576,
+        "observed_count": 593,
+        "recall": 0.8834355828220859,
+        "precision": 0.9713322091062394
+      },
+      "negation_tokens": {
+        "reference_count": 2,
+        "retained_count": 2,
+        "observed_count": 2,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 10616,
+        "scan_input_tokens": 37320
+      }
+    },
+    {
+      "suite": "paired",
+      "cohort": "paired_normative",
+      "variant": "degraded",
+      "backend": "tesseract-layout",
+      "planned_cases": 12,
+      "observed_cases": 12,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 12,
+        "mean": 0.024347061515008022,
+        "median": 0.020044674643655204,
+        "p90_nearest_rank": 0.051924798567591766,
+        "min": 0.009760858955588092,
+        "max": 0.05324909747292419
+      },
+      "wer": {
+        "count": 12,
+        "mean": 0.10338382631622198,
+        "median": 0.10377461111715436,
+        "p90_nearest_rank": 0.1378299120234604,
+        "min": 0.0641025641025641,
+        "max": 0.1657754010695187
+      },
+      "micro_cer": 0.024672543043084274,
+      "micro_wer": 0.1049709815796114,
+      "parse_seconds": {
+        "count": 12,
+        "mean": 0.9455224029370584,
+        "median": 0.9446804998442531,
+        "p90_nearest_rank": 1.0054763341322541,
+        "min": 0.8555663342121989,
+        "max": 1.0285307080484927
+      },
+      "peak_rss_bytes": {
+        "count": 12,
+        "mean": 235529557.33333334,
+        "median": 233201664.0,
+        "p90_nearest_rank": 238485504,
+        "min": 232275968,
+        "max": 251068416
+      },
+      "numeric_tokens": {
+        "reference_count": 652,
+        "retained_count": 576,
+        "observed_count": 593,
+        "recall": 0.8834355828220859,
+        "precision": 0.9713322091062394
+      },
+      "negation_tokens": {
+        "reference_count": 2,
+        "retained_count": 2,
+        "observed_count": 2,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 10616,
+        "scan_input_tokens": 37320
+      }
+    },
+    {
+      "suite": "paired",
+      "cohort": "paired_osr",
+      "variant": "clean",
+      "backend": "ocria",
+      "planned_cases": 2,
+      "observed_cases": 2,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 2,
+        "mean": 0.050759629949188964,
+        "median": 0.050759629949188964,
+        "p90_nearest_rank": 0.05590666018473505,
+        "min": 0.04561259971364287,
+        "max": 0.05590666018473505
+      },
+      "wer": {
+        "count": 2,
+        "mean": 0.10629573447868376,
+        "median": 0.10629573447868376,
+        "p90_nearest_rank": 0.11226252158894647,
+        "min": 0.10032894736842106,
+        "max": 0.11226252158894647
+      },
+      "micro_cer": 0.05031656114628457,
+      "micro_wer": 0.10614995787700084,
+      "parse_seconds": {
+        "count": 2,
+        "mean": 0.4706922295736149,
+        "median": 0.4706922295736149,
+        "p90_nearest_rank": 0.4845022920053452,
+        "min": 0.45688216714188457,
+        "max": 0.4845022920053452
+      },
+      "peak_rss_bytes": {
+        "count": 2,
+        "mean": 495009792,
+        "median": 495009792.0,
+        "p90_nearest_rank": 519815168,
+        "min": 470204416,
+        "max": 519815168
+      },
+      "numeric_tokens": {
+        "reference_count": 59,
+        "retained_count": 58,
+        "observed_count": 58,
+        "recall": 0.9830508474576272,
+        "precision": 1.0
+      },
+      "negation_tokens": {
+        "reference_count": 4,
+        "retained_count": 4,
+        "observed_count": 4,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 2793,
+        "scan_input_tokens": 6220
+      }
+    },
+    {
+      "suite": "paired",
+      "cohort": "paired_osr",
+      "variant": "clean",
+      "backend": "tesseract",
+      "planned_cases": 2,
+      "observed_cases": 2,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 2,
+        "mean": 0.05729593673772629,
+        "median": 0.05729593673772629,
+        "p90_nearest_rank": 0.06611570247933884,
+        "min": 0.048476170996113725,
+        "max": 0.06611570247933884
+      },
+      "wer": {
+        "count": 2,
+        "mean": 0.10991472366148532,
+        "median": 0.10991472366148532,
+        "p90_nearest_rank": 0.12607944732297063,
+        "min": 0.09375,
+        "max": 0.12607944732297063
+      },
+      "micro_cer": 0.05653670998556037,
+      "micro_wer": 0.10951979780960404,
+      "parse_seconds": {
+        "count": 2,
+        "mean": 1.614619062631391,
+        "median": 1.614619062631391,
+        "p90_nearest_rank": 1.6791133331134915,
+        "min": 1.5501247921492904,
+        "max": 1.6791133331134915
+      },
+      "peak_rss_bytes": {
+        "count": 2,
+        "mean": 197148672,
+        "median": 197148672.0,
+        "p90_nearest_rank": 198426624,
+        "min": 195870720,
+        "max": 198426624
+      },
+      "numeric_tokens": {
+        "reference_count": 59,
+        "retained_count": 58,
+        "observed_count": 58,
+        "recall": 0.9830508474576272,
+        "precision": 1.0
+      },
+      "negation_tokens": {
+        "reference_count": 4,
+        "retained_count": 4,
+        "observed_count": 4,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 3209,
+        "scan_input_tokens": 6220
+      }
+    },
+    {
+      "suite": "paired",
+      "cohort": "paired_osr",
+      "variant": "clean",
+      "backend": "tesseract-layout",
+      "planned_cases": 2,
+      "observed_cases": 2,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 2,
+        "mean": 0.05729593673772629,
+        "median": 0.05729593673772629,
+        "p90_nearest_rank": 0.06611570247933884,
+        "min": 0.048476170996113725,
+        "max": 0.06611570247933884
+      },
+      "wer": {
+        "count": 2,
+        "mean": 0.10991472366148532,
+        "median": 0.10991472366148532,
+        "p90_nearest_rank": 0.12607944732297063,
+        "min": 0.09375,
+        "max": 0.12607944732297063
+      },
+      "micro_cer": 0.05653670998556037,
+      "micro_wer": 0.10951979780960404,
+      "parse_seconds": {
+        "count": 2,
+        "mean": 1.71504872944206,
+        "median": 1.71504872944206,
+        "p90_nearest_rank": 1.7770368750207126,
+        "min": 1.6530605838634074,
+        "max": 1.7770368750207126
+      },
+      "peak_rss_bytes": {
+        "count": 2,
+        "mean": 262053888,
+        "median": 262053888.0,
+        "p90_nearest_rank": 262553600,
+        "min": 261554176,
+        "max": 262553600
+      },
+      "numeric_tokens": {
+        "reference_count": 59,
+        "retained_count": 58,
+        "observed_count": 58,
+        "recall": 0.9830508474576272,
+        "precision": 1.0
+      },
+      "negation_tokens": {
+        "reference_count": 4,
+        "retained_count": 4,
+        "observed_count": 4,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 3209,
+        "scan_input_tokens": 6220
+      }
+    },
+    {
+      "suite": "paired",
+      "cohort": "paired_osr",
+      "variant": "degraded",
+      "backend": "ocria",
+      "planned_cases": 2,
+      "observed_cases": 2,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 2,
+        "mean": 0.05138657685300099,
+        "median": 0.05138657685300099,
+        "p90_nearest_rank": 0.05736509479824988,
+        "min": 0.0454080589077521,
+        "max": 0.05736509479824988
+      },
+      "wer": {
+        "count": 2,
+        "mean": 0.10983234478683757,
+        "median": 0.10983234478683757,
+        "p90_nearest_rank": 0.1226252158894646,
+        "min": 0.09703947368421052,
+        "max": 0.1226252158894646
+      },
+      "micro_cer": 0.05087193157836277,
+      "micro_wer": 0.10951979780960404,
+      "parse_seconds": {
+        "count": 2,
+        "mean": 0.47048179153352976,
+        "median": 0.47048179153352976,
+        "p90_nearest_rank": 0.4766743751242757,
+        "min": 0.46428920794278383,
+        "max": 0.4766743751242757
+      },
+      "peak_rss_bytes": {
+        "count": 2,
+        "mean": 445808640,
+        "median": 445808640.0,
+        "p90_nearest_rank": 463060992,
+        "min": 428556288,
+        "max": 463060992
+      },
+      "numeric_tokens": {
+        "reference_count": 59,
+        "retained_count": 58,
+        "observed_count": 58,
+        "recall": 0.9830508474576272,
+        "precision": 1.0
+      },
+      "negation_tokens": {
+        "reference_count": 4,
+        "retained_count": 4,
+        "observed_count": 4,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 2819,
+        "scan_input_tokens": 6220
+      }
+    },
+    {
+      "suite": "paired",
+      "cohort": "paired_osr",
+      "variant": "degraded",
+      "backend": "tesseract",
+      "planned_cases": 2,
+      "observed_cases": 2,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 2,
+        "mean": 0.06414355423508351,
+        "median": 0.06414355423508351,
+        "p90_nearest_rank": 0.07122022362664074,
+        "min": 0.05706688484352628,
+        "max": 0.07122022362664074
+      },
+      "wer": {
+        "count": 2,
+        "mean": 0.1182207867466594,
+        "median": 0.1182207867466594,
+        "p90_nearest_rank": 0.12953367875647667,
+        "min": 0.1069078947368421,
+        "max": 0.12953367875647667
+      },
+      "micro_cer": 0.06353437742974564,
+      "micro_wer": 0.11794439764111204,
+      "parse_seconds": {
+        "count": 2,
+        "mean": 1.4772416669875383,
+        "median": 1.4772416669875383,
+        "p90_nearest_rank": 1.5851929169148207,
+        "min": 1.369290417060256,
+        "max": 1.5851929169148207
+      },
+      "peak_rss_bytes": {
+        "count": 2,
+        "mean": 174260224,
+        "median": 174260224.0,
+        "p90_nearest_rank": 176340992,
+        "min": 172179456,
+        "max": 176340992
+      },
+      "numeric_tokens": {
+        "reference_count": 59,
+        "retained_count": 58,
+        "observed_count": 59,
+        "recall": 0.9830508474576272,
+        "precision": 0.9830508474576272
+      },
+      "negation_tokens": {
+        "reference_count": 4,
+        "retained_count": 4,
+        "observed_count": 4,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 3269,
+        "scan_input_tokens": 6220
+      }
+    },
+    {
+      "suite": "paired",
+      "cohort": "paired_osr",
+      "variant": "degraded",
+      "backend": "tesseract-layout",
+      "planned_cases": 2,
+      "observed_cases": 2,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 2,
+        "mean": 0.06414355423508351,
+        "median": 0.06414355423508351,
+        "p90_nearest_rank": 0.07122022362664074,
+        "min": 0.05706688484352628,
+        "max": 0.07122022362664074
+      },
+      "wer": {
+        "count": 2,
+        "mean": 0.1182207867466594,
+        "median": 0.1182207867466594,
+        "p90_nearest_rank": 0.12953367875647667,
+        "min": 0.1069078947368421,
+        "max": 0.12953367875647667
+      },
+      "micro_cer": 0.06353437742974564,
+      "micro_wer": 0.11794439764111204,
+      "parse_seconds": {
+        "count": 2,
+        "mean": 1.5771439374657348,
+        "median": 1.5771439374657348,
+        "p90_nearest_rank": 1.6947935000061989,
+        "min": 1.4594943749252707,
+        "max": 1.6947935000061989
+      },
+      "peak_rss_bytes": {
+        "count": 2,
+        "mean": 245022720,
+        "median": 245022720.0,
+        "p90_nearest_rank": 245776384,
+        "min": 244269056,
+        "max": 245776384
+      },
+      "numeric_tokens": {
+        "reference_count": 59,
+        "retained_count": 58,
+        "observed_count": 59,
+        "recall": 0.9830508474576272,
+        "precision": 0.9830508474576272
+      },
+      "negation_tokens": {
+        "reference_count": 4,
+        "retained_count": 4,
+        "observed_count": 4,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 3269,
+        "scan_input_tokens": 6220
+      }
+    },
+    {
+      "suite": "paired",
+      "cohort": "paired_remarks",
+      "variant": "clean",
+      "backend": "ocria",
+      "planned_cases": 2,
+      "observed_cases": 2,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 2,
+        "mean": 0.4755946310798955,
+        "median": 0.4755946310798955,
+        "p90_nearest_rank": 0.6498271736240362,
+        "min": 0.3013620885357548,
+        "max": 0.6498271736240362
+      },
+      "wer": {
+        "count": 2,
+        "mean": 0.47931892506753876,
+        "median": 0.47931892506753876,
+        "p90_nearest_rank": 0.6432532347504621,
+        "min": 0.3153846153846154,
+        "max": 0.6432532347504621
+      },
+      "micro_cer": 0.5386565272496832,
+      "micro_wer": 0.5368289637952559,
+      "parse_seconds": {
+        "count": 2,
+        "mean": 0.3951551045756787,
+        "median": 0.3951551045756787,
+        "p90_nearest_rank": 0.45002037496306,
+        "min": 0.3402898341882974,
+        "max": 0.45002037496306
+      },
+      "peak_rss_bytes": {
+        "count": 2,
+        "mean": 447250432,
+        "median": 447250432.0,
+        "p90_nearest_rank": 454557696,
+        "min": 439943168,
+        "max": 454557696
+      },
+      "numeric_tokens": {
+        "reference_count": 82,
+        "retained_count": 80,
+        "observed_count": 82,
+        "recall": 0.975609756097561,
+        "precision": 0.975609756097561
+      },
+      "negation_tokens": {
+        "reference_count": 8,
+        "retained_count": 6,
+        "observed_count": 6,
+        "recall": 0.75,
+        "precision": 1.0
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 2022,
+        "scan_input_tokens": 6220
+      }
+    },
+    {
+      "suite": "paired",
+      "cohort": "paired_remarks",
+      "variant": "clean",
+      "backend": "tesseract",
+      "planned_cases": 2,
+      "observed_cases": 2,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 2,
+        "mean": 0.47012139343962966,
+        "median": 0.47012139343962966,
+        "p90_nearest_rank": 0.6564743419303377,
+        "min": 0.28376844494892167,
+        "max": 0.6564743419303377
+      },
+      "wer": {
+        "count": 2,
+        "mean": 0.4644852836627328,
+        "median": 0.4644852836627328,
+        "p90_nearest_rank": 0.6635859519408502,
+        "min": 0.2653846153846154,
+        "max": 0.6635859519408502
+      },
+      "micro_cer": 0.5375701611443057,
+      "micro_wer": 0.5343320848938826,
+      "parse_seconds": {
+        "count": 2,
+        "mean": 1.2258312704507262,
+        "median": 1.2258312704507262,
+        "p90_nearest_rank": 1.5848650829866529,
+        "min": 0.8667974579147995,
+        "max": 1.5848650829866529
+      },
+      "peak_rss_bytes": {
+        "count": 2,
+        "mean": 187170816,
+        "median": 187170816.0,
+        "p90_nearest_rank": 191971328,
+        "min": 182370304,
+        "max": 191971328
+      },
+      "numeric_tokens": {
+        "reference_count": 82,
+        "retained_count": 78,
+        "observed_count": 82,
+        "recall": 0.9512195121951219,
+        "precision": 0.9512195121951219
+      },
+      "negation_tokens": {
+        "reference_count": 8,
+        "retained_count": 7,
+        "observed_count": 7,
+        "recall": 0.875,
+        "precision": 1.0
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 2302,
+        "scan_input_tokens": 6220
+      }
+    },
+    {
+      "suite": "paired",
+      "cohort": "paired_remarks",
+      "variant": "clean",
+      "backend": "tesseract-layout",
+      "planned_cases": 2,
+      "observed_cases": 2,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 2,
+        "mean": 0.47012139343962966,
+        "median": 0.47012139343962966,
+        "p90_nearest_rank": 0.6564743419303377,
+        "min": 0.28376844494892167,
+        "max": 0.6564743419303377
+      },
+      "wer": {
+        "count": 2,
+        "mean": 0.4644852836627328,
+        "median": 0.4644852836627328,
+        "p90_nearest_rank": 0.6635859519408502,
+        "min": 0.2653846153846154,
+        "max": 0.6635859519408502
+      },
+      "micro_cer": 0.5375701611443057,
+      "micro_wer": 0.5343320848938826,
+      "parse_seconds": {
+        "count": 2,
+        "mean": 1.2784341665683314,
+        "median": 1.2784341665683314,
+        "p90_nearest_rank": 1.6329881250858307,
+        "min": 0.9238802080508322,
+        "max": 1.6329881250858307
+      },
+      "peak_rss_bytes": {
+        "count": 2,
+        "mean": 263725056,
+        "median": 263725056.0,
+        "p90_nearest_rank": 269041664,
+        "min": 258408448,
+        "max": 269041664
+      },
+      "numeric_tokens": {
+        "reference_count": 82,
+        "retained_count": 78,
+        "observed_count": 82,
+        "recall": 0.9512195121951219,
+        "precision": 0.9512195121951219
+      },
+      "negation_tokens": {
+        "reference_count": 8,
+        "retained_count": 7,
+        "observed_count": 7,
+        "recall": 0.875,
+        "precision": 1.0
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 2302,
+        "scan_input_tokens": 6220
+      }
+    },
+    {
+      "suite": "paired",
+      "cohort": "paired_remarks",
+      "variant": "degraded",
+      "backend": "ocria",
+      "planned_cases": 2,
+      "observed_cases": 2,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 2,
+        "mean": 0.47390990212289885,
+        "median": 0.47390990212289885,
+        "p90_nearest_rank": 0.649295400159532,
+        "min": 0.2985244040862656,
+        "max": 0.649295400159532
+      },
+      "wer": {
+        "count": 2,
+        "mean": 0.4650078202758424,
+        "median": 0.4650078202758424,
+        "p90_nearest_rank": 0.6377079482439926,
+        "min": 0.2923076923076923,
+        "max": 0.6377079482439926
+      },
+      "micro_cer": 0.5373891001267427,
+      "micro_wer": 0.5255930087390761,
+      "parse_seconds": {
+        "count": 2,
+        "mean": 0.4092691665282473,
+        "median": 0.4092691665282473,
+        "p90_nearest_rank": 0.44756133295595646,
+        "min": 0.37097700010053813,
+        "max": 0.44756133295595646
+      },
+      "peak_rss_bytes": {
+        "count": 2,
+        "mean": 427261952,
+        "median": 427261952.0,
+        "p90_nearest_rank": 429719552,
+        "min": 424804352,
+        "max": 429719552
+      },
+      "numeric_tokens": {
+        "reference_count": 82,
+        "retained_count": 79,
+        "observed_count": 81,
+        "recall": 0.9634146341463414,
+        "precision": 0.9753086419753086
+      },
+      "negation_tokens": {
+        "reference_count": 8,
+        "retained_count": 7,
+        "observed_count": 7,
+        "recall": 0.875,
+        "precision": 1.0
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 2014,
+        "scan_input_tokens": 6220
+      }
+    },
+    {
+      "suite": "paired",
+      "cohort": "paired_remarks",
+      "variant": "degraded",
+      "backend": "tesseract",
+      "planned_cases": 2,
+      "observed_cases": 2,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 2,
+        "mean": 0.4808050754487555,
+        "median": 0.4808050754487555,
+        "p90_nearest_rank": 0.6636532837011433,
+        "min": 0.29795686719636777,
+        "max": 0.6636532837011433
+      },
+      "wer": {
+        "count": 2,
+        "mean": 0.47080548841177305,
+        "median": 0.47080548841177305,
+        "p90_nearest_rank": 0.6839186691312384,
+        "min": 0.25769230769230766,
+        "max": 0.6839186691312384
+      },
+      "micro_cer": 0.5469853340575774,
+      "micro_wer": 0.5455680399500624,
+      "parse_seconds": {
+        "count": 2,
+        "mean": 1.144089333130978,
+        "median": 1.144089333130978,
+        "p90_nearest_rank": 1.4626712501049042,
+        "min": 0.8255074161570519,
+        "max": 1.4626712501049042
+      },
+      "peak_rss_bytes": {
+        "count": 2,
+        "mean": 166879232,
+        "median": 166879232.0,
+        "p90_nearest_rank": 170180608,
+        "min": 163577856,
+        "max": 170180608
+      },
+      "numeric_tokens": {
+        "reference_count": 82,
+        "retained_count": 77,
+        "observed_count": 78,
+        "recall": 0.9390243902439024,
+        "precision": 0.9871794871794872
+      },
+      "negation_tokens": {
+        "reference_count": 8,
+        "retained_count": 7,
+        "observed_count": 7,
+        "recall": 0.875,
+        "precision": 1.0
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 2341,
+        "scan_input_tokens": 6220
+      }
+    },
+    {
+      "suite": "paired",
+      "cohort": "paired_remarks",
+      "variant": "degraded",
+      "backend": "tesseract-layout",
+      "planned_cases": 2,
+      "observed_cases": 2,
+      "missing_or_failed_cases": 0,
+      "cer": {
+        "count": 2,
+        "mean": 0.4808050754487555,
+        "median": 0.4808050754487555,
+        "p90_nearest_rank": 0.6636532837011433,
+        "min": 0.29795686719636777,
+        "max": 0.6636532837011433
+      },
+      "wer": {
+        "count": 2,
+        "mean": 0.47080548841177305,
+        "median": 0.47080548841177305,
+        "p90_nearest_rank": 0.6839186691312384,
+        "min": 0.25769230769230766,
+        "max": 0.6839186691312384
+      },
+      "micro_cer": 0.5469853340575774,
+      "micro_wer": 0.5455680399500624,
+      "parse_seconds": {
+        "count": 2,
+        "mean": 1.2077063749311492,
+        "median": 1.2077063749311492,
+        "p90_nearest_rank": 1.5323120839893818,
+        "min": 0.8831006658729166,
+        "max": 1.5323120839893818
+      },
+      "peak_rss_bytes": {
+        "count": 2,
+        "mean": 240762880,
+        "median": 240762880.0,
+        "p90_nearest_rank": 242515968,
+        "min": 239009792,
+        "max": 242515968
+      },
+      "numeric_tokens": {
+        "reference_count": 82,
+        "retained_count": 77,
+        "observed_count": 78,
+        "recall": 0.9390243902439024,
+        "precision": 0.9871794871794872
+      },
+      "negation_tokens": {
+        "reference_count": 8,
+        "retained_count": 7,
+        "observed_count": 7,
+        "recall": 0.875,
+        "precision": 1.0
+      },
+      "exact_lines": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "table_associations": {
+        "scored_cases": 0,
+        "expected_count": 0,
+        "retained_count": 0,
+        "recall": null
+      },
+      "token_estimate": {
+        "observed_text_tokens": 2341,
+        "scan_input_tokens": 6220
+      }
+    }
+  ],
+  "keyword_digest_summary": {
+    "paired-ocria": {
+      "cases": 36,
+      "baseline_positive": 2,
+      "new_false_rejections": 0,
+      "new_acceptances": 0,
+      "comparable_digests": 24,
+      "same_content_changed_digest": 24
+    },
+    "paired-tesseract": {
+      "cases": 36,
+      "baseline_positive": 2,
+      "new_false_rejections": 0,
+      "new_acceptances": 0,
+      "comparable_digests": 23,
+      "same_content_changed_digest": 23
+    },
+    "paired-tesseract-layout": {
+      "cases": 36,
+      "baseline_positive": 2,
+      "new_false_rejections": 0,
+      "new_acceptances": 0,
+      "comparable_digests": 23,
+      "same_content_changed_digest": 23
+    },
+    "targeted_relevance-ocria": {
+      "cases": 24,
+      "baseline_positive": 20,
+      "new_false_rejections": 2,
+      "new_acceptances": 0,
+      "comparable_digests": 0,
+      "same_content_changed_digest": 0
+    },
+    "targeted_relevance-tesseract": {
+      "cases": 24,
+      "baseline_positive": 20,
+      "new_false_rejections": 0,
+      "new_acceptances": 0,
+      "comparable_digests": 0,
+      "same_content_changed_digest": 0
+    },
+    "targeted_relevance-tesseract-layout": {
+      "cases": 0,
+      "baseline_positive": 0,
+      "new_false_rejections": 0,
+      "new_acceptances": 0,
+      "comparable_digests": 0,
+      "same_content_changed_digest": 0
+    }
+  },
+  "keyword_rejection_cases": [
+    {
+      "id": "druk-3146-p176-degraded",
+      "cohort": "targeted_relevance",
+      "backend": "ocria",
+      "original": {
+        "chars": 2001,
+        "keyword_counts": {
+          "straz_graniczna": 1,
+          "obywatele_innych_panstw": 1
+        },
+        "accepted": true,
+        "law_digest": null
+      },
+      "ocr": {
+        "chars": 2322,
+        "keyword_counts": {
+          "obywatele_innych_panstw": 1
+        },
+        "accepted": false,
+        "law_digest": null
+      },
+      "new_false_keyword_rejection": true,
+      "new_keyword_acceptance": false,
+      "same_content_digest_changed": null
+    },
+    {
+      "id": "druk-2533-p101-degraded",
+      "cohort": "targeted_relevance",
+      "backend": "ocria",
+      "original": {
+        "chars": 1510,
+        "keyword_counts": {
+          "ochrona_miedzynarodowa": 3
+        },
+        "accepted": true,
+        "law_digest": null
+      },
+      "ocr": {
+        "chars": 1539,
+        "keyword_counts": {
+          "ochrona_miedzynarodowa": 2
+        },
+        "accepted": false,
+        "law_digest": null
+      },
+      "new_false_keyword_rejection": true,
+      "new_keyword_acceptance": false,
+      "same_content_digest_changed": null
+    }
+  ],
+  "token_volume": {
+    "method": "o200k_base page text versus repository scan estimate3110/page; no prompt/output/schema, provider calls or quality equivalence",
+    "arms": {
+      "full-ocria": {
+        "pages": 600,
+        "text_tokens": 404781,
+        "scan_token_estimate": 1866000,
+        "rows": [
+          {
+            "id": "druk-1726-full",
+            "pages": 89,
+            "text_tokens": 67938,
+            "scan_token_estimate": 276790
+          },
+          {
+            "id": "druk-1760-full",
+            "pages": 13,
+            "text_tokens": 8981,
+            "scan_token_estimate": 40430
+          },
+          {
+            "id": "druk-1765-full",
+            "pages": 14,
+            "text_tokens": 10406,
+            "scan_token_estimate": 43540
+          },
+          {
+            "id": "druk-2196-full",
+            "pages": 19,
+            "text_tokens": 12136,
+            "scan_token_estimate": 59090
+          },
+          {
+            "id": "druk-2198-full",
+            "pages": 14,
+            "text_tokens": 9045,
+            "scan_token_estimate": 43540
+          },
+          {
+            "id": "druk-233-full",
+            "pages": 56,
+            "text_tokens": 40257,
+            "scan_token_estimate": 174160
+          },
+          {
+            "id": "druk-24-full",
+            "pages": 28,
+            "text_tokens": 18538,
+            "scan_token_estimate": 87080
+          },
+          {
+            "id": "druk-244-full",
+            "pages": 13,
+            "text_tokens": 8782,
+            "scan_token_estimate": 40430
+          },
+          {
+            "id": "druk-25-full",
+            "pages": 47,
+            "text_tokens": 36286,
+            "scan_token_estimate": 146170
+          },
+          {
+            "id": "druk-26-full",
+            "pages": 54,
+            "text_tokens": 31892,
+            "scan_token_estimate": 167940
+          },
+          {
+            "id": "druk-27-full",
+            "pages": 23,
+            "text_tokens": 14828,
+            "scan_token_estimate": 71530
+          },
+          {
+            "id": "druk-2703-full",
+            "pages": 28,
+            "text_tokens": 23281,
+            "scan_token_estimate": 87080
+          },
+          {
+            "id": "druk-28-full",
+            "pages": 23,
+            "text_tokens": 13917,
+            "scan_token_estimate": 71530
+          },
+          {
+            "id": "druk-2821-full",
+            "pages": 1,
+            "text_tokens": 254,
+            "scan_token_estimate": 3110
+          },
+          {
+            "id": "druk-29-full",
+            "pages": 32,
+            "text_tokens": 20228,
+            "scan_token_estimate": 99520
+          },
+          {
+            "id": "druk-30-full",
+            "pages": 15,
+            "text_tokens": 6004,
+            "scan_token_estimate": 46650
+          },
+          {
+            "id": "druk-31-full",
+            "pages": 16,
+            "text_tokens": 8817,
+            "scan_token_estimate": 49760
+          },
+          {
+            "id": "druk-32-full",
+            "pages": 27,
+            "text_tokens": 16388,
+            "scan_token_estimate": 83970
+          },
+          {
+            "id": "druk-33-full",
+            "pages": 26,
+            "text_tokens": 17314,
+            "scan_token_estimate": 80860
+          },
+          {
+            "id": "druk-599-full",
+            "pages": 7,
+            "text_tokens": 5558,
+            "scan_token_estimate": 21770
+          },
+          {
+            "id": "druk-608-full",
+            "pages": 25,
+            "text_tokens": 16864,
+            "scan_token_estimate": 77750
+          },
+          {
+            "id": "druk-63-full",
+            "pages": 3,
+            "text_tokens": 1338,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "druk-866-full",
+            "pages": 14,
+            "text_tokens": 8129,
+            "scan_token_estimate": 43540
+          },
+          {
+            "id": "druk-867-full",
+            "pages": 13,
+            "text_tokens": 7600,
+            "scan_token_estimate": 40430
+          }
+        ]
+      },
+      "sample-ocria": {
+        "pages": 153,
+        "text_tokens": 94004,
+        "scan_token_estimate": 475830,
+        "rows": [
+          {
+            "id": "doc-158276-rcl_empty_letter",
+            "pages": 2,
+            "text_tokens": 1263,
+            "scan_token_estimate": 6220
+          },
+          {
+            "id": "doc-205286-rcl_empty_letter",
+            "pages": 2,
+            "text_tokens": 451,
+            "scan_token_estimate": 6220
+          },
+          {
+            "id": "doc-309194-rcl_empty_project",
+            "pages": 3,
+            "text_tokens": 3556,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "doc-315329-rcl_empty_project",
+            "pages": 3,
+            "text_tokens": 2307,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "doc-402964-rcl_empty_response",
+            "pages": 3,
+            "text_tokens": 1609,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "doc-691973-rcl_empty_response",
+            "pages": 1,
+            "text_tokens": 826,
+            "scan_token_estimate": 3110
+          },
+          {
+            "id": "doc-704265-rcl_empty_response",
+            "pages": 3,
+            "text_tokens": 1965,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "doc-737560-rcl_empty_response",
+            "pages": 3,
+            "text_tokens": 1744,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "druk-1009-paired_compliance",
+            "pages": 1,
+            "text_tokens": 813,
+            "scan_token_estimate": 3110
+          },
+          {
+            "id": "druk-1131-paired_normative",
+            "pages": 1,
+            "text_tokens": 791,
+            "scan_token_estimate": 3110
+          },
+          {
+            "id": "druk-1261-mixed_interior",
+            "pages": 2,
+            "text_tokens": 1285,
+            "scan_token_estimate": 6220
+          },
+          {
+            "id": "druk-1388-mixed_tail",
+            "pages": 4,
+            "text_tokens": 1661,
+            "scan_token_estimate": 12440
+          },
+          {
+            "id": "druk-1443-paired_osr",
+            "pages": 1,
+            "text_tokens": 1505,
+            "scan_token_estimate": 3110
+          },
+          {
+            "id": "druk-1606-paired_compliance",
+            "pages": 1,
+            "text_tokens": 1284,
+            "scan_token_estimate": 3110
+          },
+          {
+            "id": "druk-1610-paired_osr",
+            "pages": 1,
+            "text_tokens": 1334,
+            "scan_token_estimate": 3110
+          },
+          {
+            "id": "druk-1625-paired_normative",
+            "pages": 1,
+            "text_tokens": 734,
+            "scan_token_estimate": 3110
+          },
+          {
+            "id": "druk-1638-paired_normative",
+            "pages": 1,
+            "text_tokens": 756,
+            "scan_token_estimate": 3110
+          },
+          {
+            "id": "druk-1650-mixed_interior",
+            "pages": 4,
+            "text_tokens": 1948,
+            "scan_token_estimate": 12440
+          },
+          {
+            "id": "druk-1726-real_scan",
+            "pages": 3,
+            "text_tokens": 2728,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "druk-1750-paired_normative",
+            "pages": 1,
+            "text_tokens": 863,
+            "scan_token_estimate": 3110
+          },
+          {
+            "id": "druk-1760-real_scan",
+            "pages": 3,
+            "text_tokens": 2093,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "druk-1765-real_scan",
+            "pages": 3,
+            "text_tokens": 1861,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "druk-1809-mixed_interior",
+            "pages": 4,
+            "text_tokens": 1871,
+            "scan_token_estimate": 12440
+          },
+          {
+            "id": "druk-1893-mixed_tail",
+            "pages": 4,
+            "text_tokens": 1614,
+            "scan_token_estimate": 12440
+          },
+          {
+            "id": "druk-2196-real_scan",
+            "pages": 3,
+            "text_tokens": 2504,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "druk-2198-real_scan",
+            "pages": 3,
+            "text_tokens": 1694,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "druk-231-mixed_interior",
+            "pages": 4,
+            "text_tokens": 1121,
+            "scan_token_estimate": 12440
+          },
+          {
+            "id": "druk-233-real_scan",
+            "pages": 3,
+            "text_tokens": 2159,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "druk-2387-paired_remarks",
+            "pages": 1,
+            "text_tokens": 1367,
+            "scan_token_estimate": 3110
+          },
+          {
+            "id": "druk-24-real_scan",
+            "pages": 3,
+            "text_tokens": 1703,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "druk-244-real_scan",
+            "pages": 3,
+            "text_tokens": 1283,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "druk-2445-paired_normative",
+            "pages": 1,
+            "text_tokens": 761,
+            "scan_token_estimate": 3110
+          },
+          {
+            "id": "druk-245-mixed_tail",
+            "pages": 4,
+            "text_tokens": 2113,
+            "scan_token_estimate": 12440
+          },
+          {
+            "id": "druk-25-real_scan",
+            "pages": 3,
+            "text_tokens": 1139,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "druk-2581-paired_normative",
+            "pages": 1,
+            "text_tokens": 757,
+            "scan_token_estimate": 3110
+          },
+          {
+            "id": "druk-26-real_scan",
+            "pages": 3,
+            "text_tokens": 1906,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "druk-261-paired_normative",
+            "pages": 1,
+            "text_tokens": 807,
+            "scan_token_estimate": 3110
+          },
+          {
+            "id": "druk-27-real_scan",
+            "pages": 3,
+            "text_tokens": 1427,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "druk-2703-real_scan",
+            "pages": 3,
+            "text_tokens": 1536,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "druk-2769-mixed_interior",
+            "pages": 4,
+            "text_tokens": 2660,
+            "scan_token_estimate": 12440
+          },
+          {
+            "id": "druk-28-real_scan",
+            "pages": 3,
+            "text_tokens": 1957,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "druk-2821-real_scan",
+            "pages": 1,
+            "text_tokens": 254,
+            "scan_token_estimate": 3110
+          },
+          {
+            "id": "druk-2865-mixed_interior",
+            "pages": 4,
+            "text_tokens": 1427,
+            "scan_token_estimate": 12440
+          },
+          {
+            "id": "druk-2867-paired_remarks",
+            "pages": 1,
+            "text_tokens": 672,
+            "scan_token_estimate": 3110
+          },
+          {
+            "id": "druk-29-real_scan",
+            "pages": 3,
+            "text_tokens": 1349,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "druk-30-real_scan",
+            "pages": 3,
+            "text_tokens": 1380,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "druk-3035-paired_normative",
+            "pages": 1,
+            "text_tokens": 812,
+            "scan_token_estimate": 3110
+          },
+          {
+            "id": "druk-31-real_scan",
+            "pages": 3,
+            "text_tokens": 1314,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "druk-3123-mixed_tail",
+            "pages": 4,
+            "text_tokens": 2456,
+            "scan_token_estimate": 12440
+          },
+          {
+            "id": "druk-32-real_scan",
+            "pages": 3,
+            "text_tokens": 1901,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "druk-33-real_scan",
+            "pages": 3,
+            "text_tokens": 1888,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "druk-349-paired_normative",
+            "pages": 1,
+            "text_tokens": 890,
+            "scan_token_estimate": 3110
+          },
+          {
+            "id": "druk-437-paired_normative",
+            "pages": 1,
+            "text_tokens": 910,
+            "scan_token_estimate": 3110
+          },
+          {
+            "id": "druk-599-real_scan",
+            "pages": 3,
+            "text_tokens": 2273,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "druk-608-real_scan",
+            "pages": 3,
+            "text_tokens": 2019,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "druk-63-real_scan",
+            "pages": 2,
+            "text_tokens": 834,
+            "scan_token_estimate": 6220
+          },
+          {
+            "id": "druk-673-paired_normative",
+            "pages": 1,
+            "text_tokens": 839,
+            "scan_token_estimate": 3110
+          },
+          {
+            "id": "druk-772-mixed_tail",
+            "pages": 4,
+            "text_tokens": 2324,
+            "scan_token_estimate": 12440
+          },
+          {
+            "id": "druk-838-paired_normative",
+            "pages": 1,
+            "text_tokens": 805,
+            "scan_token_estimate": 3110
+          },
+          {
+            "id": "druk-866-real_scan",
+            "pages": 3,
+            "text_tokens": 1559,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "druk-867-real_scan",
+            "pages": 3,
+            "text_tokens": 2218,
+            "scan_token_estimate": 9330
+          },
+          {
+            "id": "druk-965-mixed_tail",
+            "pages": 4,
+            "text_tokens": 2124,
+            "scan_token_estimate": 12440
+          }
+        ]
+      }
+    }
+  },
+  "markdown_associations": {
+    "ocria-nano": {
+      "retained": 24,
+      "expected": 24
+    },
+    "tesseract": {
+      "retained": 0,
+      "expected": 24
+    },
+    "tesseract-layout": {
+      "retained": 16,
+      "expected": 24
+    }
+  },
+  "limits": [
+    "Native text is a proxy, not visual ground truth",
+    "Blind references were agent transcriptions with a preserved erratum",
+    "Targeted keyword results concern pages, not whole bills or corpus prevalence",
+    "Token savings are modeled input volume, not paid-model quality equivalence",
+    "All page IDs present does not prove all text correct"
+  ],
+  "artifact_sha256": {
+    "PLAN.md": "f519b2949f6893aa15ccfeb64e234b101abb75c45a783ce66c14f14dadbff4ef",
+    "run-summary.json": "72c28e47850bc58fef079150f039bbe8bd3136ec4b5a887dc0c4b4984129cae9",
+    "quality-v4.json": "4836cfd228fc3b7b60a18e5df71927a011cd2b167b08528ec893a2d0849f81b9",
+    "downstream.json": "4b496d02e4d5de0c7c4507f9b40ceeeb9522f42973cccd59dc89f3515fdbde60",
+    "token-volume.json": "f0859f7d7d14d832e956e34a7e6029edcf01278db0bf8af9a634e99fb8fec4c8",
+    "markdown-scores.json": "31fc5f1eece2a4fdfe09f9563a5cacb6e0999ee355bdeba3278cd6afe13af713",
+    "sample/manifest.json": "36bb2dc49061e5f4adaab40e0fcd523a30253ea68683ee91c44f9ec6d9b01eaa",
+    "sample/relevance/manifest.json": "a6844fbdc4d94f656574364f97ef56492406ad49aa7ad8b9b168d37eb3d0163d",
+    "review/adjudication.md": "3078fcb13c7ce0bf4bcbe30fc196c02ff684cdb09497dcbbebd879fada6f70c6",
+    "robustness/summary.json": "8bb8076992fdfedd37518eb5bfac3ab17de2aafd232a9b5da6437cd00b9fe25d"
+  }
+}

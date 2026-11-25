@@ -49,6 +49,7 @@ nav = [
   ] },
   { "Планы" = [
     { "Обзор" = "plans/index.md" },
+    { "Проверка OCRia-nano-1" = "plans/2026-11-25-ocria-evaluation.md" },
     { "Корпус и scripts" = "plans/2026-10-25-corpus-improvements.md" },
     { "Документы и история результатов" = "plans/2026-10-22-document-architecture.md" },
     { "Реализация архитектуры документов" = "plans/2026-10-22-document-architecture-progress.md" },
@@ -68,6 +69,7 @@ nav = [
   ] },
   { "Аудиты" = [
     { "Обзор" = "reviews/index.md" },
+    { "OCRia-nano-1 · 26.11" = "reviews/2026-11-26-ocria-nano-evaluation.md" },
     { "GPT‑6.1 Terra и Sol · 29.10" = "reviews/2026-10-29-terra-sol-evaluation.md" },
     { "Зависимости retention · 28.10" = "reviews/2026-10-28-retention-dependencies.md" },
     { "Составные исправления · 28.10" = "reviews/2026-10-28-compound-content-revisions.md" },
