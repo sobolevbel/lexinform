@@ -45,15 +45,15 @@ paths:
   `DeliveryPlan`) and share the roundup's `message_id`; a failed roundup leaves every line `failed`
   and `_retry_failed` requeues them. The card does not absorb a same-run update or sitting (it shows
   neither an RPW withdrawal nor a sitting outside its phase's venue).
-- **An announced sitting is taken back when it goes.** `AgendaWatcher._retract_gone` posts one
-  `agenda_cancelled` per announced sitting that left `PLANNED` or dropped this bill (v19, unique per
-  bill/channel/`ref`). Not a retraction: a sitting that **moved** (same `sitting_key`; told as a new
-  post saying what it moved from), one that **started or passed** (`_already_happened`), a listing
-  that **failed** (`_Listings.kept` restores items, Sejm `/proceedings/{n}` and committees alike).
-  The line says which fact — sitting off, or meets without this bill (`_Listings.announced`) — and
-  only if the announcement was `sent`; a still-queued one is dropped (`Poster.drop_sitting`).
-  Committees renumber planned sittings (ASW 138 → 135, 1 Oct 2026): `_keep_renumbered` keeps the
-  told `sitting_key`.
+- **An announced sitting is corrected when its listing changes.** `AgendaWatcher._plan_retractions`
+  creates one `agenda_cancelled` per sent announcement (v19, unique per bill/channel/`ref`).
+  Only explicit `CANCELLED` confirms a cancellation. An absent listing leaves the old time
+  unconfirmed. Removal from the agenda requires a matching sitting and a readable agenda.
+  The broadcast identifies a committee sitting across renumbering and prevents matching a reused
+  number to a different sitting. A move with the same `sitting_key` is told from the old time.
+  Started, passed and `FINISHED` sittings are excluded from retractions. `_Listings.kept` retains
+  the old agenda when a listing fails or a scheduled sitting has a blank agenda. An unsent
+  announcement that is no longer upcoming is dropped (`Poster.drop_sitting`).
 - **Agenda matching has three blind spots** (term 10: 4,387 committee and 75 Sejm sittings).
   (1) Past the third reading the agenda names the **derived print** (Senate resolution, President's
   motion; 211 committee + 160 plenary items — the reader's last windows): `_items_for` also matches

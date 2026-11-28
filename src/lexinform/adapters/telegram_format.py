@@ -1494,7 +1494,7 @@ class MessageFormatter:
         return "\n\n".join([*blocks, " ".join([*lead, *threads])])
 
     def _sitting_entry(self, news: SittingNews) -> str:
-        """Distinguish cancellation of the sitting from removal of the bill from its agenda."""
+        """Describe what the listing confirms about the earlier announcement."""
         lb = self._labels
         item = news.item
         label = self._number_label(news.bill)
@@ -1508,7 +1508,12 @@ class MessageFormatter:
             )
             where = f"{esc(name)} · "
         if news.cancelled:
-            verdict = lb.agenda_dropped_header if news.still_meets else lb.agenda_cancelled_header
+            if news.schedule_unconfirmed:
+                verdict = lb.agenda_unconfirmed_header
+            elif news.still_meets:
+                verdict = lb.agenda_dropped_header
+            else:
+                verdict = lb.agenda_cancelled_header
             return (
                 f"❌ <b>{ref} · {context}</b>\n{where}{esc(lb.agenda_was_planned)} "
                 f"{self._agenda_when(item)}"

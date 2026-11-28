@@ -305,6 +305,7 @@ class SittingNews(BaseModel):
     moved_from: AgendaItem | None = None
     cancelled: bool = False
     still_meets: bool = False
+    schedule_unconfirmed: bool = False
     card_message_id: int | None = None
 
     @classmethod
@@ -318,6 +319,7 @@ class SittingNews(BaseModel):
             moved_from=AgendaItem.model_validate_json(moved) if moved else None,
             cancelled=kind is PublicationKind.AGENDA_CANCELLED,
             still_meets=plan.still_meets,
+            schedule_unconfirmed=plan.schedule_unconfirmed,
             card_message_id=plan.reply_to,
         )
 

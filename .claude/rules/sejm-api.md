@@ -50,7 +50,7 @@ paths:
   an attempt (`AnalysisResult.unanswered`); a bill with a text must never end analysed on metadata.
   The VPS EU proxy does not help (refused the same). Probe: `.github/workflows/orka-probe.yml`.
 - Sittings: `/committees/{code}/sittings` items have `num`, `date`, `startDateTime`, `room`,
-  `status` (only PLANNED|FINISHED — a cancelled sitting vanishes, hence "gone" = retraction),
+  `status` (PLANNED|FINISHED in the term-10 snapshot; an absent row leaves its status unknown),
   `agenda` (HTML `<div class="agenda-indent-N">`, prints as "druk nr 3035"/"druki nr 3010 i 3055"),
   `video[].playerLink`, `jointWith`, `comments` (the change made), `notes`, `closed`. `/proceedings`
   lists sittings (`number` 0 = planned without agenda); `/proceedings/{n}` adds `agenda` (`<li>`,

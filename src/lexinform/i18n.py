@@ -139,6 +139,7 @@ class Labels:
     sittings_sejm: str
     sittings_committees: str
     agenda_cancelled_header: str
+    agenda_unconfirmed_header: str
     agenda_dropped_header: str
     agenda_was_planned: str
     agenda_conditional: str
@@ -520,6 +521,7 @@ RU = Labels(
     sittings_sejm="Сейм",
     sittings_committees="Комиссии",
     agenda_cancelled_header="Заседание отменено",
+    agenda_unconfirmed_header="Сейм пока не подтверждает это заседание на указанное время",
     agenda_dropped_header="Проект снят с повестки заседания",
     agenda_was_planned="было запланировано на",
     agenda_conditional="Заседание объявлено условно: состоится, только если",
@@ -1297,6 +1299,7 @@ EN = Labels(
     sittings_sejm="Sejm",
     sittings_committees="Committees",
     agenda_cancelled_header="Sitting called off",
+    agenda_unconfirmed_header="The Sejm no longer lists this sitting at that time",
     agenda_dropped_header="Bill taken off the sitting's agenda",
     agenda_was_planned="was planned for",
     agenda_conditional="The sitting is announced conditionally: it happens only if",

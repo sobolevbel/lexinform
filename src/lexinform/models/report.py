@@ -230,7 +230,7 @@ class RunReport(BaseModel):
     ] = 0
     agenda_posted: Annotated[int, ReportField("posts", "agenda: {}", row=1, order=10)] = 0
     agenda_cancelled: Annotated[
-        int, ReportField("posts", "sittings called off: {}", row=1, order=11)
+        int, ReportField("posts", "agenda corrections: {}", row=1, order=11)
     ] = 0
     discontinued: Annotated[int, ReportField("posts", "end of term: {} bill(s) lapsed", row=2)] = 0
     rehomed: Annotated[

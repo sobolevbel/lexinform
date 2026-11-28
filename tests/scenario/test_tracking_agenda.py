@@ -317,6 +317,23 @@ def test_sejm_sitting_agenda_naming_the_bill_is_posted() -> None:
     assert "Что дальше:</b> I чтение на заседании Сейма · заседание Сейма № 65" in card
 
 
+def test_a_plenary_sitting_with_a_blank_agenda_keeps_its_previous_announcement() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=REFERRED)
+    sitting = SejmSitting(
+        number=65, dates=(dt.date(2026, 9, 15),), agenda="<li>Pierwsze czytanie (druk nr 3039)</li>"
+    )
+    w.gateway.sittings = [sitting]
+    w.run()
+    w.gateway.sittings = [sitting.model_copy(update={"agenda": ""})]
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert (report.agenda_posted, report.agenda_cancelled) == (0, 0)
+    assert _refs(w) == ["sejm/65/2026-09-15"]
+
+
 def test_a_sitting_the_api_no_longer_calls_planned_is_not_announced() -> None:
     """`CommitteeSitting.status` was parsed and never read: a called-off sitting still carries a
     future date and an agenda."""
@@ -463,6 +480,70 @@ def test_the_sitting_goes_ahead_without_the_bill_and_says_so() -> None:
     _, _, still_meets = w.publisher.agenda_cancellations[0]
     assert still_meets
     assert "Проект снят с повестки заседания" in w.publisher.texts(PublicationKind.AGENDA)[-1]
+
+
+def test_a_missing_sitting_reports_only_the_schedule_change() -> None:
+    w = _referred_bill()
+    w.gateway.committee_sittings["ASW"] = (_sitting(),)
+    w.run()
+    w.gateway.committee_sittings["ASW"] = ()
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert report.agenda_cancelled == 1
+    assert _refs(w) == []
+    assert (
+        "Сейм пока не подтверждает это заседание на указанное время"
+        in (w.publisher.texts(PublicationKind.AGENDA)[-1])
+    )
+
+
+def test_renumbered_sitting_with_the_bill_removed_matches_the_original_broadcast() -> None:
+    w = _referred_bill()
+    w.gateway.committee_sittings["ASW"] = (_sitting(),)
+    w.run()
+    renumbered = _sitting(135, agenda="Inne sprawy (druk nr 1111)")
+    w.gateway.committee_sittings["ASW"] = (renumbered,)
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert report.agenda_cancelled == 1
+    assert "Проект снят с повестки заседания" in w.publisher.texts(PublicationKind.AGENDA)[-1]
+
+
+def test_another_sitting_reusing_the_number_does_not_prove_the_bill_was_removed() -> None:
+    w = _referred_bill()
+    w.gateway.committee_sittings["ASW"] = (_sitting(),)
+    w.run()
+    replacement = _sitting(agenda="Inne sprawy (druk nr 1111)").model_copy(
+        update={"video_url": "https://sejm.gov.pl/Sejm10.nsf/transmisje_arch.xsp?unid=2"}
+    )
+    w.gateway.committee_sittings["ASW"] = (replacement,)
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert report.agenda_cancelled == 1
+    assert (
+        "Сейм пока не подтверждает это заседание на указанное время"
+        in (w.publisher.texts(PublicationKind.AGENDA)[-1])
+    )
+
+
+@pytest.mark.parametrize("status", ["PLANNED", "FINISHED"])
+def test_a_listed_sitting_with_an_empty_agenda_is_not_retracted(status: str) -> None:
+    w = _referred_bill()
+    w.gateway.committee_sittings["ASW"] = (_sitting(),)
+    w.run()
+    w.gateway.committee_sittings["ASW"] = (_sitting(agenda="", status=status),)
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert (report.agenda_posted, report.agenda_cancelled) == (0, 0)
+    assert _refs(w) == ([SITTING_REF] if status == "PLANNED" else [])
 
 
 def test_a_sitting_is_taken_back_only_once() -> None:
