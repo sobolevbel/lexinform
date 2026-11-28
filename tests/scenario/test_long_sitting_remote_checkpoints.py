@@ -85,7 +85,9 @@ def queued(mode: Mode = "on", *, cancelled: bool = False) -> SittingCase:
             sent_at=world.clock.now(),
             count_attempt=False,
         )
-        world.gateway.committee_sittings["ASW"] = ()
+        world.gateway.committee_sittings["ASW"] = (
+            sitting.model_copy(update={"status": "CANCELLED"}),
+        )
         world.run(publish=False)
         kind = PublicationKind.AGENDA_CANCELLED
     source = next(

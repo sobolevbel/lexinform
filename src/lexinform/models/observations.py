@@ -1,7 +1,7 @@
 import datetime as dt
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
 from lexinform.models.attention import AttentionAssessment
 from lexinform.models.delivery import DeliverySchedule
@@ -69,7 +69,6 @@ class DeliveryPlan(BaseModel):
     hearing_json: str | None = None
     today: dt.date | None = None
     still_meets: bool = False
-    schedule_unconfirmed: bool = Field(default=False, exclude_if=lambda value: not value)
     reply_to: int | None = None
     edit_message_id: int | None = None
     revision_of: int | None = None

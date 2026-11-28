@@ -58,6 +58,9 @@ paths:
   hour per agenda point per day; unused). Of 1,150 plenary items naming a projekt, 981 give a number.
   The Sejm names the print last, so `items_mentioning` keeps a window around the reference beside the
   head when an item exceeds `ITEM_MAX_CHARS` (111 of 4,040 items).
+- The public `PlanPosKom.xsp` calendar retains some removed committee slots as `ODWOŁANE`, with
+  or without a new date. The JSON listing can omit the old slot or reuse its number for a new one
+  ([B129](../../docs/BUGS.md#b129)). Only the JSON listing is read by the watcher.
 - `modifiedSince`/`changeDate` are naive **Europe/Warsaw**; `Z` is rejected. `sort_by` and `passed`
   filters are ignored; paginate by `offset` until empty. `documentType` needs the Polish display
   string ("projekt ustawy"); the enum `BILL` does not filter.

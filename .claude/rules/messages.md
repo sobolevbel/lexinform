@@ -47,8 +47,9 @@ paths:
   neither an RPW withdrawal nor a sitting outside its phase's venue).
 - **An announced sitting is corrected when its listing changes.** `AgendaWatcher._plan_retractions`
   creates one `agenda_cancelled` per sent announcement (v19, unique per bill/channel/`ref`).
-  Only explicit `CANCELLED` confirms a cancellation. An absent listing leaves the old time
-  unconfirmed. Removal from the agenda requires a matching sitting and a readable agenda.
+  Only explicit `CANCELLED` confirms a cancellation. An absent listing clears the date from the
+  card without a post. The same `ref` remains deduplicated if it returns. Removal from the agenda
+  requires a matching sitting and a readable agenda.
   The broadcast identifies a committee sitting across renumbering and prevents matching a reused
   number to a different sitting. A move with the same `sitting_key` is told from the old time.
   Started, passed and `FINISHED` sittings are excluded from retractions. `_Listings.kept` retains

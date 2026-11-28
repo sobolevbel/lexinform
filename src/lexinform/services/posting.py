@@ -1250,7 +1250,6 @@ class Poster:
         phase: Phase | None = None,
         hearing: Stage | None = None,
         still_meets: bool = False,
-        schedule_unconfirmed: bool = False,
     ) -> Publication:
         stored = self._repo.get_publication(bill.term, bill.number, kind, self._channel_id, ref=ref)
         if stored is not None and stored.delivery is not None:
@@ -1286,7 +1285,6 @@ class Poster:
             phase_json=phase.model_dump_json() if phase else None,
             hearing_json=hearing.model_dump_json() if hearing else None,
             still_meets=still_meets,
-            schedule_unconfirmed=schedule_unconfirmed,
             reply_to=card.message_id if card else None,
         )
         delivery = self._schedule(delivery, kind)

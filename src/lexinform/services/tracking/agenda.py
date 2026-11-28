@@ -209,10 +209,9 @@ class AgendaWatcher:
                 continue
             sitting = listings.meeting(old)
             status = sitting.status if isinstance(sitting, CommitteeSitting) else None
-            if status == "FINISHED":
-                continue
             still_meets = status == PLANNED or isinstance(sitting, SejmSitting)
-            schedule_unconfirmed = not still_meets and status != "CANCELLED"
+            if not still_meets and status != "CANCELLED":
+                continue
             log.info(
                 "druk %s: retracting %s (still_meets=%s, status=%s)",
                 bill.number,
@@ -227,7 +226,6 @@ class AgendaWatcher:
                     ref=old.ref,
                     item=old,
                     still_meets=still_meets,
-                    schedule_unconfirmed=schedule_unconfirmed,
                 )
             )
         return planned

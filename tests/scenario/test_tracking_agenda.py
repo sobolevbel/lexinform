@@ -482,7 +482,8 @@ def test_the_sitting_goes_ahead_without_the_bill_and_says_so() -> None:
     assert "Проект снят с повестки заседания" in w.publisher.texts(PublicationKind.AGENDA)[-1]
 
 
-def test_a_missing_sitting_reports_only_the_schedule_change() -> None:
+@pytest.mark.parametrize("new_date", [dt.date(2026, 9, 17), dt.date(2026, 9, 22)])
+def test_a_missing_sitting_stays_quiet_until_a_new_time_is_listed(new_date: dt.date) -> None:
     w = _referred_bill()
     w.gateway.committee_sittings["ASW"] = (_sitting(),)
     w.run()
@@ -491,12 +492,19 @@ def test_a_missing_sitting_reports_only_the_schedule_change() -> None:
 
     report = w.run()
 
-    assert report.agenda_cancelled == 1
+    assert (report.agenda_cancelled, report.agenda_posted) == (0, 0)
     assert _refs(w) == []
-    assert (
-        "Сейм пока не подтверждает это заседание на указанное время"
-        in (w.publisher.texts(PublicationKind.AGENDA)[-1])
-    )
+    assert w.publication("3039", PublicationKind.AGENDA_CANCELLED) is None
+    assert len(w.publisher.agendas) == 1
+
+    w.gateway.committee_sittings["ASW"] = (_sitting(date=new_date),)
+    w.clock.advance(days=1)
+    restored = w.run()
+
+    assert restored.agenda_cancelled == 0
+    assert restored.agenda_posted == int(new_date != dt.date(2026, 9, 17))
+    assert w.bill("3039").agenda[0].date == new_date
+    assert w.publisher.agendas[-1][1].date == new_date
 
 
 def test_renumbered_sitting_with_the_bill_removed_matches_the_original_broadcast() -> None:
@@ -513,7 +521,7 @@ def test_renumbered_sitting_with_the_bill_removed_matches_the_original_broadcast
     assert "Проект снят с повестки заседания" in w.publisher.texts(PublicationKind.AGENDA)[-1]
 
 
-def test_another_sitting_reusing_the_number_does_not_prove_the_bill_was_removed() -> None:
+def test_another_sitting_reusing_the_number_does_not_retract_the_announcement() -> None:
     w = _referred_bill()
     w.gateway.committee_sittings["ASW"] = (_sitting(),)
     w.run()
@@ -525,11 +533,9 @@ def test_another_sitting_reusing_the_number_does_not_prove_the_bill_was_removed(
 
     report = w.run()
 
-    assert report.agenda_cancelled == 1
-    assert (
-        "Сейм пока не подтверждает это заседание на указанное время"
-        in (w.publisher.texts(PublicationKind.AGENDA)[-1])
-    )
+    assert (report.agenda_cancelled, report.agenda_posted) == (0, 0)
+    assert _refs(w) == []
+    assert w.publication("3039", PublicationKind.AGENDA_CANCELLED) is None
 
 
 @pytest.mark.parametrize("status", ["PLANNED", "FINISHED"])
@@ -778,7 +784,7 @@ def test_a_different_broadcast_in_the_same_slot_is_a_new_sitting() -> None:
 
     report = w.run()
 
-    assert (report.agenda_cancelled, report.agenda_posted) == (1, 1)
+    assert (report.agenda_cancelled, report.agenda_posted) == (0, 1)
     _, item, _ = w.publisher.agendas[-1]
     assert item.sitting_number == 150
     assert "Заседание перенесено" not in w.publisher.texts(PublicationKind.AGENDA)[-1]

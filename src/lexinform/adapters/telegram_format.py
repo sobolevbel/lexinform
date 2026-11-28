@@ -1508,12 +1508,7 @@ class MessageFormatter:
             )
             where = f"{esc(name)} · "
         if news.cancelled:
-            if news.schedule_unconfirmed:
-                verdict = lb.agenda_unconfirmed_header
-            elif news.still_meets:
-                verdict = lb.agenda_dropped_header
-            else:
-                verdict = lb.agenda_cancelled_header
+            verdict = lb.agenda_dropped_header if news.still_meets else lb.agenda_cancelled_header
             return (
                 f"❌ <b>{ref} · {context}</b>\n{where}{esc(lb.agenda_was_planned)} "
                 f"{self._agenda_when(item)}"
